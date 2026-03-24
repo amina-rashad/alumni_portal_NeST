@@ -1,31 +1,434 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { ArrowLeft } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { motion, Variants } from 'framer-motion';
+import Lenis from '@studio-freight/lenis';
+import { 
+  Briefcase, Calendar, Users, Star, 
+  Activity, Image as ImageIcon, MapPin, 
+  Clock, MessageSquare, ThumbsUp, Share2,
+  Bookmark, Award, ChevronRight,
+  MoreHorizontal, Video, FileText, ArrowRight,
+  BrainCircuit, ExternalLink, PlayCircle, Trophy
+} from 'lucide-react';
+
+// --- MOCK DATA ---
+const feed = [
+  { 
+    id: 1, 
+    author: { name: 'NeST Alumni Association', title: 'Official Network Portal', avatar: 'https://ui-avatars.com/api/?name=NeST+Alumni&background=0F172A&color=fff' }, 
+    time: '2h ago', 
+    content: 'We are thrilled to announce the upcoming Global Alumni Meet 2026. Join us in celebrating a decade of engineering excellence! 🎉 Register now in the Events tab to secure your spot. #NeSTAlumni #TechLeadership', 
+    likes: 342, 
+    comments: 45,
+    isOfficial: true
+  },
+  { 
+    id: 2, 
+    author: { name: 'Dr. Sarah Jenkins', title: 'Data Science Director at TechCorp | Batch of 2018', avatar: 'https://i.pravatar.cc/150?img=5' }, 
+    time: '5h ago', 
+    content: 'Excited to share that my team has successfully launched our new AI analytics platform! The foundational engineering principles I learned during my time at NeST were instrumental to this success. Let\'s connect! 🤖💡', 
+    likes: 128, 
+    comments: 24, 
+    image: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=1200&auto=format&fit=crop' 
+  }
+];
+
+const recommendations = [
+  { name: 'Priya Sharma', title: 'Product Manager @ Google', avatar: 'https://i.pravatar.cc/150?img=9', mutual: 12 },
+  { name: 'Michael Chen', title: 'Senior DevOps Engineer', avatar: 'https://i.pravatar.cc/150?img=12', mutual: 8 },
+  { name: 'Emily Davis', title: 'UX Research Lead @ Meta', avatar: 'https://i.pravatar.cc/150?img=1', mutual: 24 }
+];
+
+const jobs = [
+  { title: 'Staff Software Engineer', company: 'Google', location: 'Remote', logo: 'https://logo.clearbit.com/google.com', salary: '$180k - $240k' },
+  { title: 'VP of Engineering', company: 'Stripe', location: 'San Francisco, CA', logo: 'https://logo.clearbit.com/stripe.com', salary: '$250k+' }
+];
+
+const courses = [
+  { title: 'System Design Interview Prep', instructor: 'Alex Xu', duration: '4h 30m left', progress: 40, img: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80' },
+  { title: 'Advanced React Patterns', instructor: 'Dan Abramov', duration: '1h 15m left', progress: 85, img: 'https://images.unsplash.com/photo-1504639725590-34d0984388bd?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80' }
+];
+
+const events = [
+  { id: 1, title: 'Annual Alumni Tech Summit', date: 'Oct 15', time: '09:00 AM PST', attendees: 450, color: '#0F172A' },
+  { id: 2, title: 'AI & Machine Learning Workshop', date: 'Nov 02', time: '01:00 PM PST', attendees: 128, color: '#3B82F6' }
+];
+
+const quizzes = [
+  { id: 1, title: 'React Performance Masterclass', questions: 15, difficulty: 'Advanced', time: '20 mins', color: '#10B981' },
+  { id: 2, title: 'Cloud Architecture Essentials', questions: 10, difficulty: 'Intermediate', time: '15 mins', color: '#8B5CF6' }
+];
+
+// --- ANIMATION VARIANTS ---
+// Premium sophisticated spring
+const smoothSpring = { type: 'spring', stiffness: 100, damping: 20, mass: 1 };
+
+const sectionVariants: Variants = {
+  hidden: { opacity: 0, y: 60 },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    transition: { ...smoothSpring, staggerChildren: 0.15, delayChildren: 0.1 } 
+  }
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 30, scale: 0.98 },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    scale: 1,
+    transition: smoothSpring
+  }
+};
 
 const Dashboard: React.FC = () => {
+
+  // Smooth Scrolling Setup: Lenis
+  useEffect(() => {
+    const lenis = new Lenis({
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), 
+      direction: 'vertical', 
+      gestureDirection: 'vertical',
+      smooth: true,
+      mouseMultiplier: 1,
+      smoothTouch: false,
+      touchMultiplier: 2,
+      infinite: false,
+    } as any);
+
+    function raf(time: number) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+
+    requestAnimationFrame(raf);
+
+    return () => {
+      lenis.destroy();
+    };
+  }, []);
+
   return (
-    <motion.div 
-      className="page-container"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '2rem' }}>
-        <Link to="/" style={{ display: 'flex', alignItems: 'center', color: '#0056b3', textDecoration: 'none', marginRight: '1rem' }}>
-          <ArrowLeft size={20} style={{ marginRight: '0.5rem' }} /> Back
-        </Link>
-        <h1 style={{ margin: 0, color: '#333' }}>Dashboard</h1>
-      </div>
+    <div className="font-sans" style={{ backgroundColor: '#F8FAFC', minHeight: '100vh', padding: '3rem 1.5rem', fontFamily: '"Inter", -apple-system, sans-serif' }}>
       
-      <div style={{ background: '#fff', padding: '2rem', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
-        <h2>Welcome to the Dashboard Page</h2>
-        <p style={{ color: '#666', lineHeight: 1.6 }}>
-          This page is currently under rapid development. It will soon contain all the fully functional professional features required for Dashboard.
-        </p>
+      {/* GLOBAL CSS OVERRIDES */}
+      <style>{`
+        /* Force professional sans-serif fonts */
+        .font-sans, .font-sans h1, .font-sans h2, .font-sans h3, .font-sans h4, .font-sans h5, .font-sans h6, .font-sans p, .font-sans span, .font-sans button, .font-sans input {
+          font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif !important;
+          letter-spacing: -0.015em;
+        }
+
+        /* Premium Card Styling */
+        .luxury-card {
+          background: #ffffff;
+          border-radius: 16px;
+          border: 1px solid rgba(226, 232, 240, 0.8);
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+          transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.4s cubic-bezier(0.25, 1, 0.5, 1), border-color 0.4s;
+          overflow: hidden;
+        }
+        .luxury-card:hover {
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+          transform: translateY(-4px);
+          border-color: rgba(226, 232, 240, 1);
+        }
+
+        /* High-End Button Hovers */
+        .btn-premium {
+          transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+          position: relative;
+          overflow: hidden;
+          cursor: pointer;
+        }
+        .btn-premium::after {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background: rgba(255,255,255,0.1);
+          opacity: 0;
+          transition: opacity 0.3s;
+        }
+        .btn-premium:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+        }
+        .btn-premium:hover::after {
+          opacity: 1;
+        }
+        .btn-outline {
+          border: 1px solid #E2E8F0;
+          background: white;
+          color: #0F172A;
+        }
+        .btn-outline:hover {
+          border-color: #0F172A;
+        }
+
+        /* Utilities */
+        .link-hover:hover {
+          color: #2563EB !important;
+          text-decoration: underline;
+        }
+      `}</style>
+
+      {/* 
+        MAIN CENTRALISED LAYOUT (ONE BY ONE)
+        A constrained width makes horizontal reading comfortable and focuses the user beautifully.
+      */}
+      <div style={{ maxWidth: '860px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '3rem' }}>
+        
+        {/* WELCOME BANNER */}
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+          style={{ marginBottom: '-1rem' }}
+        >
+          <p style={{ margin: '0 0 0.25rem', color: '#64748B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.85rem' }}>Dashboard Overview</p>
+          <h1 style={{ margin: 0, fontSize: '2.5rem', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.03em' }}>Welcome back, Noble.</h1>
+        </motion.div>
+
+        {/* 1. CREATION & POSTS AREA (ACTIVITY FEED OVERVIEW) */}
+        <motion.section 
+          variants={sectionVariants} 
+          initial="hidden" 
+          whileInView="visible" 
+          viewport={{ once: true, margin: "-10%" }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+            <Activity size={24} color="#0F172A" />
+            <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#0F172A' }}>Activity Feed</h2>
+          </div>
+
+          <motion.div variants={itemVariants} className="luxury-card" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <img src="https://i.pravatar.cc/150?img=33" alt="You" style={{ width: '56px', height: '56px', borderRadius: '50%', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }} />
+              <button 
+                className="btn-premium"
+                style={{ flex: 1, textAlign: 'left', background: '#F1F5F9', border: '1px solid transparent', padding: '1.25rem 1.5rem', borderRadius: '999px', color: '#64748B', fontWeight: 500, fontSize: '1rem' }}
+              >
+                Share an update, milestone, or ask a question...
+              </button>
+            </div>
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button className="btn-premium btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem', borderRadius: '999px', fontWeight: 600 }}>
+                <ImageIcon size={18} color="#3B82F6" /> Add Media
+              </button>
+              <button className="btn-premium btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem', borderRadius: '999px', fontWeight: 600 }}>
+                <Calendar size={18} color="#10B981" /> Host Event
+              </button>
+              <button className="btn-premium btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem', borderRadius: '999px', fontWeight: 600 }}>
+                <FileText size={18} color="#F59E0B" /> Write Article
+              </button>
+            </div>
+          </motion.div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            {feed.map((post) => (
+              <motion.div key={post.id} variants={itemVariants} className="luxury-card">
+                <div style={{ padding: '2rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                      <img src={post.author.avatar} alt={post.author.name} style={{ width: '56px', height: '56px', borderRadius: post.isOfficial ? '12px' : '50%', border: '1px solid #E2E8F0' }} />
+                      <div>
+                        <h4 className="link-hover" style={{ margin: '0 0 0.25rem', fontSize: '1.1rem', fontWeight: 700, color: '#0F172A', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          {post.author.name}
+                          {post.isOfficial && <span style={{ background: '#0F172A', color: 'white', padding: '2px 8px', borderRadius: '999px', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Official</span>}
+                        </h4>
+                        <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748B' }}>{post.author.title}</p>
+                        <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#94A3B8', display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Clock size={12} /> {post.time}</p>
+                      </div>
+                    </div>
+                    <button className="btn-premium btn-outline" style={{ padding: '8px', borderRadius: '50%', display: 'flex' }}><MoreHorizontal size={20} color="#64748B" /></button>
+                  </div>
+                  
+                  <p style={{ margin: '0 0 1.5rem', color: '#334155', lineHeight: 1.7, fontSize: '1.05rem' }}>{post.content}</p>
+                </div>
+                
+                {post.image && (
+                  <div style={{ borderTop: '1px solid #F1F5F9', borderBottom: '1px solid #F1F5F9' }}>
+                    <img src={post.image} alt="Post Attachment" style={{ width: '100%', maxHeight: '450px', objectFit: 'cover', display: 'block' }} />
+                  </div>
+                )}
+                
+                <div style={{ padding: '1rem 2rem 1.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '1rem', borderBottom: '1px solid #F1F5F9', marginBottom: '0.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64748B', fontSize: '0.85rem' }}>
+                      <div style={{ display: 'flex' }}>
+                        <div style={{ background: '#2563EB', borderRadius: '50%', padding: '4px', border: '2px solid white', zIndex: 2 }}><ThumbsUp size={12} color="white" /></div>
+                        <div style={{ background: '#0F172A', borderRadius: '50%', padding: '4px', border: '2px solid white', marginLeft: '-8px', zIndex: 1 }}><Star size={12} color="white" fill="white"/></div>
+                      </div>
+                      <span style={{ fontWeight: 600, color: '#0F172A' }}>{post.likes}</span> interactions
+                    </div>
+                    <span className="link-hover" style={{ fontSize: '0.85rem', color: '#64748B', fontWeight: 500 }}>{post.comments} comments</span>
+                  </div>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+                    {[{ icon: ThumbsUp, label: 'Like' }, { icon: MessageSquare, label: 'Comment' }, { icon: Share2, label: 'Share' }].map((action, i) => (
+                      <button key={i} className="btn-premium" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', background: '#F8FAFC', border: 'none', color: '#475569', fontWeight: 600, padding: '1rem', borderRadius: '12px', fontSize: '0.95rem' }}>
+                        <action.icon size={18} /> <span>{action.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.section>
+
+        {/* 2. SUGGESTION OF PEOPLE YOU MAY KNOW */}
+        <motion.section variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-10%" }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <Users size={24} color="#0F172A" />
+                <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#0F172A' }}>People You May Know</h2>
+             </div>
+             <button className="link-hover" style={{ background: 'transparent', border: 'none', fontSize: '0.95rem', fontWeight: 600, color: '#2563EB', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                See All <ChevronRight size={16} />
+             </button>
+          </div>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
+             {recommendations.map((user, i) => (
+                <motion.div key={i} variants={itemVariants} className="luxury-card btn-premium" style={{ cursor: 'default', padding: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                   <img src={user.avatar} alt={user.name} style={{ width: '80px', height: '80px', borderRadius: '50%', marginBottom: '1rem', border: '4px solid #F1F5F9' }} />
+                   <h4 style={{ margin: '0 0 0.5rem', fontSize: '1.1rem', fontWeight: 700, color: '#0F172A' }}>{user.name}</h4>
+                   <p style={{ margin: '0 0 1rem', fontSize: '0.85rem', color: '#64748B', lineHeight: 1.4, flex: 1 }}>{user.title}</p>
+                   <p style={{ margin: '0 0 1.5rem', fontSize: '0.75rem', color: '#94A3B8', fontWeight: 600 }}>{user.mutual} mutual connections</p>
+                   <button className="btn-premium btn-outline" style={{ width: '100%', padding: '0.75rem', borderRadius: '999px', fontSize: '0.9rem', fontWeight: 700, color: '#2563EB', borderColor: '#2563EB' }}>
+                      Connect
+                   </button>
+                </motion.div>
+             ))}
+          </div>
+        </motion.section>
+
+        {/* 3. RECOMMENDED JOBS / LISTINGS OVERVIEW */}
+        <motion.section variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-10%" }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <Briefcase size={24} color="#0F172A" />
+                <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#0F172A' }}>Recommended Jobs</h2>
+             </div>
+             <button className="link-hover" style={{ background: 'transparent', border: 'none', fontSize: '0.95rem', fontWeight: 600, color: '#2563EB', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                View Job Board <ArrowRight size={16} />
+             </button>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '1.5rem' }}>
+            {jobs.map((job, i) => (
+               <motion.div key={i} variants={itemVariants} className="luxury-card btn-premium" style={{ cursor: 'pointer', padding: '1.5rem', display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+                  <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '0.75rem', borderRadius: '12px' }}>
+                     <img src={job.logo} alt={job.company} style={{ width: '48px', height: '48px', objectFit: 'contain' }} onError={(e) => { e.currentTarget.src = `https://ui-avatars.com/api/?name=${job.company}&background=random`; }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                     <h4 style={{ margin: '0 0 0.25rem', fontSize: '1.1rem', fontWeight: 700, color: '#0F172A' }}>{job.title}</h4>
+                     <p style={{ margin: '0 0 0.5rem', fontSize: '0.9rem', color: '#64748B' }}>{job.company}</p>
+                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <span style={{ fontSize: '0.8rem', color: '#94A3B8', display: 'flex', alignItems: 'center', gap: '0.25rem' }}><MapPin size={12}/> {job.location}</span>
+                        <span style={{ fontSize: '0.8rem', color: '#10B981', fontWeight: 600 }}>{job.salary}</span>
+                     </div>
+                  </div>
+               </motion.div>
+            ))}
+          </div>
+        </motion.section>
+
+        {/* 4. UPCOMING EVENTS OVERVIEW */}
+        <motion.section variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-10%" }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+             <Calendar size={24} color="#0F172A" />
+             <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#0F172A' }}>Upcoming Events</h2>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+             {events.map((event, i) => (
+                <motion.div key={i} variants={itemVariants} className="luxury-card btn-premium" style={{ cursor: 'pointer', display: 'flex', alignItems: 'stretch' }}>
+                   <div style={{ width: '120px', background: event.color, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', padding: '1.5rem' }}>
+                      <span style={{ fontSize: '1rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{event.date.split(' ')[0]}</span>
+                      <span style={{ fontSize: '2rem', fontWeight: 800, lineHeight: 1.1 }}>{event.date.split(' ')[1]}</span>
+                   </div>
+                   <div style={{ padding: '2rem', flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                         <h4 style={{ margin: '0 0 0.5rem', fontSize: '1.25rem', fontWeight: 700, color: '#0F172A' }}>{event.title}</h4>
+                         <div style={{ display: 'flex', gap: '1.5rem', color: '#64748B', fontSize: '0.9rem' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Clock size={16} /> {event.time}</span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Users size={16} /> {event.attendees} Attending</span>
+                         </div>
+                      </div>
+                      <button className="btn-premium" style={{ background: '#0F172A', color: 'white', border: 'none', padding: '0.75rem 2rem', borderRadius: '999px', fontSize: '0.95rem', fontWeight: 600 }}>
+                         Register
+                      </button>
+                   </div>
+                </motion.div>
+             ))}
+          </div>
+        </motion.section>
+
+        {/* 5. COURSES & QUIZZES (GRID SPLIT) */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '3rem', marginTop: '1rem' }}>
+           
+           {/* Courses */}
+           <motion.section variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-10%" }}>
+             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                <Award size={24} color="#0F172A" />
+                <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#0F172A' }}>Resume Courses</h2>
+             </div>
+             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                {courses.map((course, i) => (
+                   <motion.div key={i} variants={itemVariants} className="luxury-card btn-premium" style={{ padding: '1.5rem', cursor: 'pointer', display: 'flex', gap: '1.5rem' }}>
+                      <img src={course.img} alt={course.title} style={{ width: '80px', height: '80px', borderRadius: '12px', objectFit: 'cover' }} />
+                      <div style={{ flex: 1 }}>
+                         <h4 style={{ margin: '0 0 0.25rem', fontSize: '1.05rem', fontWeight: 700, color: '#0F172A' }}>{course.title}</h4>
+                         <p style={{ margin: '0 0 1rem', fontSize: '0.85rem', color: '#64748B' }}>Instructor: {course.instructor}</p>
+                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <div style={{ flex: 1, height: '6px', background: '#F1F5F9', borderRadius: '999px', overflow: 'hidden' }}>
+                               <div style={{ width: `${course.progress}%`, height: '100%', background: '#2563EB', borderRadius: '999px' }} />
+                            </div>
+                            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0F172A' }}>{course.progress}%</span>
+                         </div>
+                      </div>
+                   </motion.div>
+                ))}
+             </div>
+           </motion.section>
+
+           {/* Quizzes */}
+           <motion.section variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-10%" }}>
+             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                <BrainCircuit size={24} color="#0F172A" />
+                <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#0F172A' }}>Assessments & Quizzes</h2>
+             </div>
+             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                {quizzes.map((quiz, i) => (
+                   <motion.div key={i} variants={itemVariants} className="luxury-card btn-premium" style={{ padding: '1.5rem', cursor: 'pointer' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                         <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#0F172A', maxWidth: '70%' }}>{quiz.title}</h4>
+                         <span style={{ padding: '4px 12px', background: `${quiz.color}15`, color: quiz.color, borderRadius: '999px', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase' }}>{quiz.difficulty}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F1F5F9', paddingTop: '1rem' }}>
+                         <span style={{ fontSize: '0.85rem', color: '#64748B', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <FileText size={16}/> {quiz.questions} Qs
+                         </span>
+                         <span style={{ fontSize: '0.85rem', color: '#64748B', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <Clock size={16}/> {quiz.time}
+                         </span>
+                         <button className="btn-premium" style={{ border: 'none', background: 'transparent', color: '#2563EB', fontWeight: 700, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                            Start <ArrowRight size={16}/>
+                         </button>
+                      </div>
+                   </motion.div>
+                ))}
+             </div>
+           </motion.section>
+        </div>
+
+        <div style={{ paddingBottom: '4rem' }} />
+
       </div>
-    </motion.div>
+    </div>
   );
 };
 
