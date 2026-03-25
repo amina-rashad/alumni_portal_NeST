@@ -87,6 +87,12 @@ import ChangePassword from './pages/ChangePassword';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminPlaceholder from './pages/admin/AdminPlaceholder';
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminInterns from './pages/admin/AdminInterns';
+import AdminIVStudents from './pages/admin/AdminIVStudents';
+import AdminAddVisit from './pages/admin/AdminAddVisit';
+import AdminJobs from './pages/admin/AdminJobs';
+import AdminPostJob from './pages/admin/AdminPostJob';
 
 /* ── Splash Screen ── */
 const SplashScreen: React.FC = () => (
@@ -223,10 +229,12 @@ const App: React.FC = () => {
               <Route path="/admin" element={<AdminLayout />}>
                 <Route index element={<Navigate to="/admin/dashboard" replace />} />
                 <Route path="dashboard" element={<AdminDashboard />} />
-                <Route path="users" element={<AdminPlaceholder title="User Management" />} />
-                <Route path="interns" element={<AdminPlaceholder title="Intern Management" />} />
-                <Route path="iv-students" element={<AdminPlaceholder title="IV Students" />} />
-                <Route path="jobs" element={<AdminPlaceholder title="Job Management" />} />
+                <Route path="users" element={<AdminUsers />} />
+                <Route path="interns" element={<AdminInterns />} />
+                <Route path="iv-students" element={<AdminIVStudents />} />
+                <Route path="iv-students/add" element={<AdminAddVisit />} />
+                <Route path="jobs" element={<AdminJobs />} />
+                <Route path="jobs/post" element={<AdminPostJob />} />
                 <Route path="applications" element={<AdminPlaceholder title="Applications" />} />
                 <Route path="reports" element={<AdminPlaceholder title="Reports" />} />
                 <Route path="settings" element={<AdminPlaceholder title="Settings" />} />
