@@ -88,7 +88,9 @@ import AdminLayout from './pages/admin/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminPlaceholder from './pages/admin/AdminPlaceholder';
 import AdminUsers from './pages/admin/AdminUsers';
+import AdminAddUser from './pages/admin/AdminAddUser';
 import AdminInterns from './pages/admin/AdminInterns';
+import AdminAddIntern from './pages/admin/AdminAddIntern';
 import AdminIVStudents from './pages/admin/AdminIVStudents';
 import AdminAddVisit from './pages/admin/AdminAddVisit';
 import AdminJobs from './pages/admin/AdminJobs';
@@ -230,7 +232,9 @@ const App: React.FC = () => {
                 <Route index element={<Navigate to="/admin/dashboard" replace />} />
                 <Route path="dashboard" element={<AdminDashboard />} />
                 <Route path="users" element={<AdminUsers />} />
+                <Route path="users/add" element={<AdminAddUser />} />
                 <Route path="interns" element={<AdminInterns />} />
+                <Route path="interns/add" element={<AdminAddIntern />} />
                 <Route path="iv-students" element={<AdminIVStudents />} />
                 <Route path="iv-students/add" element={<AdminAddVisit />} />
                 <Route path="jobs" element={<AdminJobs />} />

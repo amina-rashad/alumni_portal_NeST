@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   Search, Plus, ChevronDown, 
   Eye, Edit2, MoreHorizontal, ChevronRight
@@ -73,23 +74,25 @@ const AdminUsers: React.FC = () => {
           </div>
         </div>
         
-        <button style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: '8px', 
-          background: '#3b82f6', 
-          color: '#fff', 
-          border: 'none', 
-          padding: '10px 20px', 
-          borderRadius: '12px', 
-          fontSize: '14px', 
-          fontWeight: 600, 
-          cursor: 'pointer',
-          boxShadow: '0 2px 10px rgba(59, 130, 246, 0.2)'
-        }}>
-          <Plus size={18} />
-          Add User
-        </button>
+        <Link to="/admin/users/add" style={{ textDecoration: 'none' }}>
+          <button style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '8px', 
+            background: '#3b82f6', 
+            color: '#fff', 
+            border: 'none', 
+            padding: '10px 20px', 
+            borderRadius: '12px', 
+            fontSize: '14px', 
+            fontWeight: 600, 
+            cursor: 'pointer',
+            boxShadow: '0 2px 10px rgba(59, 130, 246, 0.2)'
+          }}>
+            <Plus size={18} />
+            Add User
+          </button>
+        </Link>
       </div>
 
       {/* Data Table */}

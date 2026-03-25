@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { 
   Users, UserCheck, School, PieChart, Plus, ChevronDown, 
   Download, Eye, Edit2, MoreHorizontal, ChevronRight
@@ -75,15 +76,18 @@ const AdminInterns: React.FC = () => {
 
         {/* Action Buttons right col */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '140px' }}>
-          <button style={{ 
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', 
-            background: '#3b82f6', color: '#fff', border: 'none', padding: '12px', 
-            borderRadius: '12px', fontSize: '14px', fontWeight: 600, cursor: 'pointer',
-            boxShadow: '0 2px 10px rgba(59, 130, 246, 0.2)'
-          }}>
-            <Plus size={18} />
-            Add Intern
-          </button>
+          <Link to="/admin/interns/add" style={{ textDecoration: 'none' }}>
+            <button style={{ 
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', 
+              background: '#3b82f6', color: '#fff', border: 'none', padding: '12px', 
+              borderRadius: '12px', fontSize: '14px', fontWeight: 600, cursor: 'pointer',
+              boxShadow: '0 2px 10px rgba(59, 130, 246, 0.2)',
+              width: '100%'
+            }}>
+              <Plus size={18} />
+              Add Intern
+            </button>
+          </Link>
           <button style={{ 
             display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
             background: '#fff', border: '1px solid #e2e8f0', padding: '10px 14px', 
