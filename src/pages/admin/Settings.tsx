@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Settings as SettingsIcon, Globe, Bell, 
-  Shield, Server, Save, AlertTriangle, 
+  Globe, Shield, Server, Save, 
   ToggleLeft, ToggleRight, CheckCircle2,
   Users, Briefcase, GraduationCap, MessageSquare,
-  School, Zap, Calendar
+  Zap, Calendar
 } from 'lucide-react';
 
 type TabType = 'General' | 'Recruitment' | 'Academic' | 'Community' | 'System';
