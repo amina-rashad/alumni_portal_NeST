@@ -34,7 +34,13 @@ const Login: React.FC = () => {
       if (response.success && response.data) {
         setTokens(response.data.access_token, response.data.refresh_token);
         setUser(response.data.user);
-        navigate('/dashboard');
+        
+        // Dynamic Role-based Routing!
+        if (response.data.user.role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/dashboard');
+        }
       } else {
         setError(response.message || 'Login failed. Please try again.');
       }

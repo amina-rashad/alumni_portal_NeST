@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
@@ -6,10 +6,27 @@ import {
   FileText, BarChart3, Settings, LogOut, Bell, Search, Menu, X, ChevronDown
 } from 'lucide-react';
 import nestMainLogo from '../../assets/nest_logo.png';
+import { getUser, authApi, type AuthUser } from '../../services/api';
+import { useNavigate } from 'react-router-dom';
 
 const AdminLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const [adminUser, setAdminUser] = useState<AuthUser | null>(null);
+
+  useEffect(() => {
+    const currentUser = getUser() as unknown as AuthUser;
+    if (currentUser) {
+      setAdminUser(currentUser);
+    }
+  }, [location.pathname]);
+
+  const handleLogout = () => {
+    authApi.logout();
+    navigate('/login');
+  };
 
   const menuItems = [
     { name: 'Dashboard', path: '/admin/dashboard', icon: <LayoutDashboard size={20} /> },
@@ -95,6 +112,7 @@ const AdminLayout: React.FC = () => {
         
         <div style={{ padding: '24px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
           <button 
+            onClick={handleLogout}
             style={{ 
               display: 'flex', 
               alignItems: 'center', 
@@ -152,14 +170,18 @@ const AdminLayout: React.FC = () => {
               
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', padding: '4px', borderRadius: '12px' }}>
                 <div style={{ position: 'relative' }}>
-                  <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: '#d32f2f', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '16px' }}>
-                    AD
-                  </div>
+                  {adminUser?.profile_picture ? (
+                    <img src={adminUser.profile_picture} alt={adminUser.full_name} style={{ width: '42px', height: '42px', borderRadius: '12px', objectFit: 'cover' }} />
+                  ) : (
+                    <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: '#d32f2f', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '16px' }}>
+                      {adminUser ? adminUser.full_name.substring(0, 2).toUpperCase() : 'AD'}
+                    </div>
+                  )}
                   <div style={{ position: 'absolute', bottom: '-2px', right: '-2px', width: '12px', height: '12px', background: '#22c55e', borderRadius: '50%', border: '2px solid #fff' }}></div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <span style={{ fontSize: '14px', fontWeight: 700, color: '#1e293b' }}>John Doe</span>
-                  <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 500 }}>Admin</span>
+                  <span style={{ fontSize: '14px', fontWeight: 700, color: '#1e293b' }}>{adminUser ? adminUser.full_name : 'Administrator'}</span>
+                  <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 500 }}>System Admin</span>
                 </div>
                 <ChevronDown size={14} color="#64748b" />
               </div>
