@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { motion, Variants } from 'framer-motion';
+import React, { useEffect, useState } from 'react';
+import { motion, type Variants } from 'framer-motion';
 import Lenis from '@studio-freight/lenis';
 import { 
   Briefcase, Calendar, Users, Star, 
@@ -7,8 +7,9 @@ import {
   Clock, MessageSquare, ThumbsUp, Share2,
   Bookmark, Award, ChevronRight,
   MoreHorizontal, Video, FileText, ArrowRight,
-  BrainCircuit, ExternalLink, PlayCircle, Trophy
+  BrainCircuit, ExternalLink, PlayCircle, Trophy, BookOpen
 } from 'lucide-react';
+import { getUser, coursesApi, jobsApi, type AuthUser } from '../services/api';
 
 // --- MOCK DATA ---
 const feed = [
@@ -38,15 +39,9 @@ const recommendations = [
   { name: 'Emily Davis', title: 'UX Research Lead @ Meta', avatar: 'https://i.pravatar.cc/150?img=1', mutual: 24 }
 ];
 
-const jobs = [
-  { title: 'Staff Software Engineer', company: 'Google', location: 'Remote', logo: 'https://logo.clearbit.com/google.com', salary: '$180k - $240k' },
-  { title: 'VP of Engineering', company: 'Stripe', location: 'San Francisco, CA', logo: 'https://logo.clearbit.com/stripe.com', salary: '$250k+' }
-];
+// Global dummy jobs removed - fetching from database!
 
-const courses = [
-  { title: 'System Design Interview Prep', instructor: 'Alex Xu', duration: '4h 30m left', progress: 40, img: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80' },
-  { title: 'Advanced React Patterns', instructor: 'Dan Abramov', duration: '1h 15m left', progress: 85, img: 'https://images.unsplash.com/photo-1504639725590-34d0984388bd?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80' }
-];
+// Global dummy courses removed - fetching from database!
 
 const events = [
   { id: 1, title: 'Annual Alumni Tech Summit', date: 'Oct 15', time: '09:00 AM PST', attendees: 450, color: '#0F172A' },
@@ -60,7 +55,7 @@ const quizzes = [
 
 // --- ANIMATION VARIANTS ---
 // Premium sophisticated spring
-const smoothSpring = { type: 'spring', stiffness: 100, damping: 20, mass: 1 };
+const smoothSpring = { type: 'spring' as const, stiffness: 100, damping: 20, mass: 1 };
 
 const sectionVariants: Variants = {
   hidden: { opacity: 0, y: 60 },
@@ -82,6 +77,45 @@ const itemVariants: Variants = {
 };
 
 const Dashboard: React.FC = () => {
+  const [user, setUserData] = useState<AuthUser | null>(null);
+  const [courses, setCourses] = useState<any[]>([]);
+  const [jobs, setJobs] = useState<any[]>([]);
+
+  useEffect(() => {
+    // Load the authenticated user from local storage
+    const currentUser = getUser() as unknown as AuthUser;
+    if (currentUser) {
+      setUserData(currentUser);
+    }
+    
+    // Fetch live courses
+    const fetchCourses = async () => {
+      try {
+        const res = await coursesApi.getAllCourses();
+        const data = res.data as any;
+        if (res.success && data && data.courses) {
+          setCourses(data.courses);
+        }
+      } catch (err) {
+        console.error("Failed to load courses", err);
+      }
+    };
+    fetchCourses();
+    
+    // Fetch live jobs
+    const fetchJobs = async () => {
+      try {
+        const res = await jobsApi.getAllJobs();
+        const data = res.data as any;
+        if (res.success && data && data.jobs) {
+          setJobs(data.jobs);
+        }
+      } catch (err) {
+        console.error("Failed to load jobs", err);
+      }
+    };
+    fetchJobs();
+  }, []);
 
   // Smooth Scrolling Setup: Lenis
   useEffect(() => {
@@ -186,8 +220,13 @@ const Dashboard: React.FC = () => {
           transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
           style={{ marginBottom: '-1rem' }}
         >
-          <p style={{ margin: '0 0 0.25rem', color: '#64748B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.85rem' }}>Dashboard Overview</p>
-          <h1 style={{ margin: 0, fontSize: '2.5rem', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.03em' }}>Welcome back, Noble.</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <p style={{ margin: '0 0 0.25rem', color: '#64748B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.85rem' }}>Dashboard Overview</p>
+            {user && <span style={{ padding: '2px 8px', background: '#e2e8f0', color: '#475569', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 700 }}>{user.user_type}</span>}
+          </div>
+          <h1 style={{ margin: 0, fontSize: '2.5rem', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.03em' }}>
+            Welcome back{user ? `, ${user.full_name.split(' ')[0]}` : ''}.
+          </h1>
         </motion.div>
 
         {/* 1. CREATION & POSTS AREA (ACTIVITY FEED OVERVIEW) */}
@@ -204,7 +243,11 @@ const Dashboard: React.FC = () => {
 
           <motion.div variants={itemVariants} className="luxury-card" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
             <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <img src="https://i.pravatar.cc/150?img=33" alt="You" style={{ width: '56px', height: '56px', borderRadius: '50%', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }} />
+              <img 
+                src={user?.profile_picture || `https://ui-avatars.com/api/?name=${user?.full_name || 'User'}&background=0F172A&color=fff`} 
+                alt={user?.full_name || 'You'} 
+                style={{ width: '56px', height: '56px', borderRadius: '50%', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }} 
+              />
               <button 
                 className="btn-premium"
                 style={{ flex: 1, textAlign: 'left', background: '#F1F5F9', border: '1px solid transparent', padding: '1.25rem 1.5rem', borderRadius: '999px', color: '#64748B', fontWeight: 500, fontSize: '1rem' }}
@@ -318,17 +361,25 @@ const Dashboard: React.FC = () => {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '1.5rem' }}>
-            {jobs.map((job, i) => (
-               <motion.div key={i} variants={itemVariants} className="luxury-card btn-premium" style={{ cursor: 'pointer', padding: '1.5rem', display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-                  <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '0.75rem', borderRadius: '12px' }}>
-                     <img src={job.logo} alt={job.company} style={{ width: '48px', height: '48px', objectFit: 'contain' }} onError={(e) => { e.currentTarget.src = `https://ui-avatars.com/api/?name=${job.company}&background=random`; }} />
+            {jobs.length === 0 ? (
+              <p style={{ color: '#64748B', fontSize: '0.9rem' }}>Fetching recommended jobs...</p>
+            ) : jobs.map((job, i) => (
+               <motion.div key={job.id || i} variants={itemVariants} className="luxury-card btn-premium" style={{ cursor: 'pointer', padding: '1.5rem', display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+                  <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '0.75rem', borderRadius: '12px', flexShrink: 0 }}>
+                     {job.logo ? (
+                       <img src={job.logo} alt={job.company} style={{ width: '48px', height: '48px', objectFit: 'contain' }} onError={(e) => { e.currentTarget.src = `https://ui-avatars.com/api/?name=${job.company || 'C'}&background=random`; }} />
+                     ) : (
+                       <div style={{ width: '48px', height: '48px', background: 'linear-gradient(135deg, #10B981, #059669)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800, fontSize: '20px' }}>
+                          {(job.company || job.title || 'J').charAt(0).toUpperCase()}
+                       </div>
+                     )}
                   </div>
-                  <div style={{ flex: 1 }}>
-                     <h4 style={{ margin: '0 0 0.25rem', fontSize: '1.1rem', fontWeight: 700, color: '#0F172A' }}>{job.title}</h4>
-                     <p style={{ margin: '0 0 0.5rem', fontSize: '0.9rem', color: '#64748B' }}>{job.company}</p>
-                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <span style={{ fontSize: '0.8rem', color: '#94A3B8', display: 'flex', alignItems: 'center', gap: '0.25rem' }}><MapPin size={12}/> {job.location}</span>
-                        <span style={{ fontSize: '0.8rem', color: '#10B981', fontWeight: 600 }}>{job.salary}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                     <h4 style={{ margin: '0 0 0.25rem', fontSize: '1.1rem', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{job.title || 'Career Opportunity'}</h4>
+                     <p style={{ margin: '0 0 0.5rem', fontSize: '0.9rem', color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{job.company || 'Confidential Company'}</p>
+                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '0.8rem', color: '#94A3B8', display: 'flex', alignItems: 'center', gap: '0.25rem' }}><MapPin size={12}/> {job.location || 'Remote eligible'}</span>
+                        {job.salary && <span style={{ fontSize: '0.8rem', color: '#10B981', fontWeight: 600 }}>{job.salary}</span>}
                      </div>
                   </div>
                </motion.div>
@@ -377,17 +428,22 @@ const Dashboard: React.FC = () => {
                 <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#0F172A' }}>Resume Courses</h2>
              </div>
              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                {courses.map((course, i) => (
-                   <motion.div key={i} variants={itemVariants} className="luxury-card btn-premium" style={{ padding: '1.5rem', cursor: 'pointer', display: 'flex', gap: '1.5rem' }}>
-                      <img src={course.img} alt={course.title} style={{ width: '80px', height: '80px', borderRadius: '12px', objectFit: 'cover' }} />
+                {courses.length === 0 ? (
+                  <p style={{ color: '#64748B', fontSize: '0.9rem' }}>Fetching newest courses...</p>
+                ) : courses.map((course, i) => (
+                   <motion.div key={course.id || i} variants={itemVariants} className="luxury-card btn-premium" style={{ padding: '1.5rem', cursor: 'pointer', display: 'flex', gap: '1.5rem' }}>
+                      <div style={{ width: '80px', height: '80px', borderRadius: '12px', background: 'linear-gradient(135deg, #0f172a, #334155)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0 }}>
+                         <BookOpen size={32} opacity={0.8} />
+                      </div>
                       <div style={{ flex: 1 }}>
-                         <h4 style={{ margin: '0 0 0.25rem', fontSize: '1.05rem', fontWeight: 700, color: '#0F172A' }}>{course.title}</h4>
-                         <p style={{ margin: '0 0 1rem', fontSize: '0.85rem', color: '#64748B' }}>Instructor: {course.instructor}</p>
-                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                            <div style={{ flex: 1, height: '6px', background: '#F1F5F9', borderRadius: '999px', overflow: 'hidden' }}>
-                               <div style={{ width: `${course.progress}%`, height: '100%', background: '#2563EB', borderRadius: '999px' }} />
-                            </div>
-                            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0F172A' }}>{course.progress}%</span>
+                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                           <h4 style={{ margin: '0 0 0.25rem', fontSize: '1.05rem', fontWeight: 700, color: '#0F172A' }}>{course.title}</h4>
+                           <span style={{ fontSize: '0.7rem', padding: '2px 8px', background: '#f1f5f9', color: '#64748B', borderRadius: '12px', fontWeight: 600, textTransform: 'uppercase' }}>{course.level || 'Standard'}</span>
+                         </div>
+                         <p style={{ margin: '0 0 0.5rem', fontSize: '0.85rem', color: '#64748B' }}>Instructor: <span style={{ color: '#0f172a', fontWeight: 500 }}>{course.instructor}</span></p>
+                         <p style={{ margin: '0 0 0.5rem', fontSize: '0.8rem', color: '#94a3b8', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{course.description}</p>
+                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: '#2563eb', fontWeight: 600 }}>
+                            <Clock size={14} /> {course.duration || 'Self-paced'}
                          </div>
                       </div>
                    </motion.div>
