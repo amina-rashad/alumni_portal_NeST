@@ -83,6 +83,11 @@ import PrivacySettings from './pages/PrivacySettings';
 import NotificationSettings from './pages/NotificationSettings';
 import ChangePassword from './pages/ChangePassword';
 
+// Admin Pages
+import AdminLayout from './pages/admin/AdminLayout';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminPlaceholder from './pages/admin/AdminPlaceholder';
+
 /* ── Splash Screen ── */
 const SplashScreen: React.FC = () => (
   <motion.div
@@ -212,6 +217,19 @@ const App: React.FC = () => {
                 <Route path="/settings/privacy" element={<PrivacySettings />} />
                 <Route path="/settings/notifications" element={<NotificationSettings />} />
                 <Route path="/settings/password" element={<ChangePassword />} />
+              </Route>
+
+              {/* Admin Routes */}
+              <Route path="/admin" element={<AdminLayout />}>
+                <Route index element={<Navigate to="/admin/dashboard" replace />} />
+                <Route path="dashboard" element={<AdminDashboard />} />
+                <Route path="users" element={<AdminPlaceholder title="User Management" />} />
+                <Route path="interns" element={<AdminPlaceholder title="Intern Management" />} />
+                <Route path="iv-students" element={<AdminPlaceholder title="IV Students" />} />
+                <Route path="jobs" element={<AdminPlaceholder title="Job Management" />} />
+                <Route path="applications" element={<AdminPlaceholder title="Applications" />} />
+                <Route path="reports" element={<AdminPlaceholder title="Reports" />} />
+                <Route path="settings" element={<AdminPlaceholder title="Settings" />} />
               </Route>
 
               {/* Fallback Catch-all Route */}
