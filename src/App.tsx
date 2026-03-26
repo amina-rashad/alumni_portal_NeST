@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 
 // Splash & Styles
@@ -9,6 +9,7 @@ import './App.css';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import PlatformCapabilities from './pages/PlatformCapabilities';
 
 // Layout
 import MainLayout from './pages/MainLayout';
@@ -117,6 +118,129 @@ const SplashScreen: React.FC = () => (
   </motion.div>
 );
 
+/* ── Apple-style Crossfade Page Transition ── */
+const pageTransitionVariants = {
+  initial: { opacity: 0 },
+  animate: { opacity: 1 },
+  exit: { opacity: 0 },
+};
+
+const PageTransition: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <motion.div
+    variants={pageTransitionVariants}
+    initial="initial"
+    animate="animate"
+    exit="exit"
+    transition={{ duration: 0.45, ease: [0.42, 0, 0.58, 1] }}
+    style={{ minHeight: '100vh' }}
+  >
+    {children}
+  </motion.div>
+);
+
+/* ── Scroll to Top on Route Change ── */
+const ScrollToTop: React.FC = () => {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [pathname]);
+  return null;
+};
+
+/* ── Animated Routes wrapper with crossfade ── */
+const AnimatedRoutes: React.FC = () => {
+  const location = useLocation();
+
+  return (
+    <React.Fragment>
+      <ScrollToTop />
+      <AnimatePresence mode="wait">
+        <Routes location={location} key={location.pathname}>
+        {/* Public Routes */}
+        <Route path="/" element={<PageTransition><Home /></PageTransition>} />
+        <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
+        <Route path="/register" element={<PageTransition><Register /></PageTransition>} />
+        <Route path="/forgot-password" element={<PageTransition><ForgotPassword /></PageTransition>} />
+        <Route path="/reset-password" element={<PageTransition><ResetPassword /></PageTransition>} />
+        <Route path="/email-verification" element={<PageTransition><EmailVerification /></PageTransition>} />
+        <Route path="/platform-capabilities/:id" element={<PageTransition><PlatformCapabilities /></PageTransition>} />
+
+        {/* Protected Routes with MainLayout */}
+        <Route element={<MainLayout />}>
+          {/* Dashboards */}
+          <Route path="/dashboard" element={<PageTransition><Dashboard /></PageTransition>} />
+          <Route path="/dashboard/activity" element={<PageTransition><ActivityFeed /></PageTransition>} />
+          
+          {/* Profile */}
+          <Route path="/profile" element={<PageTransition><ViewProfile /></PageTransition>} />
+          <Route path="/profile/edit" element={<PageTransition><EditProfile /></PageTransition>} />
+          <Route path="/profile/:id" element={<PageTransition><PublicProfile /></PageTransition>} />
+          <Route path="/profile/resume" element={<PageTransition><ResumeUpload /></PageTransition>} />
+          <Route path="/profile/completion" element={<PageTransition><ProfileCompletion /></PageTransition>} />
+
+          {/* Networking */}
+          <Route path="/networking" element={<PageTransition><UserDirectory /></PageTransition>} />
+          <Route path="/networking/suggested" element={<PageTransition><SuggestedConnections /></PageTransition>} />
+          <Route path="/networking/search" element={<PageTransition><SearchResults /></PageTransition>} />
+          <Route path="/networking/requests" element={<PageTransition><ConnectionRequests /></PageTransition>} />
+          <Route path="/networking/connections" element={<PageTransition><FollowersFollowing /></PageTransition>} />
+
+          {/* Jobs */}
+          <Route path="/jobs" element={<PageTransition><JobListings /></PageTransition>} />
+          <Route path="/jobs/:id" element={<PageTransition><JobDetails /></PageTransition>} />
+          <Route path="/jobs/:id/apply" element={<PageTransition><ApplyJob /></PageTransition>} />
+          <Route path="/jobs/applications" element={<PageTransition><MyApplications /></PageTransition>} />
+          <Route path="/jobs/saved" element={<PageTransition><SavedJobs /></PageTransition>} />
+          <Route path="/jobs/recommended" element={<PageTransition><RecommendedJobs /></PageTransition>} />
+
+          {/* Courses */}
+          <Route path="/courses" element={<PageTransition><CourseListing /></PageTransition>} />
+          <Route path="/courses/:id" element={<PageTransition><CourseDetails /></PageTransition>} />
+          <Route path="/courses/:id/play" element={<PageTransition><CoursePlayer /></PageTransition>} />
+          <Route path="/courses/my-courses" element={<PageTransition><MyCourses /></PageTransition>} />
+          <Route path="/courses/:id/completion" element={<PageTransition><CourseCompletion /></PageTransition>} />
+
+          {/* Assessments */}
+          <Route path="/assessments/quiz" element={<PageTransition><Quiz /></PageTransition>} />
+          <Route path="/assessments/quiz/instructions" element={<PageTransition><QuizInstructions /></PageTransition>} />
+          <Route path="/assessments/quiz/result" element={<PageTransition><QuizResult /></PageTransition>} />
+          <Route path="/assessments/analytics" element={<PageTransition><PerformanceAnalytics /></PageTransition>} />
+
+          {/* Gamification */}
+          <Route path="/gamification" element={<PageTransition><PointsOverview /></PageTransition>} />
+          <Route path="/gamification/badges" element={<PageTransition><Badges /></PageTransition>} />
+          <Route path="/gamification/leaderboard" element={<PageTransition><Leaderboard /></PageTransition>} />
+
+          {/* Events */}
+          <Route path="/events" element={<PageTransition><EventsListing /></PageTransition>} />
+          <Route path="/events/:id" element={<PageTransition><EventDetails /></PageTransition>} />
+          <Route path="/events/:id/register" element={<PageTransition><EventRegistration /></PageTransition>} />
+          <Route path="/events/my-events" element={<PageTransition><MyEvents /></PageTransition>} />
+
+          {/* Social Feed */}
+          <Route path="/social/feed" element={<PageTransition><Feed /></PageTransition>} />
+          <Route path="/social/post/create" element={<PageTransition><CreatePost /></PageTransition>} />
+          <Route path="/social/post/:id" element={<PageTransition><PostDetails /></PageTransition>} />
+
+          {/* Notifications */}
+          <Route path="/notifications" element={<PageTransition><Notifications /></PageTransition>} />
+          <Route path="/notifications/preferences" element={<PageTransition><EmailPreferences /></PageTransition>} />
+
+          {/* Settings */}
+          <Route path="/settings" element={<PageTransition><AccountSettings /></PageTransition>} />
+          <Route path="/settings/privacy" element={<PageTransition><PrivacySettings /></PageTransition>} />
+          <Route path="/settings/notifications" element={<PageTransition><NotificationSettings /></PageTransition>} />
+          <Route path="/settings/password" element={<PageTransition><ChangePassword /></PageTransition>} />
+        </Route>
+
+        {/* Fallback Catch-all Route */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AnimatePresence>
+    </React.Fragment>
+  );
+};
+
 const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
@@ -137,86 +261,7 @@ const App: React.FC = () => {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}
           >
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<Home />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/email-verification" element={<EmailVerification />} />
-
-              {/* Protected Routes with MainLayout */}
-              <Route element={<MainLayout />}>
-                {/* Dashboards */}
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/dashboard/activity" element={<ActivityFeed />} />
-                
-                {/* Profile */}
-                <Route path="/profile" element={<ViewProfile />} />
-                <Route path="/profile/edit" element={<EditProfile />} />
-                <Route path="/profile/:id" element={<PublicProfile />} />
-                <Route path="/profile/resume" element={<ResumeUpload />} />
-                <Route path="/profile/completion" element={<ProfileCompletion />} />
-
-                {/* Networking */}
-                <Route path="/networking" element={<UserDirectory />} />
-                <Route path="/networking/suggested" element={<SuggestedConnections />} />
-                <Route path="/networking/search" element={<SearchResults />} />
-                <Route path="/networking/requests" element={<ConnectionRequests />} />
-                <Route path="/networking/connections" element={<FollowersFollowing />} />
-
-                {/* Jobs */}
-                <Route path="/jobs" element={<JobListings />} />
-                <Route path="/jobs/:id" element={<JobDetails />} />
-                <Route path="/jobs/:id/apply" element={<ApplyJob />} />
-                <Route path="/jobs/applications" element={<MyApplications />} />
-                <Route path="/jobs/saved" element={<SavedJobs />} />
-                <Route path="/jobs/recommended" element={<RecommendedJobs />} />
-
-                {/* Courses */}
-                <Route path="/courses" element={<CourseListing />} />
-                <Route path="/courses/:id" element={<CourseDetails />} />
-                <Route path="/courses/:id/play" element={<CoursePlayer />} />
-                <Route path="/courses/my-courses" element={<MyCourses />} />
-                <Route path="/courses/:id/completion" element={<CourseCompletion />} />
-
-                {/* Assessments */}
-                <Route path="/assessments/quiz" element={<Quiz />} />
-                <Route path="/assessments/quiz/instructions" element={<QuizInstructions />} />
-                <Route path="/assessments/quiz/result" element={<QuizResult />} />
-                <Route path="/assessments/analytics" element={<PerformanceAnalytics />} />
-
-                {/* Gamification */}
-                <Route path="/gamification" element={<PointsOverview />} />
-                <Route path="/gamification/badges" element={<Badges />} />
-                <Route path="/gamification/leaderboard" element={<Leaderboard />} />
-
-                {/* Events */}
-                <Route path="/events" element={<EventsListing />} />
-                <Route path="/events/:id" element={<EventDetails />} />
-                <Route path="/events/:id/register" element={<EventRegistration />} />
-                <Route path="/events/my-events" element={<MyEvents />} />
-
-                {/* Social Feed */}
-                <Route path="/social/feed" element={<Feed />} />
-                <Route path="/social/post/create" element={<CreatePost />} />
-                <Route path="/social/post/:id" element={<PostDetails />} />
-
-                {/* Notifications */}
-                <Route path="/notifications" element={<Notifications />} />
-                <Route path="/notifications/preferences" element={<EmailPreferences />} />
-
-                {/* Settings */}
-                <Route path="/settings" element={<AccountSettings />} />
-                <Route path="/settings/privacy" element={<PrivacySettings />} />
-                <Route path="/settings/notifications" element={<NotificationSettings />} />
-                <Route path="/settings/password" element={<ChangePassword />} />
-              </Route>
-
-              {/* Fallback Catch-all Route */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+            <AnimatedRoutes />
           </motion.div>
         )}
       </AnimatePresence>

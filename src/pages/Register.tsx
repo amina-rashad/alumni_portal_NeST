@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { User, Mail, Lock, Phone, GraduationCap, ChevronRight, ArrowLeft, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import nestMainLogo from '../assets/nest_logo.png';
@@ -7,6 +7,7 @@ import './Auth.css';
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
+  const [showSuccess, setShowSuccess] = useState(false);
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     fullName: '',
@@ -24,13 +25,37 @@ const Register: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate registration
-    alert('Registration Successful! Redirecting to login...');
-    navigate('/login');
+    // Show premium toast
+    setShowSuccess(true);
+    setTimeout(() => {
+	    navigate('/login');
+    }, 1500);
   };
 
   return (
     <div className="auth-page">
+      <AnimatePresence>
+        {showSuccess && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, display: 'flex', justifyContent: 'center', zIndex: 1000, pointerEvents: 'none' }}>
+            <motion.div 
+              initial={{ opacity: 0, y: -20, scale: 0.9 }}
+              animate={{ opacity: 1, y: 30, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.9 }}
+              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              style={{ background: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(16px)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '16px 24px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '16px', boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(16, 185, 129, 0.1)' }}
+            >
+              <div style={{ background: 'linear-gradient(135deg, #10B981, #059669)', borderRadius: '50%', padding: '6px', display: 'flex', boxShadow: '0 4px 10px rgba(16, 185, 129, 0.3)' }}>
+                <CheckCircle2 size={22} color="white" />
+              </div>
+              <div style={{ textAlign: 'left' }}>
+                <p style={{ margin: 0, fontWeight: 700, color: '#064E3B', fontSize: '1rem' }}>Registration Successful</p>
+                <p style={{ margin: 0, color: '#059669', fontSize: '0.85rem', fontWeight: 600 }}>Welcome to the network!</p>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <Link to="/" className="back-home">
         <ArrowLeft size={20} />
         <span>Back to Home</span>

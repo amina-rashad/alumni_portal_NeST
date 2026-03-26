@@ -1,13 +1,12 @@
-import React, { useEffect } from 'react';
-import { motion, Variants } from 'framer-motion';
-import Lenis from '@studio-freight/lenis';
+import React from 'react';
+import { motion, type Variants } from 'framer-motion';
 import { 
   Briefcase, Calendar, Users, Star, 
   Activity, Image as ImageIcon, MapPin, 
   Clock, MessageSquare, ThumbsUp, Share2,
-  Bookmark, Award, ChevronRight,
-  MoreHorizontal, Video, FileText, ArrowRight,
-  BrainCircuit, ExternalLink, PlayCircle, Trophy
+  Award, ChevronRight,
+  MoreHorizontal, FileText, ArrowRight,
+  BrainCircuit
 } from 'lucide-react';
 
 // --- MOCK DATA ---
@@ -60,7 +59,7 @@ const quizzes = [
 
 // --- ANIMATION VARIANTS ---
 // Premium sophisticated spring
-const smoothSpring = { type: 'spring', stiffness: 100, damping: 20, mass: 1 };
+const smoothSpring = { type: 'spring' as const, stiffness: 100, damping: 20, mass: 1 };
 
 const sectionVariants: Variants = {
   hidden: { opacity: 0, y: 60 },
@@ -82,32 +81,6 @@ const itemVariants: Variants = {
 };
 
 const Dashboard: React.FC = () => {
-
-  // Smooth Scrolling Setup: Lenis
-  useEffect(() => {
-    const lenis = new Lenis({
-      duration: 1.2,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), 
-      direction: 'vertical', 
-      gestureDirection: 'vertical',
-      smooth: true,
-      mouseMultiplier: 1,
-      smoothTouch: false,
-      touchMultiplier: 2,
-      infinite: false,
-    } as any);
-
-    function raf(time: number) {
-      lenis.raf(time);
-      requestAnimationFrame(raf);
-    }
-
-    requestAnimationFrame(raf);
-
-    return () => {
-      lenis.destroy();
-    };
-  }, []);
 
   return (
     <div className="font-sans" style={{ backgroundColor: '#F8FAFC', minHeight: '100vh', padding: '3rem 1.5rem', fontFamily: '"Inter", -apple-system, sans-serif' }}>
