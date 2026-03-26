@@ -160,7 +160,7 @@ const MainLayout: React.FC = () => {
         </header>
 
         {/* Page Content */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '30px', position: 'relative' }}>
+        <div id="main-content-scroll" className="custom-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '30px', position: 'relative', scrollBehavior: 'smooth' }}>
           <Outlet />
         </div>
       </div>

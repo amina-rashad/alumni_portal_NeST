@@ -4,7 +4,8 @@ import {
   ArrowRight, MapPin, Mail, Phone, Linkedin, Twitter, Facebook,
   Briefcase, BookOpen, BarChart2,
   UserCheck, CheckCircle, Shield,
-  GraduationCap, Rocket, Compass, Building2, Ticket
+  GraduationCap, Rocket, Compass, Building2, Ticket,
+  Calendar, Clock, Star, TrendingUp, Target, Award, Zap, Globe
 } from 'lucide-react';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { Link } from 'react-router-dom';
@@ -312,10 +313,10 @@ const Home: React.FC = () => {
           </motion.div>
           <div className="features-grid">
             {[
-              { icon: <UserCheck />, title: 'Talent Tracking', desc: 'Track skills, course completions, and engagement of every individual.' },
-              { icon: <Briefcase />, title: 'Job Management', desc: 'Post vacancies and get smart recommendations for your open positions.' },
-              { icon: <BookOpen />, title: 'Learning & Courses', desc: 'Access structured courses, upload materials, and monitor progress.' },
-              { icon: <BarChart2 />, title: 'Assessments', desc: 'Conduct quizzes and skills assessments with automated scoring.' },
+              { id: 'talent-tracking', icon: <UserCheck />, title: 'Talent Tracking', desc: 'Track skills, course completions, and engagement of every individual.' },
+              { id: 'job-management', icon: <Briefcase />, title: 'Job Management', desc: 'Post vacancies and get smart recommendations for your open positions.' },
+              { id: 'learning-courses', icon: <BookOpen />, title: 'Learning & Courses', desc: 'Access structured courses, upload materials, and monitor progress.' },
+              { id: 'assessments', icon: <BarChart2 />, title: 'Assessments', desc: 'Conduct quizzes and skills assessments with automated scoring.' },
             ].map((f, i) => (
               <motion.div
                 key={i}
@@ -324,10 +325,13 @@ const Home: React.FC = () => {
                 transition={{ duration: 0.5, delay: i * 0.15 }}
                 viewport={{ once: true, margin: "-50px" }}
                 className="feature-card"
+                style={{ cursor: 'pointer', padding: 0 }}
               >
-                <div className="feature-icon">{f.icon}</div>
-                <h3>{f.title}</h3>
-                <p>{f.desc}</p>
+                <Link to={`/platform-capabilities/${f.id}`} style={{ display: 'block', padding: '2rem', textDecoration: 'none', color: 'inherit', height: '100%' }}>
+                  <div className="feature-icon">{f.icon}</div>
+                  <h3>{f.title}</h3>
+                  <p>{f.desc}</p>
+                </Link>
               </motion.div>
             ))}
           </div>
@@ -386,8 +390,8 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* ── How It Works ── */}
-      <section className="how-section">
+      {/* ── Events Section ── */}
+      <section id="events" className="features-section">
         <div className="container">
           <motion.div 
             className="section-header"
@@ -396,71 +400,81 @@ const Home: React.FC = () => {
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <span className="section-tag">Simple Process</span>
-            <h2>How the Portal Works</h2>
+            <span className="section-tag">Upcoming Events</span>
+            <h2>Connect, Learn &amp; Grow Together</h2>
+            <p>Join exclusive alumni-powered events ranging from tech talks to networking meetups.</p>
           </motion.div>
-          <div className="how-grid">
+          <div className="features-grid">
             {[
-              { step: '01', title: 'Register', desc: 'Create your profile and specify your relationship with NeST.' },
-              { step: '02', title: 'Engage', desc: 'Participate in courses, events, and skill assessments.' },
-              { step: '03', title: 'Grow', desc: 'Earn certifications and badges as you progress.' },
-              { step: '04', title: 'Hired', desc: 'Get matched with relevant career opportunities.' },
-            ].map((s, i) => (
+              { icon: <Zap size={28} />, title: 'Annual Tech Summit 2025', desc: 'A flagship 2-day conference featuring keynotes from industry leaders, panel discussions, and live demos from NeST alumni working at FAANG companies.', meta: 'May 15–16 • Kochi' },
+              { icon: <Rocket size={28} />, title: 'Innovation Hackathon', desc: 'A 48-hour hackathon where alumni and current students team up to solve real-world industry challenges with prizes worth ₹5,00,000.', meta: 'June 8–10 • Virtual + Onsite' },
+              { icon: <Users size={28} />, title: 'Mentorship Mixer', desc: 'An intimate networking session connecting fresh graduates with experienced alumni mentors across domains like AI, cloud, and product management.', meta: 'Apr 20 • Bangalore' },
+              { icon: <Award size={28} />, title: 'Career Fair & Recruitment Drive', desc: 'An exclusive recruitment drive with 30+ partner companies offering direct interviews and referrals to NeST alumni and trainees.', meta: 'Jul 5 • Hybrid' },
+            ].map((event, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 40 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: i * 0.15 }}
                 viewport={{ once: true, margin: "-50px" }}
-                className="how-card"
+                className="feature-card"
               >
-                <span className="how-step">{s.step}</span>
-                <h3>{s.title}</h3>
-                <p>{s.desc}</p>
+                <div className="feature-icon">{event.icon}</div>
+                <h3>{event.title}</h3>
+                <p>{event.desc}</p>
+                <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#DC2626', fontSize: '0.85rem', fontWeight: 600 }}>
+                  <Calendar size={14} /> {event.meta}
+                </div>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── Roles ── */}
-      <section className="roles-section">
-        <div className="container roles-grid">
-          <motion.div
-            className="role-card admin-card"
-            initial={{ opacity: 0, y: 40 }}
+      {/* ── Jobs Section ── */}
+      <section id="jobs" className="users-section">
+        <div className="container">
+          <motion.div 
+            className="section-header"
+            initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            viewport={{ once: true, margin: "-50px" }}
           >
-            <div className="role-icon"><Shield size={36} /></div>
-            <h3>Administrators</h3>
-            <p>Full control over the platform. Manage users, track global metrics, post jobs, and curate content.</p>
-            <ul className="role-list">
-              <li><CheckCircle size={16} /> User Management</li>
-              <li><CheckCircle size={16} /> Job Posting & Matching</li>
-              <li><CheckCircle size={16} /> Advanced Analytics</li>
-            </ul>
-            <Link to="/login" className="btn-red">Go to Dashboard</Link>
+            <span className="section-tag">Internal Openings</span>
+            <h2>Grow Your Career at NeST Digital</h2>
+            <p>Explore current openings across departments — build your future right here at NeST Digital.</p>
           </motion.div>
-
-          <motion.div
-            className="role-card user-card-role"
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            viewport={{ once: true, margin: "-50px" }}
-          >
-            <div className="role-icon"><Users size={36} /></div>
-            <h3>Portal Members</h3>
-            <p>Create your profile, grow your skills, participate in courses and events, and get discovered for exciting job opportunities.</p>
-            <ul className="role-list">
-              <li><CheckCircle size={16} /> Skill Assessments</li>
-              <li><CheckCircle size={16} /> Course Enrollment</li>
-              <li><CheckCircle size={16} /> Job Discovery</li>
-            </ul>
-            <Link to="/register" className="btn-navy">Create Account</Link>
-          </motion.div>
+          <div className="features-grid">
+            {[
+              { icon: <Globe size={28} />, title: 'Senior Software Engineer', company: 'NeST Digital — Engineering', location: 'Kochi, Kerala', type: 'Full-time', level: '3–5 yrs', desc: 'Architect and develop enterprise-grade web applications using React, Java, and Spring Boot for NeST Digital\'s product engineering division.' },
+              { icon: <BarChart2 size={28} />, title: 'AI / ML Engineer', company: 'NeST Digital — Data & AI', location: 'Trivandrum, Kerala', type: 'Full-time', level: '2–4 yrs', desc: 'Design and deploy machine learning models and intelligent automation pipelines for NeST Digital\'s smart manufacturing and IoT solutions.' },
+              { icon: <Target size={28} />, title: 'HR Business Partner', company: 'NeST Digital — People & Culture', location: 'Kochi, Kerala', type: 'Full-time', level: '4–7 yrs', desc: 'Drive talent strategy, employee engagement, and organizational development initiatives across NeST Digital\'s engineering teams.' },
+              { icon: <Shield size={28} />, title: 'Cloud Infrastructure Lead', company: 'NeST Digital — IT Infrastructure', location: 'CSEZ, Kakkanad', type: 'Full-time', level: '5+ yrs', desc: 'Lead the cloud migration strategy and manage hybrid infrastructure across AWS and Azure for NeST Digital\'s enterprise clients.' },
+            ].map((job, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: i * 0.15 }}
+                viewport={{ once: true, margin: "-50px" }}
+                className="feature-card"
+              >
+                <div className="feature-icon">{job.icon}</div>
+                <h3>{job.title}</h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#DC2626' }}>{job.company}</span>
+                  <span style={{ fontSize: '0.75rem', color: '#6B7280', display: 'flex', alignItems: 'center', gap: '0.25rem' }}><MapPin size={12} /> {job.location}</span>
+                </div>
+                <p>{job.desc}</p>
+                <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '0.75rem', background: '#FEF2F2', color: '#991B1B', padding: '0.25rem 0.6rem', borderRadius: '999px', fontWeight: 600 }}>{job.type}</span>
+                  <span style={{ fontSize: '0.75rem', background: '#F3F4F6', color: '#374151', padding: '0.25rem 0.6rem', borderRadius: '999px', fontWeight: 600 }}>{job.level}</span>
+                  <span style={{ fontSize: '0.75rem', background: '#ECFDF5', color: '#065F46', padding: '0.25rem 0.6rem', borderRadius: '999px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Star size={10} /> Internal Hiring</span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
