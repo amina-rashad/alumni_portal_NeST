@@ -4,7 +4,7 @@ import {
   Clock, XCircle, Search, Filter, MoreVertical,
   Download, Send, Eye, Brain
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Application {
   id: string;
@@ -22,6 +22,7 @@ interface Application {
 
 const Applications: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Dummy Application Data
   const applications: Application[] = [
