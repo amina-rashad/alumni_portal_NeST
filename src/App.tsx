@@ -83,6 +83,22 @@ import PrivacySettings from './pages/PrivacySettings';
 import NotificationSettings from './pages/NotificationSettings';
 import ChangePassword from './pages/ChangePassword';
 
+// Admin Pages
+import AdminLayout from './pages/admin/AdminLayout';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminAddUser from './pages/admin/AdminAddUser';
+import AdminInterns from './pages/admin/AdminInterns';
+import AdminAddIntern from './pages/admin/AdminAddIntern';
+import AdminIVStudents from './pages/admin/AdminIVStudents';
+import AdminAddVisit from './pages/admin/AdminAddVisit';
+import AdminJobs from './pages/admin/AdminJobs';
+import AdminPostJob from './pages/admin/AdminPostJob';
+import Applications from './pages/admin/Applications';
+import Reports from './pages/admin/Reports';
+import Settings from './pages/admin/Settings';
+import AdminCourses from './pages/admin/AdminCourses';
+
 /* ── Splash Screen ── */
 const SplashScreen: React.FC = () => (
   <motion.div
@@ -212,6 +228,24 @@ const App: React.FC = () => {
                 <Route path="/settings/privacy" element={<PrivacySettings />} />
                 <Route path="/settings/notifications" element={<NotificationSettings />} />
                 <Route path="/settings/password" element={<ChangePassword />} />
+              </Route>
+
+              {/* Admin Routes */}
+              <Route path="/admin" element={<AdminLayout />}>
+                <Route index element={<Navigate to="/admin/dashboard" replace />} />
+                <Route path="dashboard" element={<AdminDashboard />} />
+                <Route path="users" element={<AdminUsers />} />
+                <Route path="users/add" element={<AdminAddUser />} />
+                <Route path="interns" element={<AdminInterns />} />
+                <Route path="interns/add" element={<AdminAddIntern />} />
+                <Route path="iv-students" element={<AdminIVStudents />} />
+                <Route path="iv-students/add" element={<AdminAddVisit />} />
+                <Route path="jobs" element={<AdminJobs />} />
+                <Route path="jobs/post" element={<AdminPostJob />} />
+                <Route path="applications" element={<Applications />} />
+                <Route path="reports" element={<Reports />} />
+                <Route path="add-courses" element={<AdminCourses />} />
+                <Route path="settings" element={<Settings />} />
               </Route>
 
               {/* Fallback Catch-all Route */}

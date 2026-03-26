@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Mail, Lock, LogIn, ArrowLeft, Shield } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import nestMainLogo from '../assets/nest_logo.png';
+import { authApi, setTokens, setUser } from '../services/api';
 import './Auth.css';
 
 const Login: React.FC = () => {
@@ -11,16 +12,43 @@ const Login: React.FC = () => {
     email: '',
     password: ''
   });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    if (error) setError('');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate login
-    alert('Login successful! Welcome back.');
-    navigate('/dashboard');
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const response = await authApi.login({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (response.success && response.data) {
+        setTokens(response.data.access_token, response.data.refresh_token);
+        setUser(response.data.user);
+        
+        // Dynamic Role-based Routing!
+        if (response.data.user.role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/dashboard');
+        }
+      } else {
+        setError(response.message || 'Login failed. Please try again.');
+      }
+    } catch {
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -44,7 +72,22 @@ const Login: React.FC = () => {
             <p>Enter your credentials to access your portal</p>
           </motion.div>
 
+
           <form onSubmit={handleSubmit} className="auth-form">
+            {error && (
+              <div style={{
+                padding: '12px 16px',
+                background: '#fef2f2',
+                border: '1px solid #fecaca',
+                borderRadius: '10px',
+                color: '#dc2626',
+                fontSize: '13px',
+                fontWeight: 500,
+              }}>
+                {error}
+              </div>
+            )}
+
             <div className="input-group">
               <label>Email Address</label>
               <div className="input-wrapper">
@@ -56,6 +99,7 @@ const Login: React.FC = () => {
                   required 
                   value={formData.email}
                   onChange={handleChange}
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -74,6 +118,7 @@ const Login: React.FC = () => {
                   required 
                   value={formData.password}
                   onChange={handleChange}
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -83,8 +128,8 @@ const Login: React.FC = () => {
               <label htmlFor="remember">Keep me logged in</label>
             </div>
 
-            <button type="submit" className="auth-btn">
-              <LogIn size={18} /> Sign In
+            <button type="submit" className="auth-btn" disabled={isLoading} style={{ opacity: isLoading ? 0.7 : 1 }}>
+              <LogIn size={18} /> {isLoading ? 'Signing In...' : 'Sign In'}
             </button>
           </form>
 
