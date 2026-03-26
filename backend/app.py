@@ -60,12 +60,14 @@ def create_app(config_name=None):
     from routes.health import health_bp
     from routes.courses import courses_bp
     from routes.jobs import jobs_bp
+    from routes.events import events_bp
 
     app.register_blueprint(health_bp, url_prefix="/api")
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(users_bp, url_prefix="/api/users")
     app.register_blueprint(courses_bp, url_prefix="/api/courses")
     app.register_blueprint(jobs_bp, url_prefix="/api/jobs")
+    app.register_blueprint(events_bp, url_prefix="/api/events")
 
     return app
 

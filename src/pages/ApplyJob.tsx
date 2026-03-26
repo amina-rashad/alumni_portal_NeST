@@ -62,14 +62,24 @@ const ApplyJob: React.FC = () => {
           <p style={{ color: '#4a4a4a', fontSize: '1.1rem', lineHeight: 1.6, marginBottom: '2.5rem' }}>
             Thank you for applying for the <strong>{job.title}</strong> role at NeST Digital. Our talent team will review your alumni profile and application closely and reach out soon.
           </p>
-          <button 
-            onClick={() => navigate('/jobs')}
-            style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '1rem 2.5rem', borderRadius: '8px', fontSize: '1.05rem', fontWeight: 600, cursor: 'pointer', transition: 'background 0.3s' }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--primary-hover)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--primary)'; }}
-          >
-            Back to Job Listings
-          </button>
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button 
+              onClick={() => navigate('/jobs/applications')}
+              style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '1rem 2.5rem', borderRadius: '8px', fontSize: '1.05rem', fontWeight: 600, cursor: 'pointer', transition: 'background 0.3s' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--primary-hover)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--primary)'; }}
+            >
+              View My Applications
+            </button>
+            <button 
+              onClick={() => navigate('/jobs')}
+              style={{ background: '#ffffff', color: '#4a4a4a', border: '1px solid #ced4da', padding: '1rem 2.5rem', borderRadius: '8px', fontSize: '1.05rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.3s' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#f8f9fa'; e.currentTarget.style.borderColor = '#adb5bd'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#ffffff'; e.currentTarget.style.borderColor = '#ced4da'; }}
+            >
+              Browse More Jobs
+            </button>
+          </div>
         </motion.div>
       </div>
     );
