@@ -95,6 +95,7 @@ import AdminPostJob from './pages/admin/AdminPostJob';
 import Applications from './pages/admin/Applications';
 import Reports from './pages/admin/Reports';
 import Settings from './pages/admin/Settings';
+import AdminCourses from './pages/admin/AdminCourses';
 
 /* ── Splash Screen ── */
 const SplashScreen: React.FC = () => (
@@ -239,6 +240,7 @@ const App: React.FC = () => {
                 <Route path="jobs/post" element={<AdminPostJob />} />
                 <Route path="applications" element={<Applications />} />
                 <Route path="reports" element={<Reports />} />
+                <Route path="add-courses" element={<AdminCourses />} />
                 <Route path="settings" element={<Settings />} />
               </Route>
 
