@@ -137,7 +137,6 @@ def get_user_by_id(user_id):
         "data": {"user": public_data}
     }), 200
 
-
 # ── List Users (for Directory) ──
 
 @users_bp.route("/", methods=["GET"])
@@ -162,6 +161,7 @@ def list_users():
         
     # Project only necessary fields for directory listing
     projection = {
+        "_id": 1,
         "full_name": 1,
         "user_type": 1,
         "batch": 1,
@@ -182,4 +182,3 @@ def list_users():
         "success": True,
         "data": {"users": users_list}
     }), 200
-

@@ -86,7 +86,6 @@ import ChangePassword from './pages/ChangePassword';
 // Admin Pages
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
-import AdminPlaceholder from './pages/admin/AdminPlaceholder';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminAddUser from './pages/admin/AdminAddUser';
 import AdminInterns from './pages/admin/AdminInterns';
