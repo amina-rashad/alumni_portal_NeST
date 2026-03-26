@@ -1,36 +1,40 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Users, UserCheck, Briefcase, FileText, 
   Plus, Calendar, BookOpen, Clock, 
   Activity
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { adminApi } from '../../services/api';
 
 const AdminDashboard: React.FC = () => {
-  const navigate = useNavigate();
-  const nestNavy = '#1a2652';
-  
-  const stats = [
-    { title: 'Total Users', value: '5,280', trend: '+12%', icon: Users, color: nestNavy, bg: 'rgba(26, 38, 82, 0.08)' },
-    { title: 'Active Courses', value: '48', trend: '+4', icon: BookOpen, color: '#8b5cf6', bg: '#f5f3ff' },
-    { title: 'Upcoming Events', value: '12', trend: '+2', icon: Calendar, color: '#f43f5e', bg: '#fff1f2' },
-    { title: 'Interns', value: '350', trend: '+8%', icon: UserCheck, color: '#06b6d4', bg: '#ecfeff' },
-    { title: 'Active Jobs', value: '28', trend: '+5%', icon: Briefcase, color: '#6366f1', bg: '#eef2ff' },
-    { title: 'Applications', value: '1,575', trend: '+15%', icon: FileText, color: '#f59e0b', bg: '#fffbeb' },
-  ];
+  const [statsData, setStatsData] = useState({
+    total_users: 0,
+    interns: 0,
+    active_jobs: 0,
+    applications: 0
+  });
 
-  const upcomingEvents = [
-    { title: 'Strategic NeST Tech Summit 2026', date: 'Oct 15, 2026', time: '10:00 AM', loc: 'Executive Auditorium', type: 'Technology' },
-    { title: 'Alumni Professional Mixer', date: 'Oct 22, 2026', time: '06:00 PM', loc: 'Grand Innovation Hall', type: 'Networking' },
-    { title: 'Cloud Infrastructure Workshop', date: 'Oct 28, 2026', time: '02:00 PM', loc: 'Virtual Session A', type: 'Career' },
+  useEffect(() => {
+    const fetchStats = async () => {
+      const res = await adminApi.getStats();
+      if (res.success && res.data) {
+        setStatsData(res.data.stats);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  const stats = [
+    { title: 'Total Users', value: statsData.total_users.toLocaleString(), trend: '+0%', icon: <Users size={24} color="#3b82f6" />, bg: '#eff6ff' },
+    { title: 'Interns', value: statsData.interns.toLocaleString(), trend: '+0%', icon: <UserCheck size={24} color="#06b6d4" />, bg: '#ecfeff' },
+    { title: 'Active Jobs', value: statsData.active_jobs.toLocaleString(), trend: '+0%', icon: <Briefcase size={24} color="#6366f1" />, bg: '#eef2ff' },
+    { title: 'Applications', value: statsData.applications.toLocaleString(), trend: '+0%', icon: <FileText size={24} color="#f59e0b" />, bg: '#fffbeb' },
   ];
 
   const recentActivity = [
-    { user: 'Rahul Nair', action: 'completed AWS Course', time: '15m ago', avatar: 'RN', detail: 'Scored 94% in final assessment' },
-    { user: 'Alan Mathew', action: 'applied for Senior Dev', time: '42m ago', avatar: 'AM', detail: 'NeST Alumni Tier 2' },
-    { user: 'HR Department', action: 'posted Python Lead', time: '1h ago', avatar: 'HR', detail: 'Urgent Requirement' },
-    { user: 'Maya Prasad', action: 'registered as Alumni', time: '3h ago', avatar: 'MP', detail: 'Class of 2022' },
+    { user: 'Admin', action: 'accessed dashboard', time: 'Just now', avatar: 'AD' },
+    { user: 'System', action: 'refreshed live data', time: 'Recently', avatar: 'SY' },
   ];
 
   return (
@@ -164,19 +168,35 @@ const AdminDashboard: React.FC = () => {
           </div>
         </section>
 
-        {/* Dynamic Sidebar: Events & Actions */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-           
-           {/* Upcoming Events Module */}
-           <section style={{ background: '#fff', borderRadius: '32px', padding: '32px', border: '1px solid #f1f5f9', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#1e293b', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                 <Calendar size={18} color="#f43f5e" /> Upcoming Events
-              </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {upcomingEvents.map((ev, i) => (
-                  <div key={i} style={{ padding: '16px', borderRadius: '20px', background: '#f8fafc', border: '1px solid #f1f5f9' }}>
-                     <div style={{ fontSize: '13px', fontWeight: 800, color: '#1e293b', marginBottom: '6px' }}>{ev.title}</div>
-                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#64748b', fontWeight: 600 }}><Clock size={12} /> {ev.date}</div>
+        {/* Right Column: Activities and Actions */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+           {/* Recent Activities */}
+           <div style={{ background: '#fff', borderRadius: '24px', padding: '24px', border: '1px solid #f1f5f9', flex: 1 }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#1e293b', marginBottom: '20px' }}>Recent Activities</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                {recentActivity.map((act, i) => (
+                  <div key={i} style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
+                    <div style={{ 
+                      width: '40px', 
+                      height: '40px', 
+                      borderRadius: '12px', 
+                      background: '#f1f5f9', 
+                      color: '#64748b',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      flexShrink: 0
+                    }}>
+                      {act.avatar}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                       <div style={{ fontSize: '14px', color: '#1e293b' }}>
+                         <span style={{ fontWeight: 700 }}>{act.user}</span> {act.action}
+                       </div>
+                       <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>{act.time}</div>
+                    </div>
                   </div>
                 ))}
               </div>

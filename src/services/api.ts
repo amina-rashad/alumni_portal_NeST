@@ -207,6 +207,42 @@ export const healthApi = {
     apiRequest('/health', { method: 'GET' }),
 };
 
+// ── Admin API ──
+export const adminApi = {
+  getStats: () => 
+    apiRequest<{ stats: { total_users: number, interns: number, active_jobs: number, applications: number } }>('/admin/stats'),
+
+  getAllUsers: () => 
+    apiRequest<{ users: any[] }>('/admin/users'),
+
+  createUser: (data: any) => 
+    apiRequest('/admin/users', { method: 'POST', body: JSON.stringify(data) }),
+
+  updateUser: (userId: string, data: any) => 
+    apiRequest(`/admin/users/${userId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+
+  getInterns: () => 
+    apiRequest<{ users: any[] }>('/admin/users?type=Intern'),
+
+  addJob: (data: any) => 
+    apiRequest('/admin/jobs', { method: 'POST', body: JSON.stringify(data) }),
+
+  deleteJob: (jobId: string) => 
+    apiRequest(`/admin/jobs/${jobId}`, { method: 'DELETE' }),
+
+  getVisits: () => 
+    apiRequest<{ visits: any[] }>('/admin/visits'),
+
+  addVisit: (data: any) => 
+    apiRequest('/admin/visits', { method: 'POST', body: JSON.stringify(data) }),
+
+  deleteVisit: (visitId: string) => 
+    apiRequest(`/admin/visits/${visitId}`, { method: 'DELETE' }),
+
+  getApplications: () => 
+    apiRequest<{ applications: any[] }>('/admin/applications'),
+};
+
 // ── Courses API ──
 
 export const coursesApi = {

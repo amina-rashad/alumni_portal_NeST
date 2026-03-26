@@ -1,22 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Download,
   TrendingUp, ArrowUpRight, ArrowDownRight,
   Shield, 
-  Activity, PieChart
+  Activity, PieChart, Sparkles
 } from 'lucide-react';
+import { adminApi } from '../../services/api';
 
 const Reports: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'Weekly' | 'Monthly' | 'Yearly'>('Monthly');
+  const [stats, setStats] = useState<any>(null);
   const nestNavy = '#1a2652';
 
-  // Enterprise-grade Data Structure
+  useEffect(() => {
+    const fetchStats = async () => {
+      const res = await adminApi.getStats();
+      if (res.success && res.data) {
+        setStats(res.data);
+      }
+    };
+    fetchStats();
+  }, []);
+
   const platformStats = [
-    { label: 'Network Integrity', value: '98.4%', target: '99%', trend: '+0.2%', isPositive: true },
-    { label: 'Hiring Efficiency', value: '74.2 days', target: '60 days', trend: '-5.1d', isPositive: true },
-    { label: 'Learning Retention', value: '82.1%', target: '80%', trend: '+2.4%', isPositive: true },
-    { label: 'Active Participation', value: '62.5%', target: '70%', trend: '-1.2%', isPositive: false }
+    { label: 'Total Users', value: stats?.total_users || 0, target: '500', trend: '+12%', isPositive: true },
+    { label: 'Active Interns', value: stats?.total_interns || 0, target: '50', trend: '+5%', isPositive: true },
+    { label: 'Open Jobs', value: stats?.active_jobs || 0, target: '20', trend: '-2%', isPositive: false },
+    { label: 'Applications', value: stats?.total_applications || 0, target: '200', trend: '+15%', isPositive: true }
   ];
 
   return (
@@ -24,13 +35,12 @@ const Reports: React.FC = () => {
       {/* Executive Control Bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '48px', background: '#fff', padding: '24px 32px', borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}>
         <div>
-          <h1 style={{ fontSize: '24px', fontWeight: 800, margin: '0 0 4px 0', letterSpacing: '-0.2px' }}>Platform Governance Dashboard</h1>
+          <h1 style={{ fontSize: '24px', fontWeight: 800, margin: '0 0 4px 0' }}>Platform Governance Dashboard</h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }}></div>
             <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748b' }}>Data Sync: Real-time (Active)</span>
           </div>
         </div>
-
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div style={{ background: '#f8fafc', padding: '4px', borderRadius: '12px', display: 'flex', border: '1px solid #e2e8f0' }}>
             {['Weekly', 'Monthly', 'Yearly'].map((t) => (
@@ -60,7 +70,6 @@ const Reports: React.FC = () => {
         </div>
       </div>
 
-      {/* Primary KPI Grid (Refined) */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '24px', marginBottom: '40px' }}>
         {platformStats.map((stat, i) => (
           <motion.div
@@ -91,9 +100,7 @@ const Reports: React.FC = () => {
         ))}
       </div>
 
-      {/* Main Analytical Hub */}
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '32px', marginBottom: '40px' }}>
-        {/* Performance & Growth Hub */}
         <div style={{ background: '#fff', padding: '40px', borderRadius: '32px', border: '1px solid #e2e8f0', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '48px' }}>
             <div>

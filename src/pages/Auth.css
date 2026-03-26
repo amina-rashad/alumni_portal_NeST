@@ -256,8 +256,8 @@
 
 .social-auth {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 15px;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
 }
 
 .social-btn {
