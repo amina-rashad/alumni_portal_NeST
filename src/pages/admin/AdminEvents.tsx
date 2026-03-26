@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Plus, Search, Calendar, Clock, MapPin, Users,
-  CheckCircle2, X, Globe, Edit3, MoreVertical, ChevronRight
+  Globe, Edit3, MoreVertical, ChevronRight
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -22,6 +22,9 @@ const AdminEvents: React.FC = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
 
+  // NeST NAVY BLUE
+  const nestNavy = '#1a2652';
+
   // Dummy Event Data
   const [events] = useState<Event[]>([
     { id: '1', title: 'Annual Alumni Homecoming 2026', category: 'Social', date: '2026-05-15', time: '18:00', location: 'Grand Ballroom, NeST Tech Park', attendees: 450, status: 'Upcoming', thumbnail: 'AH' },
@@ -39,7 +42,7 @@ const AdminEvents: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Upcoming': return { bg: '#e0e7ff', color: '#1e3a8a' }; /* Navy blue text */
+      case 'Upcoming': return { bg: 'rgba(26, 38, 82, 0.08)', color: nestNavy }; 
       case 'Completed': return { bg: '#dcfce7', color: '#16a34a' };
       case 'Cancelled': return { bg: '#fee2e2', color: '#dc2626' };
       default: return { bg: '#f1f5f9', color: '#475569' };
@@ -55,20 +58,20 @@ const AdminEvents: React.FC = () => {
         </div>
         <button 
           onClick={() => navigate('/admin/events/add')}
-          style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 24px', background: '#1e3a8a', border: 'none', borderRadius: '12px', color: '#fff', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(30, 58, 138, 0.25)' }}
+          style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 24px', background: nestNavy, border: 'none', borderRadius: '12px', color: '#fff', fontWeight: 800, cursor: 'pointer', boxShadow: '0 4px 12px rgba(26, 38, 82, 0.25)' }}
         >
           <Plus size={20} /> Create Event
         </button>
       </div>
 
-      <div style={{ display: 'flex', gap: '16px', alignItems: 'center', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '10px 20px', maxWidth: '450px' }}>
+      <div style={{ display: 'flex', gap: '16px', alignItems: 'center', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '10px 20px', maxWidth: '450px', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
         <Search size={20} color="#94a3b8" />
         <input 
           type="text" 
           placeholder="Search for events..." 
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          style={{ border: 'none', outline: 'none', width: '100%', fontSize: '15px', color: '#1e293b', background: 'transparent' }} 
+          style={{ border: 'none', outline: 'none', width: '100%', fontSize: '15px', color: '#1e293b', background: 'transparent', fontWeight: 500 }} 
         />
       </div>
 
@@ -81,48 +84,48 @@ const AdminEvents: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
-              style={{ background: '#fff', borderRadius: '20px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 4px 20px rgba(15, 23, 42, 0.03)', display: 'flex', flexDirection: 'column' }}
+              style={{ background: '#fff', borderRadius: '24px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 4px 20px rgba(26, 38, 82, 0.04)', display: 'flex', flexDirection: 'column' }}
             >
               <div style={{ padding: '24px', flex: 1 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
-                  <div style={{ width: '56px', height: '56px', borderRadius: '14px', background: 'linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 800 }}>
+                  <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: `linear-gradient(135deg, ${nestNavy} 0%, #0f172a 100%)`, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: 800 }}>
                     {event.thumbnail}
                   </div>
                   <div style={{ display: 'flex', gap: '8px' }}>
-                    <button style={{ padding: '4px', borderRadius: '8px', border: 'none', background: 'transparent', color: '#64748b', cursor: 'pointer' }}><Edit3 size={18} /></button>
-                    <button style={{ padding: '4px', borderRadius: '8px', border: 'none', background: 'transparent', color: '#64748b', cursor: 'pointer' }}><MoreVertical size={18} /></button>
+                    <button style={{ padding: '6px', borderRadius: '10px', border: 'none', background: '#f8fafc', color: '#64748b', cursor: 'pointer' }}><Edit3 size={18} /></button>
+                    <button style={{ padding: '6px', borderRadius: '10px', border: 'none', background: '#f8fafc', color: '#64748b', cursor: 'pointer' }}><MoreVertical size={18} /></button>
                   </div>
                 </div>
 
-                <div style={{ display: 'inline-block', padding: '6px 12px', borderRadius: '8px', background: '#f8fafc', color: '#64748b', fontSize: '12px', fontWeight: 700, marginBottom: '12px', letterSpacing: '0.05em' }}>
+                <div style={{ display: 'inline-block', padding: '6px 12px', borderRadius: '8px', background: 'rgba(26, 38, 82, 0.05)', color: nestNavy, fontSize: '11px', fontWeight: 800, marginBottom: '12px', letterSpacing: '0.05em' }}>
                   {event.category.toUpperCase()}
                 </div>
                 
                 <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#1e293b', margin: '0 0 16px 0', lineHeight: 1.3 }}>{event.title}</h3>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#64748b', fontSize: '14px' }}>
-                    <Calendar size={16} color="#1e3a8a" />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#64748b', fontSize: '14px', fontWeight: 500 }}>
+                    <Calendar size={16} color={nestNavy} />
                     {event.date} at {event.time}
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#64748b', fontSize: '14px' }}>
-                    <MapPin size={16} color="#1e3a8a" />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#64748b', fontSize: '14px', fontWeight: 500 }}>
+                    <MapPin size={16} color={nestNavy} />
                     {event.location}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#64748b', fontSize: '14px' }}>
-                    <Users size={16} color="#1e3a8a" />
-                    <span style={{ fontWeight: 700, color: '#1e293b' }}>{event.attendees.toLocaleString()}</span> Registered
+                    <Users size={16} color={nestNavy} />
+                    <span style={{ fontWeight: 800, color: '#1e293b' }}>{event.attendees.toLocaleString()}</span> Registered
                   </div>
                 </div>
               </div>
 
               <div style={{ padding: '16px 24px', borderTop: '1px solid #f1f5f9', background: '#fcfdfe', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ padding: '6px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 700, background: statusStyle.bg, color: statusStyle.color }}>
-                  {event.status}
+                   {event.status}
                 </span>
-                <span style={{ color: '#1e3a8a', fontSize: '13px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <button style={{ color: nestNavy, background: 'transparent', border: 'none', fontSize: '13px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
                    View Details <ChevronRight size={14} />
-                </span>
+                </button>
               </div>
             </motion.div>
           );
