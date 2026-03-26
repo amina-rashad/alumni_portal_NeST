@@ -1,39 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Users, Calendar, Briefcase, Plus, ChevronDown, 
   Eye, Edit2, MoreHorizontal, ChevronRight, Search, Laptop
 } from 'lucide-react';
+import { adminApi } from '../../services/api';
 
 const AdminInterns: React.FC = () => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [collegeFilter, setCollegeFilter] = useState('All');
-  const [yearFilter, setYearFilter] = useState('All');
+  const [interns, setInterns] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // NeST NAVY BLUE
-  const nestNavy = '#1a2652';
-
-  const interns = [
-    { id: 1, name: 'Ananya R', email: 'ananya.r@gmail.com', college: 'Mar Athanasius', year: '2024', domain: 'Java Full Stack', duration: '6 Months', status: 'Active' },
-    { id: 2, name: 'Rahul Nair', email: 'rahul.n@gmail.com', college: 'Saintgits', year: '2024', domain: 'Python Django', duration: '3 Months', status: 'Completed' },
-    { id: 3, name: 'Maya Prasad', email: 'maya.p@gmail.com', college: 'Rajagiri', year: '2024', domain: 'UI/UX Design', duration: '3 Months', status: 'Active' },
-    { id: 4, name: 'Kevin Jose', email: 'kevin.j@gmail.com', college: 'Amal Jyothi', year: '2023', domain: 'Data Science', duration: '6 Months', status: 'Active' },
-    { id: 5, name: 'Sana Khan', email: 'sana.k@gmail.com', college: 'MACFAST', year: '2023', domain: 'Cyber Security', duration: '6 Months', status: 'Inactive' },
-  ];
-
-  const filteredInterns = interns.filter(intern => {
-    const matchesSearch = 
-      intern.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      intern.email.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesCollege = collegeFilter === 'All' || intern.college === collegeFilter;
-    const matchesYear = yearFilter === 'All' || intern.year === yearFilter;
-    
-    return matchesSearch && matchesCollege && matchesYear;
-  });
-
-  const colleges = Array.from(new Set(interns.map(i => i.college)));
-  const years = Array.from(new Set(interns.map(i => i.year))).sort().reverse();
+  useEffect(() => {
+    const fetchInterns = async () => {
+      setIsLoading(true);
+      const res = await adminApi.getAllUsers();
+      if (res.success && res.data) {
+        // Filter for interns
+        const filtered = res.data.users.filter((u: any) => u.user_type === 'Intern');
+        setInterns(filtered);
+      }
+      setIsLoading(false);
+    };
+    fetchInterns();
+  }, []);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
@@ -49,20 +38,12 @@ const AdminInterns: React.FC = () => {
                <Users size={24} />
             </div>
             <div>
-               <div style={{ fontSize: '22px', fontWeight: 800, color: '#1e293b' }}>128</div>
-               <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Active Interns <span style={{ color: '#10b981' }}>+8.2%</span></div>
+               <div style={{ fontSize: '20px', fontWeight: 700, color: '#1e293b' }}>{interns.length}</div>
+               <div style={{ fontSize: '13px', color: '#64748b' }}>Total Interns</div>
             </div>
           </div>
 
-          <div style={{ flex: 1, background: '#fff', borderRadius: '20px', padding: '20px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
-            <div style={{ background: 'rgba(245, 158, 11, 0.1)', padding: '12px', borderRadius: '16px', color: '#f59e0b' }}>
-               <Laptop size={24} />
-            </div>
-            <div>
-               <div style={{ fontSize: '22px', fontWeight: 800, color: '#1e293b' }}>12</div>
-               <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>New Domains <span style={{ color: '#10b981' }}>+4.1%</span></div>
-            </div>
-          </div>
+          <div style={{ flex: 2 }} />
         </div>
 
         <div style={{ minWidth: '160px' }}>
@@ -80,81 +61,72 @@ const AdminInterns: React.FC = () => {
         </div>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px' }}>
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '10px 20px', maxWidth: '400px', width: '100%', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
-            <Search size={18} color="#94a3b8" />
-            <input 
-              type="text" 
-              placeholder="Search by name or email..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ border: 'none', outline: 'none', marginLeft: '12px', width: '100%', fontSize: '14px', color: '#1e293b', background: 'transparent', fontWeight: 500 }} 
-            />
-          </div>
-
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <select value={collegeFilter} onChange={(e) => setCollegeFilter(e.target.value)} style={{ padding: '12px 18px', borderRadius: '14px', border: '1px solid #e2e8f0', background: '#fff', color: '#1e293b', fontSize: '13px', fontWeight: 700, cursor: 'pointer', outline: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
-              <option value="All">All Colleges</option>
-              {colleges.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-            <select value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} style={{ padding: '12px 18px', borderRadius: '14px', border: '1px solid #e2e8f0', background: '#fff', color: '#1e293b', fontSize: '13px', fontWeight: 700, cursor: 'pointer', outline: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
-              <option value="All">All Years</option>
-              {years.map(y => <option key={y} value={y}>{y}</option>)}
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div style={{ background: '#fff', borderRadius: '24px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-          <thead>
-            <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#fcfdfe' }}>
-              <th style={{ padding: '20px 24px', fontSize: '12px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Intern Details</th>
-              <th style={{ padding: '20px', fontSize: '12px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>College</th>
-              <th style={{ padding: '20px', fontSize: '12px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Domain & Time</th>
-              <th style={{ padding: '20px', fontSize: '12px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
-              <th style={{ padding: '20px', fontSize: '12px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredInterns.map((intern, index) => (
-              <tr key={intern.id} style={{ borderBottom: index !== filteredInterns.length - 1 ? '1px solid #f1f5f9' : 'none', transition: 'background 0.2s' }} className="table-row-hover">
-                <td style={{ padding: '20px 24px' }}>
-                   <div style={{ fontSize: '15px', fontWeight: 800, color: '#1e293b' }}>{intern.name}</div>
-                   <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 500 }}>{intern.email}</div>
-                </td>
-                <td style={{ padding: '20px' }}>
-                   <div style={{ fontSize: '14px', color: '#1e293b', fontWeight: 700 }}>{intern.college}</div>
-                </td>
-                <td style={{ padding: '20px' }}>
-                   <div style={{ fontSize: '14px', fontWeight: 800, color: '#1e293b' }}>{intern.domain}</div>
-                   <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 500 }}>{intern.year} • {intern.duration}</div>
-                </td>
-                <td style={{ padding: '20px' }}>
-                   <span style={{ 
-                     background: intern.status === 'Active' ? 'rgba(22, 163, 74, 0.1)' : (intern.status === 'Completed' ? 'rgba(26, 38, 82, 0.08)' : '#f1f5f9'), 
-                     color: intern.status === 'Active' ? '#16a34a' : (intern.status === 'Completed' ? nestNavy : '#64748b'), 
-                     padding: '6px 14px', borderRadius: '20px', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase'
-                   }}>{intern.status}</span>
-                </td>
-                <td style={{ padding: '20px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <button style={{ padding: '8px', borderRadius: '10px', border: 'none', background: '#f8fafc', color: '#64748b', cursor: 'pointer' }}><Eye size={18} /></button>
-                    <button style={{ padding: '8px', borderRadius: '10px', border: 'none', background: '#f8fafc', color: '#64748b', cursor: 'pointer' }}><Edit2 size={18} /></button>
-                    <button style={{ padding: '8px', borderRadius: '10px', border: 'none', background: '#f8fafc', color: '#64748b', cursor: 'pointer' }}><MoreHorizontal size={18} /></button>
-                  </div>
-                </td>
+      {/* Data Table */}
+      <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+        {isLoading ? (
+          <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>Loading interns...</div>
+        ) : (
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                <th style={{ padding: '16px', width: '48px' }}>
+                  <input type="checkbox" style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: '#3b82f6' }} />
+                </th>
+                <th style={{ padding: '16px', fontSize: '13px', fontWeight: 600, color: '#475569' }}>Name</th>
+                <th style={{ padding: '16px', fontSize: '13px', fontWeight: 600, color: '#475569' }}>College / Batch</th>
+                <th style={{ padding: '16px', fontSize: '13px', fontWeight: 600, color: '#475569' }}>Specialization</th>
+                <th style={{ padding: '16px', fontSize: '13px', fontWeight: 600, color: '#475569' }}>Status</th>
+                <th style={{ padding: '16px', fontSize: '13px', fontWeight: 600, color: '#475569' }}>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-        
-        <div style={{ padding: '24px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', background: '#fcfdfe' }}>
-            <button style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#fff', fontSize: '13px', fontWeight: 800, color: '#1e293b', cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }}>
-             Next Page <ChevronRight size={16} />
-           </button>
-        </div>
+            </thead>
+            <tbody>
+              {interns.map((intern, index) => (
+                <tr key={intern.id} style={{ borderBottom: index !== interns.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                  <td style={{ padding: '16px' }}>
+                    <input type="checkbox" style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: '#3b82f6' }} />
+                  </td>
+                  <td style={{ padding: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ 
+                        width: '40px', height: '40px', borderRadius: '50%', 
+                        background: '#10b981', color: '#fff', display: 'flex', 
+                        alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 600 
+                      }}>
+                        {intern.full_name?.charAt(0) || 'I'}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '14px', fontWeight: 600, color: '#1e293b' }}>{intern.full_name}</div>
+                        <div style={{ fontSize: '13px', color: '#94a3b8' }}>{intern.email}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td style={{ padding: '16px' }}>
+                     <div style={{ fontSize: '14px', fontWeight: 500, color: '#334155' }}>Batch: {intern.batch}</div>
+                  </td>
+                  <td style={{ padding: '16px', fontSize: '14px', color: '#475569', fontWeight: 500 }}>
+                    {intern.specialization}
+                  </td>
+                  <td style={{ padding: '16px' }}>
+                    <span style={{ 
+                      padding: '6px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: 600,
+                      background: intern.is_active ? '#dcfce7' : '#fee2e2',
+                      color: intern.is_active ? '#16a34a' : '#ef4444'
+                    }}>
+                      {intern.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                  <td style={{ padding: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }} title="View"><Eye size={18} /></button>
+                      <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }} title="Edit"><Edit2 size={18} /></button>
+                      <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }} title="More"><MoreHorizontal size={18} /></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

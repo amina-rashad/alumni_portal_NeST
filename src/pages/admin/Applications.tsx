@@ -1,36 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Users, Briefcase, Calendar, CheckCircle2,
   Clock, XCircle, Search, Filter, MoreVertical,
   Download, Send, Eye, Brain
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-
-interface Application {
-  id: string;
-  candidate: {
-    name: string;
-    email: string;
-    avatar: string;
-  };
-  role: string;
-  date: string;
-  aiScore: number;
-  matchQuality: 'High' | 'Medium' | 'Low';
-  status: 'Pending' | 'Reviewing' | 'Interview' | 'Hired' | 'Rejected';
-}
+import { adminApi } from '../../services/api';
 
 const Applications: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [applications, setApplications] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Dummy Application Data
-  const applications: Application[] = [
-    { id: '1', candidate: { name: 'Sarah Wilson', email: 'sarah.w@example.com', avatar: 'SW' }, role: 'Software Engineer', date: 'Oct 24, 2023', aiScore: 94, matchQuality: 'High', status: 'Reviewing' },
-    { id: '2', candidate: { name: 'James Miller', email: 'j.miller@example.com', avatar: 'JM' }, role: 'Product Designer', date: 'Oct 23, 2023', aiScore: 78, matchQuality: 'Medium', status: 'Pending' },
-    { id: '3', candidate: { name: 'Anita Gupta', email: 'anita.g@example.com', avatar: 'AG' }, role: 'Full Stack Developer', date: 'Oct 22, 2023', aiScore: 96, matchQuality: 'High', status: 'Interview' },
-    { id: '4', candidate: { name: 'Robert Chen', email: 'r.chen@example.com', avatar: 'RC' }, role: 'Data Scientist', date: 'Oct 21, 2023', aiScore: 62, matchQuality: 'Low', status: 'Rejected' },
-    { id: '5', candidate: { name: 'Elena Rodriguez', email: 'elena.r@example.com', avatar: 'ER' }, role: 'UX Researcher', date: 'Oct 20, 2023', aiScore: 88, matchQuality: 'High', status: 'Reviewing' }
-  ];
+  useEffect(() => {
+    const fetchApps = async () => {
+      setIsLoading(true);
+      const res = await adminApi.getApplications();
+      if (res.success && res.data) {
+        setApplications(res.data.applications);
+      }
+      setIsLoading(false);
+    };
+    fetchApps();
+  }, []);
 
   const filteredApplications = applications.filter(app => 
     app.candidate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -49,15 +41,6 @@ const Applications: React.FC = () => {
     }
   };
 
-  const getMatchQualityColor = (quality: string) => {
-    switch (quality) {
-      case 'High': return '#16a34a'; /* Replaced green with a deeper one */
-      case 'Medium': return '#f59e0b';
-      case 'Low': return '#ef4444';
-      default: return '#64748b';
-    }
-  };
-
   return (
     <div style={{ maxWidth: '1440px', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
@@ -65,17 +48,34 @@ const Applications: React.FC = () => {
           <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#1e293b', marginBottom: '8px' }}>Applications</h1>
           <p style={{ color: '#64748b', fontSize: '15px' }}>Track and manage job applications with AI insights.</p>
         </div>
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button 
-            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', background: '#1e3a8a', border: 'none', borderRadius: '10px', color: '#fff', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 12px rgba(30, 58, 138, 0.2)' }} 
-            onClick={() => setIsModalOpen(true)}
-          >
-            Post Job
-          </button>
-        </div>
       </div>
 
-      <div style={{ background: '#fff', borderRadius: '18px', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(15, 23, 42, 0.03)', overflow: 'hidden' }}>
+      {/* Stats Section */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '24px', marginBottom: '32px' }}>
+        {[
+          { label: 'Total Applications', value: applications.length, icon: <Users size={24} />, color: '#3b82f6' },
+          { label: 'AI Shortlisted', value: applications.filter(a => (a.aiScore || 0) > 80).length, icon: <Brain size={24} />, color: '#8b5cf6' },
+          { label: 'Active Interviews', value: applications.filter(a => a.status === 'Interview').length, icon: <Send size={24} />, color: '#10b981' },
+          { label: 'Rejected', value: applications.filter(a => a.status === 'Rejected').length, icon: <XCircle size={24} />, color: '#f43f5e' }
+        ].map((stat, i) => (
+          <motion.div 
+            key={i}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            style={{ background: '#fff', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '20px' }}
+          >
+            <div style={{ width: '56px', height: '56px', borderRadius: '14px', background: `${stat.color}10`, color: stat.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {stat.icon}
+            </div>
+            <div>
+              <p style={{ color: '#64748b', fontSize: '14px', fontWeight: 500, margin: '0 0 4px 0' }}>{stat.label}</p>
+              <h3 style={{ fontSize: '24px', fontWeight: 700, color: '#1e293b', margin: 0 }}>{stat.value}</h3>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      <div style={{ background: '#fff', borderRadius: '18px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '0 16px', flex: 1, maxWidth: '400px' }}>
             <Search size={18} color="#94a3b8" />
@@ -90,76 +90,69 @@ const Applications: React.FC = () => {
         </div>
 
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-            <thead>
-              <tr style={{ background: '#f8fafc' }}>
-                <th style={{ padding: '16px 24px', color: '#64748b', fontSize: '13px', fontWeight: 600 }}>CANDIDATE</th>
-                <th style={{ padding: '16px 24px', color: '#64748b', fontSize: '13px', fontWeight: 600 }}>ROLE</th>
-                <th style={{ padding: '16px 24px', color: '#64748b', fontSize: '13px', fontWeight: 600 }}>DATE</th>
-                <th style={{ padding: '16px 24px', color: '#64748b', fontSize: '13px', fontWeight: 600 }}>AI SCORE</th>
-                <th style={{ padding: '16px 24px', color: '#64748b', fontSize: '13px', fontWeight: 600 }}>STATUS</th>
-                <th style={{ padding: '16px 24px', color: '#64748b', fontSize: '13px', fontWeight: 600 }}>ACTIONS</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredApplications.map((app, i) => {
-                const status = getStatusColor(app.status);
-                return (
-                  <tr key={app.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '16px 24px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#1e3a8a', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>{app.candidate.avatar}</div>
-                        <div>
-                          <div style={{ fontSize: '14px', fontWeight: 600, color: '#1e293b' }}>{app.candidate.name}</div>
-                          <div style={{ fontSize: '12px', color: '#94a3b8' }}>{app.candidate.email}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td style={{ padding: '16px 24px' }}><span style={{ fontSize: '14px', color: '#475569' }}>{app.role}</span></td>
-                    <td style={{ padding: '16px 24px', fontSize: '14px', color: '#64748b' }}>{app.date}</td>
-                    <td style={{ padding: '16px 24px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{ flex: 1, height: '4px', background: '#f1f5f9', borderRadius: '10px', minWidth: '80px', overflow: 'hidden' }}>
-                           <div style={{ width: `${app.aiScore}%`, height: '100%', background: getMatchQualityColor(app.matchQuality) }}></div>
-                        </div>
-                        <span style={{ fontSize: '13px', fontWeight: 700, color: getMatchQualityColor(app.matchQuality) }}>{app.aiScore}%</span>
-                      </div>
-                    </td>
-                    <td style={{ padding: '16px 24px' }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, background: status.bg, color: status.text }}>
-                        {status.icon} {app.status}
-                      </span>
-                    </td>
-                    <td style={{ padding: '16px 24px' }}>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}><Eye size={18} /></button>
-                        <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}><MoreVertical size={18} /></button>
-                      </div>
-                    </td>
+          {isLoading ? (
+            <div style={{ padding: '60px', textAlign: 'center', color: '#64748b' }}>Loading applications...</div>
+          ) : (
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ background: '#f8fafc' }}>
+                  <th style={{ padding: '16px 24px', color: '#64748b', fontSize: '13px', fontWeight: 600, borderBottom: '1px solid #e2e8f0' }}>CANDIDATE</th>
+                  <th style={{ padding: '16px 24px', color: '#64748b', fontSize: '13px', fontWeight: 600, borderBottom: '1px solid #e2e8f0' }}>ROLE</th>
+                  <th style={{ padding: '16px 24px', color: '#64748b', fontSize: '13px', fontWeight: 600, borderBottom: '1px solid #e2e8f0' }}>DATE</th>
+                  <th style={{ padding: '16px 24px', color: '#64748b', fontSize: '13px', fontWeight: 600, borderBottom: '1px solid #e2e8f0' }}>AI SCORE</th>
+                  <th style={{ padding: '16px 24px', color: '#64748b', fontSize: '13px', fontWeight: 600, borderBottom: '1px solid #e2e8f0' }}>STATUS</th>
+                  <th style={{ padding: '16px 24px', color: '#64748b', fontSize: '13px', fontWeight: 600, borderBottom: '1px solid #e2e8f0' }}>ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {applications.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>No applications found.</td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                ) : applications.map((app, i) => {
+                  const status = getStatusColor(app.status || 'Pending');
+                  return (
+                    <tr key={app.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '16px 24px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#3b82f6', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>
+                            {app.candidate?.name?.substring(0, 2).toUpperCase() || '??'}
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontSize: '14px', fontWeight: 600, color: '#1e293b' }}>{app.candidate?.name}</span>
+                            <span style={{ fontSize: '12px', color: '#94a3b8' }}>{app.candidate?.email}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ padding: '16px 24px', fontSize: '14px', color: '#475569' }}>{app.role}</td>
+                      <td style={{ padding: '16px 24px', fontSize: '14px', color: '#64748b' }}>{app.date}</td>
+                      <td style={{ padding: '16px 24px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div style={{ flex: 1, height: '6px', background: '#f1f5f9', borderRadius: '10px', minWidth: '80px' }}>
+                            <div style={{ width: `${app.aiScore || 0}%`, height: '100%', background: (app.aiScore || 0) > 80 ? '#22c55e' : '#f59e0b', borderRadius: '10px' }}></div>
+                          </div>
+                          <span style={{ fontSize: '14px', fontWeight: 700 }}>{app.aiScore || 0}%</span>
+                        </div>
+                      </td>
+                      <td style={{ padding: '16px 24px' }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, background: status.bg, color: status.text, border: `1px solid ${status.border}` }}>
+                          {status.icon} {app.status || 'Pending'}
+                        </span>
+                      </td>
+                      <td style={{ padding: '16px 24px' }}>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button style={{ padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#fff', color: '#64748b' }}><Eye size={16} /></button>
+                          <button style={{ padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#fff', color: '#64748b' }}><MoreVertical size={16} /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
-      <AnimatePresence>
-        {isModalOpen && (
-          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(8px)' }}>
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={{ background: '#fff', padding: '32px', borderRadius: '24px', width: '100%', maxWidth: '500px' }}>
-               <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#1e293b', marginBottom: '24px' }}>Post New Job</h2>
-               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <input type="text" placeholder="Job Title" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }} />
-                  <textarea placeholder="Description" rows={4} style={{ padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0', resize: 'none' }} />
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
-                    <button onClick={() => setIsModalOpen(false)} style={{ padding: '10px 20px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#fff', color: '#64748b', fontWeight: 600 }}>Cancel</button>
-                    <button style={{ padding: '10px 20px', borderRadius: '10px', border: 'none', background: '#1e3a8a', color: '#fff', fontWeight: 600 }}>Post Job</button>
-                  </div>
-               </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 };
