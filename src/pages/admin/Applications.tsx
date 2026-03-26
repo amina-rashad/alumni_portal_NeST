@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import {
   Users, Briefcase, Calendar, CheckCircle2,
   Clock, XCircle, Search, Filter, MoreVertical,
-  Download, Send, Eye, Brain, X, MapPin, Building2, DollarSign
+  Download, Send, Eye, Brain
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 interface Application {
   id: string;
@@ -22,7 +22,6 @@ interface Application {
 
 const Applications: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Dummy Application Data with AI Match Scores
   const applications: Application[] = [
@@ -103,12 +102,6 @@ const Applications: React.FC = () => {
         <div style={{ display: 'flex', gap: '12px' }}>
           <button style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', color: '#64748b', fontWeight: 500, cursor: 'pointer' }}>
             <Download size={18} /> Export List
-          </button>
-          <button 
-            onClick={() => setIsModalOpen(true)}
-            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', background: '#3b82f6', border: 'none', borderRadius: '10px', color: '#fff', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)' }}
-          >
-            Post New Job
           </button>
         </div>
       </div>
@@ -262,128 +255,6 @@ const Applications: React.FC = () => {
         </div>
       </div>
 
-      {/* Post New Job Modal */}
-      <AnimatePresence>
-        {isModalOpen && (
-          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(8px)' }}>
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0, y: 30 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 30 }}
-              style={{ 
-                background: 'rgba(255, 255, 255, 0.7)', 
-                backdropFilter: 'blur(20px)',
-                width: '90%', 
-                maxWidth: '540px', 
-                borderRadius: '28px', 
-                border: '1px solid rgba(255, 255, 255, 0.3)',
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)', 
-                overflow: 'hidden', 
-                position: 'relative' 
-              }}
-            >
-              {/* Modal Header */}
-              <div style={{ padding: '24px 32px', borderBottom: '1px solid rgba(0,0,0,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a', margin: '0 0 4px 0', letterSpacing: '-0.02em' }}>Post New Job</h2>
-                  <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>Define the next great role for the alumni network.</p>
-                </div>
-                <button 
-                  onClick={() => setIsModalOpen(false)}
-                  style={{ padding: '8px', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.05)', background: 'rgba(255,255,255,0.5)', color: '#64748b', cursor: 'pointer', display: 'flex' }}
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              {/* Modal Body */}
-              <div style={{ padding: '32px' }}>
-                <form style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <label style={{ fontSize: '11px', fontWeight: 700, color: '#475569', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        <Briefcase size={12} style={{ color: '#3b82f6' }} /> Job Title
-                      </label>
-                      <input 
-                        type="text" 
-                        placeholder="e.g. Senior Developer" 
-                        style={{ padding: '10px 14px', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.08)', background: 'rgba(255,255,255,0.5)', fontSize: '14px', outline: 'none', color: '#1e293b' }}
-                      />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <label style={{ fontSize: '11px', fontWeight: 700, color: '#475569', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        <Building2 size={12} style={{ color: '#3b82f6' }} /> Department
-                      </label>
-                      <select style={{ padding: '10px 14px', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.08)', background: 'rgba(255,255,255,0.5)', fontSize: '14px', outline: 'none', color: '#1e293b' }}>
-                        <option>Engineering</option>
-                        <option>Design</option>
-                        <option>Product</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <label style={{ fontSize: '11px', fontWeight: 700, color: '#475569', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        <MapPin size={12} style={{ color: '#3b82f6' }} /> Location
-                      </label>
-                      <input 
-                        type="text" 
-                        placeholder="e.g. Remote" 
-                        style={{ padding: '10px 14px', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.08)', background: 'rgba(255,255,255,0.5)', fontSize: '14px', outline: 'none', color: '#1e293b' }}
-                      />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <label style={{ fontSize: '11px', fontWeight: 700, color: '#475569', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        <DollarSign size={12} style={{ color: '#3b82f6' }} /> Salary
-                      </label>
-                      <input 
-                        type="text" 
-                        placeholder="e.g. $120k+" 
-                        style={{ padding: '10px 14px', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.08)', background: 'rgba(255,255,255,0.5)', fontSize: '14px', outline: 'none', color: '#1e293b' }}
-                      />
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <label style={{ fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Job Description</label>
-                    <textarea 
-                      placeholder="Role summary..." 
-                      rows={2}
-                      style={{ padding: '12px 14px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.08)', background: 'rgba(255,255,255,0.5)', fontSize: '14px', outline: 'none', resize: 'none', fontFamily: 'inherit', color: '#1e293b' }}
-                    />
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <label style={{ fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Key Requirements</label>
-                    <textarea 
-                      placeholder="Must-have skills..." 
-                      rows={2}
-                      style={{ padding: '12px 14px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.08)', background: 'rgba(255,255,255,0.5)', fontSize: '14px', outline: 'none', resize: 'none', fontFamily: 'inherit', color: '#1e293b' }}
-                    />
-                  </div>
-                </form>
-              </div>
-
-              {/* Modal Footer */}
-              <div style={{ padding: '24px 32px', borderTop: '1px solid rgba(0,0,0,0.05)', display: 'flex', justifyContent: 'flex-end', gap: '12px', background: 'rgba(255,255,255,0.3)' }}>
-                <button 
-                  onClick={() => setIsModalOpen(false)}
-                  style={{ padding: '10px 20px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.05)', background: 'rgba(255,255,255,0.8)', color: '#64748b', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={() => setIsModalOpen(false)}
-                  style={{ padding: '10px 24px', borderRadius: '12px', border: 'none', background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '13px', boxShadow: '0 8px 16px -4px rgba(59, 130, 246, 0.3)' }}
-                >
-                  Post Job
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 };
