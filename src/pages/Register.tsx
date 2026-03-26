@@ -8,6 +8,7 @@ import './Auth.css';
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
+  const [showSuccess, setShowSuccess] = useState(false);
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');

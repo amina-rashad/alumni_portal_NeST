@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   ClipboardSignature, ChevronDown, Briefcase, ClipboardCheck,
   Bold, Italic, Underline, Strikethrough, AlignLeft, AlignCenter, AlignRight, AlignJustify,
-  CheckSquare, List, ListOrdered, Link, Minus, Settings, Banknote
+  CheckSquare, List, ListOrdered, Link, Minus, Settings, Banknote, ArrowLeft, FilePlus, Calendar
 } from 'lucide-react';
 
 const AdminPostJob: React.FC = () => {
@@ -76,6 +76,53 @@ const AdminPostJob: React.FC = () => {
                       <option>Internship</option>
                     </select>
                     <ChevronDown size={16} color="#94a3b8" style={{ position: 'absolute', right: '16px', top: '14px', pointerEvents: 'none' }} />
+                  </div>
+                </div>
+                {/* Dates Section */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '14px', fontWeight: 500, color: '#475569' }}>Joining Date</label>
+                  <div style={{ position: 'relative' }}>
+                    <div style={{ position: 'absolute', left: '16px', top: '12px', pointerEvents: 'none' }}>
+                      <Calendar size={16} color="#94a3b8" />
+                    </div>
+                    <input 
+                      type="date" 
+                      onClick={(e) => (e.currentTarget as any).showPicker?.()}
+                      style={{ 
+                        width: '100%', 
+                        padding: '12px 16px 12px 42px', 
+                        borderRadius: '10px', 
+                        border: '1px solid #e2e8f0', 
+                        background: '#fff', 
+                        fontSize: '14px', 
+                        outline: 'none', 
+                        color: '#1e293b',
+                        cursor: 'pointer'
+                      }} 
+                    />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '14px', fontWeight: 500, color: '#475569' }}>End Date</label>
+                  <div style={{ position: 'relative' }}>
+                    <div style={{ position: 'absolute', left: '16px', top: '12px', pointerEvents: 'none' }}>
+                      <Calendar size={16} color="#94a3b8" />
+                    </div>
+                    <input 
+                      type="date" 
+                      onClick={(e) => (e.currentTarget as any).showPicker?.()}
+                      style={{ 
+                        width: '100%', 
+                        padding: '12px 16px 12px 42px', 
+                        borderRadius: '10px', 
+                        border: '1px solid #e2e8f0', 
+                        background: '#fff', 
+                        fontSize: '14px', 
+                        outline: 'none', 
+                        color: '#1e293b',
+                        cursor: 'pointer'
+                      }} 
+                    />
                   </div>
                 </div>
               </div>

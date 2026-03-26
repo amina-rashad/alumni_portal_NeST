@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  UserPlus, Briefcase, GraduationCap, FileText, ChevronDown
+  UserPlus, Briefcase, GraduationCap, FileText, ChevronDown, ArrowLeft
 } from 'lucide-react';
 
 const AdminAddIntern: React.FC = () => {

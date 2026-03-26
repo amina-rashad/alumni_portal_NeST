@@ -33,13 +33,13 @@ def create_app(config_name=None):
     app = Flask(__name__)
     app.config.from_object(config_by_name[config_name])
 
-    # ── CORS ── allow frontend dev server
+    # ── CORS ── allow all devices on the network to connect
     CORS(app, resources={
         r"/api/*": {
-            "origins": ["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"],
+            "origins": "*",
             "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization"],
-            "supports_credentials": True,
+            "supports_credentials": False,
         }
     })
 
@@ -60,12 +60,14 @@ def create_app(config_name=None):
     from routes.health import health_bp
     from routes.courses import courses_bp
     from routes.jobs import jobs_bp
+    from routes.events import events_bp
 
     app.register_blueprint(health_bp, url_prefix="/api")
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(users_bp, url_prefix="/api/users")
     app.register_blueprint(courses_bp, url_prefix="/api/courses")
     app.register_blueprint(jobs_bp, url_prefix="/api/jobs")
+    app.register_blueprint(events_bp, url_prefix="/api/events")
 
     return app
 

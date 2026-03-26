@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  CalendarDays, School, Users, FileText
+  CalendarDays, School, Users, FileText, ArrowLeft, Clock, ChevronDown
 } from 'lucide-react';
 
 const AdminAddVisit: React.FC = () => {
@@ -101,7 +101,7 @@ const AdminAddVisit: React.FC = () => {
                 <label style={{ fontSize: '13px', fontWeight: 700, color: '#475569' }}>Visit Overview & Requirements</label>
                 <textarea 
                   placeholder="Enter details about the workshop, seminar, or any special requests..." 
-                  style={{ width: '100%', minHeight: '120px', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '16px', fontSize: '14px', outline: 'none', resize: 'vertical' }}
+                  style={{ width: '100%', minHeight: '120px', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '16px', fontSize: '14px', outline: 'none', resize: 'vertical', background: '#fff', color: '#1e293b' }}
                 ></textarea>
               </div>
             </div>

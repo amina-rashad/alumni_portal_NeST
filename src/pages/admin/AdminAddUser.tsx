@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  UserPlus, Mail, Shield, ChevronDown, Lock, Phone
+  UserPlus, Mail, Shield, ChevronDown, Lock, Phone, ArrowLeft
 } from 'lucide-react';
 
 const AdminAddUser: React.FC = () => {

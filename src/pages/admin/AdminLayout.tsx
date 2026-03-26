@@ -33,7 +33,7 @@ const AdminLayout: React.FC = () => {
     { name: 'User Management', path: '/admin/users', icon: <Users size={20} /> },
     { name: 'Intern Management', path: '/admin/interns', icon: <GraduationCap size={20} /> },
     { name: 'IV Students', path: '/admin/iv-students', icon: <School size={20} /> },
-    { name: 'Job Management', path: '/admin/jobs', icon: <Briefcase size={20} />, hasSubmenu: true },
+    { name: 'Job Management', path: '/admin/jobs', icon: <Briefcase size={20} /> },
     { name: 'Applications', path: '/admin/applications', icon: <FileText size={20} /> },
     { name: 'Reports', path: '/admin/reports', icon: <BarChart3 size={20} />, hasSubmenu: true },
     { name: 'Event Management', path: '/admin/events', icon: <Calendar size={20} /> },
