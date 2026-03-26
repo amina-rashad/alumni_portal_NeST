@@ -1,24 +1,39 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Users, UserCheck, Briefcase, FileText, 
   Plus, Upload, Send, BarChart
 } from 'lucide-react';
+import { adminApi } from '../../services/api';
 
 const AdminDashboard: React.FC = () => {
+  const [statsData, setStatsData] = useState({
+    total_users: 0,
+    interns: 0,
+    active_jobs: 0,
+    applications: 0
+  });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      const res = await adminApi.getStats();
+      if (res.success && res.data) {
+        setStatsData(res.data.stats);
+      }
+    };
+    fetchStats();
+  }, []);
+
   const stats = [
-    { title: 'Total Users', value: '5,280', trend: '+12.5%', icon: <Users size={24} color="#3b82f6" />, bg: '#eff6ff' },
-    { title: 'Interns', value: '350', trend: '+8.6%', icon: <UserCheck size={24} color="#06b6d4" />, bg: '#ecfeff' },
-    { title: 'Active Jobs', value: '28', trend: '+4.5%', icon: <Briefcase size={24} color="#6366f1" />, bg: '#eef2ff' },
-    { title: 'Applications', value: '1,575', trend: '+15.8%', icon: <FileText size={24} color="#f59e0b" />, bg: '#fffbeb' },
+    { title: 'Total Users', value: statsData.total_users.toLocaleString(), trend: '+0%', icon: <Users size={24} color="#3b82f6" />, bg: '#eff6ff' },
+    { title: 'Interns', value: statsData.interns.toLocaleString(), trend: '+0%', icon: <UserCheck size={24} color="#06b6d4" />, bg: '#ecfeff' },
+    { title: 'Active Jobs', value: statsData.active_jobs.toLocaleString(), trend: '+0%', icon: <Briefcase size={24} color="#6366f1" />, bg: '#eef2ff' },
+    { title: 'Applications', value: statsData.applications.toLocaleString(), trend: '+0%', icon: <FileText size={24} color="#f59e0b" />, bg: '#fffbeb' },
   ];
 
   const recentActivity = [
-    { user: 'Rahul Nair', action: 'added as Intern', time: '2 hours ago', avatar: 'RN' },
-    { user: 'Alan Mathew', action: 'applied for Java Developer', time: '4 hours ago', avatar: 'AM' },
-    { user: 'HR', action: 'updated a new job Data Analyst', time: '6 hours ago', avatar: 'HR' },
-    { user: 'Maya Prasad', action: 'registered as Alumni', time: 'Yesterday', avatar: 'MP' },
-    { user: 'Excel file', action: 'import IV Students List', time: '2 days ago', avatar: 'EF', isFile: true },
+    { user: 'Admin', action: 'accessed dashboard', time: 'Just now', avatar: 'AD' },
+    { user: 'System', action: 'refreshed live data', time: 'Recently', avatar: 'SY' },
   ];
 
   return (
@@ -136,8 +151,8 @@ const AdminDashboard: React.FC = () => {
                       width: '40px', 
                       height: '40px', 
                       borderRadius: '12px', 
-                      background: act.isFile ? '#f0fdf4' : '#f1f5f9', 
-                      color: act.isFile ? '#22c55e' : '#64748b',
+                      background: '#f1f5f9', 
+                      color: '#64748b',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',

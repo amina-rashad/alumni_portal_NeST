@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 
 // Splash & Styles
 import './App.css';
+import nestMainLogo from './assets/nest_logo.png';
 
 // Main / Public Pages
 import Home from './pages/Home';
@@ -112,14 +113,25 @@ const SplashScreen: React.FC = () => (
       animate={{ scale: 1, opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="splash-brand">
-        <div className="splash-logo-icon">
-          <img src="https://media.licdn.com/dms/image/C560BAQGNt2PXXs_WkQ/company-logo_200_200/0/1630656715690/nest_software_logo?e=2147483647&v=beta&t=GkMvL3fQ2zIq805g8A6iU21Nkx1bYwR7y5sL_V0zHwM" alt="NeST" className="logo-icon-img" style={{ width: '52px', height: '52px' }} />
-        </div>
-        <div>
-          <h1>NeST <span>DIGITAL</span></h1>
-          <p>ENGINEERING TRANSFORMATION</p>
-        </div>
+      <div className="splash-brand" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '32px' }}>
+        <motion.div 
+          style={{ 
+            background: 'rgba(255, 255, 255, 0.95)', 
+            backdropFilter: 'blur(10px)', 
+            padding: '24px 40px', 
+            borderRadius: '20px', 
+            boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: '4px solid rgba(200, 16, 46, 0.1)'
+          }}
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+        >
+          <img src={nestMainLogo} alt="NeST Digital" style={{ height: '70px', objectFit: 'contain' }} />
+        </motion.div>
+        <p style={{ margin: 0, letterSpacing: '6px', color: '#ffffff', fontSize: '13px', fontWeight: 800, textTransform: 'uppercase' }}>ENGINEERING TRANSFORMATION</p>
       </div>
       <div className="loader-bar">
         <motion.div
