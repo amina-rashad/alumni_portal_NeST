@@ -86,13 +86,16 @@ import ChangePassword from './pages/ChangePassword';
 // Admin Pages
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
-import AdminPlaceholder from './pages/admin/AdminPlaceholder';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminInterns from './pages/admin/AdminInterns';
 import AdminIVStudents from './pages/admin/AdminIVStudents';
 import AdminAddVisit from './pages/admin/AdminAddVisit';
 import AdminJobs from './pages/admin/AdminJobs';
 import AdminPostJob from './pages/admin/AdminPostJob';
+import Applications from './pages/admin/Applications';
+import Reports from './pages/admin/Reports';
+import Settings from './pages/admin/Settings';
+import AdminCourses from './pages/admin/AdminCourses';
 
 /* ── Splash Screen ── */
 const SplashScreen: React.FC = () => (
@@ -235,9 +238,10 @@ const App: React.FC = () => {
                 <Route path="iv-students/add" element={<AdminAddVisit />} />
                 <Route path="jobs" element={<AdminJobs />} />
                 <Route path="jobs/post" element={<AdminPostJob />} />
-                <Route path="applications" element={<AdminPlaceholder title="Applications" />} />
-                <Route path="reports" element={<AdminPlaceholder title="Reports" />} />
-                <Route path="settings" element={<AdminPlaceholder title="Settings" />} />
+                <Route path="applications" element={<Applications />} />
+                <Route path="reports" element={<Reports />} />
+                <Route path="add-courses" element={<AdminCourses />} />
+                <Route path="settings" element={<Settings />} />
               </Route>
 
               {/* Fallback Catch-all Route */}
