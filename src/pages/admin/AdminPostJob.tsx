@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   ClipboardSignature, ChevronDown, Briefcase, ClipboardCheck,
   Bold, Italic, Underline, Strikethrough, AlignLeft, AlignCenter, AlignRight, AlignJustify,
-  CheckSquare, List, ListOrdered, Link, Minus, Settings, Banknote
+  CheckSquare, List, ListOrdered, Link, Minus, Settings, Banknote, ArrowLeft, FilePlus, Calendar
 } from 'lucide-react';
 
 const AdminPostJob: React.FC = () => {
@@ -12,8 +12,29 @@ const AdminPostJob: React.FC = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Header */}
-      <div>
-        <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#1e293b', margin: 0 }}>Post a Job</h1>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <button 
+          onClick={() => navigate('/admin/jobs')}
+          style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            width: '40px', 
+            height: '40px', 
+            borderRadius: '12px', 
+            background: '#fff', 
+            border: '1px solid #e2e8f0', 
+            color: '#64748b', 
+            cursor: 'pointer',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+            transition: 'all 0.2s'
+          }}
+        >
+          <ArrowLeft size={20} />
+        </button>
+        <div>
+          <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#1e293b', margin: 0 }}>Post a Job</h1>
+        </div>
       </div>
 
       <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
@@ -73,6 +94,53 @@ const AdminPostJob: React.FC = () => {
                     <ChevronDown size={16} color="#94a3b8" style={{ position: 'absolute', right: '16px', top: '14px', pointerEvents: 'none' }} />
                   </div>
                 </div>
+                {/* Dates Section */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '14px', fontWeight: 500, color: '#475569' }}>Joining Date</label>
+                  <div style={{ position: 'relative' }}>
+                    <div style={{ position: 'absolute', left: '16px', top: '12px', pointerEvents: 'none' }}>
+                      <Calendar size={16} color="#94a3b8" />
+                    </div>
+                    <input 
+                      type="date" 
+                      onClick={(e) => (e.currentTarget as any).showPicker?.()}
+                      style={{ 
+                        width: '100%', 
+                        padding: '12px 16px 12px 42px', 
+                        borderRadius: '10px', 
+                        border: '1px solid #e2e8f0', 
+                        background: '#fff', 
+                        fontSize: '14px', 
+                        outline: 'none', 
+                        color: '#1e293b',
+                        cursor: 'pointer'
+                      }} 
+                    />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '14px', fontWeight: 500, color: '#475569' }}>End Date</label>
+                  <div style={{ position: 'relative' }}>
+                    <div style={{ position: 'absolute', left: '16px', top: '12px', pointerEvents: 'none' }}>
+                      <Calendar size={16} color="#94a3b8" />
+                    </div>
+                    <input 
+                      type="date" 
+                      onClick={(e) => (e.currentTarget as any).showPicker?.()}
+                      style={{ 
+                        width: '100%', 
+                        padding: '12px 16px 12px 42px', 
+                        borderRadius: '10px', 
+                        border: '1px solid #e2e8f0', 
+                        background: '#fff', 
+                        fontSize: '14px', 
+                        outline: 'none', 
+                        color: '#1e293b',
+                        cursor: 'pointer'
+                      }} 
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Job Description Rich Text */}
@@ -108,7 +176,7 @@ const AdminPostJob: React.FC = () => {
                     </div>
                   </div>
                   {/* Textarea */}
-                  <textarea style={{ width: '100%', minHeight: '120px', border: 'none', padding: '16px', fontSize: '14px', outline: 'none', resize: 'vertical' }}></textarea>
+                  <textarea style={{ width: '100%', minHeight: '120px', border: 'none', padding: '16px', fontSize: '14px', outline: 'none', resize: 'vertical', background: '#fff', color: '#1e293b' }}></textarea>
                 </div>
               </div>
             </div>
@@ -217,12 +285,23 @@ const AdminPostJob: React.FC = () => {
                   <label style={{ fontSize: '14px', fontWeight: 600, color: '#475569' }}>Application Deadline</label>
                   <div style={{ position: 'relative', maxWidth: '400px' }}>
                     <div style={{ position: 'absolute', left: '16px', top: '12px', pointerEvents: 'none' }}>
-                      <div style={{ width: '16px', height: '16px', border: '2px solid #94a3b8', borderRadius: '4px', borderTop: '4px solid #94a3b8' }} />
+                      <Calendar size={16} color="#94a3b8" />
                     </div>
-                    <select style={{ width: '100%', padding: '12px 16px 12px 42px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#fff', fontSize: '14px', outline: 'none', appearance: 'none', color: '#94a3b8' }}>
-                      <option>Select date</option>
-                    </select>
-                    <ChevronDown size={16} color="#94a3b8" style={{ position: 'absolute', right: '16px', top: '14px', pointerEvents: 'none' }} />
+                    <input 
+                      type="date" 
+                      onClick={(e) => (e.currentTarget as any).showPicker?.()}
+                      style={{ 
+                        width: '100%', 
+                        padding: '12px 16px 12px 42px', 
+                        borderRadius: '10px', 
+                        border: '1px solid #e2e8f0', 
+                        background: '#fff', 
+                        fontSize: '14px', 
+                        outline: 'none', 
+                        color: '#1e293b',
+                        cursor: 'pointer'
+                      }} 
+                    />
                   </div>
                 </div>
 
@@ -255,7 +334,28 @@ const AdminPostJob: React.FC = () => {
               </div>
             </div>
           </div>
-
+          
+          {/* Attachments Section */}
+          <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', background: '#f8fafc', overflow: 'hidden', marginTop: '16px' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <FilePlus size={18} color="#475569" />
+              <span style={{ fontSize: '15px', fontWeight: 600, color: '#1e293b' }}>Upload Documents</span>
+            </div>
+            
+            <div style={{ padding: '24px', background: '#fff' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ border: '2px dashed #e2e8f0', borderRadius: '12px', padding: '32px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', cursor: 'pointer', transition: 'border-color 0.2s' }}>
+                  <div style={{ background: '#f1f5f9', color: '#64748b', padding: '12px', borderRadius: '50%' }}>
+                     <FilePlus size={24} />
+                  </div>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '14px', fontWeight: 600, color: '#1e293b' }}>Upload Documents</div>
+                    <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>PDF, DOCX, Image up to 10MB</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Footer actions */}

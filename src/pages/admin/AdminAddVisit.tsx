@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  CalendarDays, School, Users, FileText
+  CalendarDays, School, Users, FileText, ArrowLeft, Clock, ChevronDown
 } from 'lucide-react';
 
 const AdminAddVisit: React.FC = () => {
@@ -10,8 +10,29 @@ const AdminAddVisit: React.FC = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Header */}
-      <div>
-        <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#1e293b', margin: 0 }}>Schedule Visit</h1>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <button 
+          onClick={() => navigate('/admin/iv-students')}
+          style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            width: '40px', 
+            height: '40px', 
+            borderRadius: '12px', 
+            background: '#fff', 
+            border: '1px solid #e2e8f0', 
+            color: '#64748b', 
+            cursor: 'pointer',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+            transition: 'all 0.2s'
+          }}
+        >
+          <ArrowLeft size={20} />
+        </button>
+        <div>
+          <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#1e293b', margin: 0 }}>Schedule Visit</h1>
+        </div>
       </div>
 
       <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
@@ -54,7 +75,39 @@ const AdminAddVisit: React.FC = () => {
                 {/* Visit Date */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <label style={{ fontSize: '14px', fontWeight: 500, color: '#475569' }}>Date of Visit</label>
-                  <input type="date" style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#fff', fontSize: '14px', outline: 'none', color: '#475569' }} />
+                  <div style={{ position: 'relative' }}>
+                    <div style={{ position: 'absolute', left: '16px', top: '12px', pointerEvents: 'none' }}>
+                      <CalendarDays size={16} color="#94a3b8" />
+                    </div>
+                    <input 
+                      type="date" 
+                      onClick={(e) => (e.currentTarget as any).showPicker?.()}
+                      style={{ width: '100%', padding: '12px 16px 12px 42px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#fff', fontSize: '14px', outline: 'none', color: '#1e293b', cursor: 'pointer' }} 
+                    />
+                  </div>
+                </div>
+                {/* Visit Time */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '14px', fontWeight: 500, color: '#475569' }}>Time of Visit</label>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <div style={{ position: 'relative', flex: 1 }}>
+                      <div style={{ position: 'absolute', left: '16px', top: '12px', pointerEvents: 'none' }}>
+                        <Clock size={16} color="#94a3b8" />
+                      </div>
+                      <input 
+                        type="time" 
+                        onClick={(e) => (e.currentTarget as any).showPicker?.()}
+                        style={{ width: '100%', padding: '12px 16px 12px 42px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#fff', fontSize: '14px', outline: 'none', color: '#1e293b', cursor: 'pointer' }} 
+                      />
+                    </div>
+                    <div style={{ position: 'relative' }}>
+                      <select style={{ height: '44px', padding: '0 32px 0 16px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#fff', fontSize: '14px', outline: 'none', color: '#1e293b', appearance: 'none', width: '80px' }}>
+                        <option>AM</option>
+                        <option>PM</option>
+                      </select>
+                      <ChevronDown size={14} color="#94a3b8" style={{ position: 'absolute', right: '12px', top: '15px', pointerEvents: 'none' }} />
+                    </div>
+                  </div>
                 </div>
                 {/* Number of Students */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -105,7 +158,7 @@ const AdminAddVisit: React.FC = () => {
                 <label style={{ fontSize: '14px', fontWeight: 500, color: '#475569' }}>Visit Overview & Requirements</label>
                 <textarea 
                   placeholder="Enter details about the workshop, seminar, or any special requests..." 
-                  style={{ width: '100%', minHeight: '120px', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '16px', fontSize: '14px', outline: 'none', resize: 'vertical' }}
+                  style={{ width: '100%', minHeight: '120px', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '16px', fontSize: '14px', outline: 'none', resize: 'vertical', background: '#fff', color: '#1e293b' }}
                 ></textarea>
               </div>
             </div>

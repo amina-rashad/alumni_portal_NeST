@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  UserPlus, Mail, Shield, ChevronDown, Lock, Phone
+  UserPlus, Mail, Shield, ChevronDown, Lock, Phone, ArrowLeft
 } from 'lucide-react';
 
 const AdminAddUser: React.FC = () => {
@@ -10,8 +10,29 @@ const AdminAddUser: React.FC = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Header */}
-      <div>
-        <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#1e293b', margin: 0 }}>Create User</h1>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <button 
+          onClick={() => navigate('/admin/users')}
+          style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            width: '40px', 
+            height: '40px', 
+            borderRadius: '12px', 
+            background: '#fff', 
+            border: '1px solid #e2e8f0', 
+            color: '#64748b', 
+            cursor: 'pointer',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+            transition: 'all 0.2s'
+          }}
+        >
+          <ArrowLeft size={20} />
+        </button>
+        <div>
+          <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#1e293b', margin: 0 }}>Create User</h1>
+        </div>
       </div>
 
       <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>

@@ -98,6 +98,8 @@ import Applications from './pages/admin/Applications';
 import Reports from './pages/admin/Reports';
 import Settings from './pages/admin/Settings';
 import AdminCourses from './pages/admin/AdminCourses';
+import AdminEvents from './pages/admin/AdminEvents';
+import AdminAddEvent from './pages/admin/AdminAddEvent';
 
 /* ── Splash Screen ── */
 const SplashScreen: React.FC = () => (
@@ -244,6 +246,8 @@ const App: React.FC = () => {
                 <Route path="jobs/post" element={<AdminPostJob />} />
                 <Route path="applications" element={<Applications />} />
                 <Route path="reports" element={<Reports />} />
+                <Route path="events" element={<AdminEvents />} />
+                <Route path="events/add" element={<AdminAddEvent />} />
                 <Route path="add-courses" element={<AdminCourses />} />
                 <Route path="settings" element={<Settings />} />
               </Route>
