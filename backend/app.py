@@ -33,13 +33,13 @@ def create_app(config_name=None):
     app = Flask(__name__)
     app.config.from_object(config_by_name[config_name])
 
-    # ── CORS ── allow frontend dev server
+    # ── CORS ── allow all devices on the network to connect
     CORS(app, resources={
         r"/api/*": {
-            "origins": ["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"],
+            "origins": "*",
             "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization"],
-            "supports_credentials": True,
+            "supports_credentials": False,
         }
     })
 
