@@ -84,6 +84,24 @@ import PrivacySettings from './pages/PrivacySettings';
 import NotificationSettings from './pages/NotificationSettings';
 import ChangePassword from './pages/ChangePassword';
 
+// Admin Pages
+import AdminLayout from './pages/admin/AdminLayout';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminAddUser from './pages/admin/AdminAddUser';
+import AdminInterns from './pages/admin/AdminInterns';
+import AdminAddIntern from './pages/admin/AdminAddIntern';
+import AdminIVStudents from './pages/admin/AdminIVStudents';
+import AdminAddVisit from './pages/admin/AdminAddVisit';
+import AdminJobs from './pages/admin/AdminJobs';
+import AdminPostJob from './pages/admin/AdminPostJob';
+import Applications from './pages/admin/Applications';
+import Reports from './pages/admin/Reports';
+import Settings from './pages/admin/Settings';
+import AdminCourses from './pages/admin/AdminCourses';
+import AdminEvents from './pages/admin/AdminEvents';
+import AdminAddEvent from './pages/admin/AdminAddEvent';
+
 /* ── Splash Screen ── */
 const SplashScreen: React.FC = () => (
   <motion.div
@@ -261,7 +279,106 @@ const App: React.FC = () => {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}
           >
-            <AnimatedRoutes />
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/email-verification" element={<EmailVerification />} />
+
+              {/* Protected Routes with MainLayout */}
+              <Route element={<MainLayout />}>
+                {/* Dashboards */}
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/dashboard/activity" element={<ActivityFeed />} />
+                
+                {/* Profile */}
+                <Route path="/profile" element={<ViewProfile />} />
+                <Route path="/profile/edit" element={<EditProfile />} />
+                <Route path="/profile/:id" element={<PublicProfile />} />
+                <Route path="/profile/resume" element={<ResumeUpload />} />
+                <Route path="/profile/completion" element={<ProfileCompletion />} />
+
+                {/* Networking */}
+                <Route path="/networking" element={<UserDirectory />} />
+                <Route path="/networking/suggested" element={<SuggestedConnections />} />
+                <Route path="/networking/search" element={<SearchResults />} />
+                <Route path="/networking/requests" element={<ConnectionRequests />} />
+                <Route path="/networking/connections" element={<FollowersFollowing />} />
+
+                {/* Jobs */}
+                <Route path="/jobs" element={<JobListings />} />
+                <Route path="/jobs/:id" element={<JobDetails />} />
+                <Route path="/jobs/:id/apply" element={<ApplyJob />} />
+                <Route path="/jobs/applications" element={<MyApplications />} />
+                <Route path="/jobs/saved" element={<SavedJobs />} />
+                <Route path="/jobs/recommended" element={<RecommendedJobs />} />
+
+                {/* Courses */}
+                <Route path="/courses" element={<CourseListing />} />
+                <Route path="/courses/:id" element={<CourseDetails />} />
+                <Route path="/courses/:id/play" element={<CoursePlayer />} />
+                <Route path="/courses/my-courses" element={<MyCourses />} />
+                <Route path="/courses/:id/completion" element={<CourseCompletion />} />
+
+                {/* Assessments */}
+                <Route path="/assessments/quiz" element={<Quiz />} />
+                <Route path="/assessments/quiz/instructions" element={<QuizInstructions />} />
+                <Route path="/assessments/quiz/result" element={<QuizResult />} />
+                <Route path="/assessments/analytics" element={<PerformanceAnalytics />} />
+
+                {/* Gamification */}
+                <Route path="/gamification" element={<PointsOverview />} />
+                <Route path="/gamification/badges" element={<Badges />} />
+                <Route path="/gamification/leaderboard" element={<Leaderboard />} />
+
+                {/* Events */}
+                <Route path="/events" element={<EventsListing />} />
+                <Route path="/events/:id" element={<EventDetails />} />
+                <Route path="/events/:id/register" element={<EventRegistration />} />
+                <Route path="/events/my-events" element={<MyEvents />} />
+
+                {/* Social Feed */}
+                <Route path="/social/feed" element={<Feed />} />
+                <Route path="/social/post/create" element={<CreatePost />} />
+                <Route path="/social/post/:id" element={<PostDetails />} />
+
+                {/* Notifications */}
+                <Route path="/notifications" element={<Notifications />} />
+                <Route path="/notifications/preferences" element={<EmailPreferences />} />
+
+                {/* Settings */}
+                <Route path="/settings" element={<AccountSettings />} />
+                <Route path="/settings/privacy" element={<PrivacySettings />} />
+                <Route path="/settings/notifications" element={<NotificationSettings />} />
+                <Route path="/settings/password" element={<ChangePassword />} />
+              </Route>
+
+              {/* Admin Routes */}
+              <Route path="/admin" element={<AdminLayout />}>
+                <Route index element={<Navigate to="/admin/dashboard" replace />} />
+                <Route path="dashboard" element={<AdminDashboard />} />
+                <Route path="users" element={<AdminUsers />} />
+                <Route path="users/add" element={<AdminAddUser />} />
+                <Route path="interns" element={<AdminInterns />} />
+                <Route path="interns/add" element={<AdminAddIntern />} />
+                <Route path="iv-students" element={<AdminIVStudents />} />
+                <Route path="iv-students/add" element={<AdminAddVisit />} />
+                <Route path="jobs" element={<AdminJobs />} />
+                <Route path="jobs/post" element={<AdminPostJob />} />
+                <Route path="applications" element={<Applications />} />
+                <Route path="reports" element={<Reports />} />
+                <Route path="events" element={<AdminEvents />} />
+                <Route path="events/add" element={<AdminAddEvent />} />
+                <Route path="add-courses" element={<AdminCourses />} />
+                <Route path="settings" element={<Settings />} />
+              </Route>
+
+              {/* Fallback Catch-all Route */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
           </motion.div>
         )}
       </AnimatePresence>

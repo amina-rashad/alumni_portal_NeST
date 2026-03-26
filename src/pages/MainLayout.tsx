@@ -1,16 +1,31 @@
-import React, { useState } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Home, Activity, Bell, User, Users, Briefcase, 
   BookOpen, Edit3, Award, Calendar, MessageSquare, Settings, Menu, X, LogOut
 } from 'lucide-react';
 import nestMainLogo from '../assets/nest_logo.png';
+import { getUser, authApi, type AuthUser } from '../services/api';
 import '../App.css'; // Just re-using default CSS, we will add layout styles below inline or in App.css
 
 const MainLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const location = useLocation();
+  const navigate = useNavigate();
+  const [user, setUserData] = useState<AuthUser | null>(null);
+
+  useEffect(() => {
+    const currentUser = getUser() as unknown as AuthUser;
+    if (currentUser) {
+      setUserData(currentUser);
+    }
+  }, [location.pathname]);
+
+  const handleLogout = () => {
+    authApi.logout();
+    navigate('/login');
+  };
 
   const menuItems = [
     { section: 'Dashboard', items: [
@@ -111,10 +126,13 @@ const MainLayout: React.FC = () => {
         </div>
         
         <div style={{ padding: '20px', borderTop: '1px solid #eaeaea' }}>
-          <Link to="/login" style={{ display: 'flex', alignItems: 'center', color: '#666', textDecoration: 'none', justifyContent: sidebarOpen ? 'flex-start' : 'center' }}>
+          <button 
+            onClick={handleLogout} 
+            style={{ display: 'flex', alignItems: 'center', color: '#666', background: 'none', border: 'none', padding: 0, cursor: 'pointer', justifyContent: sidebarOpen ? 'flex-start' : 'center', width: '100%', fontSize: '16px' }}
+          >
             <LogOut size={20} style={{ marginRight: sidebarOpen ? '10px' : '0' }} />
             {sidebarOpen && <span>Logout</span>}
-          </Link>
+          </button>
         </div>
       </motion.div>
 
@@ -126,12 +144,16 @@ const MainLayout: React.FC = () => {
            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
               <Bell size={20} color="#666" style={{ cursor: 'pointer' }} />
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-                <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#d32f2f', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-                  A
-                </div>
+                {user?.profile_picture ? (
+                  <img src={user.profile_picture} alt={user.full_name} style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover' }} />
+                ) : (
+                  <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#d32f2f', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+                    {user ? user.full_name.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                )}
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#333' }}>John Doe</span>
-                  <span style={{ fontSize: '12px', color: '#888' }}>Alumni</span>
+                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#333' }}>{user ? user.full_name : 'Guest'}</span>
+                  <span style={{ fontSize: '12px', color: '#888' }}>{user ? user.user_type : 'User'}</span>
                 </div>
               </div>
            </div>

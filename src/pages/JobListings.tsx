@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 
 const JobListings: React.FC = () => {
   return (
-    <motion.div 
+    <motion.div
       className="page-container"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -18,7 +18,7 @@ const JobListings: React.FC = () => {
         </Link>
         <h1 style={{ margin: 0, color: '#333' }}>Job Listings</h1>
       </div>
-      
+
       <div style={{ background: '#fff', padding: '2rem', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
         <h2>Welcome to the Job Listings Page</h2>
         <p style={{ color: '#666', lineHeight: 1.6 }}>
