@@ -41,8 +41,7 @@ const AdminJobs: React.FC = () => {
   );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      {/* Header */}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
       <div>
         <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#1e293b', margin: 0 }}>Job Management</h1>
         <p style={{ color: '#64748b', fontSize: '14px', marginTop: '6px' }}>Manage all job postings and track applicant interest.</p>
@@ -65,11 +64,11 @@ const AdminJobs: React.FC = () => {
           <Link to="/admin/jobs/post" style={{ textDecoration: 'none' }}>
             <button style={{ 
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', 
-              background: '#3b82f6', color: '#fff', border: 'none', padding: '12px 24px', 
-              borderRadius: '12px', fontSize: '14px', fontWeight: 600, cursor: 'pointer',
-              boxShadow: '0 2px 10px rgba(59, 130, 246, 0.2)', height: 'fit-content'
+              background: nestNavy, color: '#fff', border: 'none', padding: '14px 24px', 
+              borderRadius: '14px', fontSize: '14px', fontWeight: 800, cursor: 'pointer',
+              width: '100%', boxShadow: '0 8px 24px rgba(26, 38, 82, 0.2)'
             }}>
-              <Plus size={18} />
+              <Plus size={20} />
               Post Job
             </button>
           </Link>

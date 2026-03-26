@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
-  Users, UserCheck, School, PieChart, Plus, ChevronDown, 
-  Download, Eye, Edit2, MoreHorizontal, ChevronRight
+  Users, Calendar, Briefcase, Plus, ChevronDown, 
+  Eye, Edit2, MoreHorizontal, ChevronRight, Search, Laptop
 } from 'lucide-react';
 import { adminApi } from '../../services/api';
 
@@ -25,20 +25,16 @@ const AdminInterns: React.FC = () => {
   }, []);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      {/* Header */}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
       <div>
-        <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#1e293b', margin: 0 }}>Intern Management</h1>
-        <p style={{ color: '#64748b', fontSize: '14px', marginTop: '6px' }}>Track and manage all your interns in one place.</p>
+        <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#1e293b', margin: 0 }}>Intern Management</h1>
+        <p style={{ color: '#64748b', fontSize: '15px', marginTop: '6px' }}>Onboard and track interns from various institutional partners.</p>
       </div>
 
-      {/* Stats Row */}
-      <div style={{ display: 'flex', gap: '16px' }}>
-        {/* Stat Cards */}
-        <div style={{ display: 'flex', flex: 1, gap: '16px' }}>
-          {/* Total Interns */}
-          <div style={{ flex: 1, background: '#fff', borderRadius: '16px', padding: '16px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{ background: '#f1f5f9', padding: '12px', borderRadius: '12px', color: '#3b82f6' }}>
+      <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
+        <div style={{ display: 'flex', flex: 1, gap: '20px' }}>
+          <div style={{ flex: 1, background: '#fff', borderRadius: '20px', padding: '20px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+            <div style={{ background: 'rgba(26, 38, 82, 0.08)', padding: '12px', borderRadius: '16px', color: nestNavy }}>
                <Users size={24} />
             </div>
             <div>
@@ -50,17 +46,15 @@ const AdminInterns: React.FC = () => {
           <div style={{ flex: 2 }} />
         </div>
 
-        {/* Action Buttons right col */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '140px' }}>
+        <div style={{ minWidth: '160px' }}>
           <Link to="/admin/interns/add" style={{ textDecoration: 'none' }}>
             <button style={{ 
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', 
-              background: '#3b82f6', color: '#fff', border: 'none', padding: '12px', 
-              borderRadius: '12px', fontSize: '14px', fontWeight: 600, cursor: 'pointer',
-              boxShadow: '0 2px 10px rgba(59, 130, 246, 0.2)',
-              width: '100%'
+              background: nestNavy, color: '#fff', border: 'none', padding: '14px 24px', 
+              borderRadius: '14px', fontSize: '14px', fontWeight: 800, cursor: 'pointer',
+              width: '100%', boxShadow: '0 8px 24px rgba(26, 38, 82, 0.2)'
             }}>
-              <Plus size={18} />
+              <Plus size={20} />
               Add Intern
             </button>
           </Link>

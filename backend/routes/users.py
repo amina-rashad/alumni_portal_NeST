@@ -136,3 +136,49 @@ def get_user_by_id(user_id):
         "success": True,
         "data": {"user": public_data}
     }), 200
+
+# ── List Users (for Directory) ──
+
+@users_bp.route("/", methods=["GET"])
+@jwt_required()
+def list_users():
+    """List all registered users with optional search/filtering."""
+    db = get_db()
+    
+    # Simple search & filters from query params
+    search_query = request.args.get("q", "")
+    batch = request.args.get("batch", "")
+    spec = request.args.get("spec", "")
+    
+    # Build MongoDB query
+    query = {}
+    if search_query:
+        query["full_name"] = {"$regex": search_query, "$options": "i"}
+    if batch:
+        query["batch"] = batch
+    if spec:
+        query["specialization"] = spec
+        
+    # Project only necessary fields for directory listing
+    projection = {
+        "_id": 1,
+        "full_name": 1,
+        "user_type": 1,
+        "batch": 1,
+        "specialization": 1,
+        "bio": 1,
+        "profile_picture": 1,
+        "skills": 1
+    }
+    
+    users_cursor = db["users"].find(query, projection)
+    users_list = []
+    
+    for u in users_cursor:
+        u["id"] = str(u.pop("_id"))
+        users_list.append(u)
+        
+    return jsonify({
+        "success": True,
+        "data": {"users": users_list}
+    }), 200

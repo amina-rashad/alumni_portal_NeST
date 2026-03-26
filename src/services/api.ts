@@ -262,3 +262,25 @@ export const jobsApi = {
   getJobById: (jobId: string) =>
     apiRequest(`/jobs/${jobId}`, { method: 'GET' }),
 };
+
+// ── Events API ──
+
+export const eventsApi = {
+  getAllEvents: () =>
+    apiRequest('/events', { method: 'GET' }),
+
+  getEventById: (eventId: string) =>
+    apiRequest(`/events/${eventId}`, { method: 'GET' }),
+
+  registerForEvent: (eventId: string) =>
+    apiRequest(`/events/${eventId}/register`, { method: 'POST' }),
+};
+
+// ── Networking API ──
+
+export const networkingApi = {
+  listAllUsers: (params?: { q?: string; batch?: string; spec?: string }) => {
+    const query = new URLSearchParams(params as any).toString();
+    return apiRequest(`/users?${query}`, { method: 'GET' });
+  },
+};

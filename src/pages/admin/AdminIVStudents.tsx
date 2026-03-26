@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   CalendarDays, Users, Building, GraduationCap, Plus, ChevronDown, 
-  Download, Eye, Edit2, MoreHorizontal, ChevronRight
+  Download, Eye, Edit2, MoreHorizontal, ChevronRight, Search
 } from 'lucide-react';
 import { adminApi } from '../../services/api';
 
@@ -31,12 +31,25 @@ const AdminIVStudents: React.FC = () => {
     }
   };
 
+  const filteredVisits = visits.filter(visit => {
+    const matchesSearch = 
+      visit.college.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      visit.coordName.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesCollege = collegeFilter === 'All' || visit.college === collegeFilter;
+    const matchesYear = yearFilter === 'All' || visit.year === yearFilter;
+    
+    return matchesSearch && matchesCollege && matchesYear;
+  });
+
+  const colleges = Array.from(new Set(visits.map(v => v.college)));
+  const years = Array.from(new Set(visits.map(v => v.year))).sort().reverse();
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      {/* Header */}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
       <div>
-        <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#1e293b', margin: 0 }}>IV Student Management</h1>
-        <p style={{ color: '#64748b', fontSize: '14px', marginTop: '6px' }}>Track and manage visits from various colleges in one place.</p>
+        <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#1e293b', margin: 0 }}>IV Student Management</h1>
+        <p style={{ color: '#64748b', fontSize: '15px', marginTop: '6px' }}>Track and manage visits from various colleges in one place.</p>
       </div>
 
       {/* Stats Row */}
@@ -58,12 +71,11 @@ const AdminIVStudents: React.FC = () => {
           <Link to="/admin/iv-students/add" style={{ textDecoration: 'none' }}>
             <button style={{ 
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', 
-              background: '#3b82f6', color: '#fff', border: 'none', padding: '12px', 
-              borderRadius: '12px', fontSize: '14px', fontWeight: 600, cursor: 'pointer',
-              boxShadow: '0 2px 10px rgba(59, 130, 246, 0.2)',
-              width: '100%'
+              background: nestNavy, color: '#fff', border: 'none', padding: '14px 24px', 
+              borderRadius: '14px', fontSize: '14px', fontWeight: 800, cursor: 'pointer',
+              width: '100%', boxShadow: '0 8px 24px rgba(26, 38, 82, 0.2)'
             }}>
-              <Plus size={18} />
+              <Plus size={20} />
               Add Visit
             </button>
           </Link>

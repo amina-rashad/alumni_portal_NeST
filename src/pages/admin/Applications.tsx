@@ -24,10 +24,16 @@ const Applications: React.FC = () => {
     fetchApps();
   }, []);
 
+  const filteredApplications = applications.filter(app => 
+    app.candidate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    app.candidate.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    app.role.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Pending': return { bg: '#fff7ed', border: '#ffedd5', text: '#9a3412', icon: <Clock size={12} /> };
-      case 'Reviewing': return { bg: '#eff6ff', border: '#dbeafe', text: '#1e40af', icon: <Eye size={12} /> };
+      case 'Reviewing': return { bg: '#e0e7ff', border: '#dbeafe', text: '#1e3a8a', icon: <Eye size={12} /> };
       case 'Interview': return { bg: '#fdf4ff', border: '#fae8ff', text: '#86198f', icon: <Send size={12} /> };
       case 'Hired': return { bg: '#f0fdf4', border: '#dcfce7', text: '#166534', icon: <CheckCircle2 size={12} /> };
       case 'Rejected': return { bg: '#fef2f2', border: '#fee2e2', text: '#991b1b', icon: <XCircle size={12} /> };
@@ -39,8 +45,8 @@ const Applications: React.FC = () => {
     <div style={{ maxWidth: '1440px', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
         <div>
-          <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#1e293b', marginBottom: '8px' }}>Applications Management</h1>
-          <p style={{ color: '#64748b', fontSize: '15px' }}>Track and manage job applications with AI recruitment insights.</p>
+          <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#1e293b', marginBottom: '8px' }}>Applications</h1>
+          <p style={{ color: '#64748b', fontSize: '15px' }}>Track and manage job applications with AI insights.</p>
         </div>
       </div>
 
@@ -78,7 +84,7 @@ const Applications: React.FC = () => {
               placeholder="Search applications..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ padding: '12px 0', border: 'none', background: 'transparent', outline: 'none', fontSize: '14px', width: '100%' }}
+              style={{ padding: '12px 0', border: 'none', background: 'transparent', outline: 'none', fontSize: '14px', width: '100%', color: '#1e293b' }}
             />
           </div>
         </div>
