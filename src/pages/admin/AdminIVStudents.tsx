@@ -1,200 +1,175 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   CalendarDays, Users, Building, GraduationCap, Plus, ChevronDown, 
-  Download, Eye, Edit2, MoreHorizontal, ChevronRight
+  Download, Eye, Edit2, MoreHorizontal, ChevronRight, Search
 } from 'lucide-react';
 
 const AdminIVStudents: React.FC = () => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [collegeFilter, setCollegeFilter] = useState('All');
+  const [yearFilter, setYearFilter] = useState('All');
+  const [statusFilter, setStatusFilter] = useState('All');
+
+  // NeST NAVY BLUE
+  const nestNavy = '#1a2652';
+
   const visits = [
-    { id: 1, date: 'Today', isToday: true, college: 'Mar Athanasius', collegeSub: 'Saintgits', hasSquare: false, students: 45, coordName: 'Alan Mathew', coordEmail: 'alan.mathew@xample.com', notes: 'Workshop on Java\nDevelopment' },
-    { id: 2, date: 'Apr 18,\n2024', isToday: false, college: 'Saintgits', collegeSub: 'Saingits', hasSquare: true, squareColor: '#10b981', students: 60, coordName: 'Rahul Nair', coordEmail: 'rahul.nair@example.com', notes: 'Session on IoT and\nRobotics' },
-    { id: 3, date: 'Apr 15,\n2024', isToday: false, college: 'Rajagiri', collegeSub: 'Rajagiri', hasSquare: true, squareColor: '#10b981', students: 35, coordName: 'Anu Prasad', coordEmail: 'anu.prasad@example.com', notes: 'Company overview &\nhands-on demo' },
-    { id: 4, date: 'Apr 10,\n2024', isToday: false, college: 'Amal Jyothi', collegeSub: 'Saintgits', hasSquare: true, squareColor: '#3b82f6', students: 40, coordName: 'Maya Prasad', coordEmail: 'maya.prasad@example.com', notes: 'Networking and cloud\ncomputing seminar' },
-    { id: 5, date: 'Apr 02,\n2024', isToday: false, college: 'MACFAST', collegeSub: 'Saintgits', hasSquare: true, squareColor: '#10b981', students: 25, coordName: 'Rahul Nair', coordEmail: 'rahul.nair@example.com', notes: 'Introduction to Software\nTesting' },
-    { id: 6, date: 'Mar 25,\n2024', isToday: false, college: 'Mar Athanasius', collegeSub: 'Saintgits', hasSquare: false, students: 50, coordName: 'Alan Mathew', coordEmail: 'alan.mathew@example.com', notes: 'Workshop on Data Science' },
-    { id: 7, date: 'Mar 02,\n2024', isToday: false, college: 'Mah Nair', collegeSub: 'rahul.nair@example.com', hasSquare: false, students: 50, coordName: 'Rahul Nair', coordEmail: 'rahul.nair@example.com', notes: 'Workshop on Data Science' },
+    { id: 1, date: 'Today', year: '2024', isToday: true, college: 'Mar Athanasius', collegeSub: 'Engineering', hasSquare: false, students: 45, coordName: 'Alan Mathew', coordEmail: 'alan.mathew@xample.com', notes: 'Workshop on Java Development' },
+    { id: 2, date: 'Apr 18, 2024', year: '2024', isToday: false, college: 'Saintgits', collegeSub: 'Technology', hasSquare: true, squareColor: '#10b981', students: 60, coordName: 'Rahul Nair', coordEmail: 'rahul.nair@example.com', notes: 'Session on IoT and Robotics' },
+    { id: 3, date: 'Apr 15, 2024', year: '2024', isToday: false, college: 'Rajagiri', collegeSub: 'Applied Sciences', hasSquare: true, squareColor: '#10b981', students: 35, coordName: 'Anu Prasad', coordEmail: 'anu.prasad@example.com', notes: 'Company overview & hands-on demo' },
+    { id: 4, date: 'Apr 10, 2024', year: '2024', isToday: false, college: 'Amal Jyothi', collegeSub: 'Engineering', hasSquare: true, squareColor: nestNavy, students: 40, coordName: 'Maya Prasad', coordEmail: 'maya.prasad@example.com', notes: 'Networking and cloud computing seminar' },
+    { id: 5, date: 'Apr 02, 2024', year: '2024', isToday: false, college: 'MACFAST', collegeSub: 'IT', hasSquare: true, squareColor: '#10b981', students: 25, coordName: 'Rahul Nair', coordEmail: 'rahul.nair@example.com', notes: 'Introduction to Software Testing' },
+    { id: 6, date: 'Mar 25, 2023', year: '2023', isToday: false, college: 'Mar Athanasius', collegeSub: 'Engineering', hasSquare: false, students: 50, coordName: 'Alan Mathew', coordEmail: 'alan.mathew@example.com', notes: 'Workshop on Data Science' },
+    { id: 7, date: 'Mar 02, 2023', year: '2023', isToday: false, college: 'Mah Nair', collegeSub: 'Tech', hasSquare: false, students: 50, coordName: 'Rahul Nair', coordEmail: 'rahul.nair@example.com', notes: 'Workshop on Data Science' },
   ];
 
+  const filteredVisits = visits.filter(visit => {
+    const matchesSearch = 
+      visit.college.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      visit.coordName.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesCollege = collegeFilter === 'All' || visit.college === collegeFilter;
+    const matchesYear = yearFilter === 'All' || visit.year === yearFilter;
+    
+    return matchesSearch && matchesCollege && matchesYear;
+  });
+
+  const colleges = Array.from(new Set(visits.map(v => v.college)));
+  const years = Array.from(new Set(visits.map(v => v.year))).sort().reverse();
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      {/* Header */}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
       <div>
-        <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#1e293b', margin: 0 }}>IV Student Management</h1>
-        <p style={{ color: '#64748b', fontSize: '14px', marginTop: '6px' }}>Track and manage visits from various colleges in one place.</p>
+        <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#1e293b', margin: 0 }}>IV Student Management</h1>
+        <p style={{ color: '#64748b', fontSize: '15px', marginTop: '6px' }}>Track and manage visits from various colleges in one place.</p>
       </div>
 
-      {/* Stats Row */}
-      <div style={{ display: 'flex', gap: '16px' }}>
-        {/* Stat Cards */}
-        <div style={{ display: 'flex', flex: 1, gap: '16px' }}>
-          {/* Total Visits */}
-          <div style={{ flex: 1, background: '#fff', borderRadius: '16px', padding: '16px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{ background: '#fce7f3', padding: '12px', borderRadius: '12px', color: '#be185d' }}>
+      <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
+        <div style={{ display: 'flex', flex: 1, gap: '20px' }}>
+          <div style={{ flex: 1, background: '#fff', borderRadius: '20px', padding: '20px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+            <div style={{ background: 'rgba(236, 72, 153, 0.08)', padding: '12px', borderRadius: '16px', color: '#be185d' }}>
                <CalendarDays size={24} />
             </div>
             <div>
-               <div style={{ fontSize: '20px', fontWeight: 700, color: '#1e293b' }}>82</div>
-               <div style={{ fontSize: '13px', color: '#64748b' }}>Total <span style={{ color: '#10b981', fontWeight: 600 }}>+12.3%</span></div>
+               <div style={{ fontSize: '22px', fontWeight: 800, color: '#1e293b' }}>82</div>
+               <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Total Visits <span style={{ color: '#10b981' }}>+12.3%</span></div>
             </div>
           </div>
 
-          {/* Total Students */}
-          <div style={{ flex: 1, background: '#fff', borderRadius: '16px', padding: '16px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{ background: '#eff6ff', padding: '12px', borderRadius: '12px', color: '#3b82f6' }}>
+          <div style={{ flex: 1, background: '#fff', borderRadius: '20px', padding: '20px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+            <div style={{ background: 'rgba(26, 38, 82, 0.08)', padding: '12px', borderRadius: '16px', color: nestNavy }}>
                <Users size={24} />
             </div>
             <div>
-               <div style={{ fontSize: '20px', fontWeight: 700, color: '#1e293b' }}>1,570</div>
-               <div style={{ fontSize: '13px', color: '#64748b' }}>Total \n\n</div>
-               {/* Note: The UI says "Total viset +12.6%" which implies two lines but formatted similar to total */}
-               <div style={{ fontSize: '13px', color: '#64748b', marginTop: '-18px' }}>Total viset <span style={{ color: '#10b981', fontWeight: 600 }}>+12.6%</span></div>
+               <div style={{ fontSize: '22px', fontWeight: 800, color: '#1e293b' }}>1,570</div>
+               <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Total Students <span style={{ color: '#10b981' }}>+12.6%</span></div>
             </div>
           </div>
 
-          {/* Upcoming Visit */}
-          <div style={{ flex: 1, background: '#fff', borderRadius: '16px', padding: '16px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{ background: '#ecfdf5', padding: '12px', borderRadius: '12px', color: '#059669' }}>
+          <div style={{ flex: 1, background: '#fff', borderRadius: '20px', padding: '20px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+            <div style={{ background: 'rgba(16, 185, 129, 0.08)', padding: '12px', borderRadius: '16px', color: '#059669' }}>
                <Building size={24} />
             </div>
             <div>
-               <div style={{ fontSize: '17px', fontWeight: 700, color: '#1e293b' }}>Mar Athanasius</div>
-               <div style={{ fontSize: '13px', color: '#64748b' }}>Apr 20, 2024</div>
+               <div style={{ fontSize: '18px', fontWeight: 800, color: '#1e293b' }}>Mar Athanasius</div>
+               <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Next Visit: Apr 20</div>
             </div>
           </div>
 
-          {/* Another Stat */}
-          <div style={{ flex: 1, background: '#fff', borderRadius: '16px', padding: '16px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{ background: '#f3e8ff', padding: '12px', borderRadius: '12px', color: '#7e22ce' }}>
+          <div style={{ flex: 1, background: '#fff', borderRadius: '20px', padding: '20px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+            <div style={{ background: 'rgba(126, 34, 206, 0.08)', padding: '12px', borderRadius: '16px', color: '#7e22ce' }}>
                <GraduationCap size={24} />
             </div>
             <div>
-               <div style={{ fontSize: '20px', fontWeight: 700, color: '#1e293b' }}>330</div>
-               <div style={{ fontSize: '13px', color: '#64748b' }}>Saintgits</div>
+               <div style={{ fontSize: '22px', fontWeight: 800, color: '#1e293b' }}>330</div>
+               <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Highest Intake</div>
             </div>
           </div>
         </div>
 
-        {/* Action Buttons right col */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '140px' }}>
+        <div style={{ minWidth: '160px' }}>
           <Link to="/admin/iv-students/add" style={{ textDecoration: 'none' }}>
             <button style={{ 
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', 
-              background: '#3b82f6', color: '#fff', border: 'none', padding: '12px', 
-              borderRadius: '12px', fontSize: '14px', fontWeight: 600, cursor: 'pointer',
-              boxShadow: '0 2px 10px rgba(59, 130, 246, 0.2)',
-              width: '100%'
+              background: nestNavy, color: '#fff', border: 'none', padding: '14px 24px', 
+              borderRadius: '14px', fontSize: '14px', fontWeight: 800, cursor: 'pointer',
+              width: '100%', boxShadow: '0 8px 24px rgba(26, 38, 82, 0.2)'
             }}>
-              <Plus size={18} />
+              <Plus size={20} />
               Add Visit
             </button>
           </Link>
-          <button style={{ 
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
-            background: '#fff', border: '1px solid #e2e8f0', padding: '10px 14px', 
-            borderRadius: '12px', fontSize: '14px', fontWeight: 500, color: '#475569', 
-            cursor: 'pointer'
-          }}>
-            Filter <ChevronDown size={14} />
-          </button>
         </div>
       </div>
 
-      {/* Toolbar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#e2e8f0', border: 'none', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, color: '#334155', cursor: 'pointer' }}>
-            Bulk Actions <ChevronDown size={14} />
-          </button>
-          <button style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', border: 'none', padding: '8px 12px', fontSize: '14px', fontWeight: 500, color: '#475569', cursor: 'pointer' }}>
-            College <ChevronDown size={14} />
-          </button>
-          <button style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', border: 'none', padding: '8px 12px', fontSize: '14px', fontWeight: 500, color: '#475569', cursor: 'pointer' }}>
-            Visit Date <ChevronDown size={14} />
-          </button>
-          <button style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', border: 'none', padding: '8px 12px', fontSize: '14px', fontWeight: 500, color: '#475569', cursor: 'pointer' }}>
-            All <ChevronDown size={14} />
-          </button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px' }}>
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '10px 20px', maxWidth: '400px', width: '100%', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
+            <Search size={18} color="#94a3b8" />
+            <input 
+              type="text" 
+              placeholder="Search by college or coordinator..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{ border: 'none', outline: 'none', marginLeft: '12px', width: '100%', fontSize: '14px', color: '#1e293b', background: 'transparent', fontWeight: 500 }} 
+            />
+          </div>
+
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <select value={collegeFilter} onChange={(e) => setCollegeFilter(e.target.value)} style={{ padding: '12px 18px', borderRadius: '14px', border: '1px solid #e2e8f0', background: '#fff', color: '#1e293b', fontSize: '13px', fontWeight: 700, cursor: 'pointer', outline: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+              <option value="All">All Colleges</option>
+              {colleges.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <select value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} style={{ padding: '12px 18px', borderRadius: '14px', border: '1px solid #e2e8f0', background: '#fff', color: '#1e293b', fontSize: '13px', fontWeight: 700, cursor: 'pointer', outline: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+              <option value="All">All Years</option>
+              {years.map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
+          </div>
         </div>
-        <button style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent', border: 'none', padding: '8px 16px', borderRadius: '8px', fontSize: '14px', fontWeight: 500, color: '#475569', cursor: 'pointer' }}>
+
+        <button style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent', border: '1px solid #e2e8f0', padding: '10px 18px', borderRadius: '12px', fontSize: '13px', fontWeight: 700, color: '#475569', cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }}>
           <Download size={16} /> Export
         </button>
       </div>
 
-      {/* Data Table */}
-      <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+      <div style={{ background: '#fff', borderRadius: '24px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead>
-            <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
-              <th style={{ padding: '16px', width: '48px' }}>
-                <input type="checkbox" style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: '#3b82f6' }} />
-              </th>
-              <th style={{ padding: '16px', fontSize: '13px', fontWeight: 600, color: '#475569' }}>Date</th>
-              <th style={{ padding: '16px', fontSize: '13px', fontWeight: 600, color: '#475569' }}>College</th>
-              <th style={{ padding: '16px', fontSize: '13px', fontWeight: 600, color: '#475569' }}>Students</th>
-              <th style={{ padding: '16px', fontSize: '13px', fontWeight: 600, color: '#475569' }}>Coordinator</th>
-              <th style={{ padding: '16px', fontSize: '13px', fontWeight: 600, color: '#475569' }}>Notes</th>
-              <th style={{ padding: '16px', fontSize: '13px', fontWeight: 600, color: '#475569' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                   Actions <MoreHorizontal size={14} color="#94a3b8" />
-                </div>
-              </th>
+            <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#fcfdfe' }}>
+              <th style={{ padding: '20px 24px', fontSize: '12px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Visit Date</th>
+              <th style={{ padding: '20px', fontSize: '12px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>College</th>
+              <th style={{ padding: '20px', fontSize: '12px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Students</th>
+              <th style={{ padding: '20px', fontSize: '12px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Coordinator</th>
+              <th style={{ padding: '20px', fontSize: '12px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {visits.map((visit, index) => (
-              <tr key={visit.id} style={{ borderBottom: index !== visits.length - 1 ? '1px solid #f1f5f9' : 'none', transition: 'background 0.2s', ...({ ':hover': { background: '#f8fafc' } } as any) }}>
-                <td style={{ padding: '16px', verticalAlign: 'top' }}>
-                  <input type="checkbox" style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: '#3b82f6', marginTop: '4px' }} />
-                </td>
-                <td style={{ padding: '16px', verticalAlign: 'top' }}>
+            {filteredVisits.map((visit, index) => (
+              <tr key={visit.id} style={{ borderBottom: index !== filteredVisits.length - 1 ? '1px solid #f1f5f9' : 'none', transition: 'background 0.2s' }} className="table-row-hover">
+                <td style={{ padding: '20px 24px' }}>
                   {visit.isToday ? (
-                     <span style={{ 
-                       background: '#9f1239', color: '#fff', padding: '6px 12px', 
-                       borderRadius: '16px', fontSize: '12px', fontWeight: 600, display: 'inline-block' 
-                     }}>
-                        {visit.date}
-                     </span>
+                     <span style={{ background: '#9f1239', color: '#fff', padding: '6px 14px', borderRadius: '20px', fontSize: '11px', fontWeight: 800 }}>{visit.date.toUpperCase()}</span>
                   ) : (
-                     <div style={{ fontSize: '14px', color: '#475569', fontWeight: 500, whiteSpace: 'pre-line', lineHeight: '1.4' }}>
-                        {visit.date}
-                     </div>
+                     <div style={{ fontSize: '14px', fontWeight: 700, color: '#475569' }}>{visit.date}</div>
                   )}
                 </td>
-                <td style={{ padding: '16px', verticalAlign: 'top' }}>
-                   <div style={{ fontSize: '14px', fontWeight: 500, color: '#1e293b' }}>{visit.college}</div>
-                   {visit.hasSquare ? (
-                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
-                        <div style={{ width: '12px', height: '8px', borderRadius: '2px', background: visit.squareColor }}></div>
-                        <span style={{ fontSize: '13px', color: '#64748b' }}>{visit.collegeSub}</span>
-                     </div>
-                   ) : (
-                     <div style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>{visit.collegeSub}</div>
-                   )}
+                <td style={{ padding: '20px' }}>
+                   <div style={{ fontSize: '15px', fontWeight: 800, color: '#1e293b' }}>{visit.college}</div>
+                   <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px', fontWeight: 500 }}>{visit.collegeSub}</div>
                 </td>
-                <td style={{ padding: '16px', fontSize: '14px', color: '#1e293b', fontWeight: 500, verticalAlign: 'top' }}>
-                  {visit.students}
+                <td style={{ padding: '20px' }}>
+                   <div style={{ fontSize: '14px', fontWeight: 800, color: nestNavy }}>{visit.students} <span style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8' }}>STUDENTS</span></div>
                 </td>
-                <td style={{ padding: '16px', verticalAlign: 'top' }}>
-                   <div style={{ fontSize: '14px', fontWeight: 500, color: '#1e293b' }}>{visit.coordName}</div>
-                   <div style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>{visit.coordEmail}</div>
+                <td style={{ padding: '20px' }}>
+                   <div style={{ fontSize: '14px', fontWeight: 800, color: '#1e293b' }}>{visit.coordName}</div>
+                   <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 500 }}>{visit.coordEmail}</div>
                 </td>
-                <td style={{ padding: '16px', verticalAlign: 'top' }}>
-                   <div style={{ fontSize: '13px', color: '#475569', whiteSpace: 'pre-line', lineHeight: '1.5' }}>
-                      {visit.notes}
-                   </div>
-                </td>
-                <td style={{ padding: '16px', verticalAlign: 'top' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
-                    <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: '4px' }} title="View">
-                      <Eye size={18} />
-                    </button>
-                    <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: '4px' }} title="Edit">
-                      <Edit2 size={18} />
-                    </button>
-                    <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: '4px' }} title="More">
-                      <MoreHorizontal size={18} />
-                    </button>
+                <td style={{ padding: '20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <button style={{ padding: '8px', borderRadius: '10px', border: 'none', background: '#f8fafc', color: '#64748b', cursor: 'pointer' }}><Eye size={18} /></button>
+                    <button style={{ padding: '8px', borderRadius: '10px', border: 'none', background: '#f8fafc', color: '#64748b', cursor: 'pointer' }}><Edit2 size={18} /></button>
+                    <button style={{ padding: '8px', borderRadius: '10px', border: 'none', background: '#f8fafc', color: '#64748b', cursor: 'pointer' }}><MoreHorizontal size={18} /></button>
                   </div>
                 </td>
               </tr>
@@ -202,26 +177,10 @@ const AdminIVStudents: React.FC = () => {
           </tbody>
         </table>
         
-        {/* Pagination */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', padding: '16px', borderTop: '1px solid #e2e8f0', background: '#fff' }}>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button style={{ padding: '6px 12px', borderRadius: '8px', border: 'none', background: 'transparent', color: '#64748b', fontSize: '13px', fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              Previous
-            </button>
-            <button style={{ width: '32px', height: '32px', borderRadius: '8px', border: 'none', background: '#3b82f6', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              1
-            </button>
-            <button style={{ width: '32px', height: '32px', borderRadius: '8px', border: 'none', background: 'transparent', color: '#475569', fontSize: '13px', fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              2
-            </button>
-            <button style={{ width: '32px', height: '32px', borderRadius: '8px', border: 'none', background: 'transparent', color: '#475569', fontSize: '13px', fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              3
-            </button>
-            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', color: '#94a3b8' }}>...</span>
-            <button style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#f8fafc', color: '#475569', fontSize: '13px', fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              Next <ChevronRight size={14} />
-            </button>
-          </div>
+        <div style={{ padding: '24px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', background: '#fcfdfe' }}>
+            <button style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#fff', fontSize: '13px', fontWeight: 800, color: '#1e293b', cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }}>
+             Next Page <ChevronRight size={16} />
+           </button>
         </div>
       </div>
     </div>
