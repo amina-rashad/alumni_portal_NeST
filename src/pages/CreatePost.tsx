@@ -1,31 +1,202 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { 
+  ArrowLeft, ImageIcon, FileText, 
+  MapPin, Sparkles, 
+  Send, X, Globe, Lock
+} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const CreatePost: React.FC = () => {
+  const navigate = useNavigate();
+  const [content, setContent] = useState('');
+  const [tags, setTags] = useState<string[]>(['NeSTLife']);
+  const [newTag, setNewTag] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [visibility, setVisibility] = useState<'Public' | 'Connections'>('Public');
+
+  const handlePostSubmit = () => {
+    if (!content.trim()) return;
+    setIsSubmitting(true);
+    // Mock API delay
+    setTimeout(() => {
+      setIsSubmitting(false);
+      navigate('/social/feed');
+    }, 1500);
+  };
+
+  const addTag = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && newTag.trim()) {
+      e.preventDefault();
+      if (!tags.includes(newTag.trim())) {
+        setTags([...tags, newTag.trim()]);
+      }
+      setNewTag('');
+    }
+  };
+
+  const removeTag = (tag: string) => {
+    setTags(tags.filter(t => t !== tag));
+  };
+
   return (
-    <motion.div 
-      className="page-container"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '2rem' }}>
-        <Link to="/" style={{ display: 'flex', alignItems: 'center', color: '#DC2626', textDecoration: 'none', marginRight: '1rem' }}>
-          <ArrowLeft size={20} style={{ marginRight: '0.5rem' }} /> Back
-        </Link>
-        <h1 style={{ margin: 0, color: '#333' }}>Create Post</h1>
-      </div>
+    <div style={{ maxWidth: '800px', margin: '0 auto', paddingBottom: '5rem' }}>
       
-      <div style={{ background: '#fff', padding: '2rem', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
-        <h2>Welcome to the Create Post Page</h2>
-        <p style={{ color: '#666', lineHeight: 1.6 }}>
-          This page is currently under rapid development. It will soon contain all the fully functional professional features required for CreatePost.
-        </p>
+      {/* Header */}
+      <div style={{ marginBottom: '2.5rem' }}>
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <button 
+            onClick={() => navigate(-1)}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64748B', background: 'none', border: 'none', padding: 0.5, cursor: 'pointer', fontSize: '0.9rem', marginBottom: '1rem' }}
+          >
+            <ArrowLeft size={16} /> Back
+          </button>
+          <h1 style={{ fontSize: '2.2rem', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', marginBottom: '0.5rem' }}>
+            Inspire the <span style={{ color: '#d32f2f' }}>Community</span>
+          </h1>
+          <p style={{ color: '#64748B', fontSize: '1.1rem' }}>Share your achievements, insights, or updates with the network.</p>
+        </motion.div>
       </div>
-    </motion.div>
+
+      <div className="luxury-card" style={{ padding: '2.5rem', border: '1px solid #E2E8F0', position: 'relative', overflow: 'hidden' }}>
+        {/* User Context */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#F1F5F9', border: '2px solid #fff', boxShadow: '0 0 0 2px #E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#0F172A' }}>
+              NS
+            </div>
+            <div>
+              <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#0F172A' }}>Noble Sibi</h4>
+              <button 
+                onClick={() => setVisibility(visibility === 'Public' ? 'Connections' : 'Public')}
+                style={{ 
+                  marginTop: '0.2rem', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '0.4rem', 
+                  fontSize: '0.75rem', 
+                  fontWeight: 700, 
+                  color: '#64748B',
+                  background: '#F1F5F9',
+                  border: 'none',
+                  padding: '0.25rem 0.6rem',
+                  borderRadius: '6px',
+                  cursor: 'pointer'
+                }}
+              >
+                {visibility === 'Public' ? <Globe size={12} /> : <Lock size={12} />} {visibility}
+              </button>
+            </div>
+          </div>
+          
+          <Sparkles size={24} color="#f59e0b" style={{ opacity: 0.2 }} />
+        </div>
+
+        {/* Post Area */}
+        <textarea 
+          placeholder="What's your story today?"
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          style={{ 
+            width: '100%', 
+            minHeight: '200px', 
+            border: 'none', 
+            background: 'transparent', 
+            fontSize: '1.25rem', 
+            lineHeight: 1.6, 
+            color: '#0F172A', 
+            outline: 'none',
+            resize: 'none',
+            marginBottom: '1rem'
+          }}
+        />
+
+        {/* Tags */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', marginBottom: '2rem' }}>
+          {tags.map(tag => (
+            <motion.span 
+              layout
+              key={tag} 
+              style={{ background: '#F1F5F9', color: '#0F172A', padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+            >
+              #{tag} <X size={14} style={{ cursor: 'pointer' }} onClick={() => removeTag(tag)} />
+            </motion.span>
+          ))}
+          <input 
+            type="text" 
+            placeholder="Add tag..."
+            value={newTag}
+            onChange={(e) => setNewTag(e.target.value)}
+            onKeyDown={addTag}
+            style={{ 
+              background: 'transparent', 
+              border: 'none', 
+              outline: 'none', 
+              fontSize: '0.85rem', 
+              fontWeight: 700, 
+              color: '#d32f2f',
+              width: '120px'
+            }}
+          />
+        </div>
+
+        {/* Media Attachments (Mock) */}
+        <div style={{ display: 'flex', gap: '0.75rem', padding: '1.5rem 0', borderTop: '1px solid #F1F5F9' }}>
+          <button style={{ flex: 1, padding: '1rem', borderRadius: '14px', border: '1px solid #E2E8F0', background: '#fff', color: '#64748B', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', cursor: 'pointer', transition: 'all 0.2s' }}>
+            <ImageIcon size={20} color="#10B981" /> Photo / Video
+          </button>
+          <button style={{ flex: 1, padding: '1rem', borderRadius: '14px', border: '1px solid #E2E8F0', background: '#fff', color: '#64748B', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', cursor: 'pointer', transition: 'all 0.2s' }}>
+            <FileText size={20} color="#3B82F6" /> Document
+          </button>
+          <button style={{ flex: 1, padding: '1rem', borderRadius: '14px', border: '1px solid #E2E8F0', background: '#fff', color: '#64748B', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', cursor: 'pointer', transition: 'all 0.2s' }}>
+            <MapPin size={20} color="#EF4444" /> Location
+          </button>
+        </div>
+
+        {/* Post Button */}
+        <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>
+          <button 
+             onClick={handlePostSubmit}
+             disabled={!content.trim() || isSubmitting}
+             style={{ 
+               padding: '1rem 3rem', 
+               borderRadius: '16px', 
+               background: content.trim() ? '#0F172A' : '#F1F5F9', 
+               color: content.trim() ? 'white' : '#94A3B8', 
+               border: 'none', 
+               fontWeight: 800, 
+               fontSize: '1.1rem',
+               cursor: content.trim() ? 'pointer' : 'default',
+               display: 'flex',
+               alignItems: 'center',
+               gap: '0.75rem',
+               transition: 'all 0.3s'
+             }}
+          >
+            {isSubmitting ? 'Posting...' : 'Post Update'} <Send size={20} />
+          </button>
+        </div>
+      </div>
+
+      <style>{`
+        .luxury-card {
+           background: #ffffff;
+           border-radius: 32px;
+           box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+           transition: all 0.4s ease;
+        }
+        button:not(:disabled):hover {
+           transform: translateY(-2px);
+           box-shadow: 0 8px 16px rgba(0,0,0,0.06);
+        }
+        button:not(:disabled):active {
+           transform: translateY(0);
+        }
+      `}</style>
+    </div>
   );
 };
 
