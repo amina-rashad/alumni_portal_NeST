@@ -31,16 +31,7 @@ const AdminIVStudents: React.FC = () => {
     }
   };
 
-  const filteredVisits = visits.filter(visit => {
-    const matchesSearch = 
-      visit.college.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      visit.coordName.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesCollege = collegeFilter === 'All' || visit.college === collegeFilter;
-    const matchesYear = yearFilter === 'All' || visit.year === yearFilter;
-    
-    return matchesSearch && matchesCollege && matchesYear;
-  });
+  const nestNavy = '#1a2652';
 
   const colleges = Array.from(new Set(visits.map(v => v.college)));
   const years = Array.from(new Set(visits.map(v => v.year))).sort().reverse();

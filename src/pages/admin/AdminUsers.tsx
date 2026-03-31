@@ -1,16 +1,42 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { 
-  Search, Plus, 
-  Eye, Edit2, MoreHorizontal
+  Search, Plus, UserPlus,
+  Eye, Edit2, MoreHorizontal,
+  ChevronDown, Filter
 } from 'lucide-react';
 import { adminApi } from '../../services/api';
+import { useNavigate } from 'react-router-dom';
 
 const AdminUsers: React.FC = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Filter States
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [roleFilter, setRoleFilter] = useState('All');
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [skillFilter, setSkillFilter] = useState('');
+  const [experienceFilter, setExperienceFilter] = useState('');
+  
+  const filterRef = useRef<HTMLDivElement>(null);
+
   const [users, setUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const nestNavy = '#1a2652';
+
+  // Handle outside click for filter dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+        setIsFilterOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [filterRef]);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -24,17 +50,22 @@ const AdminUsers: React.FC = () => {
     fetchUsers();
   }, []);
 
-  const filteredUsers = users.filter(user => 
-    user.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    user.email?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
   const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          user.email.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = 
+      (user.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+       user.email?.toLowerCase().includes(searchQuery.toLowerCase()));
+    
     const matchesRole = roleFilter === 'All' || user.role === roleFilter;
-    const matchesStatus = statusFilter === 'All' || user.status === statusFilter;
-    return matchesSearch && matchesRole && matchesStatus;
+    const matchesStatus = statusFilter === 'All' || (user.is_active ? 'Active' : 'Inactive') === statusFilter;
+    
+    // Extended filter logic
+    const userSkills = user.skills || ''; // Fallback for backend mock
+    const matchesSkills = skillFilter === '' || userSkills.toLowerCase().includes(skillFilter.toLowerCase());
+    
+    const userExp = user.experience || ''; 
+    const matchesExperience = experienceFilter === '' || userExp === experienceFilter;
+
+    return matchesSearch && matchesRole && matchesStatus && matchesSkills && matchesExperience;
   });
 
   return (
@@ -83,27 +114,175 @@ const AdminUsers: React.FC = () => {
               }} 
             />
           </div>
+
+          {/* Filter Button */}
+          <div style={{ position: 'relative' }} ref={filterRef}>
+            <button 
+              onClick={() => setIsFilterOpen(!isFilterOpen)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 16px',
+                background: isFilterOpen ? '#f1f5f9' : '#fff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '12px',
+                color: '#475569',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: '14px',
+                transition: 'background 0.2s'
+              }}
+            >
+              <Filter size={18} /> 
+              Filters
+              {(roleFilter !== 'All' || statusFilter !== 'All' || skillFilter !== '' || experienceFilter !== '') && (
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#3b82f6', marginLeft: '4px' }}></div>
+              )}
+            </button>
+
+            {/* Filter Dropdown Modal */}
+            {isFilterOpen && (
+              <div style={{
+                position: 'absolute',
+                top: 'calc(100% + 8px)',
+                left: 0,
+                width: '320px',
+                background: 'rgba(255, 255, 255, 0.3)',
+                backdropFilter: 'blur(24px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+                border: '1px solid rgba(255, 255, 255, 0.8)',
+                borderRadius: '16px',
+                boxShadow: '0 12px 32px rgba(31, 38, 135, 0.1)',
+                padding: '24px',
+                zIndex: 10,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '20px'
+              }}>
+                <style>{`
+                  .glass-select {
+                    appearance: none;
+                    background: rgba(255, 255, 255, 0.4);
+                    backdrop-filter: blur(12px);
+                    -webkit-backdrop-filter: blur(12px);
+                    border: 1px solid rgba(255, 255, 255, 0.6);
+                    color: #1e293b;
+                    outline: none;
+                    transition: all 0.3s ease;
+                    box-shadow: inset 0 2px 6px rgba(255, 255, 255, 0.3);
+                  }
+                  .glass-select:hover {
+                    background: rgba(255, 255, 255, 0.5);
+                    border-color: rgba(255, 255, 255, 0.8);
+                  }
+                  .glass-select:focus {
+                    background: rgba(255, 255, 255, 0.6);
+                    border-color: #3b82f6;
+                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2), inset 0 2px 6px rgba(255, 255, 255, 0.4);
+                  }
+                  .glass-select-container {
+                    position: relative;
+                  }
+                  .glass-select-icon {
+                    position: absolute;
+                    right: 12px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    pointer-events: none;
+                    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.3s ease;
+                    color: #64748b;
+                  }
+                  .glass-select:focus + .glass-select-icon {
+                    transform: translateY(-50%) rotate(180deg);
+                    color: #2563eb;
+                  }
+                  .glass-select option {
+                    background: #fff;
+                    color: #1e293b;
+                  }
+                `}</style>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontWeight: 800, color: '#1e293b', fontSize: '15px' }}>Filter Users</span>
+                  <span 
+                    onClick={() => {
+                      setRoleFilter('All');
+                      setStatusFilter('All');
+                      setSkillFilter('');
+                      setExperienceFilter('');
+                    }}
+                    style={{ fontSize: '13px', color: '#2563eb', cursor: 'pointer', fontWeight: 800 }}
+                  >
+                    Reset All
+                  </span>
+                </div>
+
+                <div style={{ height: '1px', background: 'rgba(0,0,0,0.06)', margin: '-4px 0', borderBottom: '1px solid rgba(255,255,255,0.4)' }}></div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 700, color: '#475569' }}>Role</label>
+                  <div className="glass-select-container">
+                    <select className="glass-select" value={roleFilter} onChange={e => setRoleFilter(e.target.value)} style={{ width: '100%', padding: '10px 12px', paddingRight: '36px', borderRadius: '10px', fontSize: '14px', cursor: 'pointer' }}>
+                      <option value="All">All Roles</option>
+                      <option value="user">Alumni / User</option>
+                      <option value="admin">System Admin</option>
+                      <option value="intern">Intern</option>
+                      <option value="staff">Staff</option>
+                    </select>
+                    <ChevronDown className="glass-select-icon" size={16} />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 700, color: '#475569' }}>Status</label>
+                  <div className="glass-select-container">
+                    <select className="glass-select" value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ width: '100%', padding: '10px 12px', paddingRight: '36px', borderRadius: '10px', fontSize: '14px', cursor: 'pointer' }}>
+                      <option value="All">All Statuses</option>
+                      <option value="Active">Active</option>
+                      <option value="Inactive">Inactive</option>
+                    </select>
+                    <ChevronDown className="glass-select-icon" size={16} />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 700, color: '#475569' }}>Primary Skills</label>
+                  <div className="glass-select-container">
+                    <select className="glass-select" value={skillFilter} onChange={e => setSkillFilter(e.target.value)} style={{ width: '100%', padding: '10px 12px', paddingRight: '36px', borderRadius: '10px', fontSize: '14px', cursor: 'pointer' }}>
+                      <option value="">Any Skill</option>
+                      <option value="React">React / React Native</option>
+                      <option value="Node.js">Node.js</option>
+                      <option value="Python">Python</option>
+                      <option value="Java">Java / Spring</option>
+                      <option value="C++">C++</option>
+                      <option value="Angular">Angular</option>
+                      <option value="UI/UX Design">UI/UX Design</option>
+                      <option value="Data Analysis">Data Science / Analysis</option>
+                      <option value="Marketing">Marketing</option>
+                      <option value="Project Management">Project Management</option>
+                    </select>
+                    <ChevronDown className="glass-select-icon" size={16} />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 700, color: '#475569' }}>Years of Experience</label>
+                  <div className="glass-select-container">
+                    <select className="glass-select" value={experienceFilter} onChange={e => setExperienceFilter(e.target.value)} style={{ width: '100%', padding: '10px 12px', paddingRight: '36px', borderRadius: '10px', fontSize: '14px', cursor: 'pointer' }}>
+                      <option value="">Any Experience</option>
+                      <option value="0-2">0 - 2 years</option>
+                      <option value="3-5">3 - 5 years</option>
+                      <option value="6-10">6 - 10 years</option>
+                      <option value="10+">10+ years</option>
+                    </select>
+                    <ChevronDown className="glass-select-icon" size={16} />
+                  </div>
+                </div>
+
+              </div>
+            )}
+          </div>
         </div>
-        
-        <Link to="/admin/users/add" style={{ textDecoration: 'none' }}>
-          <button style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '8px', 
-            background: '#3b82f6', 
-            color: '#fff', 
-            border: 'none', 
-            padding: '10px 20px', 
-            borderRadius: '12px', 
-            fontSize: '14px', 
-            fontWeight: 600, 
-            cursor: 'pointer',
-            boxShadow: '0 2px 10px rgba(59, 130, 246, 0.2)'
-          }}>
-            <Plus size={18} />
-            Add User
-          </button>
-        </Link>
       </div>
 
       {/* Data Table */}

@@ -17,7 +17,7 @@ const AdminJobs: React.FC = () => {
       setIsLoading(true);
       const res = await jobsApi.getAllJobs();
       if (res.success && res.data) {
-        setJobs(res.data.jobs);
+        setJobs((res.data as any).jobs || []);
       }
       setIsLoading(false);
     };
@@ -64,7 +64,7 @@ const AdminJobs: React.FC = () => {
           <Link to="/admin/jobs/post" style={{ textDecoration: 'none' }}>
             <button style={{ 
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', 
-              background: nestNavy, color: '#fff', border: 'none', padding: '14px 24px', 
+              background: '#1A2652', color: '#fff', border: 'none', padding: '14px 24px', 
               borderRadius: '14px', fontSize: '14px', fontWeight: 800, cursor: 'pointer',
               width: '100%', boxShadow: '0 8px 24px rgba(26, 38, 82, 0.2)'
             }}>

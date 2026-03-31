@@ -9,6 +9,7 @@ import { adminApi } from '../../services/api';
 const AdminInterns: React.FC = () => {
   const [interns, setInterns] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const nestNavy = '#1a2652';
 
   useEffect(() => {
     const fetchInterns = async () => {

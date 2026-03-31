@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { motion, type Variants } from 'framer-motion';
-import Lenis from '@studio-freight/lenis';
 import { 
   Briefcase, Calendar, Users, Star, 
   Activity, Image as ImageIcon, MapPin, 

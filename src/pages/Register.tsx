@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Mail, Lock, Phone, GraduationCap, ChevronRight, ArrowLeft, ShieldCheck, CheckCircle2, PartyPopper, Eye, EyeOff, Linkedin, Users } from 'lucide-react';
+import { User, Mail, Lock, Phone, GraduationCap, ChevronRight, ArrowLeft, ShieldCheck, CheckCircle2, Eye, EyeOff, Linkedin } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import nestMainLogo from '../assets/nest_logo.png';
 import nestIcon from '../assets/nest_icon.png';
@@ -11,7 +11,6 @@ type SocialProvider = 'Google' | 'LinkedIn' | 'Microsoft' | null;
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
-  const [showSuccess, setShowSuccess] = useState(false);
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -80,14 +79,6 @@ const Register: React.FC = () => {
     }
   };
 
-  const handleSocialSignIn = (provider: SocialProvider) => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      setActiveProvider(provider);
-    }, 600);
-  };
-
   const handleAccountSelect = (email: string) => {
     setActiveProvider(null);
     setIsLoading(true);
@@ -128,44 +119,17 @@ const Register: React.FC = () => {
 
   return (
     <div className="auth-page">
-      <AnimatePresence mode="wait">
-        {showSuccessPopup && (
-          <motion.div 
-            key="success-popup"
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }} 
-            exit={{ opacity: 0 }}
-            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.9)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(12px)' }}
-          >
-            <motion.div 
-              initial={{ scale: 0.9, y: 20, opacity: 0 }} 
-              animate={{ scale: 1, y: 0, opacity: 1 }} 
-              exit={{ scale: 0.9, y: 20, opacity: 0 }}
-              style={{ background: 'white', padding: '40px', borderRadius: '24px', maxWidth: '440px', width: '90%', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}
-            >
-              <div style={{ width: '150px', height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
-                <img src={nestIcon} alt="NeST" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-              </div>
-              <h3 style={{ fontSize: '28px', fontWeight: 800, color: '#1e293b', marginBottom: '12px' }}>Registration Successful!</h3>
-              <p style={{ color: '#64748b', fontSize: '15px', lineHeight: '1.6', marginBottom: '32px' }}>Welcome to the NeST Digital talent network. Your account has been created successfully.</p>
-              <button 
-                onClick={() => navigate('/login')} 
-                className="auth-btn" 
-                style={{ width: '100%', padding: '16px', fontSize: '16px' }}
-              >
-                Go to Login Page
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <Link to="/" className="back-home">
         <ArrowLeft size={20} />
         <span>Back to Home</span>
       </Link>
-      
-      <div className="auth-container register-layout">
+
+      <motion.div 
+        className="auth-container register-layout"
+        initial={{ opacity: 0, y: 30, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+      >
         <div className="auth-form-side">
           <motion.div 
             className="auth-header"
@@ -206,21 +170,21 @@ const Register: React.FC = () => {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
                 >
-                  <div className="input-group">
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="input-group">
                     <label>Full Name</label>
                     <div className="input-wrapper">
                       <User className="input-icon" size={18} />
                       <input type="text" name="fullName" placeholder="name" required value={formData.fullName} onChange={handleChange} />
                     </div>
-                  </div>
-                  <div className="input-group">
+                  </motion.div>
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="input-group">
                     <label>Email Address</label>
                     <div className="input-wrapper">
                       <Mail className="input-icon" size={18} />
                       <input type="email" name="email" placeholder="email address" required value={formData.email} onChange={handleChange} />
                     </div>
-                  </div>
-                  <div className="input-group">
+                  </motion.div>
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="input-group">
                     <label>Password</label>
                     <div className="input-wrapper">
                       <Lock className="input-icon" size={18} />
@@ -229,10 +193,10 @@ const Register: React.FC = () => {
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
                     </div>
-                  </div>
-                  <button type="button" className="auth-btn next-step-btn" style={{ marginTop: '24px', position: 'relative' }} onClick={handleNextStep}>
+                  </motion.div>
+                  <motion.button initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} type="button" className="auth-btn next-step-btn" style={{ marginTop: '24px', position: 'relative' }} onClick={handleNextStep}>
                     Next Step <ChevronRight size={18} style={{ marginLeft: '8px' }} />
-                  </button>
+                  </motion.button>
                 </motion.div>
               ) : (
                 <motion.div 
@@ -297,6 +261,26 @@ const Register: React.FC = () => {
         </div>
 
         <div className="auth-image-side register-bg">
+          <motion.div 
+            className="background-motion"
+            animate={{ 
+              scale: [1, 1.1, 1],
+              rotate: [0, 1, 0]
+            }}
+            transition={{ 
+              duration: 20, 
+              repeat: Infinity, 
+              ease: "linear" 
+            }}
+            style={{ 
+              position: 'absolute', 
+              top: 0, 
+              left: 0, 
+              width: '100%', 
+              height: '100%', 
+              zIndex: 0 
+            }}
+          />
           <div className="image-overlay"></div>
           
           <motion.div 
@@ -324,20 +308,63 @@ const Register: React.FC = () => {
               </p>
               <div className="auth-stats">
                 <div className="auth-stat">
-                  <strong>5K+</strong>
+                  <motion.strong
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.5, type: "spring", stiffness: 100 }}
+                  >
+                    5K+
+                  </motion.strong>
                   <span>Alumni</span>
                 </div>
                 <div className="auth-stat">
-                  <strong>300+</strong>
+                  <motion.strong
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.7, type: "spring", stiffness: 100 }}
+                  >
+                    300+
+                  </motion.strong>
                   <span>Jobs</span>
                 </div>
               </div>
             </div>
           </motion.div>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Social Auth Modal */}
+      <AnimatePresence mode="wait">
+        {showSuccessPopup && (
+          <motion.div 
+            key="success-popup"
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.9)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(12px)' }}
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20, opacity: 0 }} 
+              animate={{ scale: 1, y: 0, opacity: 1 }} 
+              exit={{ scale: 0.9, y: 20, opacity: 0 }}
+              style={{ background: 'white', padding: '40px', borderRadius: '24px', maxWidth: '440px', width: '90%', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}
+            >
+              <div style={{ width: '150px', height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+                <img src={nestIcon} alt="NeST" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              </div>
+              <h3 style={{ fontSize: '28px', fontWeight: 800, color: '#1e293b', marginBottom: '12px' }}>Registration Successful!</h3>
+              <p style={{ color: '#64748b', fontSize: '15px', lineHeight: '1.6', marginBottom: '32px' }}>Welcome to the NeST Digital talent network. Your account has been created successfully.</p>
+              <button 
+                onClick={() => navigate('/login')} 
+                className="auth-btn" 
+                style={{ width: '100%', padding: '16px', fontSize: '16px' }}
+              >
+                Go to Login Page
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {activeProvider && (
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(8px)' }}>
