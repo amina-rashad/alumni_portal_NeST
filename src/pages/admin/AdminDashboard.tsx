@@ -5,9 +5,13 @@ import {
   Plus, Calendar, BookOpen, Clock, 
   Activity
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { adminApi } from '../../services/api';
 
+const nestNavy = '#1a2652';
+
 const AdminDashboard: React.FC = () => {
+  const navigate = useNavigate();
   const [statsData, setStatsData] = useState({
     total_users: 0,
     interns: 0,
@@ -26,10 +30,10 @@ const AdminDashboard: React.FC = () => {
   }, []);
 
   const stats = [
-    { title: 'Total Users', value: statsData.total_users.toLocaleString(), trend: '+0%', icon: <Users size={24} color="#3b82f6" />, bg: '#eff6ff' },
-    { title: 'Interns', value: statsData.interns.toLocaleString(), trend: '+0%', icon: <UserCheck size={24} color="#06b6d4" />, bg: '#ecfeff' },
-    { title: 'Active Jobs', value: statsData.active_jobs.toLocaleString(), trend: '+0%', icon: <Briefcase size={24} color="#6366f1" />, bg: '#eef2ff' },
-    { title: 'Applications', value: statsData.applications.toLocaleString(), trend: '+0%', icon: <FileText size={24} color="#f59e0b" />, bg: '#fffbeb' },
+    { title: 'Total Users', value: statsData.total_users.toLocaleString(), trend: '+0%', icon: Users, color: '#3b82f6', bg: '#eff6ff' },
+    { title: 'Interns', value: statsData.interns.toLocaleString(), trend: '+0%', icon: UserCheck, color: '#06b6d4', bg: '#ecfeff' },
+    { title: 'Active Jobs', value: statsData.active_jobs.toLocaleString(), trend: '+0%', icon: Briefcase, color: '#6366f1', bg: '#eef2ff' },
+    { title: 'Applications', value: statsData.applications.toLocaleString(), trend: '+0%', icon: FileText, color: '#f59e0b', bg: '#fffbeb' },
   ];
 
   const recentActivity = [
@@ -200,7 +204,7 @@ const AdminDashboard: React.FC = () => {
                   </div>
                 ))}
               </div>
-           </section>
+            </div>
 
            {/* Global Actions */}
            <section style={{ background: '#fff', borderRadius: '32px', padding: '32px', border: `2px solid ${nestNavy}15`, boxShadow: '0 10px 30px rgba(26, 38, 82, 0.04)' }}>
