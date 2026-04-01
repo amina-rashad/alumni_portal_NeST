@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { 
   Search, Plus, 
-  Eye, Edit2, MoreHorizontal
+  Eye, Edit2, MoreHorizontal, UserPlus
 } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
 import { adminApi } from '../../services/api';
 
 const AdminUsers: React.FC = () => {
+  const nestNavy = '#1a2652';
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [users, setUsers] = useState<any[]>([]);
@@ -24,17 +25,12 @@ const AdminUsers: React.FC = () => {
     fetchUsers();
   }, []);
 
-  const filteredUsers = users.filter(user => 
-    user.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    user.email?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          user.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesRole = roleFilter === 'All' || user.role === roleFilter;
-    const matchesStatus = statusFilter === 'All' || user.status === statusFilter;
-    return matchesSearch && matchesRole && matchesStatus;
+  const filteredUsers = users.filter((user) => {
+    const searchLower = searchQuery.toLowerCase();
+    return (
+      user.full_name?.toLowerCase().includes(searchLower) ||
+      user.email?.toLowerCase().includes(searchLower)
+    );
   });
 
   return (

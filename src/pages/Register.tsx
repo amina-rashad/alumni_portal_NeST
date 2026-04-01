@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Mail, Lock, Phone, GraduationCap, ChevronRight, ArrowLeft, ShieldCheck, CheckCircle2, PartyPopper, Eye, EyeOff, Linkedin, Users } from 'lucide-react';
+import { User, Mail, Lock, Phone, GraduationCap, ChevronRight, ArrowLeft, ShieldCheck, CheckCircle2, PartyPopper, Eye, EyeOff, Linkedin, Users, Menu, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import nestMainLogo from '../assets/nest_logo.png';
 import nestIcon from '../assets/nest_icon.png';
@@ -11,13 +11,14 @@ type SocialProvider = 'Google' | 'LinkedIn' | 'Microsoft' | null;
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
-  const [showSuccess, setShowSuccess] = useState(false);
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [activeProvider, setActiveProvider] = useState<SocialProvider>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -27,6 +28,12 @@ const Register: React.FC = () => {
     batch: '',
     specialization: ''
   });
+
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 30);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -80,6 +87,7 @@ const Register: React.FC = () => {
     }
   };
 
+
   const handleSocialSignIn = (provider: SocialProvider) => {
     setIsLoading(true);
     setTimeout(() => {
@@ -126,9 +134,40 @@ const Register: React.FC = () => {
     }
   };
 
+  const navLinks = [
+    { name: 'Home', href: '/#home' },
+    { name: 'About', href: '/#about' },
+    { name: 'Features', href: '/#features' },
+    { name: 'User Types', href: '/#users' },
+  ];
+
   return (
-    <div className="auth-page">
-      <AnimatePresence mode="wait">
+    <div className="auth-page" style={{ paddingTop: '80px' }}>
+      
+      {/* -- Header -- */}
+      <header className={`header ${isScrolled ? 'header-scrolled' : 'header-glass'}`}>
+        <div className="container header-container">
+          <Link to="/" className="logo">
+            <img src={nestMainLogo} alt="NeST Digital" className="nest-main-logo" style={{ background: '#fff', padding: '6px 14px', borderRadius: '8px' }} />
+          </Link>
+          <nav className="desktop-nav">
+            <ul className="nav-list">
+              {navLinks.map((link) => (
+                <li key={link.name}>
+                  <Link to={link.href} className="nav-link">{link.name}</Link>
+                </li>
+              ))}
+            </ul>
+            <Link to="/login" className="btn-navy">LOGIN</Link>
+            <Link to="/register" className="btn-red">REGISTER</Link>
+          </nav>
+          <button className="mobile-menu-toggle" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+            {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
+          </button>
+        </div>
+      </header>
+
+      <AnimatePresence>
         {showSuccessPopup && (
           <motion.div 
             key="success-popup"
@@ -160,11 +199,6 @@ const Register: React.FC = () => {
         )}
       </AnimatePresence>
 
-      <Link to="/" className="back-home">
-        <ArrowLeft size={20} />
-        <span>Back to Home</span>
-      </Link>
-      
       <div className="auth-container register-layout">
         <div className="auth-form-side">
           <motion.div 
@@ -224,7 +258,7 @@ const Register: React.FC = () => {
                     <label>Password</label>
                     <div className="input-wrapper">
                       <Lock className="input-icon" size={18} />
-                      <input type={showPassword ? "text" : "password"} name="password" placeholder="••••••••" required value={formData.password} onChange={handleChange} />
+                      <input type={showPassword ? "text" : "password"} name="password" placeholder="........" required value={formData.password} onChange={handleChange} />
                       <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '14px', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>

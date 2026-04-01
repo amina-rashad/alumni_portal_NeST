@@ -8,7 +8,7 @@ import {
   Calendar, Clock, Star, TrendingUp, Target, Award, Zap, Globe
 } from 'lucide-react';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import '../App.css';
 import heroBg from '../assets/hero-bg.jpg';
 import splash1 from '../assets/splash1.jpg';
@@ -16,7 +16,7 @@ import splash2 from '../assets/splash2.jpg';
 import splash3 from '../assets/splash3.jpg';
 import nestMainLogo from '../assets/nest_logo.png';
 
-/* ── Animated Counter ── */
+/* -- Animated Counter -- */
 const Counter: React.FC<{ end: number; suffix: string; label: string }> = ({ end, suffix, label }) => {
   const [count, setCount] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
@@ -77,10 +77,12 @@ const AboutSplash: React.FC = () => {
 };
 
 const Home: React.FC = () => {
+  const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('#home');
   const [splashIndex, setSplashIndex] = useState(0);
+  const [selectedUserType, setSelectedUserType] = useState<number | null>(null);
   const splashImages = [splash1, splash2, splash3];
   const splashLabels = ['Corporate Excellence', 'Team Collaboration', 'Innovation at Work'];
 
@@ -127,7 +129,7 @@ const Home: React.FC = () => {
 
   return (
     <div className="app">
-      {/* ── Header ── */}
+      {/* -- Header -- */}
       <header className={`header ${isScrolled ? 'header-scrolled' : ''}`}>
         <div className="container header-container">
           <a href="#home" className="logo">
@@ -259,7 +261,7 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* ── Stats Bar ── */}
+      {/* -- Stats Bar -- */}
       <section className="stats-section">
         <div className="container stats-grid">
           <Counter end={5000} suffix="+" label="Portal Members" />
@@ -269,7 +271,7 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* ── About ── */}
+      {/* -- About -- */}
       <section id="about" className="about-section">
         <div className="container about-grid">
           <AboutSplash />
@@ -297,7 +299,7 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* ── Features ── */}
+      {/* -- Features -- */}
       <section id="features" className="features-section">
         <div className="container">
           <motion.div 
@@ -338,7 +340,7 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* ── User Types ── */}
+      {/* -- User Types -- */}
       <section id="users" className="users-section">
         <div className="container">
           <motion.div 
@@ -354,43 +356,89 @@ const Home: React.FC = () => {
           </motion.div>
           <div className="users-grid">
             {[
-              { icon: <GraduationCap size={44} strokeWidth={1.2} />, title: 'Alumni', desc: 'Former employees & trainees' },
-              { icon: <Rocket size={44} strokeWidth={1.2} />, title: 'Interns', desc: 'Current & former interns' },
-              { icon: <Compass size={44} strokeWidth={1.2} />, title: 'Trainees', desc: 'Skill-building participants' },
-              { icon: <Building2 size={44} strokeWidth={1.2} />, title: 'IV Students', desc: 'Industrial Visit visitors' },
-              { icon: <Ticket size={44} strokeWidth={1.2} />, title: 'Event Leads', desc: 'Event participants' },
+              { 
+                id: 'alumni',
+                img: "https://images.unsplash.com/photo-1523287562758-66c7fc58967f?q=80&w=800&auto=format&fit=crop", 
+                title: 'Alumni', 
+                desc: 'Former employees & trainees',
+                color: '#C8102E'
+              },
+              { 
+                id: 'interns',
+                img: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=800&auto=format&fit=crop", 
+                title: 'Interns', 
+                desc: 'Current & former interns',
+                color: '#1E4FA0'
+              },
+              { 
+                id: 'trainees',
+                img: "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?q=80&w=800&auto=format&fit=crop", 
+                title: 'Trainees', 
+                desc: 'Skill-building participants',
+                color: '#10B981'
+              },
+              { 
+                id: 'iv-students',
+                img: "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=800&auto=format&fit=crop", 
+                title: 'IV Students', 
+                desc: 'Industrial Visit visitors',
+                color: '#F59E0B'
+              },
+              { 
+                id: 'event-leads',
+                img: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?q=80&w=800&auto=format&fit=crop", 
+                title: 'Event Leads', 
+                desc: 'Event participants',
+                color: '#8B5CF6'
+              },
             ].map((u, i) => (
               <motion.div
                 key={i}
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: i * 0.15 }}
+                initial={{ opacity: 0, y: 50, filter: 'blur(10px)' }}
+                whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                whileHover={{ y: -10 }}
+                whileTap={{ scale: 0.95 }}
+                transition={{ 
+                  duration: 0.8, 
+                  delay: i * 0.1,
+                  ease: [0.16, 1, 0.3, 1] 
+                }}
                 viewport={{ once: true, margin: "-50px" }}
-                className="user-card"
+                className={`gradient-border-wrapper ${selectedUserType === i ? 'active' : ''}`}
+                onClick={() => {
+                  setSelectedUserType(i);
+                  setTimeout(() => navigate(`/user-type-overview/${u.id}`), 400);
+                }}
+                style={{ '--primary': u.color } as any}
               >
-                <div className="user-icon-container">
-                  <motion.div
-                    className="user-icon"
-                    animate={{ y: [0, -8, 0] }}
-                    transition={{
-                      duration: 3.5,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                      delay: i * 0.2
-                    }}
-                  >
-                    {u.icon}
-                  </motion.div>
+                <div className={`user-card-premium ${selectedUserType === i ? 'active' : ''}`}>
+                  <div className="user-card-image-wrapper">
+                    <img 
+                      src={u.img} 
+                      alt={u.title} 
+                      className="user-card-image"
+                    />
+                  </div>
+                  <div className="user-card-content">
+                    <h3 style={{ color: selectedUserType === i ? u.color : '#111827' }}>
+                      {u.title}
+                    </h3>
+                    <p>{u.desc}</p>
+                  </div>
+                  {selectedUserType === i && (
+                    <div 
+                      className="user-card-active-indicator"
+                      style={{ backgroundColor: u.color }}
+                    />
+                  )}
                 </div>
-                <h3>{u.title}</h3>
-                <p>{u.desc}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── Events Section ── */}
+      {/* -- Events Section -- */}
       <section id="events" className="features-section">
         <div className="container">
           <motion.div 
@@ -431,7 +479,7 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* ── Jobs Section ── */}
+      {/* -- Jobs Section -- */}
       <section id="jobs" className="users-section">
         <div className="container">
           <motion.div 
@@ -478,7 +526,7 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* ── CTA ── */}
+      {/* -- CTA -- */}
       <section className="cta-section">
         <motion.div 
           className="container cta-content"
@@ -496,7 +544,7 @@ const Home: React.FC = () => {
         </motion.div>
       </section>
 
-      {/* ── Footer ── */}
+      {/* -- Footer -- */}
       <footer id="contact" className="footer">
         <div className="container footer-grid">
           <div className="footer-brand">

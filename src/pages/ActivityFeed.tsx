@@ -7,7 +7,8 @@ import {
   Clock, PlayCircle, Plus, Sparkles,
   Briefcase, Send, Paperclip, ChevronRight, CheckCircle2,
   Heart, Navigation, Zap, FileText, Lightbulb, Search, X,
-  Camera, Video, Crown, Smile, GalleryVerticalEnd, Flame
+  Camera, Video, Crown, Smile, GalleryVerticalEnd, Flame,
+  TrendingUp, Users, Calendar, Award
 } from 'lucide-react';
 
 // --- MOCK DATA ---
@@ -299,14 +300,15 @@ const CreatePostModal = ({ onClose, onPublish }: { onClose: () => void, onPublis
                 minHeight: '140px', 
                 resize: 'none', 
                 fontSize: '1rem', 
-                color: '#F9FAFB', 
+                color: '#111827', 
                 fontFamily: '"Inter", sans-serif',
-                background: 'linear-gradient(145deg, #1F1F23 0%, #2A2A30 50%, #1A1A1E 100%)',
+                background: 'linear-gradient(145deg, #F9FAFB 0%, #F3F4F6 100%)',
                 padding: '1.25rem 1.5rem',
                 borderRadius: '18px',
-                boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.1)',
+                boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.02)',
                 lineHeight: 1.6,
-                letterSpacing: '0.01em'
+                letterSpacing: '0.01em',
+                fontWeight: 500
               }}
             />
             {/* Character count */}
@@ -776,8 +778,8 @@ const PostCard = ({ post, onReferralRequest, requestedRef }: { post: any, onRefe
       <div style={{ padding: '0 1.5rem 1rem' }}>
         <div style={{ background: '#F9FAFB', borderRadius: '12px', padding: '1rem', border: '1px solid #F3F4F6' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: aiAction ? '1rem' : 0 }}>
-            <Zap size={16} color="#DC2626" fill="#DC2626" />
-            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#111827' }}>AI Feed Assistant</span>
+            <Zap size={16} color="#DC2626" fill="#DC2626" className="ai-pulse-icon" />
+            <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#111827', textTransform: 'uppercase', letterSpacing: '0.05em' }}>AI Feed Assistant</span>
             <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
               <button onClick={() => executeAiAction('summarize')} className="btn-premium" style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem', borderRadius: '999px', background: aiAction === 'summarize' ? '#DC2626' : 'white', color: aiAction === 'summarize' ? 'white' : '#4B5563', border: '1px solid', borderColor: aiAction === 'summarize' ? '#DC2626' : '#E5E7EB', display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer' }}>
                 <FileText size={12} /> Summarize
@@ -1214,6 +1216,25 @@ const ActivityFeed: React.FC = () => {
           50% { background-position: 0% center; }
         }
 
+        /* AI Assistant Pulse */
+        @keyframes aiPulse {
+          0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
+          70% { box-shadow: 0 0 0 10px rgba(220, 38, 38, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+        }
+        .ai-pulse-icon {
+          animation: aiPulse 2s infinite;
+        }
+
+        @media (max-width: 1024px) {
+          .feed-layout-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .feed-sidebar-desktop {
+            display: none !important;
+          }
+        }
+
         /* Textarea placeholder in dark mode */
         .feed-container textarea::placeholder {
           color: rgba(255, 255, 255, 0.35);
@@ -1225,7 +1246,10 @@ const ActivityFeed: React.FC = () => {
       `}</style>
 
 
-      <div style={{ maxWidth: '720px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '2rem', position: 'relative', zIndex: 10 }}>
+      <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 340px', gap: '2.5rem', position: 'relative', zIndex: 10, padding: '0 1rem' }} className="feed-layout-grid">
+        
+        {/* LEFT COLUMN: MAIN FEED */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
         
         {/* HEADER */}
         <motion.div 
@@ -1326,6 +1350,90 @@ const ActivityFeed: React.FC = () => {
             )}
           </div>
         </motion.section>
+
+        </div>
+
+        {/* RIGHT COLUMN: SIDEBAR */}
+        <aside style={{ display: 'flex', flexDirection: 'column', gap: '2rem', position: 'sticky', top: '2rem', alignSelf: 'start' }} className="feed-sidebar-desktop">
+          
+          {/* PREMIUM TRENDING CARD */}
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+            className="glass-card" 
+            style={{ padding: '1.75rem', position: 'relative', overflow: 'hidden' }}
+          >
+            <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: 'linear-gradient(to bottom, #DC2626, #F59E0B)' }} />
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#111827', margin: '0 0 1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <TrendingUp size={20} color="#DC2626" /> Trending Now
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              {[
+                { topic: 'ArchitectureSummit', posts: '1.4k', growth: '+12%' },
+                { topic: 'AIReform', posts: '850', growth: '+5%' },
+                { topic: 'NeSTCareers', posts: '620', growth: '+24%' },
+                { topic: 'GoLangPerformance', posts: '430', growth: '+8%' },
+              ].map((item, i) => (
+                <div key={i} className="btn-premium" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#374151' }}>#{item.topic}</h4>
+                    <p style={{ margin: 0, fontSize: '0.75rem', color: '#9CA3AF' }}>{item.posts} interactions</p>
+                  </div>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#059669', background: '#ECFDF5', padding: '0.2rem 0.5rem', borderRadius: '6px' }}>{item.growth}</span>
+                </div>
+              ))}
+            </div>
+            <button className="btn-premium" style={{ width: '100%', marginTop: '1.5rem', padding: '0.8rem', borderRadius: '12px', background: '#F9FAFB', border: '1px solid #E5E7EB', color: '#111827', fontWeight: 700, fontSize: '0.85rem' }}>
+              Discover More Topics
+            </button>
+          </motion.div>
+
+          {/* QUICK ACTIONS / TOOLS */}
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4 }}
+            className="glass-card" 
+            style={{ padding: '1.75rem' }}
+          >
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#111827', margin: '0 0 1.25rem' }}>Quick Actions</h3>
+            <div style={{ gridTemplateColumns: '1fr 1fr', display: 'grid', gap: '1rem' }}>
+              <div className="btn-premium" style={{ background: '#FEF2F2', padding: '1rem', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center', textAlign: 'center', border: '1px solid #FEE2E2' }}>
+                <Briefcase size={20} color="#DC2626" />
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#991B1B' }}>Refer Alumni</span>
+              </div>
+              <div className="btn-premium" style={{ background: '#F0F9FF', padding: '1rem', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center', textAlign: 'center', border: '1px solid #E0F2FE' }}>
+                <Users size={20} color="#0284C7" />
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0369A1' }}>New Groups</span>
+              </div>
+              <div className="btn-premium" style={{ background: '#F5F3FF', padding: '1rem', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center', textAlign: 'center', border: '1px solid #EDE9FE' }}>
+                <Calendar size={20} color="#7C3AED" />
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#5B21B6' }}>Upc. Events</span>
+              </div>
+              <div className="btn-premium" style={{ background: '#FFFBEB', padding: '1rem', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center', textAlign: 'center', border: '1px solid #FEF3C7' }}>
+                <Award size={20} color="#D97706" />
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#92400E' }}>Badge Rewards</span>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* COMMUNITY INSIGHTS MOCKUP */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            style={{ padding: '1.5rem', background: 'linear-gradient(135deg, #111827 0%, #1F2937 100%)', borderRadius: '24px', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}
+          >
+            <Sparkles size={40} style={{ position: 'absolute', top: '-10px', right: '-10px', opacity: 0.1, transform: 'rotate(20deg)' }} />
+            <h4 style={{ margin: 0, fontSize: '0.9rem', color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>Carrer Assessment</h4>
+            <p style={{ margin: '0.5rem 0 1.25rem', fontSize: '1.1rem', fontWeight: 700, lineHeight: 1.4 }}>Find out how you stack up against other alumni.</p>
+            <button className="btn-premium" style={{ background: 'white', color: '#111827', border: 'none', padding: '0.7rem 1.2rem', borderRadius: '12px', fontWeight: 700, fontSize: '0.85rem' }}>
+              Take Quiz
+            </button>
+          </motion.div>
+
+        </aside>
 
       </div>
 
