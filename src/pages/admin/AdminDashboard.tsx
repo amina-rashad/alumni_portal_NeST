@@ -5,6 +5,7 @@ import {
   Users, UserCheck, Briefcase, FileText, 
   Plus, Activity
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { adminApi } from '../../services/api';
 
 const nestNavy = '#1a2652';

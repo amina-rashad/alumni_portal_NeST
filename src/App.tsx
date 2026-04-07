@@ -11,6 +11,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import PlatformCapabilities from './pages/PlatformCapabilities';
+import UserTypeOverview from './pages/UserTypeOverview';
 
 // Layout
 import MainLayout from './pages/MainLayout';
@@ -105,7 +106,7 @@ import AdminAddEvent from './pages/admin/AdminAddEvent';
 import AdminAddCourse from './pages/admin/AdminAddCourse';
 import AdminCertification from './pages/admin/AdminCertification';
 
-/* ── Splash Screen ── */
+/* -- Splash Screen -- */
 const SplashScreen: React.FC = () => (
   <motion.div
     className="splash-screen"
@@ -150,7 +151,7 @@ const SplashScreen: React.FC = () => (
   </motion.div>
 );
 
-/* ── Apple-style Crossfade Page Transition ── */
+/* -- Apple-style Crossfade Page Transition -- */
 const pageTransitionVariants = {
   initial: { opacity: 0 },
   animate: { opacity: 1 },
@@ -170,7 +171,7 @@ const PageTransition: React.FC<{ children: React.ReactNode }> = ({ children }) =
   </motion.div>
 );
 
-/* ── Scroll to Top on Route Change ── */
+/* -- Scroll to Top on Route Change -- */
 const ScrollToTop: React.FC = () => {
   const { pathname } = useLocation();
   useEffect(() => {
@@ -194,6 +195,7 @@ const AnimatedRoutes: React.FC = () => {
         <Route path="/reset-password" element={<PageTransition><ResetPassword /></PageTransition>} />
         <Route path="/email-verification" element={<PageTransition><EmailVerification /></PageTransition>} />
         <Route path="/platform-capabilities/:id" element={<PageTransition><PlatformCapabilities /></PageTransition>} />
+        <Route path="/user-type-overview/:id" element={<PageTransition><UserTypeOverview /></PageTransition>} />
 
         {/* User Protected Routes with MainLayout */}
         <Route element={<MainLayout />}>

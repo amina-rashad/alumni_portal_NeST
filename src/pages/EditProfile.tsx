@@ -126,7 +126,7 @@ const EditProfile: React.FC = () => {
             <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><UserIcon size={16}/> Full Name</label>
             <input 
               name="full_name" value={formData.full_name} onChange={handleChange} required
-              style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '1rem', background: '#f8fafc', outline: 'none', transition: '0.2s' }}
+              style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '1rem', background: '#f8fafc', color: '#1e293b', outline: 'none', transition: '0.2s', fontWeight: 500 }}
             />
           </div>
 
@@ -135,14 +135,14 @@ const EditProfile: React.FC = () => {
               <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Building size={16}/> Department / Specialization</label>
               <input 
                 name="specialization" value={formData.specialization} onChange={handleChange}
-                style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '1rem', background: '#f8fafc', outline: 'none', transition: '0.2s' }}
+                style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '1rem', background: '#f8fafc', color: '#1e293b', outline: 'none', transition: '0.2s', fontWeight: 500 }}
               />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
               <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Book size={16}/> Batch Year</label>
               <input 
                 name="batch" value={formData.batch} onChange={handleChange}
-                style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '1rem', background: '#f8fafc', outline: 'none', transition: '0.2s' }}
+                style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '1rem', background: '#f8fafc', color: '#1e293b', outline: 'none', transition: '0.2s', fontWeight: 500 }}
               />
             </div>
           </div>
@@ -152,14 +152,14 @@ const EditProfile: React.FC = () => {
               <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Phone size={16}/> Contact Phone</label>
               <input 
                 name="phone" value={formData.phone} onChange={handleChange}
-                style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '1rem', background: '#f8fafc', outline: 'none', transition: '0.2s' }}
+                style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '1rem', background: '#f8fafc', color: '#1e293b', outline: 'none', transition: '0.2s', fontWeight: 500 }}
               />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
               <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><CheckCircle2 size={16}/> Skills (comma separated)</label>
               <input 
                 name="skills" value={formData.skills} onChange={handleChange} placeholder="e.g. React, Python, UI/UX"
-                style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '1rem', background: '#f8fafc', outline: 'none', transition: '0.2s' }}
+                style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '1rem', background: '#f8fafc', color: '#1e293b', outline: 'none', transition: '0.2s', fontWeight: 500 }}
               />
             </div>
           </div>
@@ -169,7 +169,7 @@ const EditProfile: React.FC = () => {
             <textarea 
               name="bio" value={formData.bio} onChange={handleChange} rows={4}
               placeholder="Tell the network about yourself, your career path, and what you are building..."
-              style={{ padding: '16px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '1rem', background: '#f8fafc', outline: 'none', resize: 'vertical' }}
+              style={{ padding: '16px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '1rem', background: '#f8fafc', color: '#1e293b', outline: 'none', resize: 'vertical', minHeight: '120px', lineHeight: 1.5, fontWeight: 500 }}
             />
           </div>
 

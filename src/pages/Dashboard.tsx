@@ -4,9 +4,9 @@ import {
   Briefcase, Calendar, Users, Star, 
   Activity, Image as ImageIcon, MapPin, 
   Clock, MessageSquare, ThumbsUp, Share2,
-  Bookmark, Award, ChevronRight,
-  MoreHorizontal, Video, FileText, ArrowRight,
-  BrainCircuit, ExternalLink, PlayCircle, Trophy, BookOpen
+  Award, ChevronRight,
+  MoreHorizontal, FileText, ArrowRight,
+  BrainCircuit, BookOpen
 } from 'lucide-react';
 import { getUser, coursesApi, jobsApi, type AuthUser } from '../services/api';
 

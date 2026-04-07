@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Mail, Lock, Phone, GraduationCap, ChevronRight, ArrowLeft, ShieldCheck, CheckCircle2, Eye, EyeOff, Linkedin } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -17,6 +17,8 @@ const Register: React.FC = () => {
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [activeProvider, setActiveProvider] = useState<SocialProvider>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -26,6 +28,12 @@ const Register: React.FC = () => {
     batch: '',
     specialization: ''
   });
+
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 30);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -117,6 +125,13 @@ const Register: React.FC = () => {
     }
   };
 
+  const navLinks = [
+    { name: 'Home', href: '/#home' },
+    { name: 'About', href: '/#about' },
+    { name: 'Features', href: '/#features' },
+    { name: 'User Types', href: '/#users' },
+  ];
+
   return (
     <div className="auth-page">
       <Link to="/" className="back-home">
@@ -188,7 +203,7 @@ const Register: React.FC = () => {
                     <label>Password</label>
                     <div className="input-wrapper">
                       <Lock className="input-icon" size={18} />
-                      <input type={showPassword ? "text" : "password"} name="password" placeholder="••••••••" required value={formData.password} onChange={handleChange} />
+                      <input type={showPassword ? "text" : "password"} name="password" placeholder="........" required value={formData.password} onChange={handleChange} />
                       <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '14px', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>

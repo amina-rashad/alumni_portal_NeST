@@ -5,10 +5,12 @@ import {
   Eye, Edit2, MoreHorizontal,
   ChevronDown, Filter
 } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
 import { adminApi } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
 
 const AdminUsers: React.FC = () => {
+  const nestNavy = '#1a2652';
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   
