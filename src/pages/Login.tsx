@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, LogIn, ArrowLeft, Shield, Eye, EyeOff, Users, Linkedin, CheckCircle } from 'lucide-react';
+import { Mail, Lock, LogIn, ArrowLeft, Shield, Eye, EyeOff, Users, Linkedin, CheckCircle, Menu, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import nestMainLogo from '../assets/nest_logo.png';
 import nestIcon from '../assets/nest_icon.png';
@@ -12,6 +12,8 @@ type SocialProvider = 'Google' | 'LinkedIn' | 'Microsoft' | null;
 const Login: React.FC = () => {
   const navigate = useNavigate();
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -22,6 +24,12 @@ const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState<any>(null);
+
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 30);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -43,6 +51,7 @@ const Login: React.FC = () => {
         setTokens(response.data.access_token, response.data.refresh_token);
         setUser(response.data.user);
         setLoggedInUser(response.data.user);
+        setShowSuccess(true);
         setShowSuccessPopup(true);
       } else {
         setError(response.message || 'Login failed. Please try again.');
@@ -53,6 +62,7 @@ const Login: React.FC = () => {
       setIsLoading(false);
     }
   };
+
 
   const handleSocialSignIn = (provider: SocialProvider) => {
     setIsLoading(true);
@@ -107,15 +117,45 @@ const Login: React.FC = () => {
       default: return null;
     }
   };
+  const navLinks = [
+    { name: 'Home', href: '/#home' },
+    { name: 'About', href: '/#about' },
+    { name: 'Features', href: '/#features' },
+    { name: 'User Types', href: '/#users' },
+  ];
 
   return (
-    <div className="auth-page">
+    <div className="auth-page" style={{ paddingTop: '80px' }}>
+      
+      {/* -- Header -- */}
+      <header className={`header ${isScrolled ? 'header-scrolled' : 'header-glass'}`}>
+        <div className="container header-container">
+          <Link to="/" className="logo">
+            <img src={nestMainLogo} alt="NeST Digital" className="nest-main-logo" style={{ background: '#fff', padding: '6px 14px', borderRadius: '8px' }} />
+          </Link>
+          <nav className="desktop-nav">
+            <ul className="nav-list">
+              {navLinks.map((link) => (
+                <li key={link.name}>
+                  <Link to={link.href} className="nav-link">{link.name}</Link>
+                </li>
+              ))}
+            </ul>
+            <Link to="/login" className="btn-navy">LOGIN</Link>
+            <Link to="/register" className="btn-red">REGISTER</Link>
+          </nav>
+          <button className="mobile-menu-toggle" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+            {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
+          </button>
+        </div>
+      </header>
+
       <AnimatePresence>
         {showSuccess && (
-          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, display: 'flex', justifyContent: 'center', zIndex: 1000, pointerEvents: 'none' }}>
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, display: 'flex', justifyContent: 'center', zIndex: 2000, pointerEvents: 'none' }}>
             <motion.div 
               initial={{ opacity: 0, y: -20, scale: 0.9 }}
-              animate={{ opacity: 1, y: 30, scale: 1 }}
+              animate={{ opacity: 1, y: 100, scale: 1 }}
               exit={{ opacity: 0, y: -20, scale: 0.9 }}
               transition={{ type: "spring", stiffness: 400, damping: 25 }}
               style={{ background: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(16px)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '16px 24px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '16px', boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(16, 185, 129, 0.1)' }}
@@ -131,11 +171,6 @@ const Login: React.FC = () => {
           </div>
         )}
       </AnimatePresence>
-
-      <Link to="/" className="back-home">
-        <ArrowLeft size={20} />
-        <span>Back to Home</span>
-      </Link>
 
       <div className="auth-container">
         <div className="auth-form-side">
@@ -173,7 +208,7 @@ const Login: React.FC = () => {
               </div>
               <div className="input-wrapper">
                 <Lock className="input-icon" size={18} />
-                <input type={showPassword ? "text" : "password"} name="password" placeholder="••••••••" required value={formData.password} onChange={handleChange} disabled={isLoading} />
+                <input type={showPassword ? "text" : "password"} name="password" placeholder="........" required value={formData.password} onChange={handleChange} disabled={isLoading} />
                 <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '14px', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>

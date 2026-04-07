@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { 
   Search, Plus, UserPlus,
   Eye, Edit2, MoreHorizontal,
   ChevronDown, Filter
 } from 'lucide-react';
 import { adminApi } from '../../services/api';
-import { useNavigate } from 'react-router-dom';
 
 const AdminUsers: React.FC = () => {
+  const nestNavy = '#1a2652';
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -23,7 +23,6 @@ const AdminUsers: React.FC = () => {
 
   const [users, setUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const nestNavy = '#1a2652';
 
   // Handle outside click for filter dropdown
   useEffect(() => {

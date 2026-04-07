@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Mail, Lock, Phone, GraduationCap, ChevronRight, ArrowLeft, ShieldCheck, CheckCircle2, Eye, EyeOff, Linkedin } from 'lucide-react';
+import { User, Mail, Lock, Phone, GraduationCap, ChevronRight, ArrowLeft, ShieldCheck, CheckCircle2, PartyPopper, Eye, EyeOff, Linkedin, Users, Menu, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import nestMainLogo from '../assets/nest_logo.png';
 import nestIcon from '../assets/nest_icon.png';
@@ -17,6 +17,8 @@ const Register: React.FC = () => {
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [activeProvider, setActiveProvider] = useState<SocialProvider>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -26,6 +28,12 @@ const Register: React.FC = () => {
     batch: '',
     specialization: ''
   });
+
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 30);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -79,6 +87,15 @@ const Register: React.FC = () => {
     }
   };
 
+
+  const handleSocialSignIn = (provider: SocialProvider) => {
+    setIsLoading(true);
+    setTimeout(() => {
+      setIsLoading(false);
+      setActiveProvider(provider);
+    }, 600);
+  };
+
   const handleAccountSelect = (email: string) => {
     setActiveProvider(null);
     setIsLoading(true);
@@ -117,12 +134,70 @@ const Register: React.FC = () => {
     }
   };
 
+  const navLinks = [
+    { name: 'Home', href: '/#home' },
+    { name: 'About', href: '/#about' },
+    { name: 'Features', href: '/#features' },
+    { name: 'User Types', href: '/#users' },
+  ];
+
   return (
-    <div className="auth-page">
-      <Link to="/" className="back-home">
-        <ArrowLeft size={20} />
-        <span>Back to Home</span>
-      </Link>
+    <div className="auth-page" style={{ paddingTop: '80px' }}>
+      
+      {/* -- Header -- */}
+      <header className={`header ${isScrolled ? 'header-scrolled' : 'header-glass'}`}>
+        <div className="container header-container">
+          <Link to="/" className="logo">
+            <img src={nestMainLogo} alt="NeST Digital" className="nest-main-logo" style={{ background: '#fff', padding: '6px 14px', borderRadius: '8px' }} />
+          </Link>
+          <nav className="desktop-nav">
+            <ul className="nav-list">
+              {navLinks.map((link) => (
+                <li key={link.name}>
+                  <Link to={link.href} className="nav-link">{link.name}</Link>
+                </li>
+              ))}
+            </ul>
+            <Link to="/login" className="btn-navy">LOGIN</Link>
+            <Link to="/register" className="btn-red">REGISTER</Link>
+          </nav>
+          <button className="mobile-menu-toggle" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+            {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
+          </button>
+        </div>
+      </header>
+
+      <AnimatePresence>
+        {showSuccessPopup && (
+          <motion.div 
+            key="success-popup"
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.9)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(12px)' }}
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20, opacity: 0 }} 
+              animate={{ scale: 1, y: 0, opacity: 1 }} 
+              exit={{ scale: 0.9, y: 20, opacity: 0 }}
+              style={{ background: 'white', padding: '40px', borderRadius: '24px', maxWidth: '440px', width: '90%', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}
+            >
+              <div style={{ width: '150px', height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+                <img src={nestIcon} alt="NeST" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              </div>
+              <h3 style={{ fontSize: '28px', fontWeight: 800, color: '#1e293b', marginBottom: '12px' }}>Registration Successful!</h3>
+              <p style={{ color: '#64748b', fontSize: '15px', lineHeight: '1.6', marginBottom: '32px' }}>Welcome to the NeST Digital talent network. Your account has been created successfully.</p>
+              <button 
+                onClick={() => navigate('/login')} 
+                className="auth-btn" 
+                style={{ width: '100%', padding: '16px', fontSize: '16px' }}
+              >
+                Go to Login Page
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <motion.div 
         className="auth-container register-layout"
@@ -188,7 +263,7 @@ const Register: React.FC = () => {
                     <label>Password</label>
                     <div className="input-wrapper">
                       <Lock className="input-icon" size={18} />
-                      <input type={showPassword ? "text" : "password"} name="password" placeholder="••••••••" required value={formData.password} onChange={handleChange} />
+                      <input type={showPassword ? "text" : "password"} name="password" placeholder="........" required value={formData.password} onChange={handleChange} />
                       <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '14px', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
