@@ -180,7 +180,11 @@ const ScrollToTop: React.FC = () => {
   return null;
 };
 
+<<<<<<< HEAD
 /* -- Animated Routes wrapper with crossfade -- */
+=======
+/* ── Animated Routes ── */
+>>>>>>> 3432fe238c0da96b4ba71610e57de3c6d925ade3
 const AnimatedRoutes: React.FC = () => {
   const location = useLocation();
 
@@ -244,8 +248,13 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="/settings/password" element={<PageTransition><ChangePassword /></PageTransition>} />
         </Route>
 
+<<<<<<< HEAD
         {/* Admin Routes with Transitions */}
         <Route path="/admin" element={<PageTransition><AdminLayout /></PageTransition>}>
+=======
+        {/* Admin Protected Routes with AdminLayout */}
+        <Route path="/admin" element={<AdminLayout />}>
+>>>>>>> 3432fe238c0da96b4ba71610e57de3c6d925ade3
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="dashboard" element={<PageTransition><AdminDashboard /></PageTransition>} />
           <Route path="users" element={<PageTransition><AdminUsers /></PageTransition>} />
@@ -288,6 +297,7 @@ const App: React.FC = () => {
         {isLoading ? (
           <SplashScreen key="splash" />
         ) : (
+<<<<<<< HEAD
           <motion.div
             key="content"
             initial={{ opacity: 0 }}
@@ -296,6 +306,9 @@ const App: React.FC = () => {
           >
             <AnimatedRoutes />
           </motion.div>
+=======
+          <AnimatedRoutes />
+>>>>>>> 3432fe238c0da96b4ba71610e57de3c6d925ade3
         )}
       </AnimatePresence>
     </Router>
