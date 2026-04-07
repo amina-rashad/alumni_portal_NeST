@@ -33,17 +33,10 @@ const AdminDashboard: React.FC = () => {
   }, []);
 
   const stats = [
-<<<<<<< HEAD
     { title: 'Total Users', value: statsData.total_users.toLocaleString(), trend: '+0%', icon: Users, color: '#3b82f6', bg: '#eff6ff' },
     { title: 'Interns', value: statsData.interns.toLocaleString(), trend: '+0%', icon: UserCheck, color: '#06b6d4', bg: '#ecfeff' },
     { title: 'Active Jobs', value: statsData.active_jobs.toLocaleString(), trend: '+0%', icon: Briefcase, color: '#6366f1', bg: '#eef2ff' },
     { title: 'Applications', value: statsData.applications.toLocaleString(), trend: '+0%', icon: FileText, color: '#f59e0b', bg: '#fffbeb' },
-=======
-    { title: 'Total Users', value: statsData.total_users.toLocaleString(), trend: '+0%', icon: Users, bg: '#eff6ff', color: '#3b82f6' },
-    { title: 'Interns', value: statsData.interns.toLocaleString(), trend: '+0%', icon: UserCheck, bg: '#ecfeff', color: '#06b6d4' },
-    { title: 'Active Jobs', value: statsData.active_jobs.toLocaleString(), trend: '+0%', icon: Briefcase, bg: '#eef2ff', color: '#6366f1' },
-    { title: 'Applications', value: statsData.applications.toLocaleString(), trend: '+0%', icon: FileText, bg: '#fffbeb', color: '#f59e0b' },
->>>>>>> 3432fe238c0da96b4ba71610e57de3c6d925ade3
   ];
 
   const recentActivity = [

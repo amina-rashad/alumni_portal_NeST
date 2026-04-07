@@ -1,10 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-<<<<<<< HEAD
 import { User, Mail, Lock, Phone, GraduationCap, ChevronRight, ArrowLeft, ShieldCheck, CheckCircle2, PartyPopper, Eye, EyeOff, Linkedin, Users, Menu, X } from 'lucide-react';
-=======
-import { User, Mail, Lock, Phone, GraduationCap, ChevronRight, ArrowLeft, ShieldCheck, CheckCircle2, Eye, EyeOff, Linkedin } from 'lucide-react';
->>>>>>> 3432fe238c0da96b4ba71610e57de3c6d925ade3
 import { Link, useNavigate } from 'react-router-dom';
 import nestMainLogo from '../assets/nest_logo.png';
 import nestIcon from '../assets/nest_icon.png';
@@ -91,7 +87,6 @@ const Register: React.FC = () => {
     }
   };
 
-<<<<<<< HEAD
 
   const handleSocialSignIn = (provider: SocialProvider) => {
     setIsLoading(true);
@@ -101,8 +96,6 @@ const Register: React.FC = () => {
     }, 600);
   };
 
-=======
->>>>>>> 3432fe238c0da96b4ba71610e57de3c6d925ade3
   const handleAccountSelect = (email: string) => {
     setActiveProvider(null);
     setIsLoading(true);
@@ -149,7 +142,6 @@ const Register: React.FC = () => {
   ];
 
   return (
-<<<<<<< HEAD
     <div className="auth-page" style={{ paddingTop: '80px' }}>
       
       {/* -- Header -- */}
@@ -206,13 +198,6 @@ const Register: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
-=======
-    <div className="auth-page">
-      <Link to="/" className="back-home">
-        <ArrowLeft size={20} />
-        <span>Back to Home</span>
-      </Link>
->>>>>>> 3432fe238c0da96b4ba71610e57de3c6d925ade3
 
       <motion.div 
         className="auth-container register-layout"
