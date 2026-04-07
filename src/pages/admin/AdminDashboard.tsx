@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { 
   Users, UserCheck, Briefcase, FileText, 
-  Plus, Calendar, BookOpen, Clock, 
-  Activity
+  Plus, Activity
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { adminApi } from '../../services/api';
@@ -21,19 +21,23 @@ const AdminDashboard: React.FC = () => {
 
   useEffect(() => {
     const fetchStats = async () => {
-      const res = await adminApi.getStats();
-      if (res.success && res.data) {
-        setStatsData(res.data.stats);
+      try {
+        const res = await adminApi.getStats();
+        if (res.success && res.data) {
+          setStatsData(res.data.stats);
+        }
+      } catch (err) {
+        console.error("Failed to fetch stats", err);
       }
     };
     fetchStats();
   }, []);
 
   const stats = [
-    { title: 'Total Users', value: statsData.total_users.toLocaleString(), trend: '+0%', icon: Users, color: '#3b82f6', bg: '#eff6ff' },
-    { title: 'Interns', value: statsData.interns.toLocaleString(), trend: '+0%', icon: UserCheck, color: '#06b6d4', bg: '#ecfeff' },
-    { title: 'Active Jobs', value: statsData.active_jobs.toLocaleString(), trend: '+0%', icon: Briefcase, color: '#6366f1', bg: '#eef2ff' },
-    { title: 'Applications', value: statsData.applications.toLocaleString(), trend: '+0%', icon: FileText, color: '#f59e0b', bg: '#fffbeb' },
+    { title: 'Total Users', value: statsData.total_users.toLocaleString(), trend: '+0%', icon: Users, bg: '#eff6ff', color: '#3b82f6' },
+    { title: 'Interns', value: statsData.interns.toLocaleString(), trend: '+0%', icon: UserCheck, bg: '#ecfeff', color: '#06b6d4' },
+    { title: 'Active Jobs', value: statsData.active_jobs.toLocaleString(), trend: '+0%', icon: Briefcase, bg: '#eef2ff', color: '#6366f1' },
+    { title: 'Applications', value: statsData.applications.toLocaleString(), trend: '+0%', icon: FileText, bg: '#fffbeb', color: '#f59e0b' },
   ];
 
   const recentActivity = [
@@ -42,10 +46,10 @@ const AdminDashboard: React.FC = () => {
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', animation: 'fadeIn 0.5s ease-out' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
       
       {/* Stats - Compact Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
         {stats.map((stat, i) => (
           <motion.div 
             key={stat.title}
@@ -139,7 +143,12 @@ const AdminDashboard: React.FC = () => {
                {[60, 40, 85, 30, 95, 70, 50, 110, 80, 130, 90, 105].map((h, i) => (
                  <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', flex: 1 }}>
                    <div style={{ position: 'relative', width: '20px', height: '100%', display: 'flex', alignItems: 'flex-end' }}>
-                      <div style={{ width: '100%', height: `${h}px`, background: i === 9 ? nestNavy : 'rgba(26, 38, 82, 0.15)', borderRadius: '6px' }}></div>
+                      <motion.div 
+                        initial={{ height: 0 }}
+                        animate={{ height: `${h}px` }}
+                        transition={{ delay: i * 0.05, duration: 0.8 }}
+                        style={{ width: '100%', background: i === 9 ? nestNavy : 'rgba(26, 38, 82, 0.15)', borderRadius: '6px' }}
+                      ></motion.div>
                    </div>
                    <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 700 }}>{['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'][i]}</span>
                  </div>
@@ -149,16 +158,22 @@ const AdminDashboard: React.FC = () => {
       </div>
 
       {/* Bottom Content Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1fr', gap: '32px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: '32px' }}>
         
-        {/* Recent Activity Grid */}
+        {/* Recent Activity Section */}
         <section style={{ background: '#fff', borderRadius: '32px', padding: '32px', border: '1px solid #f1f5f9', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
           <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#1e293b', marginBottom: '28px', display: 'flex', alignItems: 'center', gap: '12px' }}>
              <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(26, 38, 82, 0.08)', color: nestNavy }}><Activity size={18} /></div> Recent Activities
           </h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
              {recentActivity.map((act, i) => (
-               <div key={i} style={{ padding: '20px', borderRadius: '24px', background: '#f8fafc', border: '1px solid #f1f5f9', display: 'flex', gap: '16px', transition: 'transform 0.2s' }}>
+               <motion.div 
+                key={i} 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.1 }}
+                style={{ padding: '20px', borderRadius: '24px', background: '#f8fafc', border: '1px solid #f1f5f9', display: 'flex', gap: '16px' }}
+               >
                   <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: nestNavy, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 800, flexShrink: 0 }}>
                     {act.avatar}
                   </div>
@@ -167,64 +182,29 @@ const AdminDashboard: React.FC = () => {
                      <div style={{ fontSize: '12px', color: '#475569', margin: '4px 0', fontWeight: 500 }}>{act.action}</div>
                      <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 600 }}>{act.time}</div>
                   </div>
-               </div>
+               </motion.div>
              ))}
           </div>
         </section>
 
-        {/* Right Column: Activities and Actions */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-           {/* Recent Activities */}
-           <div style={{ background: '#fff', borderRadius: '24px', padding: '24px', border: '1px solid #f1f5f9', flex: 1 }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#1e293b', marginBottom: '20px' }}>Recent Activities</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-                {recentActivity.map((act, i) => (
-                  <div key={i} style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
-                    <div style={{ 
-                      width: '40px', 
-                      height: '40px', 
-                      borderRadius: '12px', 
-                      background: '#f1f5f9', 
-                      color: '#64748b',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '12px',
-                      fontWeight: 700,
-                      flexShrink: 0
-                    }}>
-                      {act.avatar}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                       <div style={{ fontSize: '14px', color: '#1e293b' }}>
-                         <span style={{ fontWeight: 700 }}>{act.user}</span> {act.action}
-                       </div>
-                       <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>{act.time}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-           {/* Global Actions */}
-           <section style={{ background: '#fff', borderRadius: '32px', padding: '32px', border: `2px solid ${nestNavy}15`, boxShadow: '0 10px 30px rgba(26, 38, 82, 0.04)' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                 <button 
-                  onClick={() => navigate('/admin/events/add')}
-                  style={{ width: '100%', padding: '14px', borderRadius: '16px', border: 'none', background: '#f43f5e', color: '#fff', fontWeight: 800, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', boxShadow: '0 4px 12px rgba(244, 63, 94, 0.2)' }}
-                 >
-                   <Plus size={16} /> Host Event
-                 </button>
-                 <button 
-                  onClick={() => navigate('/admin/add-courses')}
-                  style={{ width: '100%', padding: '14px', borderRadius: '16px', border: 'none', background: nestNavy, color: '#fff', fontWeight: 800, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', boxShadow: '0 4px 12px rgba(26, 38, 82, 0.2)' }}
-                 >
-                   <Plus size={16} /> Add Course
-                 </button>
-              </div>
-           </section>
-        </div>
-
+        {/* Global Actions */}
+        <section style={{ background: '#fff', borderRadius: '32px', padding: '32px', border: `2px solid ${nestNavy}15`, boxShadow: '0 10px 30px rgba(26, 38, 82, 0.04)', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+           <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#1e293b', margin: 0 }}>Quick Actions</h3>
+           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <button 
+                onClick={() => navigate('/admin/events/add')}
+                style={{ width: '100%', padding: '14px', borderRadius: '16px', border: 'none', background: '#f43f5e', color: '#fff', fontWeight: 800, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', boxShadow: '0 4px 12px rgba(244, 63, 94, 0.2)' }}
+              >
+                <Plus size={16} /> Host Event
+              </button>
+              <button 
+                onClick={() => navigate('/admin/add-courses')}
+                style={{ width: '100%', padding: '14px', borderRadius: '16px', border: 'none', background: nestNavy, color: '#fff', fontWeight: 800, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', boxShadow: '0 4px 12px rgba(26, 38, 82, 0.2)' }}
+              >
+                <Plus size={16} /> Add Course
+              </button>
+           </div>
+        </section>
       </div>
     </div>
   );

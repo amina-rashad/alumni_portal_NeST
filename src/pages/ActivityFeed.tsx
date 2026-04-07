@@ -11,6 +11,8 @@ import {
   TrendingUp, Users, Calendar, Award
 } from 'lucide-react';
 
+import { socialApi } from '../services/api';
+
 // --- MOCK DATA ---
 
 const currentUser = {
@@ -206,7 +208,7 @@ const CareerGuidance = () => {
   );
 };
 
-const CreatePostModal = ({ onClose, onPublish }: { onClose: () => void, onPublish: () => void }) => {
+const CreatePostModal = ({ onClose, onPublish }: { onClose: () => void, onPublish: (content: string) => void }) => {
   const [text, setText] = useState("");
   const [isPublishing, setIsPublishing] = useState(false);
   const [activeAttachments, setActiveAttachments] = useState<Record<string, boolean>>({ photo: false, video: false, event: false });
@@ -215,12 +217,11 @@ const CreatePostModal = ({ onClose, onPublish }: { onClose: () => void, onPublis
     setActiveAttachments(prev => ({ ...prev, [type]: !prev[type] }));
   };
 
-  const handlePublish = () => {
+  const handlePublish = async () => {
+    if (text.trim() === '') return;
     setIsPublishing(true);
-    setTimeout(() => {
-      setIsPublishing(false);
-      onPublish();
-    }, 1500);
+    await onPublish(text);
+    setIsPublishing(false);
   };
 
   const attachmentButtons = [
@@ -709,7 +710,7 @@ const StoryViewerModal = ({ stories, initialStoryId, onClose, updateStoryInParen
 };
 
 const PostCard = ({ post, onReferralRequest, requestedRef }: { post: any, onReferralRequest: any, requestedRef: boolean }) => {
-  const [isLiked, setIsLiked] = useState(false);
+  const [isLiked, setIsLiked] = useState(post.isLiked || false);
   const [showHeartAnim, setShowHeartAnim] = useState(false);
   const [showComments, setShowComments] = useState(false);
   
@@ -717,13 +718,18 @@ const PostCard = ({ post, onReferralRequest, requestedRef }: { post: any, onRefe
   const [aiAction, setAiAction] = useState<string | null>(null);
   const [aiGenerating, setAiGenerating] = useState(false);
 
-  const handleLike = () => {
-    if (!isLiked) {
-      setIsLiked(true);
-      setShowHeartAnim(true);
-      setTimeout(() => setShowHeartAnim(false), 1000);
-    } else {
-      setIsLiked(false);
+  const handleLike = async () => {
+    try {
+      await socialApi.likePost(post.id);
+      if (!isLiked) {
+        setIsLiked(true);
+        setShowHeartAnim(true);
+        setTimeout(() => setShowHeartAnim(false), 1000);
+      } else {
+        setIsLiked(false);
+      }
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -746,7 +752,10 @@ const PostCard = ({ post, onReferralRequest, requestedRef }: { post: any, onRefe
     }
   };
 
-  const totalReactions = Object.values(post.reactions).reduce((a: any, b: any) => a + b, 0) + (isLiked ? 1 : 0);
+  const staticReactionsCount = Object.values(post.reactions || {}).reduce((a: any, b: any) => a + Number(b), 0);
+  const isNowLikedWhenItWasNot = isLiked && !post.isLiked;
+  const isNowUnlikedWhenItWas = !isLiked && post.isLiked;
+  const totalReactions = Number(staticReactionsCount) + (isNowLikedWhenItWasNot ? 1 : (isNowUnlikedWhenItWas ? -1 : 0));
 
   return (
     <motion.div variants={itemVariants} className="glass-card" style={{ position: 'relative' }}>
@@ -969,6 +978,9 @@ const PostCard = ({ post, onReferralRequest, requestedRef }: { post: any, onRefe
 };
 
 const ActivityFeed: React.FC = () => {
+  const [posts, setPosts] = useState<any[]>([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [requestedReferrals, setRequestedReferrals] = useState<Record<number, boolean>>({});
   const [viewingStory, setViewingStory] = useState<any>(null);
@@ -976,15 +988,63 @@ const ActivityFeed: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showPostSuccessToast, setShowPostSuccessToast] = useState(false);
 
+  const loadFeed = async (pageNum: number) => {
+    try {
+      const res = await socialApi.getFeed(pageNum, 10);
+      if (res.success && res.data) {
+        const fetchedPosts = (res.data as any).posts;
+        const total = (res.data as any).total;
+        
+        const formatted = fetchedPosts.map((p: any) => ({
+          id: p.id,
+          type: 'general',
+          author: {
+            name: p.author_name || 'Alumni Member',
+            role: p.author_type || 'User',
+            batch: '',
+            avatar: p.author_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.author_name || 'User')}&background=DC2626&color=fff`
+          },
+          time: new Date(p.created_at).toLocaleString(),
+          content: p.content,
+          media: p.image_url ? { type: 'image', url: p.image_url } : null,
+          reactions: { like: p.likes_count, support: 0, celebrate: 0, applaud: 0 },
+          comments: p.comments_count || p.comments?.length || 0,
+          isLiked: p.is_liked
+        }));
+        
+        if (pageNum === 1) {
+          setPosts(formatted);
+        } else {
+          setPosts(prev => [...prev, ...formatted]);
+        }
+        
+        if (pageNum * 10 >= total) {
+          setHasMore(false);
+        } else {
+          setHasMore(true);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
+  useEffect(() => {
+    loadFeed(1);
+  }, []);
 
   const handleRequestReferral = (id: number) => {
     setRequestedReferrals(prev => ({ ...prev, [id]: true }));
   };
 
   const handleLoadMore = () => {
+    if (!hasMore || loadingMore) return;
     setLoadingMore(true);
-    setTimeout(() => setLoadingMore(false), 1500);
+    const nextPage = page + 1;
+    setPage(nextPage);
+    loadFeed(nextPage);
   };
 
   const handleStoryUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1038,10 +1098,15 @@ const ActivityFeed: React.FC = () => {
         {showCreateModal && (
           <CreatePostModal 
             onClose={() => setShowCreateModal(false)}
-            onPublish={() => {
+            onPublish={async (content) => {
               setShowCreateModal(false);
-              setShowPostSuccessToast(true);
-              setTimeout(() => setShowPostSuccessToast(false), 3000);
+              const res = await socialApi.createPost({ content });
+              if (res.success) {
+                setShowPostSuccessToast(true);
+                setTimeout(() => setShowPostSuccessToast(false), 3000);
+                setPage(1);
+                loadFeed(1);
+              }
             }}
           />
         )}
@@ -1323,32 +1388,40 @@ const ActivityFeed: React.FC = () => {
 
           {/* POSTS LIST */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            {feedPosts.map((post) => (
+            {posts.length > 0 ? posts.map((post) => (
               <PostCard 
                 key={post.id} 
                 post={post} 
                 onReferralRequest={handleRequestReferral} 
                 requestedRef={!!requestedReferrals[post.id]} 
               />
-            ))}
+            )) : (
+              <div style={{ padding: '3rem 2rem', textAlign: 'center', background: '#F9FAFB', borderRadius: '16px', border: '1px dashed #E5E7EB' }}>
+                <p style={{ margin: 0, color: '#6B7280', fontSize: '0.95rem' }}>No posts available yet. Be the first to share something!</p>
+              </div>
+            )}
           </div>
 
           {/* INFINITE SCROLL / LOAD MORE MOCK */}
-          <div style={{ textAlign: 'center', marginTop: '3rem' }}>
-            {loadingMore ? (
-              <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, ease: "linear", duration: 1 }} style={{ display: 'inline-block' }}>
-                <div style={{ width: '30px', height: '30px', border: '3px solid #E5E7EB', borderTopColor: '#DC2626', borderRadius: '50%' }} />
-              </motion.div>
-            ) : (
-              <button 
-                onClick={handleLoadMore}
-                className="btn-premium" 
-                style={{ background: 'white', color: '#111827', border: '1px solid #E5E7EB', padding: '0.8rem 2rem', borderRadius: '999px', fontWeight: 600, boxShadow: '0 4px 10px rgba(0,0,0,0.03)' }}
-              >
-                Load More Updates
-              </button>
-            )}
-          </div>
+          {posts.length > 0 && (
+            <div style={{ textAlign: 'center', marginTop: '3rem' }}>
+              {loadingMore ? (
+                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, ease: "linear", duration: 1 }} style={{ display: 'inline-block' }}>
+                  <div style={{ width: '30px', height: '30px', border: '3px solid #E5E7EB', borderTopColor: '#DC2626', borderRadius: '50%' }} />
+                </motion.div>
+              ) : hasMore ? (
+                <button 
+                  onClick={handleLoadMore}
+                  className="btn-premium" 
+                  style={{ background: 'white', color: '#111827', border: '1px solid #E5E7EB', padding: '0.8rem 2rem', borderRadius: '999px', fontWeight: 600, boxShadow: '0 4px 10px rgba(0,0,0,0.03)' }}
+                >
+                  Load More Updates
+                </button>
+              ) : (
+                <p style={{ color: '#6B7280', fontSize: '0.9rem' }}>You're all caught up!</p>
+              )}
+            </div>
+          )}
         </motion.section>
 
         </div>
