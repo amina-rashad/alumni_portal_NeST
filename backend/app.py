@@ -65,6 +65,7 @@ def create_app(config_name=None):
     from routes.applications import applications_bp
     from routes.social import social_bp
     from routes.notifications import notifications_bp
+    from routes.assessments import assessments_bp
 
     app.register_blueprint(health_bp, url_prefix="/api")
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
@@ -76,6 +77,7 @@ def create_app(config_name=None):
     app.register_blueprint(applications_bp, url_prefix="/api/applications")
     app.register_blueprint(social_bp, url_prefix="/api/social")
     app.register_blueprint(notifications_bp, url_prefix="/api/notifications")
+    app.register_blueprint(assessments_bp, url_prefix="/api/assessments")
 
     return app
 

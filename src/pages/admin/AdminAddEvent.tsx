@@ -6,6 +6,7 @@ import {
   ShieldCheck, AlertCircle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { adminApi } from '../../services/api';
 
 // CUSTOM REUSABLE GLASS SELECT COMPONENT - UPDATED FOR NAVY
 const GlassSelect: React.FC<{
@@ -102,6 +103,7 @@ const AdminAddEvent: React.FC = () => {
   const navigate = useNavigate();
   const [dragActive, setDragActive] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [isPublishing, setIsPublishing] = useState(false);
   const nestNavy = '#1a2652';
 
   // Form State
@@ -138,6 +140,36 @@ const AdminAddEvent: React.FC = () => {
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
       setSelectedImage(URL.createObjectURL(file));
+    }
+  };
+
+  const handlePublish = async () => {
+    if (!formData.title) {
+      alert("Event title is required!");
+      return;
+    }
+    setIsPublishing(true);
+    try {
+      const payload = {
+        title: formData.title,
+        description: formData.description,
+        date: formData.date,
+        time: formData.startTime,
+        location: formData.venue || 'Virtual',
+        category: formData.category,
+        max_attendees: formData.limit ? parseInt(formData.limit, 10) : 0,
+      };
+      const res = await adminApi.addEvent(payload);
+      if (res.success) {
+        navigate('/admin/events');
+      } else {
+        alert(res.message || "Failed to publish event.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("An error occurred while publishing.");
+    } finally {
+      setIsPublishing(false);
     }
   };
 
@@ -182,21 +214,22 @@ const AdminAddEvent: React.FC = () => {
             Save Draft
           </button>
           <button 
-            onClick={() => console.log('Publishing:', formData)}
+            disabled={isPublishing}
+            onClick={handlePublish}
             style={{ 
               display: 'flex', 
               alignItems: 'center', 
               gap: '10px', 
               padding: '12px 28px', 
               borderRadius: '14px', 
-              background: nestNavy, 
+              background: isPublishing ? '#94a3b8' : nestNavy, 
               border: 'none',
               color: '#fff', 
               fontWeight: 800, 
-              cursor: 'pointer',
-              boxShadow: '0 8px 32px rgba(26, 38, 82, 0.2)'
+              cursor: isPublishing ? 'not-allowed' : 'pointer',
+              boxShadow: isPublishing ? 'none' : '0 8px 32px rgba(26, 38, 82, 0.2)'
             }}>
-            Publish to Portal
+            {isPublishing ? 'Publishing...' : 'Publish to Portal'}
           </button>
         </div>
       </div>

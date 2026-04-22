@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Save, User as UserIcon, Book, Building, Phone, AlignLeft, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { usersApi, setUser, getUser, type AuthUser } from '../services/api';
+import nestIcon from '../assets/nest_icon.png';
 
 const EditProfile: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [showPopup, setShowPopup] = useState(false);
   
   const [formData, setFormData] = useState({
     full_name: '',
@@ -67,7 +69,8 @@ const EditProfile: React.FC = () => {
       const data = res.data as any;
       
       if (res.success && data && data.user) {
-        setMessage({ type: 'success', text: 'Profile updated successfully!' });
+        setMessage({ type: 'success', text: 'Your profile has been updated successfully.' });
+        setShowPopup(true);
         
         // Update local cached user softly to reflect new name in header
         const currentUser = getUser() as unknown as AuthUser;
@@ -75,10 +78,12 @@ const EditProfile: React.FC = () => {
           setUser({ ...currentUser, ...data.user });
         }
       } else {
-        setMessage({ type: 'error', text: res.message || 'Update failed.' });
+        setMessage({ type: 'error', text: res.message || 'We encountered an error while updating your profile.' });
+        setShowPopup(true);
       }
     } catch (err) {
-      setMessage({ type: 'error', text: 'Network error while saving.' });
+      setMessage({ type: 'error', text: 'Network connection issue. Please try again.' });
+      setShowPopup(true);
     } finally {
       setSaving(false);
     }
@@ -108,17 +113,62 @@ const EditProfile: React.FC = () => {
       
       <div style={{ background: '#fff', padding: '2.5rem', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.04)', border: '1px solid #e2e8f0' }}>
         
-        {message.text && (
-          <div style={{ 
-            padding: '16px', marginBottom: '24px', borderRadius: '12px', fontSize: '14px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px',
-            background: message.type === 'success' ? '#f0fdf4' : '#fef2f2',
-            color: message.type === 'success' ? '#16a34a' : '#ef4444',
-            border: `1px solid ${message.type === 'success' ? '#bbf7d0' : '#fecaca'}`
-          }}>
-            {message.type === 'success' ? <CheckCircle2 size={18}/> : <ShieldCheck size={18}/>}
-            {message.text}
+      <AnimatePresence>
+        {showPopup && message.text && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(8px)' }}>
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              style={{ 
+                background: '#fff', 
+                width: '360px', 
+                borderRadius: '20px', 
+                padding: '32px', 
+                textAlign: 'center',
+                boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
+                position: 'relative',
+                overflow: 'hidden'
+              }}
+            >
+              {/* Branding Strip at Top */}
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '5px', background: '#c8102e' }} />
+              
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+                <div style={{ padding: '10px', background: '#f8fafc', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <img src={nestIcon} alt="NeST" style={{ height: '44px', objectFit: 'contain' }} />
+                </div>
+              </div>
+
+              <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>
+                {message.type === 'success' ? 'Success!' : 'Update Failed'}
+              </h2>
+              
+              <p style={{ color: '#64748b', fontSize: '15px', lineHeight: '1.5', marginBottom: '24px' }}>
+                {message.text}
+              </p>
+
+              <button 
+                onClick={() => setShowPopup(false)}
+                style={{ 
+                  width: '100%', 
+                  padding: '12px 24px', 
+                  background: '#0f172a', 
+                  color: 'white', 
+                  border: 'none', 
+                  borderRadius: '12px',
+                  fontSize: '0.95rem', 
+                  fontWeight: 700, 
+                  cursor: 'pointer',
+                  transition: '0.3s'
+                }}
+              >
+                Continue
+              </button>
+            </motion.div>
           </div>
         )}
+      </AnimatePresence>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           

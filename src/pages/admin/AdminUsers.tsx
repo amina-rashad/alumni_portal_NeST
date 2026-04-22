@@ -54,18 +54,41 @@ const AdminUsers: React.FC = () => {
       (user.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
        user.email?.toLowerCase().includes(searchQuery.toLowerCase()));
     
-    const matchesRole = roleFilter === 'All' || user.role === roleFilter;
+    const matchesIdentity = roleFilter === 'All' || user.user_type === roleFilter;
     const matchesStatus = statusFilter === 'All' || (user.is_active ? 'Active' : 'Inactive') === statusFilter;
     
-    // Extended filter logic
-    const userSkills = user.skills || ''; // Fallback for backend mock
-    const matchesSkills = skillFilter === '' || userSkills.toLowerCase().includes(skillFilter.toLowerCase());
-    
-    const userExp = user.experience || ''; 
-    const matchesExperience = experienceFilter === '' || userExp === experienceFilter;
-
-    return matchesSearch && matchesRole && matchesStatus && matchesSkills && matchesExperience;
+    return matchesSearch && matchesIdentity && matchesStatus;
   });
+
+  const handleToggleStatus = async (user: any) => {
+    const newStatus = !user.is_active;
+    const res = await adminApi.updateUser(user.id, { is_active: newStatus });
+    if (res.success) {
+      setUsers(prev => prev.map(u => u.id === user.id ? { ...u, is_active: newStatus } : u));
+    }
+  };
+
+  const handleDeleteUser = async (user: any) => {
+    if (window.confirm(`Are you sure you want to delete ${user.full_name}? This action cannot be undone.`)) {
+      const res = await adminApi.deleteUser(user.id);
+      if (res.success) {
+        setUsers(prev => prev.filter(u => u.id !== user.id));
+      }
+    }
+  };
+
+  const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setActiveMenu(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -109,6 +132,7 @@ const AdminUsers: React.FC = () => {
                 width: '100%',
                 fontSize: '14px',
                 color: '#1e293b',
+                fontWeight: 600,
                 background: 'transparent'
               }} 
             />
@@ -219,14 +243,16 @@ const AdminUsers: React.FC = () => {
                 <div style={{ height: '1px', background: 'rgba(0,0,0,0.06)', margin: '-4px 0', borderBottom: '1px solid rgba(255,255,255,0.4)' }}></div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ fontSize: '13px', fontWeight: 700, color: '#475569' }}>Role</label>
+                  <label style={{ fontSize: '13px', fontWeight: 700, color: '#475569' }}>Identity</label>
                   <div className="glass-select-container">
                     <select className="glass-select" value={roleFilter} onChange={e => setRoleFilter(e.target.value)} style={{ width: '100%', padding: '10px 12px', paddingRight: '36px', borderRadius: '10px', fontSize: '14px', cursor: 'pointer' }}>
-                      <option value="All">All Roles</option>
-                      <option value="user">Alumni / User</option>
-                      <option value="admin">System Admin</option>
-                      <option value="intern">Intern</option>
-                      <option value="staff">Staff</option>
+                      <option value="All">All Identities</option>
+                      <option value="Alumni">Alumni</option>
+                      <option value="Intern">Intern</option>
+                      <option value="Industrial Student">IV Student</option>
+                      <option value="Staff">Staff</option>
+                      <option value="Trainee">Trainee</option>
+                      <option value="Admin">Admin</option>
                     </select>
                     <ChevronDown className="glass-select-icon" size={16} />
                   </div>
@@ -285,7 +311,7 @@ const AdminUsers: React.FC = () => {
       </div>
 
       {/* Data Table */}
-      <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+      <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'visible' }}>
         {isLoading ? (
           <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>Loading users...</div>
         ) : (
@@ -293,26 +319,26 @@ const AdminUsers: React.FC = () => {
             <thead>
               <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
                 <th style={{ padding: '16px', width: '48px' }}>
-                  <input type="checkbox" style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: '#3b82f6' }} />
+                  <div style={{ width: '18px', height: '18px', border: '2px solid #cbd5e1', borderRadius: '4px' }}></div>
                 </th>
-                <th style={{ padding: '16px', fontSize: '14px', fontWeight: 600, color: '#475569' }}>Name</th>
-                <th style={{ padding: '16px', fontSize: '14px', fontWeight: 600, color: '#475569' }}>Email</th>
-                <th style={{ padding: '16px', fontSize: '14px', fontWeight: 600, color: '#475569' }}>Role</th>
-                <th style={{ padding: '16px', fontSize: '14px', fontWeight: 600, color: '#475569' }}>Status</th>
-                <th style={{ padding: '16px', fontSize: '14px', fontWeight: 600, color: '#475569' }}>Actions</th>
+                <th style={{ padding: '16px', fontSize: '14px', fontWeight: 700, color: '#475569' }}>Name</th>
+                <th style={{ padding: '16px', fontSize: '14px', fontWeight: 700, color: '#475569' }}>Email</th>
+                <th style={{ padding: '16px', fontSize: '14px', fontWeight: 700, color: '#475569' }}>Identity</th>
+                <th style={{ padding: '16px', fontSize: '14px', fontWeight: 700, color: '#475569' }}>Status</th>
+                <th style={{ padding: '16px', fontSize: '14px', fontWeight: 700, color: '#475569' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredUsers.map((user, index) => (
-                <tr key={user.id} style={{ borderBottom: index !== filteredUsers.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                <tr key={user.id} style={{ borderBottom: index !== filteredUsers.length - 1 ? '1px solid #f1f5f9' : 'none', transition: 'background 0.2s' }}>
                   <td style={{ padding: '16px' }}>
-                    <input type="checkbox" style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: '#3b82f6' }} />
+                    <div style={{ width: '18px', height: '18px', border: '2px solid #cbd5e1', borderRadius: '4px' }}></div>
                   </td>
                   <td style={{ padding: '16px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <div style={{ 
-                        width: '40px', 
-                        height: '40px', 
+                        width: '42px', 
+                        height: '42px', 
                         borderRadius: '50%', 
                         background: '#3b82f6', 
                         color: '#fff', 
@@ -320,48 +346,107 @@ const AdminUsers: React.FC = () => {
                         alignItems: 'center', 
                         justifyContent: 'center',
                         fontSize: '16px',
-                        fontWeight: 600
+                        fontWeight: 700,
+                        boxShadow: '0 2px 6px rgba(59, 130, 246, 0.2)'
                       }}>
                         {user.full_name?.charAt(0) || 'U'}
                       </div>
                       <div>
-                        <div style={{ fontSize: '14px', fontWeight: 600, color: '#1e293b' }}>{user.full_name}</div>
-                        <div style={{ fontSize: '13px', color: '#94a3b8' }}>{user.email}</div>
+                        <div style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>{user.full_name}</div>
+                        <div style={{ fontSize: '12px', color: '#64748b' }}>{user.email}</div>
                       </div>
                     </div>
                   </td>
-                  <td style={{ padding: '16px', fontSize: '14px', color: '#475569' }}>
+                  <td style={{ padding: '16px', fontSize: '14px', color: '#475569', fontWeight: 500 }}>
                     {user.email}
                   </td>
                   <td style={{ padding: '16px' }}>
                     <span style={{ 
-                      padding: '6px 12px', 
-                      borderRadius: '8px', 
+                      padding: '4px 12px', 
+                      borderRadius: '999px', 
                       fontSize: '12px', 
                       fontWeight: 600, 
-                      background: user.role === 'admin' ? '#e0e7ff' : '#f1f5f9',
-                      color: user.role === 'admin' ? '#4f46e5' : '#475569'
+                      background: '#f1f5f9',
+                      color: '#475569',
+                      border: '1px solid #e2e8f0',
+                      textTransform: 'capitalize'
                     }}>
-                      {user.role}
+                      {user.user_type || user.role}
                     </span>
                   </td>
                   <td style={{ padding: '16px' }}>
                     <span style={{ 
-                      padding: '6px 12px', 
-                      borderRadius: '8px', 
+                      padding: '4px 12px', 
+                      borderRadius: '999px', 
                       fontSize: '12px', 
                       fontWeight: 600, 
-                      background: user.is_active ? '#dcfce7' : '#fee2e2',
-                      color: user.is_active ? '#16a34a' : '#ef4444'
+                      background: user.is_active ? '#eff6ff' : '#fef2f2',
+                      color: user.is_active ? '#2563eb' : '#dc2626',
+                      border: user.is_active ? '1px solid #dbeafe' : '1px solid #fee2e2'
                     }}>
                       {user.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </td>
-                  <td style={{ padding: '16px' }}>
+                  <td style={{ padding: '16px', position: 'relative' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }} title="View"><Eye size={18} /></button>
-                      <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }} title="Edit"><Edit2 size={18} /></button>
-                      <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }} title="More"><MoreHorizontal size={18} /></button>
+                      <button 
+                         onClick={() => navigate(`/admin/users/edit/${user.id}`)}
+                         style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', transition: 'color 0.2s' }}
+                         onMouseEnter={e => e.currentTarget.style.color = nestNavy}
+                         onMouseLeave={e => e.currentTarget.style.color = '#94a3b8'}
+                         title="Edit"
+                      >
+                        <Edit2 size={18} />
+                      </button>
+                      
+                      <div style={{ position: 'relative' }}>
+                        <button 
+                          onClick={() => setActiveMenu(activeMenu === user.id ? null : user.id)}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', transition: 'color 0.2s' }}
+                          onMouseEnter={e => e.currentTarget.style.color = nestNavy}
+                          onMouseLeave={e => e.currentTarget.style.color = '#94a3b8'}
+                          title="More"
+                        >
+                          <MoreHorizontal size={18} />
+                        </button>
+                        
+                        {activeMenu === user.id && (
+                          <div 
+                            ref={menuRef}
+                            style={{
+                              position: 'absolute',
+                              top: '100%',
+                              right: 0,
+                              width: '180px',
+                              background: '#fff',
+                              border: '1px solid #e2e8f0',
+                              borderRadius: '12px',
+                              boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+                              zIndex: 100,
+                              overflow: 'hidden',
+                              marginTop: '8px'
+                            }}
+                          >
+                            <button 
+                              onClick={() => { handleToggleStatus(user); setActiveMenu(null); }}
+                              style={{ width: '100%', padding: '12px 16px', textAlign: 'left', background: 'none', border: 'none', fontSize: '13px', fontWeight: 500, color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'background 0.2s' }}
+                              onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                              onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                            >
+                              {user.is_active ? 'Deactivate User' : 'Activate User'}
+                            </button>
+                            <div style={{ height: '1px', background: '#f1f5f9' }}></div>
+                            <button 
+                              onClick={() => { handleDeleteUser(user); setActiveMenu(null); }}
+                              style={{ width: '100%', padding: '12px 16px', textAlign: 'left', background: 'none', border: 'none', fontSize: '13px', fontWeight: 500, color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'background 0.2s' }}
+                              onMouseEnter={e => e.currentTarget.style.background = '#fef2f2'}
+                              onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                            >
+                              Delete Account
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </td>
                 </tr>

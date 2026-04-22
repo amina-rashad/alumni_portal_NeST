@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, UploadCloud, CheckCircle2, AlertCircle, MapPin, Building, Briefcase } from 'lucide-react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
+import { jobsApi, applicationsApi } from '../services/api';
 
 // Simple mock data for context
 const JOB_CONTEXT: Record<string, any> = {
@@ -16,15 +17,44 @@ const JOB_CONTEXT: Record<string, any> = {
 const ApplyJob: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const job = id && JOB_CONTEXT[id] ? JOB_CONTEXT[id] : JOB_CONTEXT['1'];
-
+  
+  const [job, setJob] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [resumeFile, setResumeFile] = useState<File | null>(null);
+  
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    linkedin: '',
+    coverLetter: ''
+  });
 
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, []);
+    const fetchJob = async () => {
+      if (!id) return;
+      
+      // Fallback for mock IDs
+      if (id.includes('-') || id.length < 5) {
+        setJob(JOB_CONTEXT[id] || JOB_CONTEXT['1']);
+        setLoading(false);
+        return;
+      }
+
+      const res = await jobsApi.getJobById(id);
+      if (res.success && res.data && (res.data as any).job) {
+        setJob((res.data as any).job);
+      } else {
+        setJob(JOB_CONTEXT['1']);
+      }
+      setLoading(false);
+    };
+    fetchJob();
+  }, [id]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -32,14 +62,24 @@ const ApplyJob: React.FC = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!id) return;
+    
     setIsSubmitting(true);
-    // Mock API call
-    setTimeout(() => {
-      setIsSubmitting(false);
+    
+    const res = await applicationsApi.applyForJob({
+      job_id: id,
+      cover_letter: formData.coverLetter,
+      resume_url: resumeFile ? `mock_url/${resumeFile.name}` : '' // Mock URL for now as we don't have file upload service yet
+    });
+
+    if (res.success) {
       setIsSuccess(true);
-    }, 2000);
+    } else {
+      alert(res.message || "Failed to submit application");
+    }
+    setIsSubmitting(false);
   };
 
   if (isSuccess) {
@@ -159,28 +199,28 @@ const ApplyJob: React.FC = () => {
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '1.5rem', marginBottom: '1.5rem' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label style={{ fontWeight: 600, color: '#4a4a4a', fontSize: '0.9rem' }}>First Name *</label>
-              <input type="text" required placeholder="Jane" style={{ background: '#ffffff', color: '#1a1a1a', padding: '1rem', borderRadius: '8px', border: '1px solid #ced4da', outline: 'none', fontSize: '1rem', width: '100%', boxSizing: 'border-box' }} />
+              <input type="text" required placeholder="Jane" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} style={{ background: '#ffffff', color: '#1a1a1a', padding: '1rem', borderRadius: '8px', border: '1px solid #ced4da', outline: 'none', fontSize: '1rem', width: '100%', boxSizing: 'border-box' }} />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label style={{ fontWeight: 600, color: '#4a4a4a', fontSize: '0.9rem' }}>Last Name *</label>
-              <input type="text" required placeholder="Doe" style={{ background: '#ffffff', color: '#1a1a1a', padding: '1rem', borderRadius: '8px', border: '1px solid #ced4da', outline: 'none', fontSize: '1rem', width: '100%', boxSizing: 'border-box' }} />
+              <input type="text" required placeholder="Doe" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} style={{ background: '#ffffff', color: '#1a1a1a', padding: '1rem', borderRadius: '8px', border: '1px solid #ced4da', outline: 'none', fontSize: '1rem', width: '100%', boxSizing: 'border-box' }} />
             </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '1.5rem', marginBottom: '1.5rem' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label style={{ fontWeight: 600, color: '#4a4a4a', fontSize: '0.9rem' }}>Email Address *</label>
-              <input type="email" required placeholder="jane.doe@example.com" style={{ background: '#ffffff', color: '#1a1a1a', padding: '1rem', borderRadius: '8px', border: '1px solid #ced4da', outline: 'none', fontSize: '1rem', width: '100%', boxSizing: 'border-box' }} />
+              <input type="email" required placeholder="jane.doe@example.com" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} style={{ background: '#ffffff', color: '#1a1a1a', padding: '1rem', borderRadius: '8px', border: '1px solid #ced4da', outline: 'none', fontSize: '1rem', width: '100%', boxSizing: 'border-box' }} />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label style={{ fontWeight: 600, color: '#4a4a4a', fontSize: '0.9rem' }}>Phone Number *</label>
-              <input type="tel" required placeholder="+91 98765 43210" style={{ background: '#ffffff', color: '#1a1a1a', padding: '1rem', borderRadius: '8px', border: '1px solid #ced4da', outline: 'none', fontSize: '1rem', width: '100%', boxSizing: 'border-box' }} />
+              <input type="tel" required placeholder="+91 98765 43210" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} style={{ background: '#ffffff', color: '#1a1a1a', padding: '1rem', borderRadius: '8px', border: '1px solid #ced4da', outline: 'none', fontSize: '1rem', width: '100%', boxSizing: 'border-box' }} />
             </div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '2.5rem' }}>
             <label style={{ fontWeight: 600, color: '#4a4a4a', fontSize: '0.9rem' }}>LinkedIn Profile URL (Optional)</label>
-            <input type="url" placeholder="https://linkedin.com/in/janedoe" style={{ background: '#ffffff', color: '#1a1a1a', padding: '1rem', borderRadius: '8px', border: '1px solid #ced4da', outline: 'none', fontSize: '1rem', width: '100%', boxSizing: 'border-box' }} />
+            <input type="url" placeholder="https://linkedin.com/in/janedoe" value={formData.linkedin} onChange={e => setFormData({...formData, linkedin: e.target.value})} style={{ background: '#ffffff', color: '#1a1a1a', padding: '1rem', borderRadius: '8px', border: '1px solid #ced4da', outline: 'none', fontSize: '1rem', width: '100%', boxSizing: 'border-box' }} />
           </div>
 
           <div style={{ borderTop: '1px solid #e9ecef', paddingTop: '2.5rem', marginBottom: '2.5rem' }}>
@@ -229,6 +269,8 @@ const ApplyJob: React.FC = () => {
               <textarea 
                 rows={6} 
                 placeholder="Briefly tell us why you're a great fit for this role..." 
+                value={formData.coverLetter}
+                onChange={e => setFormData({...formData, coverLetter: e.target.value})}
                 style={{ background: '#ffffff', color: '#1a1a1a', padding: '1rem', borderRadius: '8px', border: '1px solid #ced4da', outline: 'none', fontSize: '1rem', width: '100%', resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box' }} 
               />
             </div>

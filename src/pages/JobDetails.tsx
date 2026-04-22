@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, MapPin, Briefcase, Clock, Building, CheckCircle2, Star, Share2, Upload } from 'lucide-react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
+import { jobsApi } from '../services/api';
 
 // Comprehensive mock data covering the jobs from JobListings
 const DETAILED_JOBS: Record<string, any> = {
@@ -64,13 +65,67 @@ const DETAILED_JOBS: Record<string, any> = {
 const JobDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  
-  // Use mock data for ID 1 if ID doesn't exist to prevent crashing on demo
-  const job = id && DETAILED_JOBS[id] ? DETAILED_JOBS[id] : DETAILED_JOBS['1'];
+  const [job, setJob] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, []);
+    const fetchJobDetails = async () => {
+      if (!id) return;
+      
+      // If it's a mock ID (has a hyphen), use mock data
+      if (id.includes('-') || id.length < 5) {
+        setJob(DETAILED_JOBS[id] || DETAILED_JOBS['1']);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      const res = await jobsApi.getJobById(id);
+      if (res.success && res.data && (res.data as any).job) {
+        const j = (res.data as any).job;
+        
+        // Map backend to UI format
+        let desc = j.description || '';
+        let dept = 'Engineering';
+        const deptMatch = desc.match(/^\[(.*?)\]/);
+        if (deptMatch) {
+          dept = deptMatch[1];
+          desc = desc.replace(/^\[.*?\]\s*/, ''); 
+          desc = desc.replace(/^\[.*?\]\s*/, ''); 
+        }
+
+        setJob({
+          id: j.id,
+          title: j.title,
+          department: dept,
+          location: j.location,
+          type: j.type,
+          experience: j.experience_level || 'Not specified',
+          postedAt: j.createdAt ? new Date(j.createdAt).toLocaleDateString() : 'Recently',
+          salary: j.salary,
+          aboutContext: desc,
+          responsibilities: j.requirements || [],
+          requirements: j.requirements || [], // Backend uses requirements for both for now
+          skills: j.skills_required || [],
+          urgent: true
+        });
+      } else {
+        // Fallback for demo
+        setJob(DETAILED_JOBS['1']);
+      }
+      setLoading(false);
+    };
+    fetchJobDetails();
+  }, [id]);
+
+  if (loading || !job) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8f9fa' }}>
+        <p style={{ color: '#64748b' }}>Consulting NeST Talents database...</p>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: '100vh', padding: '4rem 2rem', background: '#f8f9fa', color: '#1a1a1a', fontFamily: 'Inter, sans-serif' }}>

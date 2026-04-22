@@ -51,7 +51,7 @@ const MainLayout: React.FC = () => {
       { name: 'My Courses', path: '/courses/my-courses', icon: <BookOpen size={18} /> },
     ]},
     { section: 'Assessments', items: [
-      { name: 'Quizzes', path: '/assessments/quiz', icon: <Edit3 size={18} /> },
+      { name: 'Assessment Center', path: '/assessments/quiz', icon: <Award size={18} /> },
       { name: 'Analytics', path: '/assessments/analytics', icon: <Activity size={18} /> },
     ]},
     { section: 'Gamification', items: [

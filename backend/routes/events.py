@@ -22,11 +22,13 @@ def _serialize_event(e: dict) -> dict:
         "location": e.get("location", "Virtual"),
         "category": e.get("category", "General"),
         "attendees_count": len(e.get("attendees", [])),
+        "max_attendees": e.get("max_attendees", 0),
         "is_registered": False, # Will be set conditionally
         "organizer": e.get("organizer", "NeST Alumni Association"),
         "cover_image": e.get("cover_image", ""),
     }
 
+@events_bp.route("", methods=["GET"])
 @events_bp.route("/", methods=["GET"])
 @jwt_required()
 def list_events():
@@ -83,14 +85,26 @@ def register_for_event(event_id):
     except:
         return jsonify({"success": False, "message": "Invalid ID format."}), 400
         
+    event = db["events"].find_one({"_id": oid})
+    if not event:
+        return jsonify({"success": False, "message": "Event not found."}), 404
+        
+    # Check capacity check
+    max_attendees = event.get("max_attendees", 0)
+    current_attendees = event.get("attendees", [])
+    
+    # Check if already registered
+    if u_oid in current_attendees:
+        return jsonify({"success": False, "message": "You are already registered for this event."}), 400
+
+    if max_attendees > 0 and len(current_attendees) >= max_attendees:
+        return jsonify({"success": False, "message": "This event has reached its maximum capacity."}), 400
+        
     res = db["events"].update_one(
         {"_id": oid},
         {"$addToSet": {"attendees": u_oid}}
     )
     
-    if res.matched_count == 0:
-        return jsonify({"success": False, "message": "Event not found."}), 404
-        
     return jsonify({
         "success": True, 
         "message": "Successfully registered for the event!"

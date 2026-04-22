@@ -120,7 +120,7 @@ const MOCK_JOBS: Job[] = [
 ];
 
 const JobListings: React.FC = () => {
-  const [jobs] = useState<Job[]>(MOCK_JOBS);
+  const [jobs, setJobs] = useState<Job[]>(MOCK_JOBS);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('All');
@@ -133,8 +133,35 @@ const JobListings: React.FC = () => {
         setLoading(true);
         const res = await jobsApi.getAllJobs();
         if (res.success && res.data && (res.data as any).jobs) {
-          // Merge API jobs or use them if they match the UI quality
-          // setJobs((res.data as any).jobs);
+          const apiJobs = (res.data as any).jobs.map((j: any) => {
+            // Extract category and clean description if formatted as "[Category] [Type] description"
+            let desc = j.description || '';
+            let dept = 'Engineering';
+            const deptMatch = desc.match(/^\[(.*?)\]/);
+            if (deptMatch) {
+              dept = deptMatch[1];
+              desc = desc.replace(/^\[.*?\]\s*/, ''); // Remove category
+              desc = desc.replace(/^\[.*?\]\s*/, ''); // Remove type if present
+            }
+
+            return {
+              id: j.id,
+              title: j.title || 'Untitled Role',
+              department: dept,
+              company: j.company || 'NeST Digital',
+              location: j.location || 'Remote',
+              type: j.type || 'Full-time',
+              experience: j.experience_level || 'Not Specified',
+              postedAt: j.createdAt ? new Date(j.createdAt).toLocaleDateString() : 'Just now',
+              description: desc,
+              skills: j.skills_required || [],
+              salary: j.salary,
+              isNew: true,
+              isUrgent: j.is_urgent === true,
+              matchScore: Math.floor(Math.random() * 20) + 75 // Random high match for alumni
+            };
+          });
+          setJobs([...apiJobs, ...MOCK_JOBS]);
         }
       } catch (err) {
         console.error("Failed to load jobs", err);

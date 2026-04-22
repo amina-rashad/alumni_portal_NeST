@@ -60,6 +60,7 @@ import Quiz from './pages/Quiz';
 import QuizInstructions from './pages/QuizInstructions';
 import QuizResult from './pages/QuizResult';
 import PerformanceAnalytics from './pages/PerformanceAnalytics';
+import AssessmentCenter from './pages/AssessmentCenter';
 
 // Gamification Pages
 import PointsOverview from './pages/PointsOverview';
@@ -90,6 +91,7 @@ import ChangePassword from './pages/ChangePassword';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsers from './pages/admin/AdminUsers';
+import AdminEditUser from './pages/admin/AdminEditUser';
 import AdminAddUser from './pages/admin/AdminAddUser';
 import AdminInterns from './pages/admin/AdminInterns';
 import AdminAddIntern from './pages/admin/AdminAddIntern';
@@ -221,6 +223,7 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="/courses/:id" element={<PageTransition><CourseDetails /></PageTransition>} />
           <Route path="/courses/:id/play" element={<PageTransition><CoursePlayer /></PageTransition>} />
           <Route path="/courses/my-courses" element={<PageTransition><MyCourses /></PageTransition>} />
+          <Route path="/assessment/:id" element={<PageTransition><AssessmentCenter /></PageTransition>} />
           <Route path="/courses/:id/completion" element={<PageTransition><CourseCompletion /></PageTransition>} />
           <Route path="/assessments/quiz" element={<PageTransition><Quiz /></PageTransition>} />
           <Route path="/assessments/quiz/instructions" element={<PageTransition><QuizInstructions /></PageTransition>} />
@@ -250,6 +253,7 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="dashboard" element={<PageTransition><AdminDashboard /></PageTransition>} />
           <Route path="users" element={<PageTransition><AdminUsers /></PageTransition>} />
           <Route path="users/add" element={<PageTransition><AdminAddUser /></PageTransition>} />
+          <Route path="users/edit/:id" element={<PageTransition><AdminEditUser /></PageTransition>} />
           <Route path="interns" element={<PageTransition><AdminInterns /></PageTransition>} />
           <Route path="interns/add" element={<PageTransition><AdminAddIntern /></PageTransition>} />
           <Route path="iv-students" element={<PageTransition><AdminIVStudents /></PageTransition>} />
@@ -263,6 +267,7 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="events/add" element={<PageTransition><AdminAddEvent /></PageTransition>} />
           <Route path="add-courses" element={<PageTransition><AdminCourses /></PageTransition>} />
           <Route path="courses/add" element={<PageTransition><AdminAddCourse /></PageTransition>} />
+          <Route path="courses/edit/:id" element={<PageTransition><AdminAddCourse /></PageTransition>} />
           <Route path="settings" element={<PageTransition><Settings /></PageTransition>} />
         </Route>
 

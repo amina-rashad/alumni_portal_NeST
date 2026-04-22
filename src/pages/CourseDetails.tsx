@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft, Clock, Star, 
@@ -7,11 +7,75 @@ import {
   ChevronRight, Calendar, User, Globe
 } from 'lucide-react';
 import { coursesApi } from '../services/api';
+import StatusModal from '../components/StatusModal';
 
 const CourseDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [course, setCourse] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isEnrolled, setIsEnrolled] = useState(false);
+  const [enrolling, setEnrolling] = useState(false);
+  const [modalConfig, setModalConfig] = useState<{
+    isOpen: boolean;
+    type: 'success' | 'error' | 'warning' | 'info';
+    title: string;
+    message: string;
+  }>({
+    isOpen: false,
+    type: 'info',
+    title: '',
+    message: ''
+  });
+
+  useEffect(() => {
+    const checkEnrollment = async () => {
+      try {
+        const res = await coursesApi.getMyCourses();
+        if (res.success && res.data) {
+          const enrolled = res.data.courses.some((c: any) => c.id === id);
+          setIsEnrolled(enrolled);
+        }
+      } catch (err) {
+        console.error('Error checking enrollment:', err);
+      }
+    };
+    if (id) checkEnrollment();
+  }, [id]);
+
+  const handleEnroll = async () => {
+    if (!id) return;
+    setEnrolling(true);
+    try {
+      const res = await (coursesApi as any).enroll(id);
+      if (res.success) {
+        setIsEnrolled(true);
+        setModalConfig({
+          isOpen: true,
+          type: 'success',
+          title: 'Successfully Enrolled!',
+          message: 'You have been successfully enrolled in this course. You can now start learning!'
+        });
+      } else {
+        setModalConfig({
+          isOpen: true,
+          type: 'error',
+          title: 'Enrollment Failed',
+          message: res.message || 'Enrollment failed. Please try again later.'
+        });
+      }
+    } catch (err) {
+      console.error('Enrollment error:', err);
+      setModalConfig({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message: 'An error occurred during enrollment. Please check your connection.'
+      });
+    } finally {
+      setEnrolling(false);
+    }
+  };
 
   useEffect(() => {
     const fetchCourse = async () => {
@@ -48,7 +112,7 @@ const CourseDetails: React.FC = () => {
     );
   }
 
-  const curriculum = [
+  const curriculum = (course.modules && course.modules.length > 0) ? course.modules : [
     { title: 'Introduction to Core Concepts', duration: '45m' },
     { title: 'Foundational Principles & Theory', duration: '1h 20m' },
     { title: 'Hands-on Implementation Part I', duration: '2h 15m' },
@@ -73,28 +137,62 @@ const CourseDetails: React.FC = () => {
                      </span>
                   </div>
                   <h1 style={{ fontSize: '3rem', fontWeight: 900, marginBottom: '1.5rem', lineHeight: '1.1', letterSpacing: '-0.02em' }}>{course.title}</h1>
-                  <p style={{ fontSize: '1.25rem', color: '#cbd5e1', lineHeight: '1.6', marginBottom: '2.5rem', maxWidth: '600px' }}>{course.description || "Master industry-standard engineering practices and lead with expertise."}</p>
+                   <div style={{ background: 'rgba(255,255,255,0.06)', padding: '1.5rem 2rem', borderRadius: '1.5rem', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '2.5rem', maxWidth: '850px', backdropFilter: 'blur(10px)' }}>
+                      <p style={{ fontSize: '1.1rem', color: '#e2e8f0', lineHeight: '1.7', margin: 0 }}>
+                         {course.description || "Master industry-standard engineering practices and lead with expertise through this professional track."}
+                      </p>
+                   </div>
                   
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem' }}>
-                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <Clock size={20} color="var(--primary)" />
-                        <div>
-                           <p style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Duration</p>
-                           <p style={{ fontWeight: 800 }}>{course.duration || "24 Hours"}</p>
+                  <div style={{ display: 'flex', gap: '1rem', marginBottom: '2.5rem' }}>
+                    <span style={{ backgroundColor: 'rgba(255,255,255,0.1)', padding: '0.5rem 1rem', borderRadius: '0.5rem', fontSize: '0.8rem', fontWeight: 700, color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }}>
+                      Access: {course.access_level || 'Open'}
+                    </span>
+                    <span style={{ backgroundColor: 'rgba(255,255,255,0.1)', padding: '0.5rem 1rem', borderRadius: '0.5rem', fontSize: '0.8rem', fontWeight: 700, color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }}>
+                      Track: {course.category || 'Professional'}
+                    </span>
+                  </div>
+                  
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: '1.5rem',
+                    marginTop: '1.5rem',
+                    padding: '1.25rem 2rem',
+                    background: 'rgba(255,255,255,0.05)',
+                    borderRadius: '24px',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    width: '100%',
+                    flexWrap: 'nowrap',
+                    overflowX: 'auto'
+                  }}>
+                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
+                        <div style={{ background: 'rgba(200,16,46,0.2)', padding: '8px', borderRadius: '10px', display: 'flex' }}>
+                           <Clock size={16} color="#f87171" />
+                        </div>
+                        <div style={{ whiteSpace: 'nowrap' }}>
+                           <p style={{ fontSize: '0.6rem', color: '#cbd5e1', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '2px' }}>Duration</p>
+                           <p style={{ fontSize: '0.9rem', fontWeight: 800, color: '#fff' }}>
+                              {course.duration ? (course.duration.toLowerCase().includes('h') ? course.duration : `${course.duration} Hours`) : "24 Hours"}
+                           </p>
                         </div>
                      </div>
-                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <Calendar size={20} color="var(--primary)" />
-                        <div>
-                           <p style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Start Date</p>
-                           <p style={{ fontWeight: 800 }}>On Demand</p>
+                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
+                        <div style={{ background: 'rgba(200,16,46,0.2)', padding: '8px', borderRadius: '10px', display: 'flex' }}>
+                           <Calendar size={16} color="#f87171" />
+                        </div>
+                        <div style={{ whiteSpace: 'nowrap' }}>
+                           <p style={{ fontSize: '0.6rem', color: '#cbd5e1', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '2px' }}>Start Date</p>
+                           <p style={{ fontSize: '0.9rem', fontWeight: 800, color: '#fff' }}>{course.start_date || "On Demand"}</p>
                         </div>
                      </div>
-                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <Globe size={20} color="var(--primary)" />
-                        <div>
-                           <p style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Enrolled</p>
-                           <p style={{ fontWeight: 800 }}>2.4k Students</p>
+                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
+                        <div style={{ background: 'rgba(200,16,46,0.2)', padding: '8px', borderRadius: '10px', display: 'flex' }}>
+                           <Globe size={16} color="#f87171" />
+                        </div>
+                        <div style={{ whiteSpace: 'nowrap' }}>
+                           <p style={{ fontSize: '0.6rem', color: '#cbd5e1', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '2px' }}>Enrolled</p>
+                           <p style={{ fontSize: '0.9rem', fontWeight: 800, color: '#fff' }}>{course.enrolled_count || 0} Students</p>
                         </div>
                      </div>
                   </div>
@@ -115,15 +213,11 @@ const CourseDetails: React.FC = () => {
       </div>
 
       {/* Main Content Sections */}
-      <div style={{ maxWidth: '1200px', margin: '-4rem auto 0 auto', padding: '0 1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '3rem' }}>
+      <div style={{ maxWidth: '1200px', margin: '2rem auto 0 auto', padding: '0 1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '3rem' }}>
          {/* Left Side: Learning and Info */}
          <div style={{ gridColumn: 'span 2' }}>
             <div style={{ background: 'white', padding: '3rem', borderRadius: '2rem', boxShadow: '0 10px 30px rgba(0,0,0,0.03)', border: '1px solid #f1f5f9', marginBottom: '3rem' }}>
-               <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0d2046', marginBottom: '1.5rem' }}>Course Overview</h3>
-               <p style={{ color: '#475569', lineHeight: '1.8', fontSize: '1.05rem' }}>
-                  This comprehensive course is designed for professionals looking to master the intricacies of {course.title}. 
-                  Our industry-expert instructors provide a blend of theoretical foundation and hands-on practical exercises.
-               </p>
+               <h4 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#0d2046', marginBottom: '1.5rem', textTransform: 'uppercase', letterSpacing: '0.02em' }}>Core Knowledge Areas</h4>
                
                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem', marginTop: '2.5rem' }}>
                   <div>
@@ -140,20 +234,32 @@ const CourseDetails: React.FC = () => {
             </div>
 
             <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0d2046', marginBottom: '1.5rem' }}>Curriculum Schedule</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-               {curriculum.map((item, idx) => (
-                  <div key={idx} style={{ background: 'white', padding: '1.5rem 2rem', borderRadius: '1.25rem', border: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                     <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                        <span style={{ width: '40px', height: '40px', backgroundColor: '#f1f5f9', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.875rem' }}>{idx + 1}</span>
-                        <div>
-                           <h5 style={{ fontWeight: 800, color: '#334155' }}>{item.title}</h5>
-                           <p style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Lesson {idx + 1} • {item.duration}</p>
-                        </div>
-                     </div>
-                     <ChevronRight size={20} color="#cbd5e1" />
-                  </div>
-               ))}
-            </div>
+                {curriculum.map((item: any, idx: number) => (
+                   <div 
+                      key={idx} 
+                      onClick={() => isEnrolled && navigate(`/courses/${id}/play`)}
+                      style={{ 
+                        background: 'white', 
+                        padding: '1.5rem 2rem', 
+                        borderRadius: '1.25rem', 
+                        border: '1px solid #f1f5f9', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'space-between',
+                        cursor: isEnrolled ? 'pointer' : 'default',
+                        transition: 'all 0.2s'
+                      }}
+                   >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                         <span style={{ width: '40px', height: '40px', backgroundColor: '#f1f5f9', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.875rem' }}>{idx + 1}</span>
+                         <div>
+                            <h5 style={{ fontWeight: 800, color: '#334155' }}>{item.title}</h5>
+                            <p style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Lesson {idx + 1} • {item.duration}</p>
+                         </div>
+                      </div>
+                      <ChevronRight size={20} color={isEnrolled ? 'var(--primary)' : "#cbd5e1"} />
+                   </div>
+                ))}
          </div>
 
          {/* Right Side: Instructor and Action */}
@@ -165,7 +271,7 @@ const CourseDetails: React.FC = () => {
                   </div>
                   <div>
                      <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase' }}>Expert Instructor</p>
-                     <h4 style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0d2046' }}>{course.instructor || "Sarah Jenkins"}</h4>
+                     <h4 style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0d2046' }}>{course.instructor || "NeST Expert"}</h4>
                   </div>
                </div>
 
@@ -177,13 +283,32 @@ const CourseDetails: React.FC = () => {
                   <p style={{ fontSize: '0.8rem', color: '#64748b' }}>Exclusively available to verified NeST graduates.</p>
                </div>
 
-               <button style={{ width: '100%', padding: '1.25rem', backgroundColor: 'var(--primary)', color: 'white', fontWeight: 900, borderRadius: '1rem', marginBottom: '1.5rem', fontSize: '1.1rem', boxShadow: '0 10px 20px rgba(200,16,46,0.2)', cursor: 'pointer' }}>
-                  Enroll This Course
+               <button 
+                  onClick={isEnrolled ? () => navigate(`/courses/${id}/play`) : handleEnroll}
+                  disabled={enrolling}
+                  style={{ 
+                    width: '100%', 
+                    padding: '1.25rem', 
+                    backgroundColor: 'var(--primary)', 
+                    color: 'white', 
+                    fontWeight: 900, 
+                    borderRadius: '1rem', 
+                    marginBottom: '1.5rem', 
+                    fontSize: '1.1rem', 
+                    boxShadow: '0 10px 20px rgba(200,16,46,0.2)', 
+                    cursor: enrolling ? 'default' : 'pointer',
+                    transition: 'all 0.2s',
+                    opacity: enrolling ? 0.7 : 1
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 25px rgba(200,16,46,0.3)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 10px 20px rgba(200,16,46,0.2)'; }}
+               >
+                  {enrolling ? 'Enrolling...' : isEnrolled ? 'Start Learning' : 'Enroll This Course'}
                </button>
 
                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: '#475569', fontSize: '0.9rem', fontWeight: 600 }}>
-                     <Award size={18} color="var(--primary)" /> Professional Certificate
+                     <Award size={18} color="var(--primary)" /> {course.certification || 'Professional Certificate'}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: '#475569', fontSize: '0.9rem', fontWeight: 600 }}>
                      <User size={18} color="var(--primary)" /> One-on-one Mentorship
@@ -193,6 +318,14 @@ const CourseDetails: React.FC = () => {
          </div>
       </div>
       <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+       <StatusModal 
+         isOpen={modalConfig.isOpen}
+         onClose={() => setModalConfig(prev => ({ ...prev, isOpen: false }))}
+         type={modalConfig.type}
+         title={modalConfig.title}
+         message={modalConfig.message}
+         confirmText="Okay"
+       />
     </div>
   );
 };

@@ -202,6 +202,88 @@ const Dashboard: React.FC = () => {
           </h1>
         </motion.div>
 
+        {/* --- NEW DISCOVERY SECTION (Users Only) --- */}
+        {user?.role !== 'admin' && (
+          <motion.section 
+            variants={sectionVariants} 
+            initial="hidden" 
+            whileInView="visible" 
+            viewport={{ once: true, margin: "-10%" }}
+          >
+            <div className="luxury-card" style={{ padding: 0 }}>
+              {/* Header Area */}
+              <div style={{ padding: '2rem', borderBottom: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(to right, #ffffff, #FFF5F5)' }}>
+                <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+                  <div style={{ 
+                    background: 'linear-gradient(135deg, #EF4444, #C8102E)', 
+                    padding: '16px', 
+                    borderRadius: '16px', 
+                    display: 'flex', 
+                    boxShadow: '0 8px 20px rgba(200, 16, 46, 0.25)' 
+                  }}>
+                    <ArrowRight size={28} color="white" style={{ transform: 'rotate(-45deg)' }} />
+                  </div>
+                  <div>
+                    <h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>Discover Your Career Path</h2>
+                    <p style={{ margin: '0.25rem 0 0', color: '#64748B', fontSize: '1.05rem', fontWeight: 500 }}>Unlock AI suggestions and alumni insights.</p>
+                  </div>
+                </div>
+                <button className="btn-premium btn-outline" style={{ padding: '10px', borderRadius: '50%', background: 'white' }}>
+                   <ChevronRight size={24} color="#94A3B8" style={{ transform: 'rotate(90deg)' }} />
+                </button>
+              </div>
+
+              <div style={{ padding: '2.5rem' }}>
+                {/* Alumni Section */}
+                <div style={{ marginBottom: '2.5rem' }}>
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#0F172A', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    People from the same background:
+                  </h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
+                    {[
+                      { name: 'Alice', title: 'UX Designer', company: 'Figma', avatar: 'https://i.pravatar.cc/150?img=47' },
+                      { name: 'Bob', title: 'Product Manager', company: 'Google', avatar: 'https://i.pravatar.cc/150?img=11' },
+                      { name: 'Charlie', title: 'Frontend Dev', company: 'Vercel', avatar: 'https://i.pravatar.cc/150?img=12' }
+                    ].map((alumni, i) => (
+                      <div key={i} className="luxury-card btn-premium" style={{ padding: '1.5rem', textAlign: 'center', background: '#ffffff', border: '1px solid #F1F5F9', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+                        <div style={{ position: 'relative', display: 'inline-block', marginBottom: '1rem' }}>
+                          <img src={alumni.avatar} alt={alumni.name} style={{ width: '80px', height: '80px', borderRadius: '50%', border: '4px solid white', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }} />
+                        </div>
+                        <h4 style={{ margin: '0 0 0.25rem', fontSize: '1.1rem', fontWeight: 700, color: '#0F172A' }}>{alumni.name}</h4>
+                        <p style={{ margin: '0 0 0.5rem', fontSize: '0.9rem', color: '#64748B', fontWeight: 500 }}>{alumni.title}</p>
+                        <p style={{ margin: 0, fontSize: '0.9rem', color: '#C8102E', fontWeight: 700 }}>@ {alumni.company}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Next Steps Section */}
+                <div>
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#0F172A', marginBottom: '1.5rem' }}>Suggested Next Steps</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div className="btn-premium" style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', padding: '1.25rem 1.5rem', background: '#F8FAFC', borderRadius: '18px', border: '1px solid #F1F5F9' }}>
+                      <div style={{ background: '#FFF1F2', padding: '12px', borderRadius: '14px', display: 'flex' }}>
+                        <BrainCircuit size={20} color="#C8102E" />
+                      </div>
+                      <p style={{ margin: 0, fontSize: '1.05rem', color: '#334155', fontWeight: 600 }}>
+                        Take the <span style={{ color: '#C8102E', fontWeight: 800 }}>Career Assessment Quiz</span>
+                      </p>
+                    </div>
+                    <div className="btn-premium" style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', padding: '1.25rem 1.5rem', background: '#F8FAFC', borderRadius: '18px', border: '1px solid #F1F5F9' }}>
+                      <div style={{ background: '#FFF1F2', padding: '12px', borderRadius: '14px', display: 'flex' }}>
+                        <MessageSquare size={20} color="#C8102E" />
+                      </div>
+                      <p style={{ margin: 0, fontSize: '1.05rem', color: '#334155', fontWeight: 600 }}>
+                        Book a 1:1 mentorship with <span style={{ color: '#C8102E', fontWeight: 800 }}>Alumni Mentors</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.section>
+        )}
+
         {/* 1. CREATION & POSTS AREA (ACTIVITY FEED OVERVIEW) */}
         <motion.section 
           variants={sectionVariants} 

@@ -11,6 +11,7 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 import bcrypt
 
 from app import get_db
+from .notifications import create_notification
 
 admin_bp = Blueprint("admin", __name__)
 
@@ -94,6 +95,35 @@ def get_all_users():
     return jsonify({
         "success": True,
         "data": {"users": users_list}
+    }), 200
+
+@admin_bp.route("/users/<user_id>", methods=["GET"])
+@jwt_required()
+@admin_required
+def get_user_details(user_id):
+    """Get full details of a specific user for admin editing."""
+    db = get_db()
+    try:
+        user = db["users"].find_one({"_id": ObjectId(user_id)})
+    except:
+        return jsonify({"success": False, "message": "Invalid user ID."}), 400
+        
+    if not user:
+        return jsonify({"success": False, "message": "User not found."}), 404
+        
+    user["id"] = str(user["_id"])
+    del user["_id"]
+    if "password" in user:
+        del user["password"]
+    
+    # Convert dates to ISO
+    for field in ["created_at", "updated_at", "last_login"]:
+        if field in user and hasattr(user[field], "isoformat"):
+            user[field] = user[field].isoformat()
+            
+    return jsonify({
+        "success": True,
+        "data": {"user": user}
     }), 200
 
 @admin_bp.route("/users", methods=["POST"])
@@ -232,14 +262,32 @@ def add_job():
         "skills_required": data.get("skills_required", []),
         "experience_level": data.get("experience_level", "Entry Level"),
         "is_active": True,
+        "is_urgent": data.get("is_urgent", False),
         "posted_by": get_jwt_identity(),
         "createdAt": datetime.now(timezone.utc)
     }
     
     result = db["jobs"].insert_one(job_doc)
+    
+    # Notify all users
+    try:
+        from .notifications import create_notification
+        users_cursor = db["users"].find({"role": {"$ne": "admin"}})
+        for user in users_cursor:
+            create_notification(
+                db,
+                user["_id"],
+                "job",
+                f"New Job Opportunity: {job_doc['title']}",
+                f"{job_doc['company']} is hiring for {job_doc['title']} in {job_doc['location']}. Apply now!",
+                "/jobs"
+            )
+    except Exception as e:
+        print(f"Notification error: {e}")
+
     return jsonify({
         "success": True, 
-        "message": "Job posted successfully.",
+        "message": "Job posted successfully and notifications sent.",
         "data": {"id": str(result.inserted_id)}
     }), 201
 
@@ -252,7 +300,7 @@ def update_job(job_id):
     db = get_db()
     
     allowed_fields = ["title", "company", "location", "salary", "type", "description", 
-                       "requirements", "skills_required", "experience_level", "is_active"]
+                       "requirements", "skills_required", "experience_level", "is_active", "is_urgent"]
     update_data = {}
     for field in allowed_fields:
         if field in data:
@@ -296,6 +344,11 @@ def get_all_courses():
     courses_list = []
     for c in courses_cursor:
         c["id"] = str(c["_id"])
+        
+        # Count enrollments for this course
+        enrolled_count = db["course_enrollments"].count_documents({"course_id": c["_id"]})
+        c["enrolled_count"] = enrolled_count
+        
         del c["_id"]
         if "createdAt" in c and hasattr(c["createdAt"], "isoformat"):
             c["createdAt"] = c["createdAt"].isoformat()
@@ -312,6 +365,7 @@ def get_all_courses():
 def add_course():
     """Add a new course."""
     data = request.get_json()
+    print(f"DEBUG: add_course payload: {data}")
     db = get_db()
     
     if not data or not data.get("title"):
@@ -320,22 +374,43 @@ def add_course():
     course_doc = {
         "title": data.get("title"),
         "description": data.get("description", ""),
-        "instructor": data.get("instructor", ""),
-        "duration": data.get("duration", ""),
-        "level": data.get("level", "Beginner"),  # Beginner, Intermediate, Advanced
+        "instructor": data.get("instructor", "NeST Expert Instructor"), 
+        "duration": data.get("duration", "4h"),
+        "level": data.get("level", "Beginner"),
         "category": data.get("category", "General"),
+        "start_date": data.get("start_date", "On Demand"),
+        "certification": data.get("certification", "Standard Achievement"),
+        "access_level": data.get("access_level", "Open Access"),
         "thumbnail": data.get("thumbnail", ""),
-        "video_url": data.get("video_url", ""),
+        "video_url": data.get("videoUrl") or data.get("video_url", ""),
         "modules": data.get("modules", []),
+        "required_assessments": data.get("required_assessments", [1, 2, 3, 4, 5]),
         "is_published": data.get("is_published", True),
         "created_by": get_jwt_identity(),
         "createdAt": datetime.now(timezone.utc)
     }
     
     result = db["courses"].insert_one(course_doc)
+    
+    # Notify all users
+    try:
+        from .notifications import create_notification
+        users_cursor = db["users"].find({"role": {"$ne": "admin"}})
+        for user in users_cursor:
+            create_notification(
+                db,
+                user["_id"],
+                "system",
+                f"New Course: {course_doc['title']}",
+                f"New learning content available: {course_doc['title']} by {course_doc['instructor']}. Check it out!",
+                "/courses"
+            )
+    except Exception as e:
+        print(f"Notification error: {e}")
+
     return jsonify({
         "success": True,
-        "message": "Course created successfully.",
+        "message": "Course created successfully and notifications dispatched.",
         "data": {"id": str(result.inserted_id)}
     }), 201
 
@@ -348,7 +423,9 @@ def update_course(course_id):
     db = get_db()
     
     allowed_fields = ["title", "description", "instructor", "duration", "level",
-                       "category", "thumbnail", "video_url", "modules", "is_published"]
+                       "category", "thumbnail", "video_url", "modules", 
+                       "required_assessments", "is_published", "certification", 
+                       "access_level", "start_date"]
     update_data = {}
     for field in allowed_fields:
         if field in data:
@@ -431,9 +508,26 @@ def add_event():
     }
     
     result = db["events"].insert_one(event_doc)
+    
+    # Send notifications to all target users
+    try:
+        from .notifications import create_notification
+        users_cursor = db["users"].find({"role": {"$ne": "admin"}})
+        for user in users_cursor:
+            create_notification(
+                db,
+                user["_id"],
+                "event",
+                f"New Event: {event_doc['title']}",
+                f"A new event has been scheduled for {event_doc['date']}. View details and register now!",
+                "/events"
+            )
+    except Exception as e:
+        print(f"Notification error: {e}")
+
     return jsonify({
         "success": True,
-        "message": "Event created successfully.",
+        "message": "Event created successfully and notifications dispatched.",
         "data": {"id": str(result.inserted_id)}
     }), 201
 
@@ -604,3 +698,141 @@ def update_application_status(app_id):
     )
     
     return jsonify({"success": True, "message": f"Application status updated to '{new_status}'."}), 200
+
+# ── Assessment Management ──
+
+@admin_bp.route("/assessments/pending", methods=["GET"])
+@jwt_required()
+@admin_required
+def get_pending_assessments():
+    """List all assessment submissions awaiting review."""
+    db = get_db()
+    
+    # Stages 2, 3, 4, 5 require review
+    stages_to_review = ["2", "3", "4", "5"]
+    
+    # Find attempts where current_stage status is 'pending'
+    pending_list = []
+    
+    attempts_cursor = db["assessment_attempts"].find({
+        "$or": [
+            {f"stages.{s}.status": "pending"} for s in stages_to_review
+        ]
+    })
+    
+    for attempt in attempts_cursor:
+        # Identify which stage is pending
+        pending_stage = None
+        for s in stages_to_review:
+            if attempt["stages"].get(s, {}).get("status") == "pending":
+                pending_stage = s
+                break
+        
+        if not pending_stage:
+            continue
+            
+        # Get user info
+        user = db["users"].find_one({"_id": attempt["user_id"]})
+        # Get course info
+        course = db["courses"].find_one({"_id": attempt["course_id"]})
+        
+        pending_list.append({
+            "id": str(attempt["_id"]),
+            "user_id": str(attempt["user_id"]),
+            "user_name": user.get("full_name") if user else "Unknown User",
+            "course_id": str(attempt["course_id"]),
+            "course_title": course.get("title") if course else "Unknown Course",
+            "stage": int(pending_stage),
+            "submission": attempt["stages"][pending_stage].get("submission"),
+            "submitted_at": attempt["stages"][pending_stage].get("submitted_at").isoformat() if hasattr(attempt["stages"][pending_stage].get("submitted_at"), "isoformat") else None
+        })
+        
+    return jsonify({
+        "success": True,
+        "data": {"pending_assessments": pending_list}
+    }), 200
+
+@admin_bp.route("/assessments/<attempt_id>/review", methods=["PATCH"])
+@jwt_required()
+@admin_required
+def review_assessment(attempt_id):
+    """Approve or reject an assessment stage."""
+    data = request.get_json()
+    db = get_db()
+    
+    if not data or "action" not in data or "stage" not in data:
+        return jsonify({"success": False, "message": "Action and stage are required."}), 400
+        
+    action = data["action"] # 'approve' or 'reject'
+    stage = str(data["stage"])
+    feedback = data.get("feedback", "")
+    score = data.get("score", 0)
+    
+    attempt = db["assessment_attempts"].find_one({"_id": ObjectId(attempt_id)})
+    if not attempt:
+        return jsonify({"success": False, "message": "Assessment attempt not found."}), 404
+        
+    now = datetime.now(timezone.utc)
+    
+    if action == "approve":
+        new_status = "passed"
+        next_stage = int(stage) + 1
+        is_completed = next_stage > 5
+        
+        update_doc = {
+            f"stages.{stage}.status": "passed",
+            f"stages.{stage}.feedback": feedback,
+            f"stages.{stage}.score": score,
+            f"stages.{stage}.reviewed_at": now,
+            "updated_at": now
+        }
+        
+        if is_completed:
+            update_doc["is_completed"] = True
+            # Update enrollment status to completed if this is the final stage
+            db["course_enrollments"].update_one(
+                {"user_id": attempt["user_id"], "course_id": attempt["course_id"]},
+                {"$set": {"status": "Completed", "completed_at": now, "progress": 100}}
+            )
+        else:
+            update_doc["current_stage"] = next_stage
+            update_doc[f"stages.{str(next_stage)}.status"] = "not_started"
+            
+        db["assessment_attempts"].update_one({"_id": ObjectId(attempt_id)}, {"$set": update_doc})
+        
+        # Notify student
+        create_notification(
+            db, 
+            attempt["user_id"], 
+            "info", 
+            f"Assessment Stage {stage} Approved!", 
+            f"Congratulations! Your submission for Stage {stage} has been approved. {feedback}",
+            f"/assessment/{attempt['course_id']}"
+        )
+        
+        return jsonify({"success": True, "message": f"Stage {stage} approved."}), 200
+        
+    elif action == "reject":
+        db["assessment_attempts"].update_one(
+            {"_id": ObjectId(attempt_id)},
+            {
+                "$set": {
+                    f"stages.{stage}.status": "rejected",
+                    f"stages.{stage}.feedback": feedback,
+                    f"stages.{stage}.reviewed_at": now,
+                    "updated_at": now
+                }
+            }
+        )
+        # Notify student
+        create_notification(
+            db, 
+            attempt["user_id"], 
+            "system", 
+            f"Revision Needed: Stage {stage}", 
+            f"Your submission for Stage {stage} requires revision. Admin feedback: {feedback}",
+            f"/assessment/{attempt['course_id']}"
+        )
+        return jsonify({"success": True, "message": f"Stage {stage} rejected with feedback."}), 200
+        
+    return jsonify({"success": False, "message": "Invalid action."}), 400

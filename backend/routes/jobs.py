@@ -12,9 +12,8 @@ from app import get_db
 jobs_bp = Blueprint("jobs", __name__)
 
 @jobs_bp.route("/", methods=["GET"])
-@jwt_required()
 def get_all_jobs():
-    """Fetch all jobs."""
+    """Fetch all jobs (Public)."""
     db = get_db()
     
     # Sort by creation date descending if it exists
@@ -39,9 +38,8 @@ def get_all_jobs():
     }), 200
 
 @jobs_bp.route("/<job_id>", methods=["GET"])
-@jwt_required()
 def get_job_by_id(job_id):
-    """Fetch a single job by ID."""
+    """Fetch a single job by ID (Public)."""
     try:
         oid = ObjectId(job_id)
     except Exception:

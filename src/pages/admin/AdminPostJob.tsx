@@ -22,7 +22,8 @@ const AdminPostJob: React.FC = () => {
     currency: 'INR (₹)',
     skills: '',
     experience: 'Select experience level',
-    education: 'Select education level'
+    education: 'Select education level',
+    isUrgent: false
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -33,15 +34,18 @@ const AdminPostJob: React.FC = () => {
     // Map the new UI state to what the backend expects
     const jobData = {
       title: formData.title,
-      company: 'NeST',
+      company: 'NeST Digital',
       location: formData.location,
       salary: `${formData.currency} ${formData.minSalary} - ${formData.maxSalary} / ${formData.salaryType}`,
-      description: `[${formData.category}] [${formData.jobType}] ${formData.description}`,
+      type: formData.jobType,
+      experience_level: formData.experience,
+      skills_required: formData.skills.split(',').map(s => s.trim()),
+      description: `[${formData.category}] ${formData.description}`,
       requirements: [
-        `Skills: ${formData.skills}`,
-        `Experience: ${formData.experience}`,
-        `Education: ${formData.education}`
-      ]
+        `Education: ${formData.education}`,
+        `Job Category: ${formData.category}`
+      ],
+      is_urgent: formData.isUrgent
     };
 
     const res = await adminApi.addJob(jobData);
@@ -249,6 +253,22 @@ const AdminPostJob: React.FC = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <label style={{ fontSize: '13px', fontWeight: 700, color: '#475569' }}>Skills Required</label>
                 <input required type="text" placeholder="Enter required skills" value={formData.skills} onChange={e => setFormData({...formData, skills: e.target.value})} style={{ padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '14px', color: '#1e293b', background: '#fff' }} />
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#fff', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                <input 
+                  type="checkbox" 
+                  id="urgent-checkbox"
+                  checked={formData.isUrgent}
+                  onChange={e => setFormData({...formData, isUrgent: e.target.checked})}
+                  style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#ef4444' }}
+                />
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <label htmlFor="urgent-checkbox" style={{ fontSize: '14px', fontWeight: 700, color: '#1e293b', cursor: 'pointer', userSelect: 'none' }}>
+                    Mark as Urgent Role
+                  </label>
+                  <span style={{ fontSize: '12px', color: '#64748b' }}>This job will be highlighted to users in the Urgent Roles section.</span>
+                </div>
               </div>
               
               <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '24px' }}>

@@ -6,9 +6,11 @@ import {
   ShieldCheck,
   Plus, Link as LinkIcon, Trash2,
   BookMarked, Image as ImageIcon,
-  ChevronDown
+  ChevronDown, Star
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import { coursesApi } from '../../services/api';
+import StatusModal from '../../components/StatusModal';
 
 // CUSTOM REUSABLE GLASS SELECT COMPONENT - UPDATED FOR NAVY
 const GlassSelect: React.FC<{
@@ -102,29 +104,88 @@ const GlassSelect: React.FC<{
 };
 
 const AdminAddCourse: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [lessons, setLessons] = useState([{ id: 1, title: '', duration: '', videoUrl: '' }]);
+  const [loading, setLoading] = useState(false);
+  const isEditMode = !!id;
   const nestNavy = '#1a2652';
+
+  // Modal State
+  const [modal, setModal] = useState<{
+    isOpen: boolean;
+    type: 'success' | 'error' | 'warning' | 'info';
+    title: string;
+    message: string;
+  }>({
+    isOpen: false,
+    type: 'success',
+    title: '',
+    message: ''
+  });
 
   // Form State
   const [formData, setFormData] = useState({
     title: '',
-    track: 'Web Development',
+    category: 'Web Development',
     certification: 'Standard Achievement',
-    objectives: '',
-    estimateDuration: '',
-    difficulty: 'Beginner Friendly',
-    access: 'Open Access'
+    description: '',
+    duration: '',
+    level: 'Beginner Friendly',
+    access_level: 'Open Access',
+    instructor: '',
+    start_date: 'On Demand',
+    required_assessments: [1, 2, 3, 4, 5] // Default to all 5 rounds
   });
+
+  useEffect(() => {
+    if (id) {
+      const fetchCourse = async () => {
+        setLoading(true);
+        try {
+          const res = await coursesApi.getCourseById(id);
+          const data = res.data as any;
+          if (res.success && data && data.course) {
+            const c = data.course;
+            setFormData({
+              title: c.title || '',
+              category: c.category || 'Web Development',
+              certification: c.certification || 'Standard Achievement',
+              description: c.description || '',
+              duration: c.duration || '',
+              level: c.level || 'Beginner Friendly',
+              access_level: c.access_level || 'Open Access',
+              instructor: c.instructor || '',
+              start_date: c.start_date || 'On Demand',
+              required_assessments: c.required_assessments || [1, 2, 3, 4, 5]
+            });
+            if (c.modules && c.modules.length > 0) {
+              setLessons(c.modules.map((m: any, idx: number) => ({
+                id: idx + 1,
+                title: m.title,
+                duration: m.duration,
+                videoUrl: m.video_url || ''
+              })));
+            }
+          }
+        } catch (err) {
+          console.error('Fetch error:', err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchCourse();
+    }
+  }, [id]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const setTrack = (val: string) => setFormData(prev => ({ ...prev, track: val }));
+  const setTrack = (val: string) => setFormData(prev => ({ ...prev, category: val }));
   const setCertification = (val: string) => setFormData(prev => ({ ...prev, certification: val }));
-  const setDifficulty = (val: string) => setFormData(prev => ({ ...prev, difficulty: val }));
+  const setDifficulty = (val: string) => setFormData(prev => ({ ...prev, level: val }));
 
   const addLesson = () => {
     setLessons([...lessons, { id: lessons.length + 1, title: '', duration: '', videoUrl: '' }]);
@@ -170,7 +231,7 @@ const AdminAddCourse: React.FC = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748b', fontSize: '12px', fontWeight: 800, marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               <BookOpen size={14} color={nestNavy} /> Academic Portal <span>{'>'}</span> Curating Content
             </div>
-            <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#1e293b', margin: 0 }}>Enroll Strategic Course</h1>
+            <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#1e293b', margin: 0 }}>{isEditMode ? 'Edit Strategic Course' : 'Enroll Strategic Course'}</h1>
           </div>
         </div>
 
@@ -179,7 +240,36 @@ const AdminAddCourse: React.FC = () => {
             Save Draft
           </button>
           <button 
-            onClick={() => console.log('Publishing Course:', { formData, lessons })}
+            onClick={async () => {
+              console.log('Publishing Course:', { formData, lessons });
+              try {
+                const payload = {
+                  ...formData,
+                  modules: lessons.map(l => ({ title: l.title, duration: l.duration, video_url: l.videoUrl, content: "Lesson content goes here." }))
+                };
+                
+                const response = isEditMode 
+                  ? await coursesApi.updateCourse(id!, payload)
+                  : await coursesApi.addCourse(payload);
+
+                if (response.success) {
+                  setModal({
+                    isOpen: true,
+                    type: 'success',
+                    title: isEditMode ? 'Updated Successfully' : 'Published Successfully',
+                    message: isEditMode ? 'The course details have been updated.' : 'The new course is now available to students.'
+                  });
+                }
+              } catch (err) {
+                console.error('Failed to save course:', err);
+                setModal({
+                  isOpen: true,
+                  type: 'error',
+                  title: 'Submission Failed',
+                  message: 'An error occurred while saving the course. Please try again.'
+                });
+              }
+            }}
             style={{ 
               display: 'flex', 
               alignItems: 'center', 
@@ -219,11 +309,23 @@ const AdminAddCourse: React.FC = () => {
                 />
               </div>
 
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <label style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Instructor Name</label>
+                <input 
+                  type="text" 
+                  name="instructor"
+                  value={formData.instructor}
+                  onChange={handleInputChange}
+                  placeholder="e.g. Dr. Robert NeST" 
+                  style={glossyInputStyle} 
+                />
+              </div>
+
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
                 <GlassSelect 
                   label="Learning Track"
-                  name="track"
-                  value={formData.track}
+                  name="category"
+                  value={formData.category}
                   options={['Web Development', 'Cloud Infrastructure', 'Artificial Intelligence', 'Professional Growth']}
                   onChange={setTrack}
                 />
@@ -240,8 +342,8 @@ const AdminAddCourse: React.FC = () => {
                 <label style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Learning Objectives</label>
                 <textarea 
                   rows={5} 
-                  name="objectives"
-                  value={formData.objectives}
+                  name="description"
+                  value={formData.description}
                   onChange={handleInputChange}
                   placeholder="What will the students achieve upon completion?..." 
                   style={{ ...glossyInputStyle, resize: 'none', height: 'auto', fontFamily: 'inherit' }} 
@@ -326,8 +428,8 @@ const AdminAddCourse: React.FC = () => {
                 <label style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Estimated Duration</label>
                 <input 
                   type="text" 
-                  name="estimateDuration"
-                  value={formData.estimateDuration}
+                  name="duration"
+                  value={formData.duration}
                   onChange={handleInputChange}
                   placeholder="e.g. 12 Hours" 
                   style={glossyInputStyle} 
@@ -336,11 +438,23 @@ const AdminAddCourse: React.FC = () => {
               
               <GlassSelect 
                 label="Difficulty Rating"
-                name="difficulty"
-                value={formData.difficulty}
+                name="level"
+                value={formData.level}
                 options={['Beginner Friendly', 'Intermediate Professional', 'Advanced Strategic']}
                 onChange={setDifficulty}
               />
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Available From (Start Date)</label>
+                <input 
+                  type="text" 
+                  name="start_date"
+                  value={formData.start_date}
+                  onChange={handleInputChange}
+                  placeholder="e.g. On Demand or May 15, 2024" 
+                  style={glossyInputStyle} 
+                />
+              </div>
             </div>
           </section>
 
@@ -370,9 +484,9 @@ const AdminAddCourse: React.FC = () => {
                 <label key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', padding: '4px' }}>
                    <input 
                     type="radio" 
-                    name="access" 
+                    name="access_level" 
                     value={opt}
-                    checked={formData.access === opt}
+                    checked={formData.access_level === opt}
                     onChange={handleInputChange}
                     style={{ accentColor: nestNavy }}
                    />
@@ -381,8 +495,56 @@ const AdminAddCourse: React.FC = () => {
               ))}
             </div>
           </section>
+
+          {/* Assessment Configuration */}
+          <section style={{ background: '#fff', padding: '32px', borderRadius: '32px', border: '1px solid #e2e8f0', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#1e293b', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Star size={16} color="#f59e0b" /> Assessment Rounds
+            </h3>
+            
+            <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '20px', fontWeight: 600 }}>Select which evaluation stages are required for this course certification.</p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {[
+                { id: 1, label: 'Stage 1: Automated Quiz' },
+                { id: 2, label: 'Stage 2: Scenario Analysis' },
+                { id: 3, label: 'Stage 3: Debugging Round' },
+                { id: 4, label: 'Stage 4: Industry Project' },
+                { id: 5, label: 'Stage 5: High-Level Review' }
+              ].map((stage) => (
+                <label key={stage.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', padding: '10px', borderRadius: '12px', background: formData.required_assessments.includes(stage.id) ? 'rgba(245, 158, 11, 0.05)' : 'transparent', border: '1px solid', borderColor: formData.required_assessments.includes(stage.id) ? 'rgba(245, 158, 11, 0.2)' : 'transparent', transition: 'all 0.2s' }}>
+                   <input 
+                    type="checkbox" 
+                    checked={formData.required_assessments.includes(stage.id)}
+                    onChange={(e) => {
+                      const rounds = [...formData.required_assessments];
+                      if (e.target.checked) {
+                        rounds.push(stage.id);
+                      } else {
+                        const index = rounds.indexOf(stage.id);
+                        if (index > -1) rounds.splice(index, 1);
+                      }
+                      setFormData(prev => ({ ...prev, required_assessments: rounds.sort((a,b) => a-b) }));
+                    }}
+                    style={{ accentColor: '#f59e0b' }}
+                   />
+                   <div style={{ fontSize: '14px', fontWeight: 800, color: '#1e293b' }}>{stage.label}</div>
+                </label>
+              ))}
+            </div>
+          </section>
         </div>
       </div>
+      <StatusModal 
+        isOpen={modal.isOpen}
+        onClose={() => {
+          setModal(prev => ({ ...prev, isOpen: false }));
+          if (modal.type === 'success') navigate('/admin/add-courses');
+        }}
+        type={modal.type}
+        title={modal.title}
+        message={modal.message}
+      />
     </div>
   );
 };

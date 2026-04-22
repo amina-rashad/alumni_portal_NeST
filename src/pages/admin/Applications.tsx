@@ -16,8 +16,19 @@ const Applications: React.FC = () => {
     const fetchApps = async () => {
       setIsLoading(true);
       const res = await adminApi.getApplications();
-      if (res.success && res.data) {
-        setApplications(res.data.applications);
+      if (res.success && res.data && res.data.applications) {
+        const mapped = res.data.applications.map((app: any) => ({
+          id: app.id,
+          candidate: {
+            name: app.applicant_name || 'Alumni Member',
+            email: app.applicant_email || 'member@nest.com'
+          },
+          role: app.job_title || 'Software Role',
+          date: app.applied_at ? new Date(app.applied_at).toLocaleDateString() : 'Today',
+          aiScore: Math.floor(Math.random() * 40) + 60, // Mock AI Score for demo
+          status: app.status || 'Pending'
+        }));
+        setApplications(mapped);
       }
       setIsLoading(false);
     };
@@ -25,9 +36,9 @@ const Applications: React.FC = () => {
   }, []);
 
   const filteredApplications = applications.filter(app => 
-    app.candidate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    app.candidate.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    app.role.toLowerCase().includes(searchTerm.toLowerCase())
+    app.candidate?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    app.candidate?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    app.role?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const getStatusColor = (status: string) => {

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { 
   Briefcase, Plus, 
   Download, Eye, Edit2, MoreHorizontal,
-  Search, Calendar
+  Search, Calendar, AlertTriangle
 } from 'lucide-react';
 import { jobsApi, adminApi } from '../../services/api';
 
@@ -11,6 +11,8 @@ const AdminJobs: React.FC = () => {
   const [jobs, setJobs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [jobToDelete, setJobToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -24,15 +26,21 @@ const AdminJobs: React.FC = () => {
     fetchJobs();
   }, []);
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this job?')) {
-      const res = await adminApi.deleteJob(id);
-      if (res.success) {
-        setJobs(jobs.filter(j => j.id !== id));
-      } else {
-        alert(res.message || 'Failed to delete job');
-      }
+  const handleDeleteClick = (id: string) => {
+    setJobToDelete(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!jobToDelete) return;
+    setIsDeleting(true);
+    const res = await adminApi.deleteJob(jobToDelete);
+    if (res.success) {
+      setJobs(jobs.filter(j => j.id !== jobToDelete));
+      setJobToDelete(null);
+    } else {
+      alert(res.message || 'Failed to delete job');
     }
+    setIsDeleting(false);
   };
 
   const filteredJobs = jobs.filter(job => 
@@ -145,7 +153,7 @@ const AdminJobs: React.FC = () => {
                   <td style={{ padding: '16px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }} title="View"><Eye size={18} /></button>
-                      <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }} title="Delete" onClick={() => handleDelete(job.id)}><MoreHorizontal size={18} /></button>
+                      <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }} title="Delete" onClick={() => handleDeleteClick(job.id)}><MoreHorizontal size={18} /></button>
                     </div>
                   </td>
                 </tr>
@@ -154,6 +162,40 @@ const AdminJobs: React.FC = () => {
           </table>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {jobToDelete && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(8px)' }}>
+          <div style={{ background: '#ffffff', borderRadius: '16px', padding: '32px', width: '100%', maxWidth: '400px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+                <AlertTriangle size={24} color="#ef4444" />
+              </div>
+              <h3 style={{ margin: '0 0 8px 0', fontSize: '20px', fontWeight: 700, color: '#1e293b' }}>Delete Job</h3>
+              <p style={{ margin: '0 0 24px 0', fontSize: '14px', color: '#64748b' }}>
+                Are you sure you want to delete this job posting? This action cannot be undone.
+              </p>
+              
+              <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
+                <button 
+                  onClick={() => setJobToDelete(null)}
+                  disabled={isDeleting}
+                  style={{ flex: 1, padding: '12px', background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 600, cursor: isDeleting ? 'not-allowed' : 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={confirmDelete}
+                  disabled={isDeleting}
+                  style={{ flex: 1, padding: '12px', background: '#ef4444', color: '#ffffff', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 600, cursor: isDeleting ? 'not-allowed' : 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+                >
+                  {isDeleting ? 'Deleting...' : 'Delete Job'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

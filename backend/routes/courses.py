@@ -11,8 +11,9 @@ from app import get_db
 
 courses_bp = Blueprint("courses", __name__)
 
-@courses_bp.route("/", methods=["GET"])
-@jwt_required()
+@courses_bp.route("/", methods=["GET"], strict_slashes=False)
+@courses_bp.route("", methods=["GET"], strict_slashes=False)
+# @jwt_required()
 def get_all_courses():
     """Fetch all courses."""
     db = get_db()
@@ -23,6 +24,11 @@ def get_all_courses():
     courses_list = []
     for c in courses_cursor:
         c["id"] = str(c["_id"])
+        
+        # Count enrollments for this course
+        enrolled_count = db["course_enrollments"].count_documents({"course_id": c["_id"]})
+        c["enrolled_count"] = enrolled_count
+            
         del c["_id"]
         
         # Format the date nicely if present
@@ -54,6 +60,11 @@ def get_course_by_id(course_id):
         return jsonify({"success": False, "message": "Course not found."}), 404
 
     course["id"] = str(course["_id"])
+    
+    # Count enrollments for this course
+    enrolled_count = db["course_enrollments"].count_documents({"course_id": course["_id"]})
+    course["enrolled_count"] = enrolled_count
+    
     del course["_id"]
     if "createdAt" in course and hasattr(course["createdAt"], "isoformat"):
         course["createdAt"] = course["createdAt"].isoformat()

@@ -1,38 +1,50 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Plus, Search, Calendar, Clock, MapPin, Users,
   Globe, Edit3, MoreVertical, ChevronRight
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { adminApi } from '../../services/api';
 
 interface Event {
   id: string;
   title: string;
-  category: 'Networking' | 'Workshop' | 'Seminar' | 'Social';
+  category: string;
   date: string;
   time: string;
   location: string;
-  attendees: number;
-  status: 'Upcoming' | 'Completed' | 'Cancelled';
-  thumbnail: string;
+  attendees_count: number;
+  max_attendees: number;
+  status?: 'Upcoming' | 'Completed' | 'Cancelled';
+  thumbnail?: string;
 }
 
 const AdminEvents: React.FC = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // NeST NAVY BLUE
   const nestNavy = '#1a2652';
 
-  // Dummy Event Data
-  const [events] = useState<Event[]>([
-    { id: '1', title: 'Annual Alumni Homecoming 2026', category: 'Social', date: '2026-05-15', time: '18:00', location: 'Grand Ballroom, NeST Tech Park', attendees: 450, status: 'Upcoming', thumbnail: 'AH' },
-    { id: '2', title: 'Advanced AI & Machine Learning Workshop', category: 'Workshop', date: '2026-04-10', time: '10:00', location: 'Virtual Zoom Session', attendees: 128, status: 'Upcoming', thumbnail: 'AI' },
-    { id: '3', title: 'Global Career Opportunities Seminar', category: 'Seminar', date: '2026-03-20', time: '14:30', location: 'Auditorium A, Engineering Block', attendees: 312, status: 'Completed', thumbnail: 'GC' },
-    { id: '4', title: 'Startup Pitch & Networking Mixer', category: 'Networking', date: '2026-04-25', time: '17:00', location: 'Innovation Hub Lounge', attendees: 85, status: 'Upcoming', thumbnail: 'SN' },
-    { id: '5', title: 'Corporate Leadership Mentorship', category: 'Workshop', date: '2026-02-28', time: '11:00', location: 'Board Room 4, Corporate Plaza', attendees: 45, status: 'Completed', thumbnail: 'LM' }
-  ]);
+  const fetchEvents = async () => {
+    try {
+      const res = await adminApi.getEvents();
+      if (res.success && res.data?.events) {
+        setEvents(res.data.events);
+      }
+    } catch (error) {
+      console.error('Failed to fetch events:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEvents();
+  }, []);
 
   const filteredEvents = events.filter(e => 
     e.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -76,8 +88,10 @@ const AdminEvents: React.FC = () => {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '24px' }}>
-        {filteredEvents.map((event, i) => {
-          const statusStyle = getStatusColor(event.status);
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '50px', width: '100%', color: nestNavy }}>Loading events...</div>
+        ) : filteredEvents.map((event, i) => {
+          const statusStyle = getStatusColor(event.status || 'Upcoming');
           return (
             <motion.div 
               key={event.id}
@@ -89,7 +103,7 @@ const AdminEvents: React.FC = () => {
               <div style={{ padding: '24px', flex: 1 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
                   <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: `linear-gradient(135deg, ${nestNavy} 0%, #0f172a 100%)`, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: 800 }}>
-                    {event.thumbnail}
+                    {event.thumbnail || event.title.substring(0, 2).toUpperCase()}
                   </div>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <button style={{ padding: '6px', borderRadius: '10px', border: 'none', background: '#f8fafc', color: '#64748b', cursor: 'pointer' }}><Edit3 size={18} /></button>
@@ -114,14 +128,15 @@ const AdminEvents: React.FC = () => {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#64748b', fontSize: '14px' }}>
                     <Users size={16} color={nestNavy} />
-                    <span style={{ fontWeight: 800, color: '#1e293b' }}>{event.attendees.toLocaleString()}</span> Registered
+                    <span style={{ fontWeight: 800, color: '#1e293b' }}>{(event.attendees_count || 0).toLocaleString()}</span>
+                    <span style={{ color: '#94a3b8' }}> / {event.max_attendees > 0 ? event.max_attendees : '∞'} Seats Taken</span>
                   </div>
                 </div>
               </div>
 
               <div style={{ padding: '16px 24px', borderTop: '1px solid #f1f5f9', background: '#fcfdfe', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ padding: '6px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 700, background: statusStyle.bg, color: statusStyle.color }}>
-                   {event.status}
+                   {event.status || 'Upcoming'}
                 </span>
                 <button style={{ color: nestNavy, background: 'transparent', border: 'none', fontSize: '13px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
                    View Details <ChevronRight size={14} />

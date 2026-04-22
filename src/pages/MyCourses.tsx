@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, BookOpen, Clock, Award, PlayCircle, CheckCircle2, ChevronDown, Search, Filter, BarChart3, Calendar, Star, ChevronRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { coursesApi } from '../services/api';
 
 type CourseStatus = 'In Progress' | 'Completed' | 'Not Started';
 
@@ -133,31 +134,60 @@ const LEVEL_COLORS: Record<string, { color: string; bg: string }> = {
 const ALL_STATUSES: CourseStatus[] = ['In Progress', 'Completed', 'Not Started'];
 
 const MyCourses: React.FC = () => {
+  const [courses, setCourses] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
 
-  const filteredCourses = MOCK_COURSES.filter(course => {
-    const matchesStatus = filterStatus === 'All' || course.status === filterStatus;
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const res = await coursesApi.getMyCourses();
+        if (res.success && res.data) {
+          setCourses(res.data.courses);
+        }
+      } catch (err) {
+        console.error('Failed to fetch my courses:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCourses();
+  }, []);
+
+  const filteredCourses = courses.filter(course => {
+    const status = course.enrollment_info?.status || 'Not Started';
+    const matchesStatus = filterStatus === 'All' || status === filterStatus;
     const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           course.instructor.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesStatus && matchesSearch;
   });
 
-  const statusCounts = MOCK_COURSES.reduce((acc, course) => {
-    acc[course.status] = (acc[course.status] || 0) + 1;
+  const statusCounts = courses.reduce((acc, course) => {
+    const status = course.enrollment_info?.status || 'Not Started';
+    acc[status] = (acc[status] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
-  const totalProgress = MOCK_COURSES.length > 0
-    ? Math.round(MOCK_COURSES.reduce((sum, c) => sum + c.progress, 0) / MOCK_COURSES.length)
+  const totalProgress = courses.length > 0
+    ? Math.round(courses.reduce((sum, c) => sum + (c.enrollment_info?.progress || 0), 0) / courses.length)
     : 0;
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-IN', {
-      day: 'numeric', month: 'short', year: 'numeric'
-    });
+    if (!dateStr) return 'N/A';
+    try {
+      // Fix potential space instead of T
+      const isoStr = dateStr.replace(' ', 'T');
+      const date = new Date(isoStr);
+      if (isNaN(date.getTime())) return dateStr; // Fallback to raw string
+      return date.toLocaleDateString('en-IN', {
+        day: 'numeric', month: 'short', year: 'numeric'
+      });
+    } catch {
+      return dateStr;
+    }
   };
 
   const getTimeAgo = (dateStr: string) => {
@@ -205,7 +235,7 @@ const MyCourses: React.FC = () => {
           style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '1rem', marginBottom: '2.5rem' }}
         >
           {[
-            { label: 'Total Enrolled', count: MOCK_COURSES.length, color: '#1a1a1a', bg: '#f8f9fa', icon: <BookOpen size={20} /> },
+            { label: 'Total Enrolled', count: courses.length, color: '#1a1a1a', bg: '#f8f9fa', icon: <BookOpen size={20} /> },
             { label: 'In Progress', count: statusCounts['In Progress'] || 0, color: '#1971c2', bg: '#e7f5ff', icon: <PlayCircle size={20} /> },
             { label: 'Completed', count: statusCounts['Completed'] || 0, color: '#2b8a3e', bg: '#ebfbee', icon: <CheckCircle2 size={20} /> },
             { label: 'Avg Progress', count: totalProgress, color: 'var(--primary)', bg: '#fff5f5', icon: <BarChart3 size={20} />, suffix: '%' },
@@ -299,7 +329,10 @@ const MyCourses: React.FC = () => {
         <AnimatePresence mode="popLayout">
           {filteredCourses.length > 0 ? (
             filteredCourses.map((course, index) => {
-              const config = STATUS_CONFIG[course.status];
+              const enrollment = course.enrollment_info;
+              const status = enrollment?.status || 'Not Started';
+              const progress = enrollment?.progress || 0;
+              const config = (STATUS_CONFIG as any)[status] || STATUS_CONFIG['Not Started'];
               const levelConfig = LEVEL_COLORS[course.level] || { color: '#6c757d', bg: '#f8f9fa' };
               const isExpanded = expandedId === course.id;
 
@@ -367,10 +400,10 @@ const MyCourses: React.FC = () => {
                       <div style={{ marginTop: '1rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
                           <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#4a4a4a' }}>
-                            {course.completedLessons}/{course.totalLessons} lessons
+                            Progress
                           </span>
-                          <span style={{ fontSize: '0.82rem', fontWeight: 700, color: course.progress === 100 ? '#2b8a3e' : 'var(--primary)' }}>
-                            {course.progress}%
+                          <span style={{ fontSize: '0.82rem', fontWeight: 700, color: progress === 100 ? '#2b8a3e' : 'var(--primary)' }}>
+                            {progress}%
                           </span>
                         </div>
                         <div style={{
@@ -379,12 +412,12 @@ const MyCourses: React.FC = () => {
                         }}>
                           <motion.div
                             initial={{ width: 0 }}
-                            animate={{ width: `${course.progress}%` }}
+                            animate={{ width: `${progress}%` }}
                             transition={{ duration: 1, delay: index * 0.1, ease: 'easeOut' }}
                             style={{
                               height: '100%',
                               borderRadius: '10px',
-                              background: course.progress === 100
+                              background: progress === 100
                                 ? 'linear-gradient(90deg, #2b8a3e, #40c057)'
                                 : 'linear-gradient(90deg, var(--primary), #e8536c)'
                             }}
@@ -408,7 +441,7 @@ const MyCourses: React.FC = () => {
                         fontSize: '0.82rem'
                       }}>
                         {config.icon}
-                        {course.status}
+                        {status}
                       </div>
 
                       {/* Expand Toggle */}
@@ -439,11 +472,11 @@ const MyCourses: React.FC = () => {
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
                             <div>
                               <p style={{ fontSize: '0.78rem', fontWeight: 600, color: '#868e96', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.3rem' }}>Last Accessed</p>
-                              <p style={{ color: '#1a1a1a', fontWeight: 500, fontSize: '0.95rem' }}>{getTimeAgo(course.lastAccessed)}</p>
+                              <p style={{ color: '#1a1a1a', fontWeight: 500, fontSize: '0.95rem' }}>Today</p>
                             </div>
                             <div>
                               <p style={{ fontSize: '0.78rem', fontWeight: 600, color: '#868e96', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.3rem' }}>Enrolled On</p>
-                              <p style={{ color: '#1a1a1a', fontWeight: 500, fontSize: '0.95rem' }}>{formatDate(course.enrolledDate)}</p>
+                              <p style={{ color: '#1a1a1a', fontWeight: 500, fontSize: '0.95rem' }}>{enrollment?.enrolled_at ? formatDate(enrollment.enrolled_at) : 'N/A'}</p>
                             </div>
                             {course.completedDate && (
                               <div>
@@ -457,31 +490,52 @@ const MyCourses: React.FC = () => {
                             </div>
                           </div>
 
-                          {/* Next Lesson Info */}
-                          {course.nextLesson && course.status !== 'Completed' && (
-                            <div style={{
-                              background: config.bg,
-                              border: `1px solid ${config.border}`,
-                              borderRadius: '10px',
-                              padding: '1rem 1.2rem',
-                              marginBottom: '1.5rem',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              flexWrap: 'wrap',
-                              gap: '0.5rem'
-                            }}>
-                              <div>
-                                <p style={{ fontSize: '0.78rem', fontWeight: 600, color: config.color, marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                  {course.status === 'Not Started' ? 'First Lesson' : 'Next Up'}
-                                </p>
-                                <p style={{ color: '#4a4a4a', fontSize: '0.95rem', fontWeight: 600, margin: 0 }}>
-                                  {course.nextLesson}
-                                </p>
+                          {/* Assessment Progress */}
+                          <div style={{
+                                background: '#f8fafc',
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '10px',
+                                padding: '1rem 1.2rem',
+                                marginBottom: '1.5rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                flexWrap: 'wrap',
+                                gap: '0.5rem'
+                              }}>
+                                <div>
+                                  <p style={{ fontSize: '0.78rem', fontWeight: 600, color: '#64748b', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                    Assessment Phase
+                                  </p>
+                                  <p style={{ color: '#0d2046', fontSize: '0.95rem', fontWeight: 700, margin: 0 }}>
+                                    {course.assessment_info?.is_completed ? 'Fully Certified' : `Stage ${course.assessment_info?.current_stage || 1}: ${
+                                      course.assessment_info?.current_stage === 1 ? 'Automated Quiz' :
+                                      course.assessment_info?.current_stage === 2 ? 'Scenario Analysis' :
+                                      course.assessment_info?.current_stage === 3 ? 'Debugging Round' :
+                                      course.assessment_info?.current_stage === 4 ? 'Industry Project' :
+                                      'High-Level Review'
+                                    }`}
+                                  </p>
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    {[1, 2, 3, 4, 5].map(s => (
+                                        <div key={s} style={{ 
+                                            width: '24px', 
+                                            height: '24px', 
+                                            borderRadius: '50%', 
+                                            background: (course.assessment_info?.current_stage || 1) > s ? '#2b8a3e' : (course.assessment_info?.current_stage || 1) === s ? 'var(--primary)' : '#e2e8f0',
+                                            color: 'white',
+                                            fontSize: '0.7rem',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            fontWeight: 700
+                                        }}>
+                                            {s}
+                                        </div>
+                                    ))}
+                                </div>
                               </div>
-                              <ChevronRight size={18} color={config.color} />
-                            </div>
-                          )}
 
                           {/* Certificate Info */}
                           {course.certificateAvailable && (
@@ -505,10 +559,10 @@ const MyCourses: React.FC = () => {
 
                           {/* Action Buttons */}
                           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                            {course.status === 'Completed' ? (
+                            {status === 'Completed' ? (
                               <>
                                 <button
-                                  onClick={() => navigate(`/courses/${course.courseId}`)}
+                                  onClick={() => navigate(`/courses/${course.id}`)}
                                   style={{
                                     padding: '0.6rem 1.2rem',
                                     borderRadius: '8px',
@@ -554,7 +608,7 @@ const MyCourses: React.FC = () => {
                             ) : (
                               <>
                                 <button
-                                  onClick={() => navigate(`/courses/${course.courseId}`)}
+                                  onClick={() => navigate(`/courses/${course.id}`)}
                                   style={{
                                     padding: '0.6rem 1.2rem',
                                     borderRadius: '8px',
@@ -575,7 +629,7 @@ const MyCourses: React.FC = () => {
                                   <PlayCircle size={15} /> {course.status === 'Not Started' ? 'Start Course' : 'Continue Learning'}
                                 </button>
                                 <button
-                                  onClick={() => navigate(`/courses/${course.courseId}`)}
+                                  onClick={() => navigate(`/courses/${course.id}`)}
                                   style={{
                                     padding: '0.6rem 1.2rem',
                                     borderRadius: '8px',
@@ -595,6 +649,28 @@ const MyCourses: React.FC = () => {
                                 >
                                   <BookOpen size={15} /> View Details
                                 </button>
+                                {progress === 100 && status !== 'Completed' && (
+                                  <button
+                                    onClick={() => navigate(`/assessment/${course.id}`)}
+                                    style={{
+                                      padding: '0.6rem 1.2rem',
+                                      borderRadius: '8px',
+                                      background: 'linear-gradient(90deg, #F59E0B, #D97706)',
+                                      border: 'none',
+                                      color: 'white',
+                                      fontSize: '0.88rem',
+                                      fontWeight: 800,
+                                      cursor: 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '0.4rem',
+                                      transition: 'all 0.2s',
+                                      boxShadow: '0 4px 12px rgba(217, 119, 6, 0.3)'
+                                    }}
+                                  >
+                                    <Star size={15} /> Go to Assessment
+                                  </button>
+                                )}
                               </>
                             )}
                           </div>

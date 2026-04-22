@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { coursesApi } from '../../services/api';
 import { motion } from 'framer-motion';
 import { 
-  Plus, Search, Filter, BookOpen, Clock, Users, 
   MoreVertical, Edit3, CheckCircle2, 
-  AlertCircle, X, Star
+  AlertCircle, X, Star, Trash2, Plus, Search, Filter, Clock
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import StatusModal from '../../components/StatusModal';
 
 interface Course {
   id: string;
@@ -21,15 +22,54 @@ interface Course {
 const AdminCourses: React.FC = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Modal State
+  const [modal, setModal] = useState<{
+    isOpen: boolean;
+    type: 'success' | 'error' | 'warning' | 'info';
+    title: string;
+    message: string;
+    onConfirm?: () => void;
+    showConfirmOnly?: boolean;
+  }>({
+    isOpen: false,
+    type: 'info',
+    title: '',
+    message: '',
+    showConfirmOnly: true
+  });
 
-  // Dummy Course Data
-  const [courses] = useState<Course[]>([
-    { id: '1', title: 'Full-Stack React Development', category: 'Engineering', duration: '45h 20m', enrolledStudents: 1248, rating: 4.8, status: 'Published', thumbnail: 'RC' },
-    { id: '2', title: 'Advanced Python for Data Science', category: 'Data Science', duration: '38h 15m', enrolledStudents: 856, rating: 4.9, status: 'Published', thumbnail: 'PY' },
-    { id: '3', title: 'UI/UX Design Systems', category: 'Design', duration: '22h 45m', enrolledStudents: 542, rating: 4.7, status: 'Draft', thumbnail: 'UX' },
-    { id: '4', title: 'Project Management Professional (PMP)', category: 'Business', duration: '30h 00m', enrolledStudents: 934, rating: 4.6, status: 'Published', thumbnail: 'PM' },
-    { id: '5', title: 'Cloud Infrastructure with AWS', category: 'Cloud Computing', duration: '52h 10m', enrolledStudents: 721, rating: 4.9, status: 'Published', thumbnail: 'AWS' }
-  ]);
+  const fetchCourses = async () => {
+    setLoading(true);
+    try {
+      const res = await coursesApi.getAllCourses();
+      if (res.success && res.data) {
+        // Map backend fields to frontend interface
+        const rawCourses = (res.data as any).courses || [];
+        const mappedCourses = rawCourses.map((c: any) => ({
+          id: c.id || c._id,
+          title: c.title,
+          category: c.category || 'General',
+          duration: c.duration || '0h',
+          enrolledStudents: c.enrolled_count || 0,
+          rating: 4.8, // Dummy rating for now
+          status: c.is_published ? 'Published' : 'Draft',
+          thumbnail: c.title.substring(0, 2).toUpperCase()
+        }));
+        setCourses(mappedCourses);
+      }
+    } catch (err) {
+      console.error('Failed to fetch courses:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCourses();
+  }, []);
 
   const filteredCourses = courses.filter(c => 
     c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -86,46 +126,119 @@ const AdminCourses: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredCourses.map((course, i) => {
-                const statusStyle = getStatusStyle(course.status);
-                return (
-                  <tr key={course.id} style={{ borderBottom: '1px solid #f8fafc' }}>
-                    <td style={{ padding: '20px 32px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <div style={{ width: '52px', height: '52px', borderRadius: '12px', background: '#1e3a8a', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>
-                          {course.thumbnail}
+              {loading ? (
+                <tr>
+                  <td colSpan={5} style={{ padding: '40px', textAlign: 'center' }}>
+                    <div style={{ display: 'inline-block', width: '24px', height: '24px', border: '3px solid #f3f3f3', borderTop: '3px solid #1e3a8a', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                  </td>
+                </tr>
+              ) : filteredCourses.length === 0 ? (
+                <tr>
+                  <td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
+                    No courses found. Add your first course to get started!
+                  </td>
+                </tr>
+              ) : (
+                filteredCourses.map((course, i) => {
+                  const statusStyle = getStatusStyle(course.status);
+                  return (
+                    <tr key={course.id} style={{ borderBottom: '1px solid #f8fafc' }}>
+                      <td style={{ padding: '20px 32px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                          <div style={{ width: '52px', height: '52px', borderRadius: '12px', background: '#1e3a8a', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>
+                            {course.thumbnail}
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '15px', fontWeight: 700, color: '#1e293b' }}>{course.title}</div>
+                            <div style={{ fontSize: '13px', color: '#64748b' }}>{course.category}</div>
+                          </div>
                         </div>
-                        <div>
-                          <div style={{ fontSize: '15px', fontWeight: 700, color: '#1e293b' }}>{course.title}</div>
-                          <div style={{ fontSize: '13px', color: '#64748b' }}>{course.category}</div>
+                      </td>
+                      <td style={{ padding: '20px 32px' }}>
+                        <div style={{ fontSize: '14px', fontWeight: 700, color: '#1e293b' }}>{course.enrolledStudents.toLocaleString()}</div>
+                        <div style={{ fontSize: '12px', color: '#94a3b8' }}>Enrolled</div>
+                      </td>
+                      <td style={{ padding: '20px 32px' }}>
+                        <span style={{ fontSize: '14px', fontWeight: 600, color: '#475569' }}>{course.duration}</span>
+                      </td>
+                      <td style={{ padding: '20px 32px' }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 700, background: statusStyle.bg, color: statusStyle.color }}>
+                          {statusStyle.icon} {course.status}
+                        </span>
+                      </td>
+                      <td style={{ padding: '20px 32px' }}>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button 
+                            onClick={() => navigate(`/admin/courses/edit/${course.id}`)}
+                            style={{ padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#fff', color: '#64748b', cursor: 'pointer' }}
+                          >
+                            <Edit3 size={16} />
+                          </button>
+                          <button 
+                            onClick={() => {
+                              setModal({
+                                isOpen: true,
+                                type: 'warning',
+                                title: 'Delete Course',
+                                message: `Are you sure you want to delete "${course.title}"? This action cannot be undone.`,
+                                showConfirmOnly: false,
+                                onConfirm: async () => {
+                                  try {
+                                    const res = await coursesApi.deleteCourse(course.id);
+                                    if (res.success) {
+                                      setModal({
+                                        isOpen: true,
+                                        type: 'success',
+                                        title: 'Deleted!',
+                                        message: 'The course has been removed successfully.',
+                                        showConfirmOnly: true
+                                      });
+                                      fetchCourses();
+                                    } else {
+                                      setModal({
+                                        isOpen: true,
+                                        type: 'error',
+                                        title: 'Delete Failed',
+                                        message: res.message || 'Could not delete the course.',
+                                        showConfirmOnly: true
+                                      });
+                                    }
+                                  } catch (err) {
+                                    setModal({
+                                      isOpen: true,
+                                      type: 'error',
+                                      title: 'Error',
+                                      message: 'An unexpected error occurred.',
+                                      showConfirmOnly: true
+                                    });
+                                  }
+                                }
+                              });
+                            }}
+                            style={{ padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#fff', color: '#ef4444', cursor: 'pointer' }}
+                          >
+                            <Trash2 size={16} />
+                          </button>
                         </div>
-                      </div>
-                    </td>
-                    <td style={{ padding: '20px 32px' }}>
-                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#1e293b' }}>{course.enrolledStudents.toLocaleString()}</div>
-                      <div style={{ fontSize: '12px', color: '#94a3b8' }}>Enrolled</div>
-                    </td>
-                    <td style={{ padding: '20px 32px' }}>
-                      <span style={{ fontSize: '14px', fontWeight: 600, color: '#475569' }}>{course.duration}</span>
-                    </td>
-                    <td style={{ padding: '20px 32px' }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 700, background: statusStyle.bg, color: statusStyle.color }}>
-                        {statusStyle.icon} {course.status}
-                      </span>
-                    </td>
-                    <td style={{ padding: '20px 32px' }}>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <button style={{ padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#fff', color: '#64748b', cursor: 'pointer' }}><Edit3 size={16} /></button>
-                        <button style={{ padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#fff', color: '#64748b', cursor: 'pointer' }}><MoreVertical size={16} /></button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
       </div>
+      <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+      <StatusModal 
+        isOpen={modal.isOpen}
+        onClose={() => setModal(prev => ({ ...prev, isOpen: false }))}
+        type={modal.type}
+        title={modal.title}
+        message={modal.message}
+        onConfirm={modal.onConfirm}
+        showConfirmOnly={modal.showConfirmOnly}
+      />
     </div>
   );
 };

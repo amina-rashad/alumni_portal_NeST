@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   UserPlus, Mail, Shield, Lock, Phone, ArrowLeft, Calendar, DollarSign
 } from 'lucide-react';
 import { adminApi } from '../../services/api';
+import nestIcon from '../../assets/nest_icon.png';
 
 const AdminAddUser: React.FC = () => {
   const navigate = useNavigate();
@@ -20,9 +22,9 @@ const AdminAddUser: React.FC = () => {
     require_password_change: true
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
+  const [popupMessage, setPopupMessage] = useState({ type: '', text: '' });
 
-  // Derive full name for API if needed, but backend expects 'full_name' usually.
-  // We'll combine them for the API submission.
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -38,10 +40,11 @@ const AdminAddUser: React.FC = () => {
 
     const res = await adminApi.createUser(apiPayload);
     if (res.success) {
-      alert('User created successfully!');
-      navigate('/admin/users');
+      setPopupMessage({ type: 'success', text: 'New user account has been created successfully.' });
+      setShowPopup(true);
     } else {
-      alert(res.message || 'Failed to create user');
+      setPopupMessage({ type: 'error', text: res.message || 'Failed to create user account.' });
+      setShowPopup(true);
     }
     setIsSubmitting(false);
   };
@@ -50,6 +53,65 @@ const AdminAddUser: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
+      
+      <AnimatePresence>
+        {showPopup && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(8px)' }}>
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              style={{ 
+                background: '#fff', 
+                width: '360px', 
+                borderRadius: '20px', 
+                padding: '32px', 
+                textAlign: 'center',
+                boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
+                position: 'relative',
+                overflow: 'hidden'
+              }}
+            >
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '5px', background: '#c8102e' }} />
+              
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+                <div style={{ padding: '10px', background: '#f8fafc', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <img src={nestIcon} alt="NeST" style={{ height: '44px', objectFit: 'contain' }} />
+                </div>
+              </div>
+
+              <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>
+                {popupMessage.type === 'success' ? 'User Created!' : 'Action Failed'}
+              </h2>
+              
+              <p style={{ color: '#64748b', fontSize: '15px', lineHeight: '1.5', marginBottom: '24px' }}>
+                {popupMessage.text}
+              </p>
+
+              <button 
+                onClick={() => {
+                  setShowPopup(false);
+                  if (popupMessage.type === 'success') navigate('/admin/users');
+                }}
+                style={{ 
+                  width: '100%', 
+                  padding: '12px 24px', 
+                  background: '#0f172a', 
+                  color: 'white', 
+                  border: 'none', 
+                  borderRadius: '12px',
+                  fontSize: '0.95rem', 
+                  fontWeight: 700, 
+                  cursor: 'pointer'
+                }}
+              >
+                {popupMessage.type === 'success' ? 'View Users' : 'Try Again'}
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
         <button 
@@ -80,7 +142,7 @@ const AdminAddUser: React.FC = () => {
             <UserPlus size={28} />
           </div>
           <div>
-            <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#1e293b', margin: 0, fontFamily: '"Playfair Display", serif' }}>Add New User</h2>
+            <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#1e293b', margin: 0 }}>Add New User</h2>
             <p style={{ color: '#64748b', fontSize: '14px', marginTop: '4px', margin: '4px 0 0 0' }}>Configure account details and access roles for a new user.</p>
           </div>
         </div>
@@ -104,7 +166,7 @@ const AdminAddUser: React.FC = () => {
                 <input required type="text" placeholder="Enter last name" value={formData.last_name} onChange={e => setFormData({...formData, last_name: e.target.value})} style={{ padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '14px', color: '#1e293b', background: '#fff' }} />
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', gridColumn: 'span 2' }}>
                 <label style={{ fontSize: '13px', fontWeight: 700, color: '#475569' }}>Email Address</label>
                 <div style={{ position: 'relative' }}>
                   <div style={{ position: 'absolute', top: '50%', left: '16px', transform: 'translateY(-50%)', color: '#94a3b8', display: 'flex' }}>
@@ -116,32 +178,17 @@ const AdminAddUser: React.FC = () => {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <label style={{ fontSize: '13px', fontWeight: 700, color: '#475569' }}>Phone Number</label>
-                <div style={{ position: 'relative' }}>
-                  <div style={{ position: 'absolute', top: '50%', left: '16px', transform: 'translateY(-50%)', color: '#94a3b8', display: 'flex' }}>
-                    <Phone size={16} />
-                  </div>
-                  <input type="tel" placeholder="+91 XXXX XXXX XX" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} style={{ padding: '12px 16px 12px 42px', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '14px', color: '#1e293b', width: '100%', boxSizing: 'border-box', background: '#fff' }} />
-                </div>
+                <input type="tel" placeholder="+91 XXXX XXXX XX" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} style={{ padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '14px', color: '#1e293b', background: '#fff' }} />
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <label style={{ fontSize: '13px', fontWeight: 700, color: '#475569' }}>Salary / Stipend</label>
-                <div style={{ position: 'relative' }}>
-                  <div style={{ position: 'absolute', top: '50%', left: '16px', transform: 'translateY(-50%)', color: '#94a3b8', display: 'flex' }}>
-                    <DollarSign size={16} />
-                  </div>
-                  <input type="text" placeholder="e.g. 25,000" value={formData.salary} onChange={e => setFormData({...formData, salary: e.target.value})} style={{ padding: '12px 16px 12px 42px', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '14px', color: '#1e293b', width: '100%', boxSizing: 'border-box', background: '#fff' }} />
-                </div>
+                <input type="text" placeholder="e.g. 25,000" value={formData.salary} onChange={e => setFormData({...formData, salary: e.target.value})} style={{ padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '14px', color: '#1e293b', background: '#fff' }} />
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <label style={{ fontSize: '13px', fontWeight: 700, color: '#475569' }}>Joining Date</label>
-                <div style={{ position: 'relative' }}>
-                  <div style={{ position: 'absolute', top: '50%', left: '16px', transform: 'translateY(-50%)', color: '#94a3b8', display: 'flex', pointerEvents: 'none' }}>
-                    <Calendar size={16} />
-                  </div>
-                  <input type="date" value={formData.joining_date} onChange={e => setFormData({...formData, joining_date: e.target.value})} onClick={(e) => { try { (e.target as HTMLInputElement).showPicker?.(); } catch (err) {} }} style={{ padding: '12px 16px 12px 42px', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '14px', color: '#1e293b', width: '100%', boxSizing: 'border-box', background: '#fff', cursor: 'pointer' }} />
-                </div>
+                <input type="date" value={formData.joining_date} onChange={e => setFormData({...formData, joining_date: e.target.value})} style={{ padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '14px', color: '#1e293b', background: '#fff', cursor: 'pointer' }} />
               </div>
 
             </div>
@@ -156,17 +203,18 @@ const AdminAddUser: React.FC = () => {
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <label style={{ fontSize: '13px', fontWeight: 700, color: '#475569' }}>Assign Role</label>
-                <select value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})} style={{ padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '14px', color: '#1e293b', appearance: 'none', background: '#fff url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%2364748b\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'/%3E%3C/svg%3E") no-repeat right 16px center', cursor: 'pointer' }}>
+                <select value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})} style={{ padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '14px', color: '#1e293b', background: '#fff', cursor: 'pointer' }}>
                   <option value="Alumni">Alumni</option>
                   <option value="System Admin">System Admin</option>
                   <option value="Intern">Intern</option>
                   <option value="Staff">Staff</option>
+                  <option value="Trainee">Trainee</option>
                 </select>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <label style={{ fontSize: '13px', fontWeight: 700, color: '#475569' }}>Initial Status</label>
-                <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} style={{ padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '14px', color: '#10b981', fontWeight: 600, appearance: 'none', background: '#fff url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%2364748b\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'/%3E%3C/svg%3E") no-repeat right 16px center', cursor: 'pointer' }}>
+                <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} style={{ padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '14px', color: '#10b981', fontWeight: 600, background: '#fff', cursor: 'pointer' }}>
                   <option value="Active / Verified" style={{ color: '#10b981' }}>Active / Verified</option>
                   <option value="Pending" style={{ color: '#f59e0b' }}>Pending</option>
                   <option value="Inactive" style={{ color: '#ef4444' }}>Inactive</option>

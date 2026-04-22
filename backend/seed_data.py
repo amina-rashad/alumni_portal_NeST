@@ -226,56 +226,68 @@ courses_col = db["courses"]
 
 sample_courses = [
     {
-        "title": "Full-Stack Web Development with MERN",
-        "description": "Master MongoDB, Express.js, React, and Node.js to build modern web applications from scratch.",
-        "instructor": "Dr. Sarah Jenkins",
-        "duration": "12 weeks",
-        "level": "Intermediate",
-        "category": "Web Development",
-        "is_published": True,
-    },
-    {
-        "title": "Machine Learning Fundamentals",
-        "description": "Introduction to supervised and unsupervised learning, neural networks, and practical ML with Python.",
-        "instructor": "Prof. Ramesh Kumar",
-        "duration": "8 weeks",
+        "title": "Microsoft PowerPoint Mastery",
+        "description": "Learn to create stunning presentations with advanced animations and design principles.",
+        "instructor": "John Doe",
+        "duration": "2 weeks",
         "level": "Beginner",
-        "category": "AI/ML",
+        "category": "Office Productivity",
         "is_published": True,
+        "modules": [
+            {"title": "Introduction to PowerPoint", "duration": "45m", "content": "Welcome to PowerPoint. Let's learn the basics of interface and shortcuts."},
+            {"title": "Mastering Animations", "duration": "1h 15m", "content": "Learn how to use transition effects and path animations to wow your audience."},
+            {"title": "Design Principles for Slides", "duration": "50m", "content": "Contrast, alignment, and hierarchy. How to make readable slides."}
+        ]
     },
     {
-        "title": "Cloud Architecture with AWS",
-        "description": "Learn to design, deploy, and manage scalable cloud solutions on Amazon Web Services.",
-        "instructor": "Aishwarya Suresh",
-        "duration": "10 weeks",
-        "level": "Advanced",
-        "category": "Cloud Computing",
+        "title": "Advanced Microsoft Excel",
+        "description": "Master data analysis, pivot tables, and complex formulas for business intelligence.",
+        "instructor": "Jane Smith",
+        "duration": "4 weeks",
+        "level": "Intermediate",
+        "category": "Office Productivity",
         "is_published": True,
+        "modules": [
+            {"title": "Lookup Functions & References", "duration": "1h", "content": "VLOOKUP, HLOOKUP, and the powerful XLOOKUP function."},
+            {"title": "Pivot Table Deep Dive", "duration": "1h 30m", "content": "Turning raw data into meaningful business reports with Pivot Tables."},
+            {"title": "Macros & VBA Basics", "duration": "2h", "content": "Automating your repetitive tasks using simple Excel macros."}
+        ]
     },
     {
-        "title": "Mobile App Development with Flutter",
-        "description": "Build beautiful, natively compiled applications for mobile from a single Dart codebase.",
-        "instructor": "Arjun Krishnan",
+        "title": "Java Programming Fundamentals",
+        "description": "Learn object-oriented programming with Java, covering core concepts and advanced features.",
+        "instructor": "Dr. Alan Turing",
+        "duration": "8 weeks",
+        "level": "Intermediate",
+        "category": "Programming",
+        "is_published": True,
+        "modules": [
+            {"title": "Java Syntax & Variables", "duration": "1h", "content": "Understanding types, variables, and control flow in Java."},
+            {"title": "Object-Oriented Programming (OOP)", "duration": "2h 30m", "content": "Classes, objects, inheritance, and polymorphism explained."},
+            {"title": "Exception Handling", "duration": "1h", "content": "Writing robust code that handles errors gracefully."}
+        ]
+    },
+    {
+        "title": "Python for Data Science",
+        "description": "Comprehensive guide to Python programming tailored for data analysis and machine learning.",
+        "instructor": "Guido van Rossum",
         "duration": "6 weeks",
         "level": "Intermediate",
-        "category": "Mobile Development",
+        "category": "Programming",
         "is_published": True,
-    },
-    {
-        "title": "Cybersecurity Essentials",
-        "description": "Learn the fundamentals of cybersecurity, ethical hacking, and vulnerability assessment.",
-        "instructor": "Dr. Michael Chen",
-        "duration": "8 weeks",
-        "level": "Beginner",
-        "category": "Security",
-        "is_published": True,
+        "modules": [
+            {"title": "Python Basics & Data Structures", "duration": "1h 15m", "content": "Lists, Dictionaries, and Sets in Python."},
+            {"title": "Numerical Python (NumPy)", "duration": "2h", "content": "Working with arrays and mathematical operations efficiently."},
+            {"title": "Data Analysis with Pandas", "duration": "2h 30m", "content": "Manipulating DataFrames and Series for data cleaning."}
+        ]
     },
 ]
 
 for c in sample_courses:
     c["thumbnail"] = ""
     c["video_url"] = ""
-    c["modules"] = []
+    if "modules" not in c:
+        c["modules"] = []
     c["created_by"] = "admin"
     c["createdAt"] = now - timedelta(days=random.randint(1, 60))
 
@@ -373,7 +385,78 @@ if arjun and priya:
     posts_col.insert_many(sample_posts)
     print(f"✅ Posts: {len(sample_posts)} seeded")
 
-# ── 6. CREATE INDEXES ──
+# ── 6. AUTO-ENROLLMENT & ASSESSMENTS ──
+print("📦 Initializing Auto-Enrollments and Assessments...")
+
+all_users = list(users_col.find({"role": "user"}))
+all_courses = list(courses_col.find())
+
+enroll_col = db["course_enrollments"]
+assess_col = db["assessment_attempts"]
+
+enroll_col.delete_many({})
+assess_col.delete_many({})
+
+for user in all_users:
+    if user["email"] == "melbin@gmail.com":
+        continue
+    # Enroll each user in 2-3 random courses
+    target_courses = random.sample(all_courses, k=min(3, len(all_courses)))
+    for course in target_courses:
+        now_enrolled = datetime.now(timezone.utc) - timedelta(days=random.randint(1, 30))
+        
+        # Determine a random progress
+        progress = random.choice([0, 25, 50, 75, 100])
+        status = "In Progress" if progress < 100 else "Completed"
+        
+        enroll_col.insert_one({
+            "user_id": user["_id"],
+            "course_id": course["_id"],
+            "enrolled_at": now_enrolled,
+            "progress": progress,
+            "status": status
+        })
+        
+        # Initialize assessment attempt
+        current_stage = 1
+        if progress == 100:
+            current_stage = random.randint(1, 4) # They've finished course, move to some assessment stage
+            
+        stages = {
+            "1": {"status": "not_started" if progress < 100 else "passed", "data": {}},
+            "2": {"status": "locked" if current_stage < 2 else "passed" if current_stage > 2 else "pending", "data": {}},
+            "3": {"status": "locked" if current_stage < 3 else "passed" if current_stage > 3 else "pending", "data": {}},
+            "4": {"status": "locked" if current_stage < 4 else "passed" if current_stage > 4 else "pending", "data": {}},
+            "5": {"status": "locked" if current_stage < 5 else "passed" if current_stage > 5 else "pending", "data": {}}
+        }
+        
+        # Add some sample data for pending stages
+        if current_stage == 2:
+            stages["2"]["submission"] = {"response": "This is a strategic response to the scenario."}
+            stages["2"]["submitted_at"] = datetime.now(timezone.utc)
+        elif current_stage == 3:
+            stages["2"]["status"] = "passed"
+            stages["3"]["submission"] = {"code": "function fix() { ... }", "explanation": "Fixed the memory leak."}
+            stages["3"]["submitted_at"] = datetime.now(timezone.utc)
+        elif current_stage == 4:
+            stages["2"]["status"] = "passed"
+            stages["3"]["status"] = "passed"
+            stages["4"]["submission"] = {"repo_url": "https://github.com/alumni/project-x"}
+            stages["4"]["submitted_at"] = datetime.now(timezone.utc)
+
+        assess_col.insert_one({
+            "user_id": user["_id"],
+            "course_id": course["_id"],
+            "current_stage": current_stage,
+            "is_completed": current_stage > 5,
+            "stages": stages,
+            "created_at": now_enrolled,
+            "updated_at": datetime.now(timezone.utc)
+        })
+
+print(f"✅ Auto-enrollment completed for {len(all_users)} users")
+
+# ── 7. CREATE INDEXES ──
 users_col.create_index("email", unique=True)
 users_col.create_index("user_type")
 users_col.create_index("created_at")
@@ -383,6 +466,8 @@ events_col.create_index("date")
 db["applications"].create_index([("user_id", 1), ("job_id", 1)], unique=True)
 db["notifications"].create_index([("user_id", 1), ("created_at", -1)])
 db["posts"].create_index("created_at")
+db["course_enrollments"].create_index([("user_id", 1), ("course_id", 1)], unique=True)
+db["assessment_attempts"].create_index([("user_id", 1), ("course_id", 1)], unique=True)
 
 print(f"✅ Indexes created")
 

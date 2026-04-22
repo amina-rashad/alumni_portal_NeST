@@ -15,11 +15,13 @@ const CourseListing: React.FC = () => {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const res = await coursesApi.getAllCourses();
-        const data = res.data as any;
-        if (res.success && data && data.courses) {
-          setCourses(data.courses);
-          setFilteredCourses(data.courses);
+        const res = await coursesApi.getAllCourses() as any;
+        console.log('Courses API Response:', res);
+        
+        if (res.success) {
+          const courseData = res.data?.courses || res.courses || [];
+          setCourses(courseData);
+          setFilteredCourses(courseData);
         }
       } catch (err) {
         console.error('Failed to fetch courses:', err);
@@ -143,7 +145,7 @@ const CourseListing: React.FC = () => {
                 height: '100%',
                 cursor: 'pointer'
               }}
-              onClick={() => navigate(`/courses/${course.id}`)}
+              onClick={() => navigate(`/courses/${course.id || course._id}`)}
             >
               {/* Card Image Wrapper */}
               <div style={{ position: 'relative', height: '180px', backgroundColor: '#0d2046', overflow: 'hidden' }}>

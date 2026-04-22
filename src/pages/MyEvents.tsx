@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowLeft, Calendar, MapPin, Clock, 
@@ -6,33 +6,40 @@ import {
   Download
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
-interface Event {
-  id: string;
-  title: string;
-  date: string;
-  time: string;
-  location: string;
-  type: 'Online' | 'In-Person' | 'Hybrid';
-  status: 'Registered' | 'Attended' | 'Missed' | 'Cancelled';
-  thumbnail: string;
-  countdown?: string;
-}
-
-const MOCK_MY_EVENTS: Event[] = [
-  { id: '1', title: 'Global Alumni Tech Summit 2026', date: 'April 15, 2026', time: '10:00 AM - 4:00 PM', location: 'NeST Innovation Hub, Kochi', type: 'Hybrid', status: 'Registered', thumbnail: 'https://images.unsplash.com/photo-1540575861501-7ad05823c95b?auto=format&fit=crop&q=80&w=400', countdown: '18 Days to go' },
-  { id: '2', title: 'Career Pivot: AI Engineering', date: 'April 22, 2026', time: '6:30 PM - 8:00 PM', location: 'Zoom Webinar', type: 'Online', status: 'Registered', thumbnail: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&q=80&w=400', countdown: '25 Days to go' },
-  { id: '3', title: 'NeST Annual Networking Gala', date: 'March 10, 2026', time: '7:00 PM - 10:00 PM', location: 'The Grand Ballroom, Bangalore', type: 'In-Person', status: 'Attended', thumbnail: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&q=80&w=400' },
-  { id: '4', title: 'System Design for Scale: Go vs Rust', date: 'Feb 15, 2026', time: '11:00 AM', location: 'Virtual', type: 'Online', status: 'Attended', thumbnail: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&q=80&w=400' },
-];
+import { eventsApi } from '../services/api';
 
 const MyEvents: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
-  const [showTicket, setShowTicket] = useState<string | null>(null);
+  const [events, setEvents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredEvents = MOCK_MY_EVENTS.filter(e => 
-    activeTab === 'upcoming' ? e.status === 'Registered' : (e.status === 'Attended' || e.status === 'Missed')
-  );
+  useEffect(() => {
+    const fetchRegisteredEvents = async () => {
+      try {
+        const res = await eventsApi.getAllEvents();
+        const data = res.data as any;
+        if (res.success && data && data.events) {
+          // Filter only registered events
+          setEvents(data.events.filter((e: any) => e.is_registered));
+        }
+      } catch (err) {
+        console.error('Failed to fetch events:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchRegisteredEvents();
+  }, []);
+
+  const filteredEvents = events.filter(e => {
+    const eventDate = new Date(e.date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Start of today
+    
+    const isPast = eventDate < today;
+    if (activeTab === 'upcoming') return !isPast;
+    return isPast;
+  }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto', paddingBottom: '5rem' }}>
@@ -98,10 +105,19 @@ const MyEvents: React.FC = () => {
       </div>
 
       {/* Main Events Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '2rem' }}>
-        <AnimatePresence mode="popLayout">
-          {filteredEvents.map((event, index) => (
-            <motion.div
+      {loading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '5rem 0' }}>
+           <div style={{ width: '40px', height: '40px', border: '3px solid #f3f3f3', borderTop: '3px solid #d32f2f', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+        </div>
+      ) : filteredEvents.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '4rem 0', background: '#F8FAFC', borderRadius: '24px' }}>
+          <p style={{ color: '#64748B', fontSize: '1.1rem', fontWeight: 600 }}>No events found.</p>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '2rem' }}>
+          <AnimatePresence mode="popLayout">
+            {filteredEvents.map((event, index) => (
+              <motion.div
               layout
               key={event.id}
               initial={{ opacity: 0, scale: 0.95 }}
@@ -114,7 +130,7 @@ const MyEvents: React.FC = () => {
             >
               {/* Thumbnail with Overlay */}
               <div style={{ position: 'relative', height: '180px' }}>
-                <img src={event.thumbnail} alt={event.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={event.cover_image || 'https://images.unsplash.com/photo-1540575861501-7ad05823c95b?auto=format&fit=crop&q=80&w=400'} alt={event.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 <div style={{ position: 'absolute', top: '1rem', right: '1rem' }}>
                   <div style={{ 
                     background: 'rgba(255, 255, 255, 0.9)', 
@@ -126,16 +142,35 @@ const MyEvents: React.FC = () => {
                     color: '#0F172A',
                     boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                   }}>
-                    {event.type}
+                    {(event.location?.toLowerCase().includes('virtual') || event.location?.toLowerCase().includes('zoom')) ? 'Online' : 'In-Person'}
                   </div>
                 </div>
-                {event.countdown && (
-                   <div style={{ position: 'absolute', bottom: '1rem', left: '1rem' }}>
-                     <div style={{ background: '#d32f2f', color: 'white', padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 800 }}>
-                        {event.countdown}
-                     </div>
-                   </div>
-                )}
+                {(() => {
+                  const eventDate = new Date(event.date);
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const diffTime = eventDate.getTime() - today.getTime();
+                  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                  
+                  if (diffDays >= 0) {
+                    return (
+                      <div style={{ position: 'absolute', bottom: '1rem', left: '1rem' }}>
+                        <div style={{ 
+                          background: '#d32f2f', 
+                          color: 'white', 
+                          padding: '0.4rem 0.8rem', 
+                          borderRadius: '8px', 
+                          fontSize: '0.75rem', 
+                          fontWeight: 800,
+                          boxShadow: '0 4px 12px rgba(211, 47, 47, 0.3)'
+                        }}>
+                          {diffDays === 0 ? 'Happening Today' : `${diffDays} Days to go`}
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
 
               {/* Content */}
@@ -155,14 +190,8 @@ const MyEvents: React.FC = () => {
                 </div>
 
                 <div style={{ marginTop: 'auto', paddingTop: '1.5rem', display: 'flex', gap: '0.75rem' }}>
-                  {activeTab === 'upcoming' ? (
+                   {activeTab === 'upcoming' ? (
                     <>
-                      <button 
-                        onClick={() => setShowTicket(event.id)}
-                        style={{ flex: 1, background: '#0F172A', color: 'white', padding: '0.75rem', borderRadius: '10px', border: 'none', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
-                      >
-                        <Ticket size={18} /> View Ticket
-                      </button>
                       <button style={{ width: '44px', height: '44px', background: '#F1F5F9', borderRadius: '10px', border: 'none', color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                         <Share2 size={18} />
                       </button>
@@ -189,58 +218,9 @@ const MyEvents: React.FC = () => {
           ))}
         </AnimatePresence>
       </div>
+      )}
 
-      {/* Ticket Modal (Mockup) */}
-      <AnimatePresence>
-        {showTicket && (
-          <>
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowTicket(null)}
-              style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(8px)', zIndex: 1000 }}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              style={{ 
-                position: 'fixed', 
-                top: '50%', left: '50%', 
-                transform: 'translate(-50%, -50%)', 
-                width: '400px', 
-                background: 'white', 
-                borderRadius: '32px', 
-                padding: '2.5rem', 
-                zIndex: 1001,
-                textAlign: 'center',
-                boxShadow: '0 40px 80px rgba(0,0,0,0.3)'
-              }}
-            >
-              <Ticket size={48} color="#d32f2f" style={{ marginBottom: '1.5rem' }} />
-              <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0F172A', marginBottom: '0.5rem' }}>Event Admission</h2>
-              <p style={{ color: '#64748B', fontSize: '0.95rem', marginBottom: '2rem' }}>Please present this QR code at the registration desk for check-in.</p>
-              
-              <div style={{ width: '240px', height: '240px', background: '#F8FAFC', margin: '0 auto 2rem', borderRadius: '24px', padding: '2rem', border: '2px dashed #E2E8F0', position: 'relative' }}>
-                {/* Mock QR Content */}
-                <div style={{ width: '100%', height: '100%', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                  {Array.from({ length: 36 }).map((_, i) => (
-                    <div key={i} style={{ width: '28px', height: '28px', background: Math.random() > 0.6 ? '#0F172A' : 'transparent', borderRadius: '4px' }} />
-                  ))}
-                </div>
-              </div>
-              
-              <button 
-                onClick={() => setShowTicket(null)}
-                style={{ width: '100%', padding: '1rem', borderRadius: '16px', background: '#F1F5F9', border: 'none', color: '#0F172A', fontWeight: 700, cursor: 'pointer' }}
-              >
-                Close and Save to Wallet
-              </button>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+      {/* Ticket Modal (Mockup) Removed */}
 
       <style>{`
         .luxury-card {
