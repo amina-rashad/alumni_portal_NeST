@@ -104,6 +104,7 @@ import AdminCourses from './pages/admin/AdminCourses';
 import AdminEvents from './pages/admin/AdminEvents';
 import AdminAddEvent from './pages/admin/AdminAddEvent';
 import AdminAddCourse from './pages/admin/AdminAddCourse';
+import AdminCertification from './pages/admin/AdminCertification';
 
 /* -- Luxury Splash Screen with Mask Reveal -- */
 import heroBg from './assets/hero-bg.jpg';
@@ -295,7 +296,7 @@ const ScrollToTop: React.FC = () => {
   return null;
 };
 
-/* -- Animated Routes wrapper with crossfade -- */
+/* ── Animated Routes ── */
 const AnimatedRoutes: React.FC = () => {
   const location = useLocation();
 
@@ -314,76 +315,55 @@ const AnimatedRoutes: React.FC = () => {
         <Route path="/platform-capabilities/:id" element={<PageTransition><PlatformCapabilities /></PageTransition>} />
         <Route path="/user-type-overview/:id" element={<PageTransition><UserTypeOverview /></PageTransition>} />
 
-        {/* Protected Routes with MainLayout */}
+        {/* User Protected Routes with MainLayout */}
         <Route element={<MainLayout />}>
-          {/* Dashboards */}
           <Route path="/dashboard" element={<PageTransition><Dashboard /></PageTransition>} />
           <Route path="/dashboard/activity" element={<PageTransition><ActivityFeed /></PageTransition>} />
-          
-          {/* Profile */}
           <Route path="/profile" element={<PageTransition><ViewProfile /></PageTransition>} />
           <Route path="/profile/edit" element={<PageTransition><EditProfile /></PageTransition>} />
           <Route path="/profile/:id" element={<PageTransition><PublicProfile /></PageTransition>} />
           <Route path="/profile/resume" element={<PageTransition><ResumeUpload /></PageTransition>} />
           <Route path="/profile/completion" element={<PageTransition><ProfileCompletion /></PageTransition>} />
-
-          {/* Networking */}
           <Route path="/networking" element={<PageTransition><UserDirectory /></PageTransition>} />
           <Route path="/networking/suggested" element={<PageTransition><SuggestedConnections /></PageTransition>} />
           <Route path="/networking/search" element={<PageTransition><SearchResults /></PageTransition>} />
           <Route path="/networking/requests" element={<PageTransition><ConnectionRequests /></PageTransition>} />
           <Route path="/networking/connections" element={<PageTransition><FollowersFollowing /></PageTransition>} />
-
-          {/* Jobs */}
           <Route path="/jobs" element={<PageTransition><JobListings /></PageTransition>} />
           <Route path="/jobs/:id" element={<PageTransition><JobDetails /></PageTransition>} />
           <Route path="/jobs/:id/apply" element={<PageTransition><ApplyJob /></PageTransition>} />
           <Route path="/jobs/applications" element={<PageTransition><MyApplications /></PageTransition>} />
           <Route path="/jobs/saved" element={<PageTransition><SavedJobs /></PageTransition>} />
           <Route path="/jobs/recommended" element={<PageTransition><RecommendedJobs /></PageTransition>} />
-
-          {/* Courses */}
           <Route path="/courses" element={<PageTransition><CourseListing /></PageTransition>} />
           <Route path="/courses/:id" element={<PageTransition><CourseDetails /></PageTransition>} />
           <Route path="/courses/:id/play" element={<PageTransition><CoursePlayer /></PageTransition>} />
           <Route path="/courses/my-courses" element={<PageTransition><MyCourses /></PageTransition>} />
           <Route path="/courses/:id/completion" element={<PageTransition><CourseCompletion /></PageTransition>} />
-
-          {/* Assessments */}
           <Route path="/assessments/quiz" element={<PageTransition><Quiz /></PageTransition>} />
           <Route path="/assessments/quiz/instructions" element={<PageTransition><QuizInstructions /></PageTransition>} />
           <Route path="/assessments/quiz/result" element={<PageTransition><QuizResult /></PageTransition>} />
           <Route path="/assessments/analytics" element={<PageTransition><PerformanceAnalytics /></PageTransition>} />
-
-          {/* Gamification */}
           <Route path="/gamification" element={<PageTransition><PointsOverview /></PageTransition>} />
           <Route path="/gamification/badges" element={<PageTransition><Badges /></PageTransition>} />
           <Route path="/gamification/leaderboard" element={<PageTransition><Leaderboard /></PageTransition>} />
-
-          {/* Events */}
           <Route path="/events" element={<PageTransition><EventsListing /></PageTransition>} />
           <Route path="/events/:id" element={<PageTransition><EventDetails /></PageTransition>} />
           <Route path="/events/:id/register" element={<PageTransition><EventRegistration /></PageTransition>} />
           <Route path="/events/my-events" element={<PageTransition><MyEvents /></PageTransition>} />
-
-          {/* Social Feed */}
           <Route path="/social/feed" element={<PageTransition><Feed /></PageTransition>} />
           <Route path="/social/post/create" element={<PageTransition><CreatePost /></PageTransition>} />
           <Route path="/social/post/:id" element={<PageTransition><PostDetails /></PageTransition>} />
-
-          {/* Notifications */}
           <Route path="/notifications" element={<PageTransition><Notifications /></PageTransition>} />
           <Route path="/notifications/preferences" element={<PageTransition><EmailPreferences /></PageTransition>} />
-
-          {/* Settings */}
           <Route path="/settings" element={<PageTransition><AccountSettings /></PageTransition>} />
           <Route path="/settings/privacy" element={<PageTransition><PrivacySettings /></PageTransition>} />
           <Route path="/settings/notifications" element={<PageTransition><NotificationSettings /></PageTransition>} />
           <Route path="/settings/password" element={<PageTransition><ChangePassword /></PageTransition>} />
         </Route>
 
-        {/* Admin Routes */}
-        <Route path="/admin" element={<PageTransition><AdminLayout /></PageTransition>}>
+        {/* Admin Protected Routes with AdminLayout */}
+        <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="dashboard" element={<PageTransition><AdminDashboard /></PageTransition>} />
           <Route path="users" element={<PageTransition><AdminUsers /></PageTransition>} />
@@ -392,6 +372,7 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="interns/add" element={<PageTransition><AdminAddIntern /></PageTransition>} />
           <Route path="iv-students" element={<PageTransition><AdminIVStudents /></PageTransition>} />
           <Route path="iv-students/add" element={<PageTransition><AdminAddVisit /></PageTransition>} />
+          <Route path="certification" element={<PageTransition><AdminCertification /></PageTransition>} />
           <Route path="jobs" element={<PageTransition><AdminJobs /></PageTransition>} />
           <Route path="jobs/post" element={<PageTransition><AdminPostJob /></PageTransition>} />
           <Route path="applications" element={<PageTransition><Applications /></PageTransition>} />
@@ -399,6 +380,7 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="events" element={<PageTransition><AdminEvents /></PageTransition>} />
           <Route path="events/add" element={<PageTransition><AdminAddEvent /></PageTransition>} />
           <Route path="add-courses" element={<PageTransition><AdminCourses /></PageTransition>} />
+          <Route path="courses/add" element={<PageTransition><AdminAddCourse /></PageTransition>} />
           <Route path="settings" element={<PageTransition><Settings /></PageTransition>} />
         </Route>
 
@@ -419,6 +401,7 @@ const App: React.FC = () => {
 
   return (
     <Router>
+      <ScrollToTop />
       <AnimatePresence mode="wait">
         {isLoading ? (
           <SplashScreen key="splash" />

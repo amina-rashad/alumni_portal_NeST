@@ -61,6 +61,10 @@ def create_app(config_name=None):
     from routes.courses import courses_bp
     from routes.jobs import jobs_bp
     from routes.admin import admin_bp
+    from routes.events import events_bp
+    from routes.applications import applications_bp
+    from routes.social import social_bp
+    from routes.notifications import notifications_bp
 
     app.register_blueprint(health_bp, url_prefix="/api")
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
@@ -68,6 +72,10 @@ def create_app(config_name=None):
     app.register_blueprint(courses_bp, url_prefix="/api/courses")
     app.register_blueprint(jobs_bp, url_prefix="/api/jobs")
     app.register_blueprint(admin_bp, url_prefix="/api/admin")
+    app.register_blueprint(events_bp, url_prefix="/api/events")
+    app.register_blueprint(applications_bp, url_prefix="/api/applications")
+    app.register_blueprint(social_bp, url_prefix="/api/social")
+    app.register_blueprint(notifications_bp, url_prefix="/api/notifications")
 
     return app
 
@@ -78,3 +86,22 @@ def _ensure_indexes():
     users.create_index("email", unique=True)
     users.create_index("user_type")
     users.create_index("created_at")
+
+    # Jobs
+    db["jobs"].create_index("createdAt")
+    db["jobs"].create_index("is_active")
+
+    # Courses
+    db["courses"].create_index("createdAt")
+
+    # Events
+    db["events"].create_index("date")
+
+    # Applications (compound unique: one application per user per job)
+    db["applications"].create_index([("user_id", 1), ("job_id", 1)], unique=True)
+
+    # Notifications
+    db["notifications"].create_index([("user_id", 1), ("created_at", -1)])
+
+    # Posts
+    db["posts"].create_index("created_at")

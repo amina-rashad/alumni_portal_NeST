@@ -3,7 +3,7 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, Users, GraduationCap, School, Briefcase,
-  FileText, BarChart3, Settings, LogOut, Bell, Menu, X, ChevronDown, BookOpen, Calendar
+  FileText, BarChart3, Settings, LogOut, Bell, Menu, X, ChevronDown, BookOpen, Calendar, Award
 } from 'lucide-react';
 import nestMainLogo from '../../assets/nest_logo.png';
 import { getUser, authApi, type AuthUser } from '../../services/api';
@@ -33,9 +33,10 @@ const AdminLayout: React.FC = () => {
     { name: 'User Management', path: '/admin/users', icon: <Users size={20} /> },
     { name: 'Intern Management', path: '/admin/interns', icon: <GraduationCap size={20} /> },
     { name: 'IV Students', path: '/admin/iv-students', icon: <School size={20} /> },
+    { name: 'Certification', path: '/admin/certification', icon: <Award size={20} /> },
     { name: 'Job Management', path: '/admin/jobs', icon: <Briefcase size={20} /> },
     { name: 'Applications', path: '/admin/applications', icon: <FileText size={20} /> },
-    { name: 'Reports', path: '/admin/reports', icon: <BarChart3 size={20} />, hasSubmenu: true },
+    { name: 'Reports', path: '/admin/reports', icon: <BarChart3 size={20} /> },
     { name: 'Event Management', path: '/admin/events', icon: <Calendar size={20} /> },
     { name: 'Add Courses', path: '/admin/add-courses', icon: <BookOpen size={20} /> },
     { name: 'Settings', path: '/admin/settings', icon: <Settings size={20} /> },
@@ -158,7 +159,6 @@ const AdminLayout: React.FC = () => {
                 {sidebarOpen && (
                   <>
                     <span style={{ fontSize: '14px', fontWeight: isActive ? 700 : 400, flex: 1, letterSpacing: '0.01em' }}>{item.name}</span>
-                    {item.hasSubmenu && <ChevronDown size={14} style={{ opacity: 0.5 }} />}
                     {isActive && (
                       <motion.div layoutId="activeInd" style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px', background: '#fff' }} />
                     )}

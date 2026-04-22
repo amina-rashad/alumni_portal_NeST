@@ -9,6 +9,7 @@ import { adminApi } from '../../services/api';
 const AdminIVStudents: React.FC = () => {
   const [visits, setVisits] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const nestNavy = '#1a2652';
 
   useEffect(() => {
     const fetchVisits = async () => {
@@ -31,16 +32,6 @@ const AdminIVStudents: React.FC = () => {
     }
   };
 
-  const filteredVisits = visits.filter(visit => {
-    const matchesSearch = 
-      visit.college.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      visit.coordName.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesCollege = collegeFilter === 'All' || visit.college === collegeFilter;
-    const matchesYear = yearFilter === 'All' || visit.year === yearFilter;
-    
-    return matchesSearch && matchesCollege && matchesYear;
-  });
 
   const colleges = Array.from(new Set(visits.map(v => v.college)));
   const years = Array.from(new Set(visits.map(v => v.year))).sort().reverse();

@@ -296,3 +296,19 @@ export const networkingApi = {
     return apiRequest(`/users?${query}`, { method: 'GET' });
   },
 };
+
+// ── Social API ──
+
+export const socialApi = {
+  getFeed: (page: number = 1, perPage: number = 20) =>
+    apiRequest(`/social/feed?page=${page}&per_page=${perPage}&t=${Date.now()}`, { method: 'GET', cache: 'no-store' }),
+
+  createPost: (data: { content: string; image_url?: string }) =>
+    apiRequest('/social/posts', { method: 'POST', body: JSON.stringify(data) }),
+
+  likePost: (postId: string) =>
+    apiRequest(`/social/posts/${postId}/like`, { method: 'POST' }),
+
+  addComment: (postId: string, text: string) =>
+    apiRequest(`/social/posts/${postId}/comments`, { method: 'POST', body: JSON.stringify({ text }) }),
+};
