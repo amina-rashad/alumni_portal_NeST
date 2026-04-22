@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Users, UserPlus, UserCheck, UserMinus, Search, MessageSquare, Linkedin, MoreHorizontal, X, Filter } from 'lucide-react';
+import { ArrowLeft, Users, UserPlus, UserCheck, Search, MessageSquare, Linkedin, MoreHorizontal, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
 type ConnectionTab = 'followers' | 'following' | 'mutual';
@@ -282,32 +282,45 @@ const FollowersFollowing: React.FC = () => {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '1rem', marginBottom: '2.5rem' }}
+          style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '1rem', marginBottom: '2.5rem' }}
         >
           {[
-            { label: 'Followers', count: MOCK_FOLLOWERS.length, color: '#1a1a1a', bg: '#f8f9fa', icon: <Users size={20} /> },
-            { label: 'Following', count: MOCK_FOLLOWING.length, color: '#1971c2', bg: '#e7f5ff', icon: <UserCheck size={20} /> },
-            { label: 'Mutual', count: mutualCount, color: '#2b8a3e', bg: '#ebfbee', icon: <UserPlus size={20} /> },
-            { label: 'New This Month', count: 2, color: 'var(--primary)', bg: '#fff5f5', icon: <UserPlus size={20} /> },
+            { label: 'Followers', count: MOCK_FOLLOWERS.length, color: '#0f172a', bg: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)', icon: <Users size={20} />, border: 'rgba(15, 23, 42, 0.08)' },
+            { label: 'Following', count: MOCK_FOLLOWING.length, color: '#0369a1', bg: 'linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%)', icon: <UserCheck size={20} />, border: 'rgba(14, 165, 233, 0.1)' },
+            { label: 'Mutual', count: mutualCount, color: '#15803d', bg: 'linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%)', icon: <UserPlus size={20} />, border: 'rgba(34, 197, 94, 0.12)' },
           ].map((stat) => (
             <motion.div
               key={stat.label}
-              whileHover={{ y: -3, boxShadow: '0 8px 20px rgba(0,0,0,0.06)' }}
-              style={{
+              whileHover={{ y: -5, boxShadow: '0 12px 30px rgba(0,0,0,0.08)' }}
+            style={{
                 background: stat.bg,
-                borderRadius: '14px',
-                padding: '1.4rem 1.5rem',
-                border: '1px solid #e9ecef',
-                textAlign: 'center',
-                transition: 'all 0.3s',
-                cursor: 'default'
+                borderRadius: '16px',
+                padding: '1.25rem 1rem',
+                border: 'none',
+                transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+                cursor: 'default',
+                position: 'relative',
+                overflow: 'hidden',
+                boxShadow: '0 4px 15px rgba(0,0,0,0.02)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center'
               }}
+              className="luxury-stat-card"
             >
-              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.6rem', color: stat.color, opacity: 0.7 }}>
-                {stat.icon}
+              {/* Luxury Noise Texture Overlay */}
+              <div style={{ 
+                position: 'absolute', inset: 0, opacity: 0.03, pointerEvents: 'none',
+                backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`
+              }} />
+              
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.75rem', color: stat.color, opacity: 0.8 }}>
+                <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} transition={{ duration: 0.5 }}>
+                  {stat.icon}
+                </motion.div>
               </div>
-              <p style={{ fontSize: '2rem', fontWeight: 800, color: stat.color, margin: '0 0 0.2rem 0' }}>{stat.count}</p>
-              <p style={{ fontSize: '0.82rem', color: '#6c757d', fontWeight: 500, margin: 0 }}>{stat.label}</p>
+              <p style={{ fontSize: '2.2rem', fontWeight: 900, color: '#1a1a1a', margin: '0 0 0.25rem 0', letterSpacing: '-0.03em' }}>{stat.count}</p>
+              <p style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600, margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{stat.label}</p>
             </motion.div>
           ))}
         </motion.div>
@@ -317,7 +330,13 @@ const FollowersFollowing: React.FC = () => {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.13 }}
-          style={{ display: 'flex', gap: '0', marginBottom: '1.5rem', borderBottom: '2px solid #f1f3f5' }}
+          style={{ 
+            display: 'flex', 
+            gap: '0', 
+            marginBottom: '2rem', 
+            borderBottom: '1px solid #e2e8f0', 
+            position: 'relative'
+          }}
         >
           {TAB_CONFIG.map(tab => (
             <button
@@ -326,31 +345,51 @@ const FollowersFollowing: React.FC = () => {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.9rem 1.5rem',
-                fontSize: '0.92rem',
-                fontWeight: activeTab === tab.key ? 700 : 500,
-                color: activeTab === tab.key ? 'var(--primary)' : '#6c757d',
+                gap: '0.6rem',
+                padding: '1.2rem 2rem',
+                fontSize: '0.95rem',
+                fontWeight: activeTab === tab.key ? 700 : 600,
+                color: activeTab === tab.key ? '#0f172a' : '#94a3b8',
                 background: 'transparent',
                 border: 'none',
-                borderBottom: activeTab === tab.key ? '2px solid var(--primary)' : '2px solid transparent',
                 cursor: 'pointer',
-                transition: 'all 0.2s',
-                marginBottom: '-2px'
+                transition: 'color 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                position: 'relative',
+                outline: 'none'
               }}
             >
-              {tab.icon}
-              {tab.label}
-              <span style={{
-                background: activeTab === tab.key ? 'var(--primary)' : '#e9ecef',
-                color: activeTab === tab.key ? 'white' : '#6c757d',
-                padding: '0.15rem 0.55rem',
-                borderRadius: '10px',
-                fontSize: '0.72rem',
-                fontWeight: 700
-              }}>
-                {tab.count}
+              <span style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                {React.cloneElement(tab.icon as React.ReactElement<any>, { size: 18, style: { opacity: activeTab === tab.key ? 1 : 0.7 } })}
+                {tab.label}
+                <span style={{
+                  background: activeTab === tab.key ? '#0f172a' : '#f1f5f9',
+                  color: activeTab === tab.key ? 'white' : '#64748b',
+                  padding: '0.2rem 0.6rem',
+                  borderRadius: '12px',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  transition: 'all 0.3s ease'
+                }}>
+                  {tab.count}
+                </span>
               </span>
+
+              {activeTab === tab.key && (
+                <motion.div
+                  layoutId="activeTabUnderline"
+                  style={{
+                    position: 'absolute',
+                    bottom: '-1px',
+                    left: 0,
+                    right: 0,
+                    height: '3px',
+                    background: '#0f172a',
+                    borderRadius: '3px 3px 0 0',
+                    zIndex: 3
+                  }}
+                  transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+                />
+              )}
             </button>
           ))}
         </motion.div>
@@ -731,6 +770,27 @@ const FollowersFollowing: React.FC = () => {
           )}
         </AnimatePresence>
       </div>
+      <style>{`
+        .luxury-stat-card {
+           position: relative;
+        }
+        .luxury-stat-card::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          border-radius: 16px;
+          padding: 1.5px; /* Border thickness */
+          background: linear-gradient(135deg, rgba(200, 16, 46, 0.1), rgba(0, 0, 0, 0.05), rgba(200, 16, 46, 0.05));
+          -webkit-mask: linear-gradient(%23fff 0 0) content-box, linear-gradient(%23fff 0 0);
+          -webkit-mask-composite: xor;
+          mask-composite: exclude;
+          pointer-events: none;
+        }
+        .luxury-stat-card:hover::before {
+          background: linear-gradient(135deg, #c8102e, rgba(26, 26, 26, 0.5));
+          opacity: 0.2;
+        }
+      `}</style>
     </div>
   );
 };

@@ -100,19 +100,50 @@
 .luxury-title {
   display: inline-block;
   cursor: default;
-  background: linear-gradient(120deg, #0f172a 20%, var(--primary) 40%, #0f172a 60%);
-  background-size: 200% auto;
+  background: linear-gradient(110deg, #0f172a 0%, #0f172a 45%, #ffffff 50%, #0f172a 55%, #0f172a 100%);
+  background-size: 250% 100%;
   color: transparent;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: shimmerTitle 4s linear infinite;
+  animation: sweepText 6s infinite ease-in-out;
 }
 
-@keyframes shimmerTitle {
-  to {
-    background-position: 200% center;
-  }
+.luxury-logo-sweep {
+  position: relative;
+  overflow: hidden;
+  display: inline-block;
+  border-radius: 12px;
+}
+
+.luxury-logo-sweep::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -200%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: skewX(-20deg);
+  animation: sweepLogo 6s infinite ease-in-out;
+  pointer-events: none;
+}
+
+@keyframes sweepText {
+  0% { background-position: -125% 0; }
+  25% { background-position: 125% 0; }
+  100% { background-position: 125% 0; }
+}
+
+@keyframes sweepLogo {
+  0% { left: -200%; }
+  25% { left: 200%; }
+  100% { left: 200%; }
 }
 
 .auth-header p {
@@ -265,7 +296,7 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  padding: 10px;
+  padding: 12px;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
   font-size: 14px;
@@ -277,15 +308,6 @@
 .social-btn:hover {
   background: #f8fafc;
 }
-
-.dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
-.linkedin .dot { background: #0077b5; }
-.microsoft .dot { background: #00a1f1; }
 
 .auth-footer {
   margin-top: auto;

@@ -3,8 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft, Users, Target, Rocket, Award, 
-  Zap, Menu, X, ArrowRight, Globe, Share2,
-  ShieldCheck, Briefcase, GraduationCap, MapPin, Calendar
+  Zap, Menu, X, Globe,
+  ShieldCheck, Briefcase, GraduationCap, MapPin
 } from 'lucide-react';
 import '../App.css';
 import nestMainLogo from '../assets/nest_logo.png';
@@ -96,28 +96,6 @@ const userTypeData: Record<string, any> = {
       { icon: Users, title: 'Guided Factory Tours', desc: 'See how large-scale software and hardware systems are integrated.' },
       { icon: Zap, title: 'Tech Workshops', desc: 'Attend short power-talks by our senior architects during your visit.' },
       { icon: Rocket, title: 'Future Careers', desc: 'Understand the different roles available and find your calling in tech.' }
-    ]
-  },
-  'event-leads': {
-    title: 'Event Network',
-    tagline: 'Connecting through shared tech interests.',
-    description: 'Our events bring together tech enthusiasts, innovators, and leaders from across the globe. From hackathons to tech summits, we provide the platform to showcase talent and share knowledge.',
-    heroImage: 'https://images.unsplash.com/photo-1505373877841-8d25f7d46678?q=80&w=1600&auto=format&fit=crop',
-    color: '#8B5CF6',
-    pillars: [
-      { title: 'Global Summits', desc: 'Annual tech summits featuring speakers from major global organizations.', icon: Calendar },
-      { icon: Target, title: 'Hackatons', desc: 'Intensive 48-hour coding challenges with significant prize pools and hiring opportunities.' },
-      { icon: Share2, title: 'Networking Portal', desc: 'Exclusive access to our attendee networking portal for 1 month post-event.' }
-    ],
-    details: [
-      { label: 'Frequency', value: '2+ major events per month including webinars, meetups, and summits.' },
-      { label: 'Inclusivity', value: 'Events designed for everyone from beginners to seasoned architects.' },
-      { label: 'Reach', value: 'Online events reach over 100,000+ tech enthusiasts annually.' }
-    ],
-    features: [
-      { icon: Rocket, title: 'Hackathons', desc: 'Participate in high-stakes innovation challenges and win amazing prizes.' },
-      { icon: Users, title: 'Tech Summits', desc: 'Hear from FAANG leaders and local heroes during our quarterly summits.' },
-      { icon: Zap, title: 'Global Networking', desc: 'Build connections that transcend borders via our event portal.' }
     ]
   }
 };
