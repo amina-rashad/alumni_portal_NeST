@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, UploadCloud, CheckCircle2, AlertCircle, MapPin, Building, Briefcase } from 'lucide-react';
+import { ArrowLeft, UploadCloud, CheckCircle2, AlertCircle, MapPin, Building, Briefcase, FileText, PenBox } from 'lucide-react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
+import InlineResumeBuilder from './InlineResumeBuilder';
 
 // Simple mock data for context
 const JOB_CONTEXT: Record<string, any> = {
@@ -21,6 +22,7 @@ const ApplyJob: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [resumeOption, setResumeOption] = useState<'profile' | 'upload' | 'build'>('upload');
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -184,53 +186,125 @@ const ApplyJob: React.FC = () => {
           </div>
 
           <div style={{ borderTop: '1px solid #e9ecef', paddingTop: '2.5rem', marginBottom: '2.5rem' }}>
-            <h3 style={{ fontSize: '1.3rem', color: '#1a1a1a', marginBottom: '1.5rem', fontWeight: 600 }}>Resume & Cover Letter</h3>
+            <h3 style={{ fontSize: '1.3rem', color: '#1a1a1a', marginBottom: '1.5rem', fontWeight: 600 }}>Resume Options</h3>
             
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem' }}>
-              <label style={{ fontWeight: 600, color: '#4a4a4a', fontSize: '0.9rem' }}>Resume / CV *</label>
-              <div 
-                style={{ 
-                  border: '2px dashed #ced4da', 
-                  borderRadius: '12px', 
-                  padding: '3rem 2rem', 
-                  textAlign: 'center', 
-                  background: '#f8f9fa',
-                  cursor: 'pointer',
-                  position: 'relative',
-                  transition: 'background 0.3s, border-color 0.3s'
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = '#f1f3f5'; e.currentTarget.style.borderColor = 'var(--primary)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = '#f8f9fa'; e.currentTarget.style.borderColor = '#ced4da'; }}
-              >
-                <input 
-                  type="file" 
-                  required 
-                  accept=".pdf,.doc,.docx" 
-                  onChange={handleFileChange}
-                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} 
-                />
-                {!resumeFile ? (
-                  <>
-                    <UploadCloud size={40} color="var(--primary)" style={{ margin: '0 auto 1rem auto' }} />
-                    <p style={{ color: '#1a1a1a', fontWeight: 600, fontSize: '1.05rem', marginBottom: '0.3rem' }}>Click to upload or drag and drop</p>
-                    <p style={{ color: '#6c757d', fontSize: '0.9rem' }}>PDF, DOCX up to 5MB</p>
-                  </>
-                ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.8rem' }}>
-                    <CheckCircle2 size={24} color="#2b8a3e" />
-                    <p style={{ color: '#1a1a1a', fontWeight: 600, fontSize: '1.05rem' }}>{resumeFile.name}</p>
-                  </div>
-                )}
-              </div>
-            </div>
+            <div style={{ marginBottom: '2.5rem' }}>
+              <label style={{ fontWeight: 600, color: '#4a4a4a', fontSize: '0.9rem', display: 'block', marginBottom: '1rem' }}>Choose Resume Option *</label>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setResumeOption('profile')}
+                  style={{
+                    padding: '1rem',
+                    borderRadius: '12px',
+                    border: `2px solid ${resumeOption === 'profile' ? 'var(--primary)' : '#e9ecef'}`,
+                    background: resumeOption === 'profile' ? '#fff1f1' : '#ffffff',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '0.8rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <FileText size={24} color={resumeOption === 'profile' ? 'var(--primary)' : '#6c757d'} />
+                  <span style={{ fontWeight: 600, color: resumeOption === 'profile' ? 'var(--primary)' : '#4a4a4a', fontSize: '0.95rem' }}>Use Profile Resume</span>
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => setResumeOption('upload')}
+                  style={{
+                    padding: '1rem',
+                    borderRadius: '12px',
+                    border: `2px solid ${resumeOption === 'upload' ? 'var(--primary)' : '#e9ecef'}`,
+                    background: resumeOption === 'upload' ? '#fff1f1' : '#ffffff',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '0.8rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <UploadCloud size={24} color={resumeOption === 'upload' ? 'var(--primary)' : '#6c757d'} />
+                  <span style={{ fontWeight: 600, color: resumeOption === 'upload' ? 'var(--primary)' : '#4a4a4a', fontSize: '0.95rem' }}>Upload New File</span>
+                </button>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label style={{ fontWeight: 600, color: '#4a4a4a', fontSize: '0.9rem' }}>Cover Letter (Optional)</label>
-              <textarea 
-                rows={6} 
-                placeholder="Briefly tell us why you're a great fit for this role..." 
-                style={{ background: '#ffffff', color: '#1a1a1a', padding: '1rem', borderRadius: '8px', border: '1px solid #ced4da', outline: 'none', fontSize: '1rem', width: '100%', resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box' }} 
-              />
+                <button
+                  type="button"
+                  onClick={() => setResumeOption('build')}
+                  style={{
+                    padding: '1rem',
+                    borderRadius: '12px',
+                    border: `2px solid ${resumeOption === 'build' ? 'var(--primary)' : '#e9ecef'}`,
+                    background: resumeOption === 'build' ? '#fff1f1' : '#ffffff',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '0.8rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <PenBox size={24} color={resumeOption === 'build' ? 'var(--primary)' : '#6c757d'} />
+                  <span style={{ fontWeight: 600, color: resumeOption === 'build' ? 'var(--primary)' : '#4a4a4a', fontSize: '0.95rem' }}>Create New Resume</span>
+                </button>
+              </div>
+
+              {resumeOption === 'profile' && (
+                <div style={{ background: '#f8f9fa', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e9ecef', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{ padding: '0.8rem', background: '#e3fbee', borderRadius: '8px' }}>
+                    <CheckCircle2 size={24} color="#2b8a3e" />
+                  </div>
+                  <div>
+                    <p style={{ fontWeight: 600, color: '#1a1a1a', marginBottom: '0.2rem' }}>Jane_Doe_Resume_Current.pdf</p>
+                    <p style={{ color: '#6c757d', fontSize: '0.85rem' }}>Attached from your verified Profile</p>
+                  </div>
+                </div>
+              )}
+
+              {resumeOption === 'upload' && (
+                <div 
+                  style={{ 
+                    border: '2px dashed #ced4da', 
+                    borderRadius: '12px', 
+                    padding: '3rem 2rem', 
+                    textAlign: 'center', 
+                    background: '#f8f9fa',
+                    cursor: 'pointer',
+                    position: 'relative',
+                    transition: 'background 0.3s, border-color 0.3s'
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = '#f1f3f5'; e.currentTarget.style.borderColor = 'var(--primary)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = '#f8f9fa'; e.currentTarget.style.borderColor = '#ced4da'; }}
+                >
+                  <input 
+                    type="file" 
+                    required={resumeOption === 'upload' && !resumeFile} 
+                    accept=".pdf,.doc,.docx" 
+                    onChange={handleFileChange}
+                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} 
+                  />
+                  {!resumeFile ? (
+                    <>
+                      <UploadCloud size={40} color="var(--primary)" style={{ margin: '0 auto 1rem auto' }} />
+                      <p style={{ color: '#1a1a1a', fontWeight: 600, fontSize: '1.05rem', marginBottom: '0.3rem' }}>Click to upload or drag and drop</p>
+                      <p style={{ color: '#6c757d', fontSize: '0.9rem' }}>PDF, DOCX up to 5MB</p>
+                    </>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.8rem' }}>
+                      <CheckCircle2 size={24} color="#2b8a3e" />
+                      <p style={{ color: '#1a1a1a', fontWeight: 600, fontSize: '1.05rem' }}>{resumeFile.name}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {resumeOption === 'build' && (
+                <InlineResumeBuilder onAttach={(file) => setResumeFile(file)} />
+              )}
             </div>
           </div>
 

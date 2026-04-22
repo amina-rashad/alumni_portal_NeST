@@ -9,6 +9,7 @@ import { adminApi } from '../../services/api';
 const AdminIVStudents: React.FC = () => {
   const [visits, setVisits] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const nestNavy = '#1a2652';
 
   useEffect(() => {
     const fetchVisits = async () => {
@@ -31,7 +32,6 @@ const AdminIVStudents: React.FC = () => {
     }
   };
 
-  const nestNavy = '#1a2652';
 
   const colleges = Array.from(new Set(visits.map(v => v.college)));
   const years = Array.from(new Set(visits.map(v => v.year))).sort().reverse();
