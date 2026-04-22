@@ -5,13 +5,13 @@ import {
   Users, UserCheck, Briefcase, FileText, 
   Plus, Activity
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { adminApi } from '../../services/api';
 
 const nestNavy = '#1a2652';
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
+
   const [statsData, setStatsData] = useState({
     total_users: 0,
     interns: 0,

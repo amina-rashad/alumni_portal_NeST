@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowLeft, Calendar, MapPin, Clock, 
-  Ticket, Share2, 
+  Share2, 
   Download
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -28,7 +28,6 @@ const MOCK_MY_EVENTS: Event[] = [
 
 const MyEvents: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
-  const [showTicket, setShowTicket] = useState<string | null>(null);
 
   const filteredEvents = MOCK_MY_EVENTS.filter(e => 
     activeTab === 'upcoming' ? e.status === 'Registered' : (e.status === 'Attended' || e.status === 'Missed')
@@ -156,17 +155,9 @@ const MyEvents: React.FC = () => {
 
                 <div style={{ marginTop: 'auto', paddingTop: '1.5rem', display: 'flex', gap: '0.75rem' }}>
                   {activeTab === 'upcoming' ? (
-                    <>
-                      <button 
-                        onClick={() => setShowTicket(event.id)}
-                        style={{ flex: 1, background: '#0F172A', color: 'white', padding: '0.75rem', borderRadius: '10px', border: 'none', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
-                      >
-                        <Ticket size={18} /> View Ticket
-                      </button>
-                      <button style={{ width: '44px', height: '44px', background: '#F1F5F9', borderRadius: '10px', border: 'none', color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                        <Share2 size={18} />
-                      </button>
-                    </>
+                    <button style={{ flex: 1, background: '#F1F5F9', borderRadius: '10px', border: 'none', color: '#0F172A', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: '0.75rem', fontWeight: 700, gap: '0.5rem' }}>
+                      <Share2 size={18} /> Share Event
+                    </button>
                   ) : (
                     <>
                       <button 
@@ -189,58 +180,6 @@ const MyEvents: React.FC = () => {
           ))}
         </AnimatePresence>
       </div>
-
-      {/* Ticket Modal (Mockup) */}
-      <AnimatePresence>
-        {showTicket && (
-          <>
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowTicket(null)}
-              style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(8px)', zIndex: 1000 }}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              style={{ 
-                position: 'fixed', 
-                top: '50%', left: '50%', 
-                transform: 'translate(-50%, -50%)', 
-                width: '400px', 
-                background: 'white', 
-                borderRadius: '32px', 
-                padding: '2.5rem', 
-                zIndex: 1001,
-                textAlign: 'center',
-                boxShadow: '0 40px 80px rgba(0,0,0,0.3)'
-              }}
-            >
-              <Ticket size={48} color="#d32f2f" style={{ marginBottom: '1.5rem' }} />
-              <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0F172A', marginBottom: '0.5rem' }}>Event Admission</h2>
-              <p style={{ color: '#64748B', fontSize: '0.95rem', marginBottom: '2rem' }}>Please present this QR code at the registration desk for check-in.</p>
-              
-              <div style={{ width: '240px', height: '240px', background: '#F8FAFC', margin: '0 auto 2rem', borderRadius: '24px', padding: '2rem', border: '2px dashed #E2E8F0', position: 'relative' }}>
-                {/* Mock QR Content */}
-                <div style={{ width: '100%', height: '100%', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                  {Array.from({ length: 36 }).map((_, i) => (
-                    <div key={i} style={{ width: '28px', height: '28px', background: Math.random() > 0.6 ? '#0F172A' : 'transparent', borderRadius: '4px' }} />
-                  ))}
-                </div>
-              </div>
-              
-              <button 
-                onClick={() => setShowTicket(null)}
-                style={{ width: '100%', padding: '1rem', borderRadius: '16px', background: '#F1F5F9', border: 'none', color: '#0F172A', fontWeight: 700, cursor: 'pointer' }}
-              >
-                Close and Save to Wallet
-              </button>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
 
       <style>{`
         .luxury-card {

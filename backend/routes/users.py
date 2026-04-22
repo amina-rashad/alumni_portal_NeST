@@ -29,6 +29,9 @@ def _serialize_user(user: dict) -> dict:
         "bio": user.get("bio"),
         "profile_picture": user.get("profile_picture"),
         "linkedin_url": user.get("linkedin_url"),
+        "resume_url": user.get("resume_url"),
+        "resume_data": user.get("resume_data"),
+        "is_resume_created": user.get("is_resume_created", False),
         "skills": user.get("skills", []),
         "is_active": user.get("is_active", True),
         "is_email_verified": user.get("is_email_verified", False),
@@ -71,7 +74,8 @@ def update_profile():
     # Fields allowed for update
     allowed_fields = [
         "full_name", "phone", "batch", "specialization",
-        "bio", "linkedin_url", "skills", "profile_picture"
+        "bio", "linkedin_url", "skills", "profile_picture",
+        "resume_url", "resume_data", "is_resume_created"
     ]
 
     update_data = {}
@@ -129,6 +133,9 @@ def get_user_by_id(user_id):
         "bio": user.get("bio"),
         "profile_picture": user.get("profile_picture"),
         "linkedin_url": user.get("linkedin_url"),
+        "resume_url": user.get("resume_url"),
+        "resume_data": user.get("resume_data"),
+        "is_resume_created": user.get("is_resume_created", False),
         "skills": user.get("skills", []),
     }
 
