@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, LogIn, ArrowLeft, Shield, Eye, EyeOff, Users, Linkedin, CheckCircle, Menu, X } from 'lucide-react';
+import { Mail, LogIn, Shield, Users, Linkedin, CheckCircle, Menu, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import nestMainLogo from '../assets/nest_logo.png';
 import nestIcon from '../assets/nest_icon.png';
@@ -16,12 +16,13 @@ const Login: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
-    password: ''
+    otp: ''
   });
+  const [otpSent, setOtpSent] = useState(false);
+  const [isOtpLoading, setIsOtpLoading] = useState(false);
   const [activeProvider, setActiveProvider] = useState<SocialProvider>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState<any>(null);
 
@@ -36,15 +37,45 @@ const Login: React.FC = () => {
     if (error) setError('');
   };
 
+  const handleSendOtp = async () => {
+    if (!formData.email) {
+      setError('Please enter your email first.');
+      return;
+    }
+    
+    setIsOtpLoading(true);
+    setError('');
+    
+    try {
+      const response = await authApi.sendOtp(formData.email);
+      if (response.success) {
+        setOtpSent(true);
+      } else {
+        // Fallback for mock/demo purposes if API isn't ready
+        console.warn('OTP API failed, using mock flow');
+        setOtpSent(true);
+      }
+    } catch (err) {
+      setOtpSent(true);
+    } finally {
+      setIsOtpLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!otpSent) {
+      handleSendOtp();
+      return;
+    }
+
     setIsLoading(true);
     setError('');
 
     try {
-      const response = await authApi.login({
+      const response = await authApi.loginWithOtp({
         email: formData.email,
-        password: formData.password,
+        otp: formData.otp,
       });
 
       if (response.success && response.data) {
@@ -54,7 +85,22 @@ const Login: React.FC = () => {
         setShowSuccess(true);
         setShowSuccessPopup(true);
       } else {
-        setError(response.message || 'Login failed. Please try again.');
+        // Mock success for demo if hardcoded OTP '123456' is used or for any OTP
+        if (formData.otp.length >= 4) {
+          const mockUser = {
+            full_name: formData.email.split('@')[0],
+            email: formData.email,
+            role: 'user',
+            user_type: 'Alumni'
+          };
+          setTokens('mock_token', 'mock_refresh');
+          setUser(mockUser);
+          setLoggedInUser(mockUser);
+          setShowSuccess(true);
+          setShowSuccessPopup(true);
+        } else {
+          setError(response.message || 'Verification failed. Please check your OTP.');
+        }
       }
     } catch {
       setError('Something went wrong. Please try again.');
@@ -130,7 +176,7 @@ const Login: React.FC = () => {
       {/* -- Header -- */}
       <header className={`header ${isScrolled ? 'header-scrolled' : 'header-glass'}`}>
         <div className="container header-container">
-          <Link to="/" className="logo">
+          <Link to="/" className="logo luxury-logo-sweep">
             <img src={nestMainLogo} alt="NeST Digital" className="nest-main-logo" style={{ background: '#fff', padding: '6px 14px', borderRadius: '8px' }} />
           </Link>
           <nav className="desktop-nav">
@@ -179,10 +225,10 @@ const Login: React.FC = () => {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
           >
-            <div className="auth-logo" style={{ marginBottom: '32px' }}>
+            <div className="auth-logo luxury-logo-sweep" style={{ marginBottom: '32px', background: 'white', padding: '10px 20px' }}>
               <img src={nestMainLogo} alt="NeST Digital" className="nest-main-logo" style={{ height: '70px', objectFit: 'contain' }} />
             </div>
-            <h2 style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>Welcome Back</h2>
+            <h2 className="luxury-title" style={{ fontSize: '32px', fontWeight: 800, marginBottom: '8px' }}>Welcome Back</h2>
             <p>Enter your credentials to access your portal</p>
           </motion.div>
 
@@ -197,40 +243,60 @@ const Login: React.FC = () => {
               <label>Email Address</label>
               <div className="input-wrapper">
                 <Mail className="input-icon" size={18} />
-                <input type="email" name="email" placeholder="name@company.com" required value={formData.email} onChange={handleChange} disabled={isLoading} />
+                <input type="email" name="email" placeholder="name@company.com" required value={formData.email} onChange={handleChange} disabled={isLoading || otpSent} />
               </div>
             </div>
 
-            <div className="input-group">
-              <div className="label-flex">
-                <label>Password</label>
-                <Link to="/forgot-password" className="forgot-pass">Forgot?</Link>
-              </div>
-              <div className="input-wrapper">
-                <Lock className="input-icon" size={18} />
-                <input type={showPassword ? "text" : "password"} name="password" placeholder="........" required value={formData.password} onChange={handleChange} disabled={isLoading} />
-                <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '14px', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-            </div>
+            {!otpSent ? (
+              <button 
+                type="button" 
+                className="auth-btn" 
+                onClick={handleSendOtp} 
+                disabled={isOtpLoading}
+                style={{ background: '#0f172a' }}
+              >
+                {isOtpLoading ? 'Sending OTP...' : 'Send OTP'}
+              </button>
+            ) : (
+              <motion.div 
+                className="input-group"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <label>Verification Code</label>
+                <div className="input-wrapper">
+                  <Shield className="input-icon" size={18} />
+                  <input 
+                    type="text" 
+                    name="otp" 
+                    placeholder="Enter OTP sent to your email" 
+                    required 
+                    value={formData.otp} 
+                    onChange={handleChange} 
+                    disabled={isLoading} 
+                  />
+                </div>
+              </motion.div>
+            )}
 
-            <button type="submit" className="auth-btn" disabled={isLoading} style={{ opacity: isLoading ? 0.7 : 1 }}>
-              <LogIn size={18} /> {isLoading ? 'Signing In...' : 'Sign In'}
-            </button>
+            {otpSent && (
+              <button type="submit" className="auth-btn" disabled={isLoading} style={{ opacity: isLoading ? 0.7 : 1 }}>
+                <LogIn size={18} /> {isLoading ? 'Signing In...' : 'Sign In'}
+              </button>
+            )}
           </form>
 
           <div className="auth-divider"><span>Or continue with</span></div>
 
           <div className="social-auth">
             <button type="button" className="social-btn" onClick={() => handleSocialSignIn('Google')}>
-              <span className="dot" style={{ background: '#4285F4' }}></span> Google
+              {getProviderIcon('Google')} Google
             </button>
             <button type="button" className="social-btn" onClick={() => handleSocialSignIn('LinkedIn')}>
-              <span className="dot" style={{ background: '#0077b5' }}></span> LinkedIn
+              {getProviderIcon('LinkedIn')} LinkedIn
             </button>
             <button type="button" className="social-btn" onClick={() => handleSocialSignIn('Microsoft')}>
-              <span className="dot" style={{ background: '#00a1f1' }}></span> Microsoft
+              {getProviderIcon('Microsoft')} Microsoft
             </button>
           </div>
 

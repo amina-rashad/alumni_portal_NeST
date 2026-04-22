@@ -56,39 +56,39 @@ const AdminAddVisit: React.FC = () => {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <label style={{ fontSize: '14px', fontWeight: 600, color: '#475569' }}>College Name</label>
-              <input required type="text" value={formData.college} onChange={e => setFormData({...formData, college: e.target.value})} style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #e2e8f0', outline: 'none' }} />
+              <input required type="text" value={formData.college} onChange={e => setFormData({...formData, college: e.target.value})} style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #e2e8f0', outline: 'none', color: '#111827' }} />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <label style={{ fontSize: '14px', fontWeight: 600, color: '#475569' }}>Branch / Department</label>
-              <input required type="text" value={formData.branch} onChange={e => setFormData({...formData, branch: e.target.value})} style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #e2e8f0', outline: 'none' }} />
+              <input required type="text" value={formData.branch} onChange={e => setFormData({...formData, branch: e.target.value})} style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #e2e8f0', outline: 'none', color: '#111827' }} />
             </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <label style={{ fontSize: '14px', fontWeight: 600, color: '#475569' }}>Date of Visit</label>
-              <input required type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #e2e8f0', outline: 'none' }} />
+              <input required type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #e2e8f0', outline: 'none', color: '#111827' }} />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <label style={{ fontSize: '14px', fontWeight: 600, color: '#475569' }}>Number of Students</label>
-              <input required type="number" value={formData.students_count} onChange={e => setFormData({...formData, students_count: e.target.value})} style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #e2e8f0', outline: 'none' }} />
+              <input required type="number" value={formData.students_count} onChange={e => setFormData({...formData, students_count: e.target.value})} style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #e2e8f0', outline: 'none', color: '#111827' }} />
             </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <label style={{ fontSize: '14px', fontWeight: 600, color: '#475569' }}>Coordinator Name</label>
-              <input required type="text" value={formData.coordinator_name} onChange={e => setFormData({...formData, coordinator_name: e.target.value})} style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #e2e8f0', outline: 'none' }} />
+              <input required type="text" value={formData.coordinator_name} onChange={e => setFormData({...formData, coordinator_name: e.target.value})} style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #e2e8f0', outline: 'none', color: '#111827' }} />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <label style={{ fontSize: '14px', fontWeight: 600, color: '#475569' }}>Coordinator Email</label>
-              <input required type="email" value={formData.coordinator_email} onChange={e => setFormData({...formData, coordinator_email: e.target.value})} style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #e2e8f0', outline: 'none' }} />
+              <input required type="email" value={formData.coordinator_email} onChange={e => setFormData({...formData, coordinator_email: e.target.value})} style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #e2e8f0', outline: 'none', color: '#111827' }} />
             </div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <label style={{ fontSize: '14px', fontWeight: 600, color: '#475569' }}>Additional Notes</label>
-            <textarea rows={4} value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #e2e8f0', outline: 'none', resize: 'vertical' }} />
+            <textarea rows={4} value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #e2e8f0', outline: 'none', resize: 'vertical', color: '#111827' }} />
           </div>
         </div>
 

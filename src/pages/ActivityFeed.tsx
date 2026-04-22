@@ -7,8 +7,7 @@ import {
   Clock, PlayCircle, Plus, Sparkles,
   Briefcase, Send, Paperclip, ChevronRight, CheckCircle2,
   Heart, Navigation, Zap, FileText, Lightbulb, Search, X,
-  Camera, Video, Crown, Smile, GalleryVerticalEnd, Flame,
-  TrendingUp, Users, Calendar, Award
+  Camera, Video, Crown, Flame, TrendingUp
 } from 'lucide-react';
 
 // --- MOCK DATA ---
@@ -956,7 +955,7 @@ const PostCard = ({ post, onReferralRequest, requestedRef }: { post: any, onRefe
                 {/* Add Comment Input */}
                 <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
                   <img src={currentUser.avatar} style={{ width: '32px', height: '32px', borderRadius: '50%' }} />
-                  <input type="text" placeholder="Write a comment..." style={{ flex: 1, background: '#F3F4F6', border: 'none', padding: '0.75rem 1rem', borderRadius: '999px', outline: 'none', fontSize: '0.85rem' }} />
+                  <input type="text" placeholder="Write a comment..." style={{ flex: 1, background: '#F3F4F6', border: 'none', padding: '0.75rem 1rem', borderRadius: '999px', outline: 'none', fontSize: '0.85rem', color: '#111827' }} />
                 </div>
               </div>
             </motion.div>
@@ -1235,13 +1234,15 @@ const ActivityFeed: React.FC = () => {
           }
         }
 
-        /* Textarea placeholder in dark mode */
-        .feed-container textarea::placeholder {
-          color: rgba(255, 255, 255, 0.35);
+        /* Textarea placeholder in light mode */
+        .feed-container textarea::placeholder,
+        .feed-container input::placeholder {
+          color: rgba(0, 0, 0, 0.4);
         }
 
-        .feed-container textarea:focus {
-          box-shadow: inset 0 2px 8px rgba(0,0,0,0.3), 0 0 0 2px rgba(220, 38, 38, 0.2) !important;
+        .feed-container textarea:focus,
+        .feed-container input:focus {
+          box-shadow: inset 0 2px 8px rgba(0,0,0,0.05), 0 0 0 2px rgba(220, 38, 38, 0.1) !important;
         }
       `}</style>
 
@@ -1390,33 +1391,7 @@ const ActivityFeed: React.FC = () => {
           </motion.div>
 
           {/* QUICK ACTIONS / TOOLS */}
-          <motion.div 
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.4 }}
-            className="glass-card" 
-            style={{ padding: '1.75rem' }}
-          >
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#111827', margin: '0 0 1.25rem' }}>Quick Actions</h3>
-            <div style={{ gridTemplateColumns: '1fr 1fr', display: 'grid', gap: '1rem' }}>
-              <div className="btn-premium" style={{ background: '#FEF2F2', padding: '1rem', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center', textAlign: 'center', border: '1px solid #FEE2E2' }}>
-                <Briefcase size={20} color="#DC2626" />
-                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#991B1B' }}>Refer Alumni</span>
-              </div>
-              <div className="btn-premium" style={{ background: '#F0F9FF', padding: '1rem', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center', textAlign: 'center', border: '1px solid #E0F2FE' }}>
-                <Users size={20} color="#0284C7" />
-                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0369A1' }}>New Groups</span>
-              </div>
-              <div className="btn-premium" style={{ background: '#F5F3FF', padding: '1rem', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center', textAlign: 'center', border: '1px solid #EDE9FE' }}>
-                <Calendar size={20} color="#7C3AED" />
-                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#5B21B6' }}>Upc. Events</span>
-              </div>
-              <div className="btn-premium" style={{ background: '#FFFBEB', padding: '1rem', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center', textAlign: 'center', border: '1px solid #FEF3C7' }}>
-                <Award size={20} color="#D97706" />
-                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#92400E' }}>Badge Rewards</span>
-              </div>
-            </div>
-          </motion.div>
+
 
           {/* COMMUNITY INSIGHTS MOCKUP */}
           <motion.div 
