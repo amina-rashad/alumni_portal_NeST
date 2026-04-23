@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Save, User as UserIcon, Book, Building, Phone, AlignLeft, ShieldCheck, CheckCircle2, FileText, UploadCloud, Plus } from 'lucide-react';
+import { ArrowLeft, Save, User as UserIcon, Book, Building, Phone, AlignLeft, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { usersApi, setUser, getUser, type AuthUser } from '../services/api';
-import InlineResumeBuilder from './InlineResumeBuilder';
 
 const EditProfile: React.FC = () => {
   const navigate = useNavigate();
@@ -11,18 +10,13 @@ const EditProfile: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   
-  const [showResumeBuilder, setShowResumeBuilder] = useState(false);
-  const [resumeData, setResumeData] = useState<any>(null);
-  
   const [formData, setFormData] = useState({
     full_name: '',
     bio: '',
     phone: '',
     batch: '',
     specialization: '',
-    skills: '', // We'll store as comma separated string for simple editing
-    resume_url: '',
-    is_resume_created: false
+    skills: '' // We'll store as comma separated string for simple editing
   });
 
   useEffect(() => {
@@ -38,13 +32,8 @@ const EditProfile: React.FC = () => {
             phone: u.phone || '',
             batch: u.batch || '',
             specialization: u.specialization || '',
-            skills: (u.skills || []).join(', '),
-            resume_url: u.resume_url || '',
-            is_resume_created: u.is_resume_created || false
+            skills: (u.skills || []).join(', ')
           });
-          if (u.resume_data) {
-             setResumeData(u.resume_data);
-          }
         }
       } catch (err) {
         setMessage({ type: 'error', text: 'Failed to load profile data.' });
@@ -54,33 +43,6 @@ const EditProfile: React.FC = () => {
     };
     fetchProfile();
   }, []);
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const dataUrl = event.target?.result as string;
-        setFormData({ ...formData, resume_url: dataUrl, is_resume_created: false });
-        setMessage({ type: 'success', text: `Resume "${file.name}" uploaded and ready to preview!` });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const getAutofillData = () => ({
-    fullName: formData.full_name || '',
-    title: formData.specialization || '',
-    phone: formData.phone || '',
-    summary: formData.bio || '',
-    experience: resumeData?.experience || '',
-    projects: resumeData?.projects || '',
-    education: resumeData?.education || '',
-    certification: resumeData?.certification || '',
-    email: resumeData?.email || '',
-    address: resumeData?.address || '',
-    portfolio: resumeData?.portfolio || ''
-  });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -98,25 +60,20 @@ const EditProfile: React.FC = () => {
       
       const updatePayload = {
         ...formData,
-        skills: skillsArray,
-        resume_data: resumeData || null
+        skills: skillsArray
       };
 
       const res = await usersApi.updateProfile(updatePayload);
       const data = res.data as any;
       
       if (res.success && data && data.user) {
-        setMessage({ type: 'success', text: 'Profile & Resume updated successfully!' });
+        setMessage({ type: 'success', text: 'Profile updated successfully!' });
         
         // Update local cached user softly to reflect new name in header
         const currentUser = getUser() as unknown as AuthUser;
         if (currentUser) {
           setUser({ ...currentUser, ...data.user });
         }
-        
-        setTimeout(() => {
-          navigate('/profile');
-        }, 800);
       } else {
         setMessage({ type: 'error', text: res.message || 'Update failed.' });
       }
@@ -125,12 +82,6 @@ const EditProfile: React.FC = () => {
     } finally {
       setSaving(false);
     }
-  };
-
-  const handleResumeAttach = (_file: File, data: any) => {
-    setResumeData(data);
-    setFormData({ ...formData, is_resume_created: true, resume_url: 'System Generated Resume' });
-    setMessage({ type: 'success', text: 'Resume saved! Click "Save Profile Changes" to store it.' });
   };
 
   if (loading) {
@@ -142,7 +93,6 @@ const EditProfile: React.FC = () => {
   }
 
   return (
-    <>
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -223,66 +173,6 @@ const EditProfile: React.FC = () => {
             />
           </div>
 
-          {/* ── Resume Section ── */}
-          <div style={{ 
-            marginTop: '1rem', padding: '24px', borderRadius: '16px', 
-            background: 'linear-gradient(to right, #f8fafc, #fff)', border: '1px solid #e2e8f0' 
-          }}>
-             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                   <FileText size={22} color="#c8102e" /> Professional Resume
-                </h3>
-                {formData.resume_url && (
-                   <span style={{ fontSize: '12px', padding: '4px 12px', background: '#dcfce7', color: '#16a34a', borderRadius: '99px', fontWeight: 700 }}>
-                      ✓ Resume Ready
-                   </span>
-                )}
-             </div>
-
-             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: showResumeBuilder ? '20px' : 0 }}>
-                <div 
-                   onClick={() => document.getElementById('resume-upload-profile')?.click()}
-                   style={{ 
-                      padding: '24px', border: '2px dashed #cbd5e1', borderRadius: '12px', textAlign: 'center',
-                      cursor: 'pointer', transition: '0.2s', background: 'white'
-                   }}
-                   onMouseEnter={(e) => e.currentTarget.style.borderColor = '#c8102e'}
-                   onMouseLeave={(e) => e.currentTarget.style.borderColor = '#cbd5e1'}
-                >
-                   <UploadCloud size={28} color="#64748b" style={{ margin: '0 auto 12px' }} />
-                   <div style={{ fontSize: '14px', fontWeight: 700, color: '#1e293b' }}>Upload PDF/Doc</div>
-                   <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>Max size 10MB</div>
-                   <input 
-                      id="resume-upload-profile" type="file" accept=".pdf,.doc,.docx" 
-                      style={{ display: 'none' }} onChange={handleFileUpload} 
-                   />
-                </div>
-
-                <div 
-                   onClick={() => setShowResumeBuilder(prev => !prev)}
-                   style={{ 
-                      padding: '24px', border: `2px solid ${showResumeBuilder ? '#c8102e' : '#e2e8f0'}`, borderRadius: '12px', textAlign: 'center',
-                      cursor: 'pointer', transition: '0.2s', background: showResumeBuilder ? '#fff1f1' : 'white'
-                   }}
-                   onMouseEnter={(e) => { if (!showResumeBuilder) e.currentTarget.style.borderColor = '#0f172a'; }}
-                   onMouseLeave={(e) => { if (!showResumeBuilder) e.currentTarget.style.borderColor = '#e2e8f0'; }}
-                >
-                   <Plus size={28} color={showResumeBuilder ? '#c8102e' : '#64748b'} style={{ margin: '0 auto 12px' }} />
-                   <div style={{ fontSize: '14px', fontWeight: 700, color: showResumeBuilder ? '#c8102e' : '#1e293b' }}>{formData.is_resume_created ? 'Edit Created Resume' : 'Create Resume Online'}</div>
-                   <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>{showResumeBuilder ? 'Click to collapse' : 'Automated Form Builder'}</div>
-                </div>
-             </div>
-
-             {/* Inline Resume Builder — same as ApplyJob page */}
-             {showResumeBuilder && (
-               <InlineResumeBuilder
-                 onAttach={handleResumeAttach}
-                 initialData={resumeData || getAutofillData()}
-                 buttonText="Save Resume"
-               />
-             )}
-          </div>
-
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
             <button 
               type="submit" 
@@ -301,7 +191,6 @@ const EditProfile: React.FC = () => {
         </form>
       </div>
     </motion.div>
-    </>
   );
 };
 
