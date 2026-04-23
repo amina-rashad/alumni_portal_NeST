@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { adminApi } from '../../services/api';
 import { 
   Search, Plus, UserPlus,
   Eye, Edit2, MoreHorizontal,
   ChevronDown, Filter
 } from 'lucide-react';
-import { adminApi } from '../../services/api';
+
 
 const AdminUsers: React.FC = () => {
   const nestNavy = '#1a2652';
@@ -23,6 +24,7 @@ const AdminUsers: React.FC = () => {
 
   const [users, setUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
 
   // Handle outside click for filter dropdown
   useEffect(() => {
