@@ -32,6 +32,7 @@ const feed = [
     image: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=1200&auto=format&fit=crop' 
   }
 ];
+import bannerImg from '../assets/dashboard_banner.png';
 
 const recommendations = [
   { name: 'Priya Sharma', title: 'Product Manager @ Google', avatar: 'https://i.pravatar.cc/150?img=9', mutual: 12 },
@@ -120,7 +121,17 @@ const Dashboard: React.FC = () => {
   }, []);
 
   return (
-    <div className="font-sans" style={{ backgroundColor: '#F8FAFC', minHeight: '100vh', padding: '3rem 1.5rem', fontFamily: '"Inter", -apple-system, sans-serif' }}>
+    <div className="font-sans" style={{ 
+      backgroundColor: '#f6f9fc', 
+      backgroundImage: `
+        radial-gradient(at 0% 0%, rgba(211, 47, 47, 0.05) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(45, 34, 84, 0.05) 0px, transparent 50%),
+        radial-gradient(at 50% 100%, rgba(59, 130, 246, 0.05) 0px, transparent 50%)
+      `,
+      minHeight: '100vh', 
+      padding: '3rem 1.5rem', 
+      fontFamily: '"Montserrat", sans-serif' 
+    }}>
       
       {/* GLOBAL CSS OVERRIDES */}
       <style>{`
@@ -130,19 +141,61 @@ const Dashboard: React.FC = () => {
           letter-spacing: -0.015em;
         }
 
-        /* Premium Card Styling */
+        /* Ultra-Luxury Card Styling */
         .luxury-card {
-          background: #ffffff;
-          border-radius: 16px;
-          border: 1px solid rgba(226, 232, 240, 0.8);
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-          transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.4s cubic-bezier(0.25, 1, 0.5, 1), border-color 0.4s;
+          background: rgba(255, 255, 255, 0.7);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          border-radius: 24px;
+          border: 1px solid rgba(255, 255, 255, 0.4);
+          box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.04);
+          transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
           overflow: hidden;
+          position: relative;
+        }
+        .luxury-card::before {
+          content: "";
+          position: absolute;
+          top: 0; left: 0; width: 100%; height: 100%;
+          background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, transparent 100%);
+          pointer-events: none;
         }
         .luxury-card:hover {
-          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
-          transform: translateY(-4px);
-          border-color: rgba(226, 232, 240, 1);
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+          transform: translateY(-8px) scale(1.01);
+          border-color: rgba(211, 47, 47, 0.1);
+        }
+
+        /* Job Flash Card Marquee */
+        .job-marquee-container {
+          position: relative;
+          width: 100%;
+          overflow: hidden;
+          padding: 2rem 0;
+          cursor: grab;
+        }
+        .job-marquee-container:active {
+          cursor: grabbing;
+        }
+        .job-flash-card {
+          min-width: 420px;
+          background: rgba(255, 255, 255, 0.8);
+          backdrop-filter: blur(24px);
+          border-radius: 28px;
+          padding: 2.5rem;
+          margin-right: 2rem;
+          border: 1px solid rgba(255, 255, 255, 0.5);
+          box-shadow: 0 12px 40px -10px rgba(0, 0, 0, 0.08);
+          transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+          display: flex;
+          flex-direction: column;
+          gap: 1.5rem;
+        }
+        .job-flash-card:hover {
+          transform: scale(1.03) translateY(-10px);
+          box-shadow: 0 30px 60px -12px rgba(211, 47, 47, 0.15);
+          border-color: rgba(211, 47, 47, 0.3);
+          background: #fff;
         }
 
         /* High-End Animated Noise */
@@ -174,13 +227,46 @@ const Dashboard: React.FC = () => {
 
         .premium-banner-wrapper {
           position: relative;
-          padding: 3.5rem;
-          background: #ffffff;
+          padding: 0;
+          background: #fff9f6; /* Subtle cream background to match reference */
           border-radius: 32px;
-          border: 1px solid rgba(15, 23, 42, 0.08);
+          border: 1px solid rgba(15, 23, 42, 0.05);
           overflow: hidden;
-          margin-bottom: -1rem;
-          box-shadow: 0 30px 60px -12px rgba(15, 23, 42, 0.08), 0 18px 36px -18px rgba(15, 23, 42, 0.1), inset 0 0 2px rgba(255,255,255,0.8);
+          margin-bottom: 2rem;
+          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+          display: flex;
+          align-items: stretch;
+          min-height: 220px;
+        }
+
+        .banner-content {
+          flex: 1;
+          padding: 2rem 3.5rem;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          z-index: 2;
+        }
+
+        .banner-image-container {
+          width: 45%;
+          position: relative;
+          overflow: hidden;
+          background: #fff;
+        }
+
+        .banner-image-container::before {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; width: 100%; height: 100%;
+          background: linear-gradient(to right, #fff9f6 0%, transparent 10%, transparent 90%, #fff 100%);
+          z-index: 1;
+        }
+
+        .banner-image {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
         }
 
         .luxury-blob {
@@ -258,14 +344,26 @@ const Dashboard: React.FC = () => {
         }
 
         .premium-heading-name {
-          background: linear-gradient(90deg, #d32f2f 0%, #ff5252 25%, #d32f2f 50%, #ff5252 75%, #d32f2f 100%);
-          background-size: 200% auto;
+          background: linear-gradient(135deg, #d32f2f 0%, #ff4d4d 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
-          animation: gradientFlow 6s ease-in-out infinite;
           display: inline;
           text-transform: capitalize;
           position: relative;
+          font-weight: 800;
+          filter: drop-shadow(0 2px 4px rgba(211, 47, 47, 0.1));
+        }
+
+        .premium-heading-name::after {
+          content: '';
+          position: absolute;
+          left: 0;
+          bottom: 4px;
+          width: 100%;
+          height: 8px;
+          background: rgba(211, 47, 47, 0.08);
+          z-index: -1;
+          border-radius: 4px;
         }
 
         /* Subtle Shimmer Overlay */
@@ -295,7 +393,7 @@ const Dashboard: React.FC = () => {
         MAIN CENTRALISED LAYOUT (ONE BY ONE)
         A constrained width makes horizontal reading comfortable and focuses the user beautifully.
       */}
-      <div style={{ maxWidth: '860px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '3rem' }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '3rem' }}>
         
         {/* WELCOME BANNER WITH NOISE & GRADIENT */}
         <motion.div 
@@ -304,402 +402,333 @@ const Dashboard: React.FC = () => {
           transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
           className="premium-banner-wrapper"
         >
-          {/* Animated Background Elements - Luxury Mesh Gradient */}
-          <motion.div 
-            className="luxury-blob"
-            animate={{
-              x: [0, 180, -80, 0],
-              y: [0, 100, 150, 0],
-              scale: [1, 1.4, 0.85, 1],
-            }}
-            transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-            style={{ width: '600px', height: '600px', top: '-150px', left: '-200px', background: 'radial-gradient(circle, #d32f2f 0%, transparent 70%)', opacity: 0.12 }}
-          />
-          <motion.div 
-            className="luxury-blob"
-            animate={{
-              x: [0, -120, 150, 0],
-              y: [0, -80, 50, 0],
-              scale: [1, 1.2, 1.5, 1],
-            }}
-            transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-            style={{ width: '500px', height: '500px', bottom: '-200px', right: '-150px', background: 'radial-gradient(circle, #0F172A 0%, transparent 70%)', opacity: 0.1 }}
-          />
-          <motion.div 
-            className="luxury-blob"
-            animate={{
-              x: [0, 100, -60, 0],
-              y: [0, 60, -100, 0],
-              scale: [1, 1.3, 0.7, 1],
-            }}
-            transition={{ duration: 22, repeat: Infinity, ease: "linear" }}
-            style={{ width: '400px', height: '400px', top: '20%', right: '15%', background: 'radial-gradient(circle, #3B82F6 0%, transparent 70%)', opacity: 0.08 }}
-          />
-          <motion.div 
-            className="luxury-blob"
-            animate={{
-              x: [0, -50, 50, 0],
-              y: [0, 150, -50, 0],
-              scale: [0.8, 1.1, 0.9, 0.8],
-            }}
-            transition={{ duration: 35, repeat: Infinity, ease: "linear" }}
-            style={{ width: '450px', height: '450px', bottom: '10%', left: '20%', background: 'radial-gradient(circle, #d32f2f 0%, transparent 70%)', opacity: 0.05 }}
-          />
-
-          <div className="noise-container" />
-          
-          <div style={{ position: 'relative', zIndex: 2 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '0.5rem' }}>
-              <p style={{ margin: 0, color: '#64748B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.8rem' }}>Dashboard Overview</p>
+          <div className="banner-content">
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 20, duration: 0.3 }}
+              style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1rem' }}
+            >
+              <p style={{ margin: 0, color: '#475569', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15rem', fontSize: '0.9rem', fontFamily: 'Montserrat, sans-serif' }}>Dashboard Overview</p>
               {user && (
                 <span style={{ 
-                  padding: '4px 12px', 
-                  background: 'rgba(15, 23, 42, 0.05)', 
-                  backdropFilter: 'blur(4px)',
-                  color: '#1e293b', 
+                  padding: '4px 14px', 
+                  background: '#2D2254', 
+                  color: '#fff', 
                   borderRadius: '999px', 
-                  fontSize: '0.65rem', 
-                  fontWeight: 800,
-                  border: '1px solid rgba(15, 23, 42, 0.1)'
+                  fontSize: '0.75rem', 
+                  fontWeight: 700,
+                  textTransform: 'capitalize',
+                  boxShadow: '0 4px 12px rgba(45, 34, 84, 0.2)',
+                  fontFamily: 'Montserrat, sans-serif'
                 }}>
-                  {user.user_type}
+                  {user.user_type === 'alumni' ? 'Alumni' : user.user_type}
                 </span>
               )}
-            </div>
-            <h1 style={{ margin: 0, fontSize: '3.5rem', fontWeight: 900, letterSpacing: '-0.04em', lineHeight: 1, display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '0.6rem' }}>
-              <span className="premium-heading-welcome" style={{ fontSize: '1em' }}>Welcome back,</span>
-              <span className="premium-heading-name" style={{ fontSize: '1em' }}>
-                {user ? user.full_name.split(' ')[0] : 'noble'}.
-              </span>
-            </h1>
-            <p style={{ margin: '1rem 0 0', color: '#64748B', fontSize: '1.1rem', fontWeight: 500, maxWidth: '500px', lineHeight: 1.5 }}>
+            </motion.div>
+
+            <motion.h1 
+              initial={{ opacity: 0, y: 30, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ type: 'spring', stiffness: 120, damping: 12, mass: 1.2, delay: 0.2 }}
+              style={{ 
+                margin: 0, 
+                fontSize: '4.25rem', 
+                fontWeight: 900, 
+                letterSpacing: '-0.04em', 
+                lineHeight: 1, 
+                color: '#1e293b',
+                fontFamily: 'Montserrat, sans-serif'
+              }}
+            >
+              Welcome back, <span className="premium-heading-name">{user ? user.full_name : 'noble'}</span>
+            </motion.h1>
+
+            <motion.p 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ ease: 'easeOut', duration: 1.2, delay: 0.5 }}
+              style={{ 
+                margin: '1.25rem 0 0', 
+                color: '#64748B', 
+                fontSize: '1.5rem', 
+                fontWeight: 500, 
+                maxWidth: '650px', 
+                lineHeight: 1.4,
+                fontFamily: 'Montserrat, sans-serif',
+                letterSpacing: '-0.01em'
+              }}
+            >
               Your alumni network is growing. Check out the latest updates and opportunities from classmates.
-            </p>
+            </motion.p>
+          </div>
+          
+          <div className="banner-image-container">
+             <img src={bannerImg} alt="Alumni Group" className="banner-image" />
           </div>
         </motion.div>
 
-        {/* 1. CREATION & POSTS AREA (ACTIVITY FEED OVERVIEW) */}
+        {/* 1. RECOMMENDED JOBS (AUTO-MOVING FLASH CARDS) */}
+        <motion.section 
+          variants={sectionVariants} 
+          initial="hidden" 
+          whileInView="visible" 
+          viewport={{ once: true, margin: "-10%" }}
+          className="section-margin"
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ background: '#d32f2f', padding: '10px', borderRadius: '14px', display: 'flex' }}>
+                  <Briefcase size={22} color="white" />
+                </div>
+                <h2 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 800, color: '#1e293b', letterSpacing: '-0.02em' }}>Recommended Jobs</h2>
+             </div>
+             <button onClick={() => navigate('/jobs')} className="btn-premium" style={{ border: 'none', background: 'rgba(211, 47, 47, 0.1)', color: '#d32f2f', fontWeight: 700, padding: '10px 24px', borderRadius: '999px', fontSize: '0.9rem' }}>
+                Explore All
+             </button>
+          </div>
+
+          <div className="job-marquee-container">
+            <motion.div 
+              animate={{ x: [0, -2000] }}
+              transition={{ 
+                x: {
+                  repeat: Infinity,
+                  repeatType: "loop",
+                  duration: 25,
+                  ease: "linear",
+                },
+              }}
+              style={{ display: 'flex', width: 'max-content' }}
+            >
+              {/* Multiplying jobs for infinite effect */}
+              {[...jobs, ...jobs, ...jobs].map((job, i) => (
+                  <div 
+                    key={i} 
+                    className="job-flash-card"
+                    onClick={() => navigate(`/jobs/${job.id}`)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div style={{ background: '#fff', border: '1px solid rgba(15,23,42,0.05)', padding: '0.75rem', borderRadius: '18px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+                          {job.logo ? (
+                            <img src={job.logo} alt={job.company} style={{ width: '50px', height: '50px', objectFit: 'contain' }} />
+                          ) : (
+                            <div style={{ width: '50px', height: '50px', background: 'linear-gradient(135deg, #2D2254, #1a2652)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 900, fontSize: '20px' }}>
+                              {(job.company || 'J').charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                      </div>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748B', background: '#f8fafc', padding: '6px 14px', borderRadius: '999px', border: '1px solid #f1f5f9' }}>
+                        {i % 2 === 0 ? 'Urgent' : 'New'}
+                      </span>
+                    </div>
+
+                    <div>
+                      <h4 style={{ margin: '0 0 0.5rem', fontSize: '1.5rem', fontWeight: 900, color: '#1e293b', letterSpacing: '-0.02em' }}>{job.title}</h4>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                        <span style={{ fontSize: '1.1rem', color: '#475569', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <Users size={18} color="#d32f2f" /> {job.company}
+                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                          <span style={{ fontSize: '0.95rem', color: '#94A3B8', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <MapPin size={18}/> {job.location}
+                          </span>
+                          {job.salary && <span style={{ fontSize: '0.95rem', color: '#10B981', fontWeight: 800 }}>{job.salary}</span>}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(0,0,0,0.03)', paddingTop: '1.5rem' }}>
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          {[1,2,3].map(n => <div key={n} style={{ width: '20px', height: '4px', borderRadius: '2px', background: n===1 ? '#d32f2f' : '#e2e8f0' }} />)}
+                        </div>
+                        <span style={{ color: '#d32f2f', fontWeight: 700, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          Apply Now <ArrowRight size={18} />
+                        </span>
+                    </div>
+                  </div>
+              ))}
+            </motion.div>
+          </div>
+        </motion.section>
+
+        {/* 2. UPCOMING EVENTS */}
+        <motion.section variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-10%" }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+             <div style={{ background: '#2D2254', padding: '10px', borderRadius: '14px', display: 'flex' }}>
+               <Calendar size={22} color="white" />
+             </div>
+             <h2 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 800, color: '#1e293b', letterSpacing: '-0.02em' }}>Featured Network Events</h2>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem' }}>
+             {events.map((event, i) => (
+                <motion.div 
+                  key={i} 
+                  variants={itemVariants} 
+                  className="luxury-card" 
+                  style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column' }}
+                  onClick={() => navigate(`/events/${event.id}`)}
+                >
+                   <div style={{ h: '8px', background: `linear-gradient(90deg, ${event.color}, transparent)`, width: '100%', height: '6px' }} />
+                   <div style={{ padding: '2rem', flex: 1 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+                         <div style={{ background: '#f8fafc', padding: '12px 20px', borderRadius: '16px', textAlign: 'center', border: '1px solid #f1f5f9' }}>
+                            <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 800, color: '#d32f2f', textTransform: 'uppercase' }}>{event.date.split(' ')[0]}</p>
+                            <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 900, color: '#1e293b' }}>{event.date.split(' ')[1]}</p>
+                         </div>
+                         <button className="btn-premium" style={{ background: 'transparent', color: '#64748B', border: '1px solid #e2e8f0', padding: '8px 16px', borderRadius: '999px', fontSize: '0.8rem', fontWeight: 700 }}>
+                           Network Only
+                         </button>
+                      </div>
+                      <h4 style={{ margin: '0 0 1rem', fontSize: '1.4rem', fontWeight: 800, color: '#1e293b', lineHeight: 1.3 }}>{event.title}</h4>
+                      <div style={{ display: 'flex', gap: '1.5rem', color: '#64748B', fontSize: '0.95rem', fontWeight: 500 }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Clock size={16} /> {event.time}</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Users size={16} /> {event.attendees}+ Joined</span>
+                      </div>
+                   </div>
+                   <div style={{ padding: '1.5rem 2rem', background: 'rgba(255,255,255,0.5)', borderTop: '1px solid rgba(0,0,0,0.03)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', marginLeft: '8px' }}>
+                        {[1,2,3].map(n => <img key={n} src={`https://i.pravatar.cc/150?img=${n+10}`} style={{ width: '32px', height: '32px', borderRadius: '50%', border: '2px solid white', marginLeft: '-8px' }} alt="attendee" />)}
+                        <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#f1f5f9', border: '2px solid white', marginLeft: '-8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 700, color: '#64748B' }}>+12</div>
+                      </div>
+                      <button className="btn-premium" style={{ background: '#d32f2f', color: 'white', border: 'none', padding: '10px 24px', borderRadius: '12px', fontWeight: 700, fontSize: '0.9rem' }}>Secure Spot</button>
+                   </div>
+                </motion.div>
+             ))}
+          </div>
+        </motion.section>
+
+        {/* 3. COURSES */}
+        <motion.section variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-10%" }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ background: '#3B82F6', padding: '10px', borderRadius: '14px', display: 'flex' }}>
+                  <Award size={22} color="white" />
+                </div>
+                <h2 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 800, color: '#1e293b', letterSpacing: '-0.02em' }}>Advanced Learning</h2>
+              </div>
+              <button onClick={() => navigate('/learning')} className="link-hover" style={{ background: 'transparent', border: 'none', color: '#64748B', fontWeight: 700 }}>Browse Catalogue</button>
+          </div>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '2rem' }}>
+              {courses.length === 0 ? (
+                <p style={{ color: '#64748B', fontSize: '1rem' }}>Curating elite masterclasses...</p>
+              ) : courses.map((course, i) => (
+                  <motion.div key={course.id || i} variants={itemVariants} className="luxury-card" style={{ cursor: 'pointer' }} onClick={() => navigate(`/learning/course/${course.id}`)}>
+                    <div style={{ height: '180px', background: 'linear-gradient(135deg, #0F172A, #334155)', position: 'relative', overflow: 'hidden' }}>
+                      <div className="noise-container" style={{ opacity: 0.1 }} />
+                      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <BookOpen size={64} color="white" style={{ opacity: 0.2 }} />
+                      </div>
+                      <div style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)', padding: '6px 14px', borderRadius: '999px', color: 'white', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase' }}>
+                        {course.level || 'Mastery'}
+                      </div>
+                    </div>
+                    <div style={{ padding: '2rem' }}>
+                        <h4 style={{ margin: '0 0 0.75rem', fontSize: '1.3rem', fontWeight: 800, color: '#1e293b', lineHeight: 1.3 }}>{course.title}</h4>
+                        <p style={{ margin: '0 0 1.5rem', fontSize: '0.95rem', color: '#64748B', lineHeight: 1.6, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{course.description}</p>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '1.5rem' }}>
+                          <span style={{ fontSize: '0.9rem', color: '#1e293b', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Clock size={16} color="#d32f2f" /> {course.duration || 'Flexible'}</span>
+                          <span style={{ color: '#d32f2f', fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>Resume <ArrowRight size={16} /></span>
+                        </div>
+                    </div>
+                  </motion.div>
+              ))}
+          </div>
+        </motion.section>
+
+        {/* 4. ACTIVITY FEED (USER POSTS) */}
         <motion.section 
           variants={sectionVariants} 
           initial="hidden" 
           whileInView="visible" 
           viewport={{ once: true, margin: "-10%" }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-            <Activity size={24} color="#d32f2f" />
-            <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#0F172A' }}>Activity Feed</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+            <div style={{ background: '#FF9500', padding: '10px', borderRadius: '14px', display: 'flex' }}>
+              <Activity size={22} color="white" />
+            </div>
+            <h2 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 800, color: '#1e293b', letterSpacing: '-0.02em' }}>Nexus Feed</h2>
           </div>
 
-          <motion.div variants={itemVariants} className="luxury-card" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <motion.div variants={itemVariants} className="luxury-card" style={{ padding: '2rem', marginBottom: '2.5rem' }}>
+            <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', marginBottom: '1.5rem' }}>
               <img 
                 src={user?.profile_picture || `https://ui-avatars.com/api/?name=${user?.full_name || 'User'}&background=d32f2f&color=fff`} 
                 alt={user?.full_name || 'You'} 
-                style={{ width: '56px', height: '56px', borderRadius: '50%', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }} 
+                style={{ width: '64px', height: '64px', borderRadius: '50%', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }} 
               />
               <button 
                 className="btn-premium"
-                style={{ flex: 1, textAlign: 'left', background: '#F1F5F9', border: '1px solid transparent', padding: '1.25rem 1.5rem', borderRadius: '999px', color: '#64748B', fontWeight: 500, fontSize: '1rem' }}
+                style={{ flex: 1, textAlign: 'left', background: '#f8fafc', border: '1px solid #e2e8f0', padding: '1.25rem 2rem', borderRadius: '16px', color: '#94a3b8', fontWeight: 500, fontSize: '1.1rem' }}
               >
-                Share an update, milestone, or ask a question...
+                Spark a conversation or share a milestone...
               </button>
             </div>
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-              <button 
-                onClick={() => { const i = document.createElement('input'); i.type = 'file'; i.click(); }}
-                className="btn-premium btn-outline" 
-                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem', borderRadius: '999px', fontWeight: 600 }}
-              >
-                <ImageIcon size={18} color="#3B82F6" /> Add Media
-              </button>
-              <button 
-                onClick={() => navigate('/events')}
-                className="btn-premium btn-outline" 
-                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem', borderRadius: '999px', fontWeight: 600 }}
-              >
-                <Calendar size={18} color="#10B981" /> Host Event
-              </button>
-              <button 
-                onClick={() => navigate('/social/post/create')}
-                className="btn-premium btn-outline" 
-                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem', borderRadius: '999px', fontWeight: 600 }}
-              >
-                <FileText size={18} color="#F59E0B" /> Write Article
-              </button>
+              {[{ icon: ImageIcon, text: 'Media', color: '#3B82F6' }, { icon: Calendar, text: 'Event', color: '#10B981' }, { icon: FileText, text: 'Article', color: '#F59E0B' }].map((item, i) => (
+                <button key={i} className="btn-premium luxury-card" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '12px 24px', borderRadius: '16px', fontWeight: 700, fontSize: '0.9rem', color: '#1e293b' }}>
+                  <item.icon size={20} color={item.color} /> {item.text}
+                </button>
+              ))}
             </div>
           </motion.div>
 
-           <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+           <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
             {feed.map((post) => (
               <motion.div key={post.id} variants={itemVariants} className="luxury-card">
-                <div style={{ padding: '2rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
-                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                      <img src={post.author.avatar.replace('background=0F172A', 'background=d32f2f')} alt={post.author.name} style={{ width: '56px', height: '56px', borderRadius: post.isOfficial ? '12px' : '50%', border: '1px solid #E2E8F0' }} />
+                <div style={{ padding: '2.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
+                    <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
+                      <img src={post.author.avatar.replace('background=0F172A', 'background=d32f2f')} alt={post.author.name} style={{ width: '60px', height: '60px', borderRadius: post.isOfficial ? '16px' : '50%', border: '2px solid #fff', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }} />
                       <div>
-                        <h4 className="link-hover" style={{ margin: '0 0 0.25rem', fontSize: '1.1rem', fontWeight: 700, color: '#0F172A', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <h4 className="link-hover" style={{ margin: '0 0 0.4rem', fontSize: '1.2rem', fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                           {post.author.name}
-                          {post.isOfficial && <span style={{ background: '#d32f2f', color: 'white', padding: '2px 8px', borderRadius: '999px', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Official</span>}
+                          {post.isOfficial && <span style={{ background: '#d32f2f', color: 'white', padding: '3px 10px', borderRadius: '8px', fontSize: '0.6rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Official</span>}
                         </h4>
-                        <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748B' }}>{post.author.title}</p>
-                        <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#94A3B8', display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Clock size={12} /> {post.time}</p>
+                        <p style={{ margin: 0, fontSize: '0.9rem', color: '#64748B', fontWeight: 600 }}>{post.author.title}</p>
+                        <p style={{ margin: '0.4rem 0 0', fontSize: '0.8rem', color: '#94A3B8', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Clock size={14} /> {post.time}</p>
                       </div>
                     </div>
-                    <button className="btn-premium btn-outline" style={{ padding: '8px', borderRadius: '50%', display: 'flex' }}><MoreHorizontal size={20} color="#64748B" /></button>
+                    <button className="btn-premium" style={{ padding: '10px', borderRadius: '14px', background: '#f8fafc', border: '1px solid #e2e8f0' }}><MoreHorizontal size={22} color="#64748B" /></button>
                   </div>
                   
-                  <p style={{ margin: '0 0 1.5rem', color: '#334155', lineHeight: 1.7, fontSize: '1.05rem' }}>{post.content}</p>
+                  <p style={{ margin: '0 0 2rem', color: '#1e293b', lineHeight: 1.8, fontSize: '1.1rem', fontWeight: 450 }}>{post.content}</p>
                 </div>
                 
                 {post.image && (
-                  <div style={{ borderTop: '1px solid #F1F5F9', borderBottom: '1px solid #F1F5F9' }}>
-                    <img src={post.image} alt="Post Attachment" style={{ width: '100%', maxHeight: '450px', objectFit: 'cover', display: 'block' }} />
+                  <div style={{ maxHeight: '500px', overflow: 'hidden' }}>
+                    <img src={post.image} alt="Feed" style={{ width: '100%', objectFit: 'cover' }} />
                   </div>
                 )}
                 
-                <div style={{ padding: '1rem 2rem 1.5rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '1rem', borderBottom: '1px solid #F1F5F9', marginBottom: '0.5rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64748B', fontSize: '0.85rem' }}>
+                <div style={{ padding: '1.5rem 2.5rem 2.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '1.5rem', borderBottom: '1px solid #f1f5f9', marginBottom: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#64748B', fontSize: '0.9rem', fontWeight: 600 }}>
                       <div style={{ display: 'flex' }}>
-                        <div style={{ background: '#2563EB', borderRadius: '50%', padding: '4px', border: '2px solid white', zIndex: 2 }}><ThumbsUp size={12} color="white" /></div>
-                        <div style={{ background: '#0F172A', borderRadius: '50%', padding: '4px', border: '2px solid white', marginLeft: '-8px', zIndex: 1 }}><Star size={12} color="white" fill="white"/></div>
+                        {[...Array(2)].map((_, i) => <div key={i} style={{ background: i===0 ? '#d32f2f' : '#2D2254', borderRadius: '50%', padding: '6px', border: '3px solid white', marginLeft: i===0 ? 0 : '-10px', zIndex: 2-i }}><ThumbsUp size={12} color="white" /></div>)}
                       </div>
-                      <span style={{ fontWeight: 600, color: '#0F172A' }}>{post.likes}</span> interactions
+                      <span style={{ color: '#1e293b', fontWeight: 800 }}>{post.likes}</span> Elite Recognitions
                     </div>
-                    <span className="link-hover" style={{ fontSize: '0.85rem', color: '#64748B', fontWeight: 500 }}>{post.comments} comments</span>
+                    <span className="link-hover" style={{ fontSize: '0.9rem', color: '#64748B', fontWeight: 600 }}>{post.comments} thoughts shared</span>
                   </div>
                   
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
-                    <button 
-                      onClick={() => {
-                        setLikedPosts(prev => prev.includes(post.id) ? prev.filter(id => id !== post.id) : [...prev, post.id]);
-                      }}
-                      className="btn-premium" 
-                      style={{ 
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', 
-                        background: likedPosts.includes(post.id) ? '#EFF6FF' : '#F8FAFC', 
-                        border: 'none', 
-                        color: likedPosts.includes(post.id) ? '#2563EB' : '#475569', 
-                        fontWeight: 600, padding: '1rem', borderRadius: '12px', fontSize: '0.95rem' 
-                      }}
-                    >
-                      <ThumbsUp size={18} fill={likedPosts.includes(post.id) ? '#2563EB' : 'none'} /> <span>Like</span>
-                    </button>
-                    <button 
-                      onClick={() => navigate(`/social/post/${post.id}`)}
-                      className="btn-premium" 
-                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', background: '#F8FAFC', border: 'none', color: '#475569', fontWeight: 600, padding: '1rem', borderRadius: '12px', fontSize: '0.95rem' }}
-                    >
-                      <MessageSquare size={18} /> <span>Comment</span>
-                    </button>
-                    <button 
-                      onClick={() => { navigator.clipboard.writeText(window.location.origin + `/social/post/${post.id}`); alert('Link copied to clipboard!'); }}
-                      className="btn-premium" 
-                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', background: '#F8FAFC', border: 'none', color: '#475569', fontWeight: 600, padding: '1rem', borderRadius: '12px', fontSize: '0.95rem' }}
-                    >
-                      <Share2 size={18} /> <span>Share</span>
-                    </button>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
+                    {[{ icon: ThumbsUp, text: 'Recognize' }, { icon: MessageSquare, text: 'Contribute' }, { icon: Share2, text: 'Amplify' }].map((action, i) => (
+                      <button key={i} className="btn-premium luxury-card" style={{ background: 'rgba(248, 250, 252, 0.5)', border: 'none', padding: '1rem', borderRadius: '16px', color: '#64748B', fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' }}>
+                        <action.icon size={20} /> {action.text}
+                      </button>
+                    ))}
                   </div>
                 </div>
               </motion.div>
             ))}
           </div>
         </motion.section>
-
-        {/* 2. SUGGESTION OF PEOPLE YOU MAY KNOW */}
-        <motion.section variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-10%" }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <Users size={24} color="#d32f2f" />
-                <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#0F172A' }}>People You May Know</h2>
-             </div>
-             <button onClick={() => navigate('/networking')} className="link-hover" style={{ background: 'transparent', border: 'none', fontSize: '0.95rem', fontWeight: 600, color: '#d32f2f', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                See All <ChevronRight size={16} />
-             </button>
-          </div>
-          
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
-             {recommendations.map((user, i) => (
-                <motion.div 
-                  key={i} 
-                  variants={itemVariants} 
-                  className="luxury-card btn-premium" 
-                  style={{ cursor: 'pointer', padding: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}
-                  onClick={() => navigate('/networking')}
-                >
-                   <img src={user.avatar} alt={user.name} style={{ width: '80px', height: '80px', borderRadius: '50%', marginBottom: '1rem', border: '4px solid #F1F5F9' }} />
-                   <h4 style={{ margin: '0 0 0.5rem', fontSize: '1.1rem', fontWeight: 700, color: '#0F172A' }}>{user.name}</h4>
-                   <p style={{ margin: '0 0 1rem', fontSize: '0.85rem', color: '#64748B', lineHeight: 1.4, flex: 1 }}>{user.title}</p>
-                   <p style={{ margin: '0 0 1.5rem', fontSize: '0.75rem', color: '#94A3B8', fontWeight: 600 }}>{user.mutual} mutual connections</p>
-                   <button 
-                    onClick={(e) => { e.stopPropagation(); alert(`Connection request sent to ${user.name}!`); }}
-                    className="btn-premium btn-outline" 
-                    style={{ width: '100%', padding: '0.75rem', borderRadius: '999px', fontSize: '0.9rem', fontWeight: 700, color: '#d32f2f', borderColor: '#d32f2f' }}
-                   >
-                      Connect
-                   </button>
-                </motion.div>
-             ))}
-          </div>
-        </motion.section>
-
-        {/* 3. RECOMMENDED JOBS / LISTINGS OVERVIEW */}
-        <motion.section variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-10%" }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <Briefcase size={24} color="#d32f2f" />
-                <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#0F172A' }}>Recommended Jobs</h2>
-             </div>
-             <button onClick={() => navigate('/jobs')} className="link-hover" style={{ background: 'transparent', border: 'none', fontSize: '0.95rem', fontWeight: 600, color: '#d32f2f', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                View Job Board <ArrowRight size={16} />
-             </button>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '1.5rem' }}>
-            {jobs.length === 0 ? (
-              <p style={{ color: '#64748B', fontSize: '0.9rem' }}>Fetching recommended jobs...</p>
-            ) : jobs.slice(0, 4).map((job, i) => (
-               <motion.div 
-                key={job.id || i} 
-                variants={itemVariants} 
-                className="luxury-card btn-premium" 
-                style={{ cursor: 'pointer', padding: '1.5rem', display: 'flex', gap: '1.5rem', alignItems: 'center' }}
-                onClick={() => navigate(`/jobs/${job.id}`)}
-               >
-                  <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '0.75rem', borderRadius: '12px', flexShrink: 0 }}>
-                     {job.logo ? (
-                       <img src={job.logo} alt={job.company} style={{ width: '48px', height: '48px', objectFit: 'contain' }} onError={(e) => { e.currentTarget.src = `https://ui-avatars.com/api/?name=${job.company || 'C'}&background=random`; }} />
-                     ) : (
-                       <div style={{ width: '48px', height: '48px', background: 'linear-gradient(135deg, #10B981, #059669)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800, fontSize: '20px' }}>
-                          {(job.company || job.title || 'J').charAt(0).toUpperCase()}
-                       </div>
-                     )}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                     <h4 style={{ margin: '0 0 0.25rem', fontSize: '1.1rem', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{job.title || 'Career Opportunity'}</h4>
-                     <p style={{ margin: '0 0 0.5rem', fontSize: '0.9rem', color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{job.company || 'Confidential Company'}</p>
-                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: '0.8rem', color: '#94A3B8', display: 'flex', alignItems: 'center', gap: '0.25rem' }}><MapPin size={12}/> {job.location || 'Remote eligible'}</span>
-                        {job.salary && <span style={{ fontSize: '0.8rem', color: '#10B981', fontWeight: 600 }}>{job.salary}</span>}
-                     </div>
-                  </div>
-               </motion.div>
-            ))}
-          </div>
-        </motion.section>
-
-        {/* 4. UPCOMING EVENTS OVERVIEW */}
-        <motion.section variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-10%" }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-             <Calendar size={24} color="#d32f2f" />
-             <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#0F172A' }}>Upcoming Events</h2>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-             {events.map((event, i) => (
-                <motion.div 
-                  key={i} 
-                  variants={itemVariants} 
-                  className="luxury-card btn-premium" 
-                  style={{ cursor: 'pointer', display: 'flex', alignItems: 'stretch' }}
-                  onClick={() => navigate(`/events/${event.id}`)}
-                >
-                   <div style={{ width: '120px', background: event.color, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', padding: '1.5rem' }}>
-                      <span style={{ fontSize: '1rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{event.date.split(' ')[0]}</span>
-                      <span style={{ fontSize: '2rem', fontWeight: 800, lineHeight: 1.1 }}>{event.date.split(' ')[1]}</span>
-                   </div>
-                   <div style={{ padding: '2rem', flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                         <h4 style={{ margin: '0 0 0.5rem', fontSize: '1.25rem', fontWeight: 700, color: '#0F172A' }}>{event.title}</h4>
-                         <div style={{ display: 'flex', gap: '1.5rem', color: '#64748B', fontSize: '0.9rem' }}>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Clock size={16} /> {event.time}</span>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Users size={16} /> {event.attendees} Attending</span>
-                         </div>
-                      </div>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); navigate(`/events/${event.id}/register`); }}
-                        className="btn-premium" 
-                        style={{ background: '#d32f2f', color: 'white', border: 'none', padding: '0.75rem 2rem', borderRadius: '999px', fontSize: '0.95rem', fontWeight: 600 }}
-                      >
-                         Register
-                      </button>
-                   </div>
-                </motion.div>
-             ))}
-          </div>
-        </motion.section>
-
-        {/* 5. COURSES & QUIZZES (GRID SPLIT) */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '3rem', marginTop: '1rem' }}>
-           
-           {/* Courses */}
-           <motion.section variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-10%" }}>
-             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                <Award size={24} color="#d32f2f" />
-                <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#0F172A' }}>Resume Courses</h2>
-             </div>
-             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                {courses.length === 0 ? (
-                  <p style={{ color: '#64748B', fontSize: '0.9rem' }}>Fetching newest courses...</p>
-                ) : courses.map((course, i) => (
-                   <motion.div key={course.id || i} variants={itemVariants} className="luxury-card btn-premium" style={{ padding: '1.5rem', cursor: 'pointer', display: 'flex', gap: '1.5rem' }}>
-                      <div style={{ width: '80px', height: '80px', borderRadius: '12px', background: 'linear-gradient(135deg, #0f172a, #334155)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0 }}>
-                         <BookOpen size={32} opacity={0.8} />
-                      </div>
-                      <div style={{ flex: 1 }}>
-                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                           <h4 style={{ margin: '0 0 0.25rem', fontSize: '1.05rem', fontWeight: 700, color: '#0F172A' }}>{course.title}</h4>
-                           <span style={{ fontSize: '0.7rem', padding: '2px 8px', background: '#f1f5f9', color: '#64748B', borderRadius: '12px', fontWeight: 600, textTransform: 'uppercase' }}>{course.level || 'Standard'}</span>
-                         </div>
-                         <p style={{ margin: '0 0 0.5rem', fontSize: '0.85rem', color: '#64748B' }}>Instructor: <span style={{ color: '#0f172a', fontWeight: 500 }}>{course.instructor}</span></p>
-                         <p style={{ margin: '0 0 0.5rem', fontSize: '0.8rem', color: '#94a3b8', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{course.description}</p>
-                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: '#d32f2f', fontWeight: 600 }}>
-                            <Clock size={14} /> {course.duration || 'Self-paced'}
-                         </div>
-                      </div>
-                   </motion.div>
-                ))}
-             </div>
-           </motion.section>
-
-           {/* Quizzes */}
-           <motion.section variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-10%" }}>
-             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                <BrainCircuit size={24} color="#d32f2f" />
-                <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#0F172A' }}>Assessments & Quizzes</h2>
-             </div>
-             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                {quizzes.map((quiz, i) => (
-                   <motion.div 
-                    key={i} 
-                    variants={itemVariants} 
-                    className="luxury-card btn-premium" 
-                    style={{ padding: '1.5rem', cursor: 'pointer' }}
-                    onClick={() => navigate('/assessments/quiz/instructions')}
-                   >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                         <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#0F172A', maxWidth: '70%' }}>{quiz.title}</h4>
-                         <span style={{ padding: '4px 12px', background: `${quiz.color}15`, color: quiz.color, borderRadius: '999px', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase' }}>{quiz.difficulty}</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F1F5F9', paddingTop: '1rem' }}>
-                         <span style={{ fontSize: '0.85rem', color: '#64748B', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <FileText size={16}/> {quiz.questions} Qs
-                         </span>
-                         <span style={{ fontSize: '0.85rem', color: '#64748B', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <Clock size={16}/> {quiz.time}
-                         </span>
-                         <button className="btn-premium" style={{ border: 'none', background: 'transparent', color: '#d32f2f', fontWeight: 700, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                            Start <ArrowRight size={16}/>
-                         </button>
-                      </div>
-                   </motion.div>
-                ))}
-             </div>
-           </motion.section>
-        </div>
-
-        <div style={{ paddingBottom: '4rem' }} />
-
+        
+        <div style={{ paddingBottom: '6rem' }} />
       </div>
     </div>
   );
