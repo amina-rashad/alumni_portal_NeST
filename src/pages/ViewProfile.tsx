@@ -4,7 +4,7 @@ import {
   Edit3, Mail, Phone,
   Briefcase, Book, Award, 
   Linkedin, Github, Twitter, Globe,
-  CheckCircle2, Building, FileText, Download
+  CheckCircle2, Building
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { usersApi, getUser } from '../services/api';
@@ -225,121 +225,7 @@ const ViewProfile: React.FC = () => {
             </div>
           </section>
 
-          {/* ── Professional Resume Section ── */}
-          {(user.resume_url || (user.resume_data && Object.keys(user.resume_data).length > 0)) && (
-            <section style={{ 
-              background: 'white', padding: '0', borderRadius: '20px', 
-              boxShadow: '0 4px 20px rgba(0,0,0,0.04)', border: '1px solid #f1f5f9',
-              overflow: 'hidden'
-            }}>
 
-              <div style={{ padding: '32px' }}>
-                {user.is_resume_created && user.resume_data ? (
-                  <div style={{ 
-                    background: 'white', padding: '40px', border: '1px solid #e2e8f0', 
-                    boxShadow: '0 10px 30px rgba(0,0,0,0.03)', borderRadius: '4px',
-                    fontFamily: '"Inter", sans-serif'
-                  }}>
-                    {/* Online Created Resume Styling */}
-                    <div style={{ borderBottom: '3px solid #0f172a', paddingBottom: '20px', marginBottom: '24px', textAlign: 'center' }}>
-                      <h1 style={{ margin: 0, fontSize: '32px', fontWeight: 900, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                        {user.resume_data.fullName || user.full_name}
-                      </h1>
-                      <div style={{ margin: '8px 0', fontSize: '16px', fontWeight: 700, color: '#d32f2f', textTransform: 'uppercase' }}>
-                        {user.resume_data.title || user.specialization}
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', fontSize: '13px', color: '#64748b' }}>
-                        {user.resume_data.email && <span>{user.resume_data.email}</span>}
-                        {user.resume_data.phone && <><span>|</span> <span>{user.resume_data.phone}</span></>}
-                        {user.resume_data.address && <><span>|</span> <span>{user.resume_data.address}</span></>}
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                      {user.resume_data.summary && (
-                        <div>
-                          <h4 style={{ fontSize: '14px', fontWeight: 900, color: '#0f172a', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px', marginBottom: '8px' }}>Summary</h4>
-                          <p style={{ margin: 0, fontSize: '14px', lineHeight: 1.6, color: '#475569' }}>{user.resume_data.summary}</p>
-                        </div>
-                      )}
-
-                      {user.resume_data.experience && (
-                        <div>
-                          <h4 style={{ fontSize: '14px', fontWeight: 900, color: '#0f172a', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px', marginBottom: '12px' }}>Experience</h4>
-                          <div style={{ fontSize: '14px', lineHeight: 1.6, color: '#475569', whiteSpace: 'pre-line' }}>{user.resume_data.experience}</div>
-                        </div>
-                      )}
-
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
-                        {user.resume_data.education && (
-                          <div>
-                            <h4 style={{ fontSize: '14px', fontWeight: 900, color: '#0f172a', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px', marginBottom: '12px' }}>Education</h4>
-                            <div style={{ fontSize: '14px', lineHeight: 1.6, color: '#475569', whiteSpace: 'pre-line' }}>{user.resume_data.education}</div>
-                          </div>
-                        )}
-                        {user.resume_data.certification && (
-                          <div>
-                            <h4 style={{ fontSize: '14px', fontWeight: 900, color: '#0f172a', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px', marginBottom: '12px' }}>Certifications</h4>
-                            <div style={{ fontSize: '14px', lineHeight: 1.6, color: '#475569', whiteSpace: 'pre-line' }}>{user.resume_data.certification}</div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ) : user.resume_url ? (() => {
-                  const isPreviewable = user.resume_url.startsWith('http') || user.resume_url.startsWith('data:');
-                  const fileName = user.resume_url.startsWith('data:')
-                    ? 'Uploaded Resume'
-                    : user.resume_url.split('/').pop();
-                  return (
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <div style={{ width: '40px', height: '40px', background: '#fee2e2', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <FileText size={20} color="#d32f2f" />
-                          </div>
-                          <div>
-                            <div style={{ fontWeight: 700, fontSize: '15px', color: '#0f172a' }}>{fileName}</div>
-                            <div style={{ fontSize: '12px', color: '#94a3b8' }}>PDF Document</div>
-                          </div>
-                        </div>
-                        {isPreviewable && (
-                          <a
-                            href={user.resume_url}
-                            download="resume.pdf"
-                            style={{
-                              padding: '8px 16px', background: '#f1f5f9', color: '#0f172a',
-                              borderRadius: '8px', textDecoration: 'none', fontSize: '13px',
-                              fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px',
-                              border: '1px solid #e2e8f0'
-                            }}
-                          >
-                            <Download size={14} /> Download
-                          </a>
-                        )}
-                      </div>
-
-                      {isPreviewable ? (
-                        <div style={{ width: '100%', height: '700px', borderRadius: '12px', overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.04)' }}>
-                          <iframe
-                            src={user.resume_url}
-                            title="Resume Preview"
-                            width="100%"
-                            height="100%"
-                            style={{ border: 'none' }}
-                          />
-                        </div>
-                      ) : (
-                        <div style={{ textAlign: 'center', padding: '40px', background: '#f8fafc', borderRadius: '12px', border: '2px dashed #e2e8f0' }}>
-                          <p style={{ color: '#64748b', fontSize: '14px' }}>No preview available.</p>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })() : null}
-              </div>
-            </section>
-          )}
         </div>
 
         {/* Right Column: Contact and Network */}

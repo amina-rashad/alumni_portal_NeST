@@ -84,7 +84,7 @@ const AdminAddVisit: React.FC = () => {
           </div>
         </div>
 
-        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <form onSubmit={handleSubmit} style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <label style={{ fontSize: '14px', fontWeight: 600, color: '#475569' }}>College Name</label>
@@ -123,6 +123,24 @@ const AdminAddVisit: React.FC = () => {
             <textarea rows={4} value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #e2e8f0', outline: 'none', resize: 'vertical', color: '#111827' }} />
           </div>
 
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
+            <button 
+              type="submit" 
+              disabled={isSubmitting}
+              style={{
+                background: nestNavy,
+                color: '#fff',
+                padding: '12px 24px',
+                borderRadius: '8px',
+                border: 'none',
+                fontWeight: 600,
+                cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                opacity: isSubmitting ? 0.7 : 1
+              }}
+            >
+              {isSubmitting ? 'Scheduling...' : 'Schedule Visit'}
+            </button>
+          </div>
         </form>
       </div>
     </div>
