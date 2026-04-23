@@ -490,19 +490,22 @@ const Dashboard: React.FC = () => {
 
           <div className="job-marquee-container">
             <motion.div 
-              animate={{ x: [0, -2000] }}
+              drag="x"
+              dragConstraints={{ left: -3000, right: 0 }}
+              animate={{ x: [-1500, 0] }}
               transition={{ 
                 x: {
                   repeat: Infinity,
                   repeatType: "loop",
-                  duration: 25,
+                  duration: 5,
                   ease: "linear",
                 },
               }}
+              whileHover={{ animationPlayState: 'paused' }}
               style={{ display: 'flex', width: 'max-content' }}
             >
               {/* Multiplying jobs for infinite effect */}
-              {[...jobs, ...jobs, ...jobs].map((job, i) => (
+              {[...jobs, ...jobs, ...jobs, ...jobs].map((job, i) => (
                   <div 
                     key={i} 
                     className="job-flash-card"
