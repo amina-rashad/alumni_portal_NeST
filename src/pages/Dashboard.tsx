@@ -84,6 +84,8 @@ const Dashboard: React.FC = () => {
   const [likedPosts, setLikedPosts] = useState<number[]>([]);
   const navigate = useNavigate();
 
+  const [currentIndex, setCurrentIndex] = useState(0);
+
   useEffect(() => {
     // Load the authenticated user from local storage
     const currentUser = getUser() as unknown as AuthUser;
@@ -120,6 +122,17 @@ const Dashboard: React.FC = () => {
     fetchJobs();
   }, []);
 
+  // Job Auto-Marquee Timer
+  useEffect(() => {
+    if (jobs.length <= 1) return;
+    
+    const timer = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % Math.min(jobs.length, 6));
+    }, 5500); // 5.5s cycle (5s pause + 0.5s transition)
+    
+    return () => clearInterval(timer);
+  }, [jobs]);
+
   return (
     <div className="font-sans" style={{ 
       backgroundColor: '#f6f9fc', 
@@ -153,38 +166,39 @@ const Dashboard: React.FC = () => {
           overflow: hidden;
           position: relative;
         }
-        .luxury-card::before {
-          content: "";
-          position: absolute;
-          top: 0; left: 0; width: 100%; height: 100%;
-          background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, transparent 100%);
-          pointer-events: none;
-        }
-        .luxury-card:hover {
-          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
-          transform: translateY(-8px) scale(1.01);
-          border-color: rgba(211, 47, 47, 0.1);
-        }
 
-        /* Job Flash Card Marquee */
+        /* Ultra-Luxury Job Splash Card */
+        .job-splash-card {
+           min-width: 650px;
+           height: 320px;
+           background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.8) 100%);
+           border-radius: 32px;
+           padding: 2.5rem;
+           display: flex;
+           flex-direction: column;
+           justify-content: space-between;
+           border: 1px solid rgba(255, 255, 255, 0.6);
+           box-shadow: 0 15px 45px -10px rgba(0, 0, 0, 0.06);
+           transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+           position: relative;
+           overflow: hidden;
+        }
+        .job-splash-card:hover {
+           transform: scale(1.02);
+           box-shadow: 0 30px 70px -15px rgba(211, 47, 47, 0.15);
+           border-color: rgba(211, 47, 47, 0.2);
+        }
         .job-marquee-container {
-          position: relative;
-          width: 100%;
-          overflow: hidden;
-          padding: 2rem 0;
-          cursor: grab;
+           width: 100%;
+           overflow: hidden; /* We handle scrolling via translateX */
+           padding: 1rem 0 3rem;
+           position: relative;
         }
-        .job-marquee-container:active {
-          cursor: grabbing;
+        .marquee-track {
+           display: flex;
+           gap: 2.5rem;
+           transition: transform 0.8s cubic-bezier(0.65, 0, 0.35, 1);
         }
-        .job-flash-card {
-          min-width: 420px;
-          background: rgba(255, 255, 255, 0.8);
-          backdrop-filter: blur(24px);
-          border-radius: 28px;
-          padding: 2.5rem;
-          margin-right: 2rem;
-          border: 1px solid rgba(255, 255, 255, 0.5);
           box-shadow: 0 12px 40px -10px rgba(0, 0, 0, 0.08);
           transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1);
           display: flex;
@@ -468,91 +482,102 @@ const Dashboard: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* 1. RECOMMENDED JOBS (AUTO-MOVING FLASH CARDS) */}
+        {/* 1. RECOMMENDED JOBS (MARQUEE SPLASH CARDS) */}
         <motion.section 
           variants={sectionVariants} 
           initial="hidden" 
           whileInView="visible" 
           viewport={{ once: true, margin: "-10%" }}
-          className="section-margin"
+          style={{ marginBottom: '4rem' }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <div style={{ background: '#d32f2f', padding: '10px', borderRadius: '14px', display: 'flex' }}>
                   <Briefcase size={22} color="white" />
                 </div>
-                <h2 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 800, color: '#1e293b', letterSpacing: '-0.02em' }}>Recommended Jobs</h2>
+                <h2 style={{ margin: 0, fontSize: '2rem', fontWeight: 900, color: '#1e293b', letterSpacing: '-0.03em', fontFamily: 'Montserrat, sans-serif' }}>Recommended For You</h2>
              </div>
-             <button onClick={() => navigate('/jobs')} className="btn-premium" style={{ border: 'none', background: 'rgba(211, 47, 47, 0.1)', color: '#d32f2f', fontWeight: 700, padding: '10px 24px', borderRadius: '999px', fontSize: '0.9rem' }}>
+             <button onClick={() => navigate('/jobs')} className="btn-premium" style={{ border: 'none', background: 'rgba(211, 47, 47, 0.1)', color: '#d32f2f', fontWeight: 800, padding: '12px 30px', borderRadius: '999px', fontSize: '0.95rem', fontFamily: 'Montserrat, sans-serif' }}>
                 Explore All
              </button>
           </div>
 
           <div className="job-marquee-container">
             <motion.div 
-              drag="x"
-              dragConstraints={{ left: -3000, right: 0 }}
-              animate={{ x: [-1500, 0] }}
-              transition={{ 
-                x: {
-                  repeat: Infinity,
-                  repeatType: "loop",
-                  duration: 5,
-                  ease: "linear",
-                },
-              }}
-              whileHover={{ animationPlayState: 'paused' }}
-              style={{ display: 'flex', width: 'max-content' }}
+              className="marquee-track"
+              animate={{ x: -(currentIndex * (650 + 40)) }} /* Card width + gap */
+              style={{ paddingRight: '200px' }}
             >
-              {/* Multiplying jobs for infinite effect */}
-              {[...jobs, ...jobs, ...jobs, ...jobs].map((job, i) => (
-                  <div 
-                    key={i} 
-                    className="job-flash-card"
+              {jobs.length === 0 ? (
+                <p style={{ color: '#64748B', fontSize: '1.1rem', fontWeight: 500 }}>Curating career paths for your expertise...</p>
+              ) : jobs.slice(0, 10).map((job, i) => (
+                  <motion.div 
+                    key={job.id || i} 
+                    className="job-splash-card"
                     onClick={() => navigate(`/jobs/${job.id}`)}
                     style={{ cursor: 'pointer' }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div style={{ background: '#fff', border: '1px solid rgba(15,23,42,0.05)', padding: '0.75rem', borderRadius: '18px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+                        <div style={{ background: '#fff', border: '1px solid rgba(15,23,42,0.05)', padding: '1.25rem', borderRadius: '24px', boxShadow: '0 10px 20px rgba(0,0,0,0.04)' }}>
                           {job.logo ? (
-                            <img src={job.logo} alt={job.company} style={{ width: '50px', height: '50px', objectFit: 'contain' }} />
+                            <img src={job.logo} alt={job.company} style={{ width: '64px', height: '64px', objectFit: 'contain' }} />
                           ) : (
-                            <div style={{ width: '50px', height: '50px', background: 'linear-gradient(135deg, #2D2254, #1a2652)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 900, fontSize: '20px' }}>
+                            <div style={{ width: '64px', height: '64px', background: 'linear-gradient(135deg, #2D2254, #1a2652)', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 900, fontSize: '28px' }}>
                               {(job.company || 'J').charAt(0).toUpperCase()}
                             </div>
                           )}
-                      </div>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748B', background: '#f8fafc', padding: '6px 14px', borderRadius: '999px', border: '1px solid #f1f5f9' }}>
-                        {i % 2 === 0 ? 'Urgent' : 'New'}
-                      </span>
+                        </div>
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                          <span style={{ background: '#f1f5f9', color: '#475569', padding: '8px 18px', borderRadius: '999px', fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase' }}>Full Time</span>
+                          <button style={{ background: 'transparent', border: 'none', color: '#94A3B8' }}><Star size={24} /></button>
+                        </div>
                     </div>
 
-                    <div>
-                      <h4 style={{ margin: '0 0 0.5rem', fontSize: '1.5rem', fontWeight: 900, color: '#1e293b', letterSpacing: '-0.02em' }}>{job.title}</h4>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                        <span style={{ fontSize: '1.1rem', color: '#475569', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <div style={{ marginTop: '1.5rem' }}>
+                      <h4 style={{ margin: '0 0 0.75rem', fontSize: '2rem', fontWeight: 900, color: '#1e293b', letterSpacing: '-0.02em', lineHeight: 1.1 }}>{job.title}</h4>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '1.1rem', color: '#475569', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                           <Users size={18} color="#d32f2f" /> {job.company}
                         </span>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                          <span style={{ fontSize: '0.95rem', color: '#94A3B8', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                            <MapPin size={18}/> {job.location}
-                          </span>
-                          {job.salary && <span style={{ fontSize: '0.95rem', color: '#10B981', fontWeight: 800 }}>{job.salary}</span>}
-                        </div>
+                        <span style={{ fontSize: '1.05rem', color: '#64748B', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <MapPin size={18}/> {job.location}
+                        </span>
                       </div>
                     </div>
 
-                    <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(0,0,0,0.03)', paddingTop: '1.5rem' }}>
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                          {[1,2,3].map(n => <div key={n} style={{ width: '20px', height: '4px', borderRadius: '2px', background: n===1 ? '#d32f2f' : '#e2e8f0' }} />)}
-                        </div>
-                        <span style={{ color: '#d32f2f', fontWeight: 700, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          Apply Now <ArrowRight size={18} />
-                        </span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(0,0,0,0.03)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        {job.salary && <span style={{ fontSize: '1.1rem', color: '#10B981', fontWeight: 800, background: '#10B98110', padding: '6px 16px', borderRadius: '12px' }}>{job.salary}</span>}
+                        <span style={{ color: '#94A3B8', fontSize: '0.9rem', fontWeight: 600 }}>Posted 2 days ago</span>
+                      </div>
+                      <button className="btn-premium" style={{ background: '#1e293b', color: 'white', border: 'none', padding: '12px 28px', borderRadius: '16px', fontWeight: 700, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        Apply Now <ArrowRight size={18} />
+                      </button>
                     </div>
-                  </div>
+
+                    {/* Decorative Background Accent */}
+                    <div style={{ position: 'absolute', bottom: '-40px', right: '-40px', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(211, 47, 47, 0.03) 0%, transparent 70%)', borderRadius: '50%', zIndex: -1 }} />
+                  </motion.div>
               ))}
             </motion.div>
+
+            {/* Stepper / Progress Dots */}
+            <div style={{ display: 'flex', gap: '8px', marginTop: '2rem', justifyContent: 'center' }}>
+              {jobs.slice(0, 6).map((_, i) => (
+                <div 
+                  key={i} 
+                  onClick={() => setCurrentIndex(i)}
+                  style={{ 
+                    width: currentIndex === i ? '24px' : '8px', 
+                    height: '8px', 
+                    background: currentIndex === i ? '#d32f2f' : '#cbd5e1', 
+                    borderRadius: '999px', 
+                    transition: 'all 0.5s ease',
+                    cursor: 'pointer'
+                  }} 
+                />
+              ))}
+            </div>
           </div>
         </motion.section>
 
