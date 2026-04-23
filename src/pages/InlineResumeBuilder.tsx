@@ -45,7 +45,7 @@ const InlineResumeBuilder: React.FC<InlineResumeBuilderProps> = ({ onAttach, ini
     setData({ ...data, [e.target.name]: e.target.value });
   };
 
-  const generatePDF = async () => {
+  const generatePDF = async (): Promise<any> => {
     if (!resumeRef.current) return null;
     const canvas = await html2canvas(resumeRef.current, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
     const imgData = canvas.toDataURL('image/png');

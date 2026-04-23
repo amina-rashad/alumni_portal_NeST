@@ -31,7 +31,6 @@ const EventManagerLayout: React.FC = () => {
   const menuItems = [
     { name: 'Dashboard', path: '/event-manager/dashboard', icon: <LayoutDashboard size={20} /> },
     { name: 'My Events', path: '/event-manager/events', icon: <Calendar size={20} /> },
-    { name: 'Create Event', path: '/event-manager/events/add', icon: <PlusCircle size={20} /> },
     { name: 'Attendees', path: '/event-manager/attendees', icon: <UserCheck size={20} /> },
     { name: 'Registrations', path: '/event-manager/registrations', icon: <Users size={20} /> },
     { name: 'Reports', path: '/event-manager/reports', icon: <BarChart3 size={20} /> },

@@ -110,7 +110,6 @@ import AdminCertification from './pages/admin/AdminCertification';
 import EventManagerLayout from './pages/event_manager/EventManagerLayout';
 import EventManagerDashboard from './pages/event_manager/EventManagerDashboard';
 import EventManagerEvents from './pages/event_manager/EventManagerEvents';
-import EventManagerAddEvent from './pages/event_manager/EventManagerAddEvent';
 import EventManagerPlaceholder from './pages/event_manager/EventManagerPlaceholder';
 
 /* -- Luxury Splash Screen with Mask Reveal -- */
@@ -395,7 +394,6 @@ const AnimatedRoutes: React.FC = () => {
           <Route index element={<Navigate to="/event-manager/dashboard" replace />} />
           <Route path="dashboard" element={<PageTransition><EventManagerDashboard /></PageTransition>} />
           <Route path="events" element={<PageTransition><EventManagerEvents /></PageTransition>} />
-          <Route path="events/add" element={<PageTransition><EventManagerAddEvent /></PageTransition>} />
           <Route path="attendees" element={<PageTransition><EventManagerPlaceholder title="Attendee Management" /></PageTransition>} />
           <Route path="registrations" element={<PageTransition><EventManagerPlaceholder title="Registration Tracking" /></PageTransition>} />
           <Route path="reports" element={<PageTransition><EventManagerPlaceholder title="Analytics Reports" /></PageTransition>} />

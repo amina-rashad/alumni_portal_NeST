@@ -56,21 +56,7 @@ const EventManagerDashboard: React.FC = () => {
           <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#1e293b', margin: '0 0 8px 0' }}>Welcome back, Event Manager</h1>
           <p style={{ margin: 0, color: '#64748b', fontWeight: 500 }}>Here's what's happening with your events today.</p>
         </div>
-        <button style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          padding: '12px 24px',
-          borderRadius: '14px',
-          background: brandPrimary,
-          color: '#fff',
-          border: 'none',
-          fontWeight: 700,
-          cursor: 'pointer',
-          boxShadow: '0 10px 20px rgba(79, 70, 229, 0.2)'
-        }}>
-          Create New Event <ArrowUpRight size={18} />
-        </button>
+        {/* Create New Event button removed per user request */}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px' }}>
