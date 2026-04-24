@@ -3,9 +3,10 @@ import {
   Plus, Search, Filter, MoreVertical, 
   Calendar, MapPin, Users, Edit2, Trash2, ExternalLink,
   ArrowLeft, Clock, Upload, X, Image as ImageIcon,
-  Info, ChevronDown, ShieldCheck, AlertCircle
+  Info, ChevronDown, ShieldCheck, AlertCircle, Video
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 const GlassSelect: React.FC<{
   label: string;
@@ -16,7 +17,7 @@ const GlassSelect: React.FC<{
 }> = ({ label, options, value, onChange }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const brandPrimary = '#4f46e5';
+  const brandPrimary = '#233167';
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -36,7 +37,7 @@ const GlassSelect: React.FC<{
         style={{ 
           padding: '14px 20px', 
           borderRadius: '16px', 
-          border: '1px solid rgba(79, 70, 229, 0.1)', 
+          border: '1px solid rgba(35, 49, 103, 0.1)', 
           background: 'rgba(255, 255, 255, 0.8)', 
           backdropFilter: 'blur(16px)', 
           fontSize: '15px', 
@@ -47,7 +48,7 @@ const GlassSelect: React.FC<{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          boxShadow: '0 4px 12px rgba(79, 70, 229, 0.03)',
+          boxShadow: '0 4px 12px rgba(35, 49, 103, 0.03)',
           transition: 'all 0.2s ease'
         }}
       >
@@ -65,8 +66,8 @@ const GlassSelect: React.FC<{
           background: 'rgba(255, 255, 255, 0.95)', 
           backdropFilter: 'blur(24px)', 
           borderRadius: '18px', 
-          border: '1px solid rgba(79, 70, 229, 0.1)', 
-          boxShadow: '0 10px 30px rgba(79, 70, 229, 0.1)',
+          border: '1px solid rgba(35, 49, 103, 0.1)', 
+          boxShadow: '0 10px 30px rgba(35, 49, 103, 0.1)',
           overflow: 'hidden',
           padding: '8px'
         }}>
@@ -82,7 +83,7 @@ const GlassSelect: React.FC<{
                 fontSize: '14px', 
                 fontWeight: 700, 
                 color: value === opt ? brandPrimary : '#475569',
-                background: value === opt ? 'rgba(79, 70, 229, 0.05)' : 'transparent',
+                background: value === opt ? 'rgba(35, 49, 103, 0.05)' : 'transparent',
                 borderRadius: '12px',
                 cursor: 'pointer',
                 transition: 'all 0.15s ease'
@@ -98,11 +99,19 @@ const GlassSelect: React.FC<{
 };
 
 const EventManagerEvents: React.FC = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeCategory, setActiveCategory] = useState('All');
   const [isAddingEvent, setIsAddingEvent] = useState(false);
+  const [editingEventId, setEditingEventId] = useState<number | null>(null);
+  const [menuOpenId, setMenuOpenId] = useState<number | null>(null);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const filterRef = useRef<HTMLDivElement>(null);
   const [dragActive, setDragActive] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const brandPrimary = '#4f46e5';
+  const brandPrimary = '#233167';
 
   const [formData, setFormData] = useState({
     title: '',
@@ -113,7 +122,8 @@ const EventManagerEvents: React.FC = () => {
     startTime: '',
     endTime: '',
     venue: '',
-    audience: 'Platform Wide'
+    audience: 'Platform Wide',
+    mode: 'offline'
   });
 
   const events = [
@@ -130,12 +140,26 @@ const EventManagerEvents: React.FC = () => {
 
   const setCategory = (val: string) => setFormData(prev => ({ ...prev, category: val }));
   const setAudience = (val: string) => setFormData(prev => ({ ...prev, audience: val }));
+  const setMode = (val: string) => setFormData(prev => ({ ...prev, mode: val }));
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(e.type === "dragenter" || e.type === "dragover");
   };
+
+   useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpenId(null);
+      }
+      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+        setIsFilterOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -147,13 +171,49 @@ const EventManagerEvents: React.FC = () => {
     }
   };
 
-  const filteredEvents = activeTab === 'All' ? events : events.filter(e => e.status === activeTab);
+  const handleLaunch = () => {
+    alert(editingEventId ? 'Event updated successfully!' : 'Event launched successfully!');
+    setIsAddingEvent(false);
+    setEditingEventId(null);
+    setFormData({
+      title: '', category: 'Networking & Mixer', limit: '',
+      description: '', date: '', startTime: '', endTime: '',
+      venue: '', audience: 'Platform Wide', mode: 'offline'
+    });
+    setSelectedImage(null);
+  };
+
+  const handleEdit = (event: any) => {
+    setEditingEventId(event.id);
+    setFormData({
+      title: event.title,
+      category: event.category === 'Technology' ? 'Seminar' : event.category,
+      limit: event.capacity?.toString() || '0',
+      description: 'Pre-filled details for ' + event.title,
+      date: event.date,
+      startTime: '10:00',
+      endTime: '12:00',
+      venue: event.location,
+      audience: 'Public',
+      mode: event.location === 'Virtual' ? 'online' : 'offline'
+    });
+    setSelectedImage(event.image);
+    setIsAddingEvent(true);
+  };
+
+  const filteredEvents = events.filter(e => {
+    const matchesTab = activeTab === 'All' || e.status === activeTab;
+    const matchesSearch = e.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          e.category.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = activeCategory === 'All' || e.category === activeCategory;
+    return matchesTab && matchesSearch && matchesCategory;
+  });
 
   const glossyInputStyle = {
     padding: '14px',
     borderRadius: '16px',
-    border: '1px solid rgba(79, 70, 229, 0.1)',
-    background: 'rgba(79, 70, 229, 0.05)', 
+    border: '1px solid rgba(35, 49, 103, 0.1)',
+    background: 'rgba(35, 49, 103, 0.05)', 
     backdropFilter: 'blur(16px)',
     fontSize: '15px',
     width: '100%',
@@ -161,13 +221,13 @@ const EventManagerEvents: React.FC = () => {
     color: '#1e1b4b', 
     fontWeight: 700,
     transition: 'all 0.2s ease',
-    boxShadow: '0 4px 12px rgba(79, 70, 229, 0.02)'
+    boxShadow: '0 4px 12px rgba(35, 49, 103, 0.02)'
   };
 
   if (isAddingEvent) {
     return (
       <div style={{ maxWidth: '1200px', margin: '0 auto', paddingBottom: '100px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '40px', background: '#fff', padding: '24px 32px', borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(79, 70, 229, 0.04)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '40px', background: '#fff', padding: '24px 32px', borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(35, 49, 103, 0.04)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
             <button 
               onClick={() => setIsAddingEvent(false)}
@@ -200,7 +260,7 @@ const EventManagerEvents: React.FC = () => {
                 color: '#fff', 
                 fontWeight: 800, 
                 cursor: 'pointer',
-                boxShadow: '0 8px 32px rgba(79, 70, 229, 0.2)'
+                boxShadow: '0 8px 32px rgba(35, 49, 103, 0.2)'
               }}>
               Launch Event
             </button>
@@ -211,7 +271,7 @@ const EventManagerEvents: React.FC = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
             <section style={{ background: '#fff', padding: '40px', borderRadius: '32px', border: '1px solid #e2e8f0', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
               <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#1e293b', marginBottom: '32px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(79, 70, 229, 0.08)', color: brandPrimary }}><Info size={18} /></div> Event Information
+                <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(35, 49, 103, 0.08)', color: brandPrimary }}><Info size={18} /></div> Event Information
               </h3>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -241,7 +301,7 @@ const EventManagerEvents: React.FC = () => {
               </h3>
               <div 
                 onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}
-                style={{ border: `2px dashed ${dragActive ? brandPrimary : '#cbd5e1'}`, borderRadius: '24px', padding: '48px', textAlign: 'center', background: dragActive ? 'rgba(79, 70, 229, 0.05)' : '#f8fafc', position: 'relative' }}
+                style={{ border: `2px dashed ${dragActive ? brandPrimary : '#cbd5e1'}`, borderRadius: '24px', padding: '48px', textAlign: 'center', background: dragActive ? 'rgba(35, 49, 103, 0.05)' : '#f8fafc', position: 'relative' }}
               >
                 {selectedImage ? (
                   <div style={{ position: 'relative' }}>
@@ -277,10 +337,14 @@ const EventManagerEvents: React.FC = () => {
                   <input type="time" name="startTime" value={formData.startTime} onChange={handleInputChange} style={glossyInputStyle} />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8' }}>Location</label>
+                  <label style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8' }}>{formData.mode === 'online' ? 'Meeting Link' : 'Location'}</label>
                   <div style={{ position: 'relative' }}>
-                    <MapPin size={16} color={brandPrimary} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
-                    <input name="venue" value={formData.venue} onChange={handleInputChange} placeholder="Venue name or Link" style={{ ...glossyInputStyle, paddingLeft: '40px' }} />
+                    {formData.mode === 'online' ? (
+                      <Video size={16} color={brandPrimary} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                    ) : (
+                      <MapPin size={16} color={brandPrimary} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                    )}
+                    <input name="venue" value={formData.venue} onChange={handleInputChange} placeholder={formData.mode === 'online' ? 'Zoom, Meet, or Teams Link' : 'Venue name or Physical Address'} style={{ ...glossyInputStyle, paddingLeft: '40px' }} />
                   </div>
                 </div>
               </div>
@@ -290,10 +354,10 @@ const EventManagerEvents: React.FC = () => {
               <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#1e293b', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <ShieldCheck size={16} color="#10b981" /> Settings
               </h3>
-              <GlassSelect label="Privacy" name="audience" value={formData.audience} options={['Public', 'Invite Only', 'Members Only']} onChange={setAudience} />
+              <GlassSelect label="Event Mode" name="mode" value={formData.mode} options={['online', 'offline']} onChange={setMode} />
             </section>
 
-            <div style={{ background: 'rgba(79, 70, 229, 0.05)', padding: '24px', borderRadius: '24px', border: '1px solid rgba(79, 70, 229, 0.1)', display: 'flex', gap: '12px' }}>
+            <div style={{ background: 'rgba(35, 49, 103, 0.05)', padding: '24px', borderRadius: '24px', border: '1px solid rgba(35, 49, 103, 0.1)', display: 'flex', gap: '12px' }}>
                <AlertCircle color={brandPrimary} size={20} />
                <div>
                  <div style={{ fontSize: '13px', fontWeight: 800, color: brandPrimary, marginBottom: '4px' }}>Draft Mode</div>
@@ -314,7 +378,16 @@ const EventManagerEvents: React.FC = () => {
           <p style={{ margin: 0, color: '#64748b', fontWeight: 500 }}>Create, monitor and maintain your event portfolio.</p>
         </div>
         <button 
-          onClick={() => setIsAddingEvent(true)}
+          onClick={() => {
+            setEditingEventId(null);
+            setFormData({
+              title: '', category: 'Networking & Mixer', limit: '',
+              description: '', date: '', startTime: '', endTime: '',
+              venue: '', audience: 'Platform Wide', mode: 'offline'
+            });
+            setSelectedImage(null);
+            setIsAddingEvent(true);
+          }}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -326,7 +399,7 @@ const EventManagerEvents: React.FC = () => {
             border: 'none',
             fontWeight: 700,
             cursor: 'pointer',
-            boxShadow: '0 10px 20px rgba(79, 70, 229, 0.2)'
+            boxShadow: '0 10px 20px rgba(35, 49, 103, 0.2)'
           }}
         >
           <Plus size={18} /> Create Event
@@ -360,19 +433,70 @@ const EventManagerEvents: React.FC = () => {
             <Search size={18} color="#94a3b8" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
             <input 
               type="text" 
-              placeholder="Search events..." 
-              style={{ padding: '12px 16px 12px 48px', borderRadius: '14px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '14px', width: '260px', outline: 'none' }}
+              placeholder="Search events by title or category..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{ padding: '12px 16px 12px 48px', borderRadius: '14px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '14px', width: '300px', outline: 'none', transition: 'all 0.2s' }}
+              onFocus={e => e.currentTarget.style.borderColor = brandPrimary}
+              onBlur={e => e.currentTarget.style.borderColor = '#e2e8f0'}
             />
           </div>
-          <button style={{ padding: '12px', borderRadius: '14px', border: '1px solid #e2e8f0', background: '#fff', color: '#64748b', cursor: 'pointer' }}>
-            <Filter size={18} />
-          </button>
+          <div ref={filterRef} style={{ position: 'relative' }}>
+            <button 
+              onClick={() => setIsFilterOpen(!isFilterOpen)}
+              style={{ padding: '12px', borderRadius: '14px', border: '1px solid #e2e8f0', background: isFilterOpen ? 'rgba(35, 49, 103, 0.05)' : '#fff', color: isFilterOpen ? brandPrimary : '#64748b', cursor: 'pointer', transition: 'all 0.2s' }}
+            >
+              <Filter size={18} />
+            </button>
+
+            <AnimatePresence>
+              {isFilterOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  style={{ position: 'absolute', top: 'calc(100% + 12px)', right: 0, background: '#fff', padding: '12px', borderRadius: '18px', border: '1px solid #e2e8f0', boxShadow: '0 10px 40px rgba(0,0,0,0.1)', width: '220px', zIndex: 1000 }}
+                >
+                  <div style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '8px', paddingLeft: '8px' }}>Filter by Category</div>
+                  {['All', 'Technology', 'Networking', 'Professional Development', 'Social'].map(cat => (
+                    <button 
+                      key={cat}
+                      onClick={() => { setActiveCategory(cat); setIsFilterOpen(false); }}
+                      style={{ 
+                        width: '100%', padding: '10px 14px', borderRadius: '10px', border: 'none', background: activeCategory === cat ? 'rgba(35, 49, 103, 0.05)' : 'none', 
+                        display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', fontWeight: 600, color: activeCategory === cat ? brandPrimary : '#475569', 
+                        cursor: 'pointer', textAlign: 'left'
+                      }}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '32px' }}>
-        <AnimatePresence>
-          {filteredEvents.map((event) => (
+        <AnimatePresence mode="popLayout">
+          {filteredEvents.length === 0 ? (
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '100px 0', background: '#f8fafc', borderRadius: '32px', border: '2px dashed #e2e8f0' }}
+            >
+               <Search size={48} color="#cbd5e1" style={{ marginBottom: '16px' }} />
+               <h3 style={{ margin: 0, color: '#1e293b', fontWeight: 800, fontSize: '20px' }}>No events found</h3>
+               <p style={{ color: '#64748b', fontSize: '14px', marginTop: '8px', maxWidth: '300px', margin: '8px auto 0' }}>Try adjusting your search or category filters to find what you're looking for.</p>
+               <button 
+                 onClick={() => { setSearchQuery(''); setActiveCategory('All'); setActiveTab('All'); }} 
+                 style={{ marginTop: '24px', padding: '12px 28px', borderRadius: '14px', background: brandPrimary, color: '#fff', border: 'none', fontWeight: 700, cursor: 'pointer', boxShadow: '0 10px 20px rgba(35, 49, 103, 0.15)' }}
+               >
+                 Reset All Filters
+               </button>
+            </motion.div>
+          ) : filteredEvents.map((event) => (
             <motion.div
               key={event.id}
               layout
@@ -442,15 +566,65 @@ const EventManagerEvents: React.FC = () => {
                 </div>
 
                 <div style={{ display: 'flex', gap: '12px', marginTop: 'auto' }}>
-                  <button style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#fff', color: '#1e293b', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                  <button 
+                    onClick={() => handleEdit(event)}
+                    style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#fff', color: '#1e293b', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                  >
                     <Edit2 size={16} /> Edit
                   </button>
-                  <button style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#fff', color: '#1e293b', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                  <button 
+                    onClick={() => navigate('/event-manager/attendees')}
+                    style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#fff', color: '#1e293b', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                  >
                     <Users size={16} /> Attendees
                   </button>
-                  <button style={{ padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#fff', color: '#1e293b', cursor: 'pointer' }}>
-                    <MoreVertical size={18} />
-                  </button>
+                   <div style={{ position: 'relative' }}>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuOpenId(menuOpenId === event.id ? null : event.id);
+                      }}
+                      style={{ padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', background: menuOpenId === event.id ? '#f1f5f9' : '#fff', color: '#1e293b', cursor: 'pointer', transition: 'all 0.2s' }}
+                    >
+                      <MoreVertical size={18} />
+                    </button>
+
+                    <AnimatePresence>
+                      {menuOpenId === event.id && (
+                        <motion.div 
+                          ref={menuRef}
+                          initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                          style={{
+                            position: 'absolute', bottom: 'calc(100% + 12px)', right: 0,
+                            background: '#fff', borderRadius: '16px', boxShadow: '0 10px 40px rgba(0,0,0,0.12)',
+                            border: '1px solid #e2e8f0', width: '200px', padding: '8px', zIndex: 1000
+                          }}
+                        >
+                           {[
+                             { label: 'View Public Portal', icon: <ExternalLink size={14} />, action: () => alert('Opening public portal...') },
+                             { label: 'Duplicate Event', icon: <Plus size={14} />, action: () => alert('Event duplicated!') },
+                             { label: 'Delete Event', icon: <Trash2 size={14} />, action: () => { if(confirm('Are you sure you want to delete this event?')) alert('Event deleted!'); }, danger: true },
+                           ].map((item, i) => (
+                             <button 
+                               key={i}
+                               onClick={(e) => { e.stopPropagation(); item.action(); setMenuOpenId(null); }}
+                               style={{ 
+                                 width: '100%', padding: '10px 14px', borderRadius: '10px', border: 'none', background: 'none', 
+                                 display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', fontWeight: 600, color: item.danger ? '#ef4444' : '#475569', 
+                                 cursor: 'pointer', textAlign: 'left'
+                               }}
+                               onMouseEnter={e => e.currentTarget.style.background = item.danger ? '#fef2f2' : '#f8fafc'}
+                               onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                             >
+                               {item.icon} {item.label}
+                             </button>
+                           ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 </div>
               </div>
             </motion.div>

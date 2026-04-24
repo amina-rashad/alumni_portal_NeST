@@ -3,7 +3,7 @@ import {
   ArrowLeft, Calendar, Clock, MapPin, 
   Upload, X, Image as ImageIcon,
   Info, ChevronDown,
-  ShieldCheck, AlertCircle
+  ShieldCheck, AlertCircle, Video
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -16,7 +16,7 @@ const GlassSelect: React.FC<{
 }> = ({ label, options, value, onChange }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const brandPrimary = '#4f46e5';
+  const brandPrimary = '#233167';
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -36,7 +36,7 @@ const GlassSelect: React.FC<{
         style={{ 
           padding: '14px 20px', 
           borderRadius: '16px', 
-          border: '1px solid rgba(79, 70, 229, 0.1)', 
+          border: '1px solid rgba(35, 49, 103, 0.1)', 
           background: 'rgba(255, 255, 255, 0.8)', 
           backdropFilter: 'blur(16px)', 
           fontSize: '15px', 
@@ -47,7 +47,7 @@ const GlassSelect: React.FC<{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          boxShadow: '0 4px 12px rgba(79, 70, 229, 0.03)',
+          boxShadow: '0 4px 12px rgba(35, 49, 103, 0.03)',
           transition: 'all 0.2s ease'
         }}
       >
@@ -65,8 +65,8 @@ const GlassSelect: React.FC<{
           background: 'rgba(255, 255, 255, 0.95)', 
           backdropFilter: 'blur(24px)', 
           borderRadius: '18px', 
-          border: '1px solid rgba(79, 70, 229, 0.1)', 
-          boxShadow: '0 10px 30px rgba(79, 70, 229, 0.1)',
+          border: '1px solid rgba(35, 49, 103, 0.1)', 
+          boxShadow: '0 10px 30px rgba(35, 49, 103, 0.1)',
           overflow: 'hidden',
           padding: '8px'
         }}>
@@ -82,7 +82,7 @@ const GlassSelect: React.FC<{
                 fontSize: '14px', 
                 fontWeight: 700, 
                 color: value === opt ? brandPrimary : '#475569',
-                background: value === opt ? 'rgba(79, 70, 229, 0.05)' : 'transparent',
+                background: value === opt ? 'rgba(35, 49, 103, 0.05)' : 'transparent',
                 borderRadius: '12px',
                 cursor: 'pointer',
                 transition: 'all 0.15s ease'
@@ -101,7 +101,7 @@ const EventManagerAddEvent: React.FC = () => {
   const navigate = useNavigate();
   const [dragActive, setDragActive] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const brandPrimary = '#4f46e5';
+  const brandPrimary = '#233167';
 
   const [formData, setFormData] = useState({
     title: '',
@@ -112,7 +112,8 @@ const EventManagerAddEvent: React.FC = () => {
     startTime: '',
     endTime: '',
     venue: '',
-    audience: 'Platform Wide'
+    audience: 'Platform Wide',
+    mode: 'Offline'
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -122,6 +123,7 @@ const EventManagerAddEvent: React.FC = () => {
 
   const setCategory = (val: string) => setFormData(prev => ({ ...prev, category: val }));
   const setAudience = (val: string) => setFormData(prev => ({ ...prev, audience: val }));
+  const setMode = (val: string) => setFormData(prev => ({ ...prev, mode: val }));
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -142,8 +144,8 @@ const EventManagerAddEvent: React.FC = () => {
   const glossyInputStyle = {
     padding: '14px',
     borderRadius: '16px',
-    border: '1px solid rgba(79, 70, 229, 0.1)',
-    background: 'rgba(79, 70, 229, 0.05)', 
+    border: '1px solid rgba(35, 49, 103, 0.1)',
+    background: 'rgba(35, 49, 103, 0.05)', 
     backdropFilter: 'blur(16px)',
     fontSize: '15px',
     width: '100%',
@@ -151,12 +153,12 @@ const EventManagerAddEvent: React.FC = () => {
     color: '#1e1b4b', 
     fontWeight: 700,
     transition: 'all 0.2s ease',
-    boxShadow: '0 4px 12px rgba(79, 70, 229, 0.02)'
+    boxShadow: '0 4px 12px rgba(35, 49, 103, 0.02)'
   };
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', paddingBottom: '100px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '40px', background: '#fff', padding: '24px 32px', borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(79, 70, 229, 0.04)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '40px', background: '#fff', padding: '24px 32px', borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(35, 49, 103, 0.04)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
           <button 
             onClick={() => navigate('/event-manager/events')}
@@ -188,7 +190,7 @@ const EventManagerAddEvent: React.FC = () => {
               color: '#fff', 
               fontWeight: 800, 
               cursor: 'pointer',
-              boxShadow: '0 8px 32px rgba(79, 70, 229, 0.2)'
+              boxShadow: '0 8px 32px rgba(35, 49, 103, 0.2)'
             }}>
             Launch Event
           </button>
@@ -199,7 +201,7 @@ const EventManagerAddEvent: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
           <section style={{ background: '#fff', padding: '40px', borderRadius: '32px', border: '1px solid #e2e8f0', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
             <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#1e293b', marginBottom: '32px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(79, 70, 229, 0.08)', color: brandPrimary }}><Info size={18} /></div> Event Information
+              <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(35, 49, 103, 0.08)', color: brandPrimary }}><Info size={18} /></div> Event Information
             </h3>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -216,10 +218,10 @@ const EventManagerAddEvent: React.FC = () => {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <label style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Description</label>
-                <textarea rows={6} name="description" value={formData.description} onChange={handleInputChange} placeholder="What is this event about?" style={{ ...glossyInputStyle, resize: 'none', height: 'auto', fontFamily: 'inherit' }} />
-              </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <label style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Description</label>
+                  <textarea rows={6} name="description" value={formData.description} onChange={handleInputChange} placeholder="What is this event about?" style={{ ...glossyInputStyle, resize: 'none', height: 'auto', fontFamily: 'inherit' }} />
+                </div>
             </div>
           </section>
 
@@ -229,7 +231,7 @@ const EventManagerAddEvent: React.FC = () => {
             </h3>
             <div 
               onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}
-              style={{ border: `2px dashed ${dragActive ? brandPrimary : '#cbd5e1'}`, borderRadius: '24px', padding: '48px', textAlign: 'center', background: dragActive ? 'rgba(79, 70, 229, 0.05)' : '#f8fafc', position: 'relative' }}
+              style={{ border: `2px dashed ${dragActive ? brandPrimary : '#cbd5e1'}`, borderRadius: '24px', padding: '48px', textAlign: 'center', background: dragActive ? 'rgba(35, 49, 103, 0.05)' : '#f8fafc', position: 'relative' }}
             >
               {selectedImage ? (
                 <div style={{ position: 'relative' }}>
@@ -265,10 +267,14 @@ const EventManagerAddEvent: React.FC = () => {
                 <input type="time" name="startTime" value={formData.startTime} onChange={handleInputChange} style={glossyInputStyle} />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8' }}>Location</label>
+                <label style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8' }}>{formData.mode === 'Online' ? 'Meeting Link' : 'Location'}</label>
                 <div style={{ position: 'relative' }}>
-                  <MapPin size={16} color={brandPrimary} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
-                  <input name="venue" value={formData.venue} onChange={handleInputChange} placeholder="Venue name or Link" style={{ ...glossyInputStyle, paddingLeft: '40px' }} />
+                  {formData.mode === 'Online' ? (
+                    <Video size={16} color={brandPrimary} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                  ) : (
+                    <MapPin size={16} color={brandPrimary} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                  )}
+                  <input name="venue" value={formData.venue} onChange={handleInputChange} placeholder={formData.mode === 'Online' ? 'Zoom, Meet, or Teams Link' : 'Venue name or Physical Address'} style={{ ...glossyInputStyle, paddingLeft: '40px' }} />
                 </div>
               </div>
             </div>
@@ -278,10 +284,10 @@ const EventManagerAddEvent: React.FC = () => {
             <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#1e293b', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <ShieldCheck size={16} color="#10b981" /> Settings
             </h3>
-            <GlassSelect label="Privacy" name="audience" value={formData.audience} options={['Public', 'Invite Only', 'Members Only']} onChange={setAudience} />
+            <GlassSelect label="Event Mode" name="mode" value={formData.mode} options={['online', 'offline']} onChange={setMode} />
           </section>
 
-          <div style={{ background: 'rgba(79, 70, 229, 0.05)', padding: '24px', borderRadius: '24px', border: '1px solid rgba(79, 70, 229, 0.1)', display: 'flex', gap: '12px' }}>
+          <div style={{ background: 'rgba(35, 49, 103, 0.05)', padding: '24px', borderRadius: '24px', border: '1px solid rgba(35, 49, 103, 0.1)', display: 'flex', gap: '12px' }}>
              <AlertCircle color={brandPrimary} size={20} />
              <div>
                <div style={{ fontSize: '13px', fontWeight: 800, color: brandPrimary, marginBottom: '4px' }}>Draft Mode</div>

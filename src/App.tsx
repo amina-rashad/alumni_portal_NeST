@@ -110,6 +110,11 @@ import AdminCertification from './pages/admin/AdminCertification';
 import EventManagerLayout from './pages/event_manager/EventManagerLayout';
 import EventManagerDashboard from './pages/event_manager/EventManagerDashboard';
 import EventManagerEvents from './pages/event_manager/EventManagerEvents';
+import EventManagerAttendees from './pages/event_manager/EventManagerAttendees';
+import EventManagerPosts from './pages/event_manager/EventManagerPosts';
+import EventManagerRegistrations from './pages/event_manager/EventManagerRegistrations';
+import EventManagerReports from './pages/event_manager/EventManagerReports';
+import EventManagerSettings from './pages/event_manager/EventManagerSettings';
 import EventManagerPlaceholder from './pages/event_manager/EventManagerPlaceholder';
 
 /* -- Luxury Splash Screen with Mask Reveal -- */
@@ -394,10 +399,11 @@ const AnimatedRoutes: React.FC = () => {
           <Route index element={<Navigate to="/event-manager/dashboard" replace />} />
           <Route path="dashboard" element={<PageTransition><EventManagerDashboard /></PageTransition>} />
           <Route path="events" element={<PageTransition><EventManagerEvents /></PageTransition>} />
-          <Route path="attendees" element={<PageTransition><EventManagerPlaceholder title="Attendee Management" /></PageTransition>} />
-          <Route path="registrations" element={<PageTransition><EventManagerPlaceholder title="Registration Tracking" /></PageTransition>} />
-          <Route path="reports" element={<PageTransition><EventManagerPlaceholder title="Analytics Reports" /></PageTransition>} />
-          <Route path="settings" element={<PageTransition><EventManagerPlaceholder title="Module Settings" /></PageTransition>} />
+          <Route path="attendees" element={<PageTransition><EventManagerAttendees /></PageTransition>} />
+          <Route path="posts" element={<PageTransition><EventManagerPosts /></PageTransition>} />
+          <Route path="registrations" element={<PageTransition><EventManagerRegistrations /></PageTransition>} />
+          <Route path="reports" element={<PageTransition><EventManagerReports /></PageTransition>} />
+          <Route path="settings" element={<PageTransition><EventManagerSettings /></PageTransition>} />
         </Route>
 
         {/* Fallback Catch-all Route */}
