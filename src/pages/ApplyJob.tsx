@@ -24,14 +24,6 @@ const ApplyJob: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [resumeFile, setResumeFile] = useState<File | null>(null);
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    linkedin: '',
-    coverLetter: ''
-  });
   const [resumeOption, setResumeOption] = useState<'profile' | 'upload' | 'build'>('upload');
 
   useEffect(() => {
@@ -57,11 +49,6 @@ const ApplyJob: React.FC = () => {
     fetchJob();
   }, [id]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setResumeFile(e.target.files[0]);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -292,118 +279,100 @@ const ApplyJob: React.FC = () => {
                 </button>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '2.5rem' }}>
-                <label style={{ fontWeight: 600, color: '#4a4a4a', fontSize: '0.9rem' }}>Cover Letter (Optional)</label>
-                <textarea
-                  rows={6}
-                  placeholder="Briefly tell us why you're a great fit for this role..."
-                  value={formData.coverLetter}
-                  onChange={e => setFormData({ ...formData, coverLetter: e.target.value })}
-                  style={{ background: '#ffffff', color: '#1a1a1a', padding: '1rem', borderRadius: '8px', border: '1px solid #ced4da', outline: 'none', fontSize: '1rem', width: '100%', resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box' }}
-                />
-              </div>
+              {resumeOption === 'profile' && (
+                <div style={{ background: '#f8f9fa', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e9ecef', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{ padding: '0.8rem', background: '#e3fbee', borderRadius: '8px' }}>
+                    <CheckCircle2 size={24} color="#2b8a3e" />
+                  </div>
+                  <div>
+                    <p style={{ fontWeight: 600, color: '#1a1a1a', marginBottom: '0.2rem' }}>Jane_Doe_Resume_Current.pdf</p>
+                    <p style={{ color: '#6c757d', fontSize: '0.85rem' }}>Attached from your verified Profile</p>
+                  </div>
+                </div>
+              )}
 
-  {
-    resumeOption === 'profile' && (
-      <div style={{ background: '#f8f9fa', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e9ecef', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        <div style={{ padding: '0.8rem', background: '#e3fbee', borderRadius: '8px' }}>
-          <CheckCircle2 size={24} color="#2b8a3e" />
-        </div>
-        <div>
-          <p style={{ fontWeight: 600, color: '#1a1a1a', marginBottom: '0.2rem' }}>Jane_Doe_Resume_Current.pdf</p>
-          <p style={{ color: '#6c757d', fontSize: '0.85rem' }}>Attached from your verified Profile</p>
-        </div>
-      </div>
-    )
-  }
+              {resumeOption === 'upload' && (
+                <div
+                  style={{
+                    border: '2px dashed #ced4da',
+                    borderRadius: '12px',
+                    padding: '3rem 2rem',
+                    textAlign: 'center',
+                    background: '#f8f9fa',
+                    cursor: 'pointer',
+                    position: 'relative',
+                    transition: 'background 0.3s, border-color 0.3s'
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = '#f1f3f5'; e.currentTarget.style.borderColor = 'var(--primary)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = '#f8f9fa'; e.currentTarget.style.borderColor = '#ced4da'; }}
+                >
+                  <input
+                    type="file"
+                    required={resumeOption === 'upload' && !resumeFile}
+                    accept=".pdf,.doc,.docx"
+                    onChange={handleFileChange}
+                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
+                  />
+                  {!resumeFile ? (
+                    <>
+                      <UploadCloud size={40} color="var(--primary)" style={{ margin: '0 auto 1rem auto' }} />
+                      <p style={{ color: '#1a1a1a', fontWeight: 600, fontSize: '1.05rem', marginBottom: '0.3rem' }}>Click to upload or drag and drop</p>
+                      <p style={{ color: '#6c757d', fontSize: '0.9rem' }}>PDF, DOCX up to 5MB</p>
+                    </>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.8rem' }}>
+                      <CheckCircle2 size={24} color="#2b8a3e" />
+                      <p style={{ color: '#1a1a1a', fontWeight: 600, fontSize: '1.05rem' }}>{resumeFile.name}</p>
+                    </div>
+                  )}
+                </div>
+              )}
 
-  {
-    resumeOption === 'upload' && (
-      <div
-        style={{
-          border: '2px dashed #ced4da',
-          borderRadius: '12px',
-          padding: '3rem 2rem',
-          textAlign: 'center',
-          background: '#f8f9fa',
-          cursor: 'pointer',
-          position: 'relative',
-          transition: 'background 0.3s, border-color 0.3s'
-        }}
-        onMouseEnter={(e) => { e.currentTarget.style.background = '#f1f3f5'; e.currentTarget.style.borderColor = 'var(--primary)'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.background = '#f8f9fa'; e.currentTarget.style.borderColor = '#ced4da'; }}
-      >
-        <input
-          type="file"
-          required={resumeOption === 'upload' && !resumeFile}
-          accept=".pdf,.doc,.docx"
-          onChange={handleFileChange}
-          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
-        />
-        {!resumeFile ? (
-          <>
-            <UploadCloud size={40} color="var(--primary)" style={{ margin: '0 auto 1rem auto' }} />
-            <p style={{ color: '#1a1a1a', fontWeight: 600, fontSize: '1.05rem', marginBottom: '0.3rem' }}>Click to upload or drag and drop</p>
-            <p style={{ color: '#6c757d', fontSize: '0.9rem' }}>PDF, DOCX up to 5MB</p>
-          </>
-        ) : (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.8rem' }}>
-            <CheckCircle2 size={24} color="#2b8a3e" />
-            <p style={{ color: '#1a1a1a', fontWeight: 600, fontSize: '1.05rem' }}>{resumeFile.name}</p>
+              {resumeOption === 'build' && (
+                <InlineResumeBuilder onAttach={(file) => setResumeFile(file)} />
+              )}
+            </div>
           </div>
-        )}
-      </div>
-    )
-  }
 
-  {
-    resumeOption === 'build' && (
-      <InlineResumeBuilder onAttach={(file) => setResumeFile(file)} />
-    )
-  }
->>>>>>> b5a55a284d9dbff01cfc419439be311dfe2096da
-            </div >
-          </div >
-
-  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-    <button
-      type="submit"
-      disabled={isSubmitting}
-      style={{
-        background: isSubmitting ? '#e9ecef' : 'var(--primary)',
-        color: isSubmitting ? '#adb5bd' : 'white',
-        padding: '1.2rem',
-        borderRadius: '8px',
-        fontSize: '1.1rem',
-        fontWeight: 600,
-        border: 'none',
-        cursor: isSubmitting ? 'not-allowed' : 'pointer',
-        transition: 'background 0.3s',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}
-      onMouseEnter={(e) => { if (!isSubmitting) e.currentTarget.style.background = 'var(--primary-hover)'; }}
-      onMouseLeave={(e) => { if (!isSubmitting) e.currentTarget.style.background = 'var(--primary)'; }}
-    >
-      {isSubmitting ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <div className="spinner" style={{ width: '20px', height: '20px', border: '3px solid rgba(0,0,0,0.1)', borderTopColor: '#adb5bd', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-          Submitting Application...
-        </div>
-      ) : (
-        'Submit Application'
-      )}
-    </button>
-    <p style={{ color: '#6c757d', fontSize: '0.85rem', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
-      <AlertCircle size={14} /> By applying, you agree to our Candidate Privacy Policy.
-    </p>
-  </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              style={{
+                background: isSubmitting ? '#e9ecef' : 'var(--primary)',
+                color: isSubmitting ? '#adb5bd' : 'white',
+                padding: '1.2rem',
+                borderRadius: '8px',
+                fontSize: '1.1rem',
+                fontWeight: 600,
+                border: 'none',
+                cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                transition: 'background 0.3s',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              onMouseEnter={(e) => { if (!isSubmitting) e.currentTarget.style.background = 'var(--primary-hover)'; }}
+              onMouseLeave={(e) => { if (!isSubmitting) e.currentTarget.style.background = 'var(--primary)'; }}
+            >
+              {isSubmitting ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <div className="spinner" style={{ width: '20px', height: '20px', border: '3px solid rgba(0,0,0,0.1)', borderTopColor: '#adb5bd', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                  Submitting Application...
+                </div>
+              ) : (
+                'Submit Application'
+              )}
+            </button>
+            <p style={{ color: '#6c757d', fontSize: '0.85rem', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+              <AlertCircle size={14} /> By applying, you agree to our Candidate Privacy Policy.
+            </p>
+          </div>
 
         </motion.form >
       </div >
 
-  <style>{`
+      <style>{`
         @keyframes spin {
           to { transform: rotate(360deg); }
         }

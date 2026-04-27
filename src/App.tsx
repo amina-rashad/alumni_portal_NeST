@@ -327,6 +327,8 @@ const AnimatedRoutes: React.FC = () => {
         <Route path="/platform-capabilities/:id" element={<PageTransition><PlatformCapabilities /></PageTransition>} />
         <Route path="/user-type-overview/:id" element={<PageTransition><UserTypeOverview /></PageTransition>} />
 
+        <Route path="/courses/:id/play" element={<PageTransition><CoursePlayer /></PageTransition>} />
+        
         {/* User Protected Routes with MainLayout */}
         <Route element={<MainLayout />}>
           <Route path="/dashboard" element={<PageTransition><Dashboard /></PageTransition>} />
@@ -349,7 +351,6 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="/jobs/recommended" element={<PageTransition><RecommendedJobs /></PageTransition>} />
           <Route path="/courses" element={<PageTransition><CourseListing /></PageTransition>} />
           <Route path="/courses/:id" element={<PageTransition><CourseDetails /></PageTransition>} />
-          <Route path="/courses/:id/play" element={<PageTransition><CoursePlayer /></PageTransition>} />
           <Route path="/courses/my-courses" element={<PageTransition><MyCourses /></PageTransition>} />
           <Route path="/assessment/:id" element={<PageTransition><AssessmentCenter /></PageTransition>} />
           <Route path="/courses/:id/completion" element={<PageTransition><CourseCompletion /></PageTransition>} />

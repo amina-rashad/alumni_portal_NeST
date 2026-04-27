@@ -69,9 +69,7 @@ const EventsListing: React.FC = () => {
            <h1 style={{ fontSize: '3rem', fontWeight: 900, color: '#0d2046', marginBottom: '0.5rem', letterSpacing: '-0.02em' }}>
              Professional <span style={{ color: 'var(--primary)' }}>Events</span>
            </h1>
-           <p style={{ color: '#64748b', fontSize: '1.15rem', maxWidth: '600px', lineHeight: '1.6' }}>
-             Expand your horizons through networking mixers, technical workshops, and global alumni summits.
-           </p>
+
         </div>
         
         <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>

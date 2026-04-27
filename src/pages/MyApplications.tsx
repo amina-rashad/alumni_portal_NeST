@@ -132,7 +132,7 @@ const MyApplications: React.FC = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', padding: '4rem 2rem', background: '#ffffff', color: '#1a1a1a', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ minHeight: '100vh', padding: '2rem', background: 'transparent', color: '#1a1a1a', fontFamily: 'Montserrat, sans-serif' }}>
       <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
 
         {/* Header */}
@@ -142,20 +142,11 @@ const MyApplications: React.FC = () => {
           transition={{ duration: 0.5 }}
           style={{ marginBottom: '2.5rem' }}
         >
-          <Link
-            to="/jobs"
-            style={{ display: 'inline-flex', alignItems: 'center', color: '#666666', marginBottom: '1.5rem', fontSize: '0.9rem', transition: 'color 0.3s', textDecoration: 'none' }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--primary)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = '#666666'; }}
-          >
-            <ArrowLeft size={16} style={{ marginRight: '0.5rem' }} /> Back to Job Listings
-          </Link>
+
           <h1 style={{ fontSize: '2.8rem', marginBottom: '0.5rem', color: '#1a1a1a' }}>
             My <span style={{ color: 'var(--primary)' }}>Applications</span>
           </h1>
-          <p style={{ fontSize: '1.05rem', color: '#4a4a4a', maxWidth: '600px' }}>
-            Track the status of all your job applications. Stay updated on interviews and offers.
-          </p>
+
         </motion.div>
 
         {/* Stats Cards */}
@@ -187,25 +178,25 @@ const MyApplications: React.FC = () => {
           ))}
         </motion.div>
 
-        {/* Filter & Search Bar */}
+
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.15 }}
           style={{
-            background: '#f8f9fa',
-            border: '1px solid #e9ecef',
-            borderRadius: '14px',
-            padding: '1.2rem 1.5rem',
-            marginBottom: '2rem',
+            background: 'white',
+            borderRadius: '20px',
+            padding: '1.5rem',
+            marginBottom: '2.5rem',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.04)',
+            border: '1px solid #E2E8F0',
             display: 'flex',
+            gap: '1.5rem',
             flexWrap: 'wrap',
-            gap: '1rem',
             alignItems: 'center'
           }}
         >
-          <div style={{ flex: '1 1 250px', position: 'relative' }}>
-            <Search size={18} style={{ position: 'absolute', left: '0.8rem', top: '50%', transform: 'translateY(-50%)', color: '#6c757d' }} />
+          <div style={{ flex: 1, minWidth: '300px', position: 'relative' }}>
+            <Search style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} size={20} />
             <input
               type="text"
               placeholder="Search applications..."
@@ -213,33 +204,38 @@ const MyApplications: React.FC = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{
                 width: '100%',
-                padding: '0.75rem 0.75rem 0.75rem 2.5rem',
-                borderRadius: '8px',
-                border: '1px solid #ced4da',
-                background: '#ffffff',
-                color: '#1a1a1a',
-                fontSize: '0.95rem',
+                padding: '0.8rem 1rem 0.8rem 3rem',
+                borderRadius: '12px',
+                border: '1px solid #E2E8F0',
+                background: '#F8FAFC',
+                fontSize: '1rem',
                 outline: 'none',
+                transition: 'border-color 0.2s',
+                color: '#1a1a1a',
                 boxSizing: 'border-box'
               }}
+              onFocus={(e) => e.target.style.borderColor = '#d32f2f'}
+              onBlur={(e) => e.target.style.borderColor = '#E2E8F0'}
             />
           </div>
+
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-            <Filter size={16} color="#6c757d" />
+            <Filter size={18} color="#94A3B8" />
             {['All', ...ALL_STATUSES.filter(s => statusCounts[s])].map(status => (
               <button
                 key={status}
                 onClick={() => setFilterStatus(status)}
                 style={{
-                  padding: '0.4rem 0.9rem',
-                  borderRadius: '20px',
-                  fontSize: '0.82rem',
-                  fontWeight: 500,
-                  border: `1px solid ${filterStatus === status ? 'var(--primary)' : '#ced4da'}`,
-                  background: filterStatus === status ? 'var(--primary)' : '#ffffff',
-                  color: filterStatus === status ? 'white' : '#4a4a4a',
+                  padding: '0.6rem 1.2rem',
+                  borderRadius: '12px',
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  border: `1px solid ${filterStatus === status ? '#d32f2f' : '#E2E8F0'}`,
+                  background: filterStatus === status ? '#d32f2f' : 'white',
+                  color: filterStatus === status ? 'white' : '#475569',
                   cursor: 'pointer',
-                  transition: 'all 0.2s'
+                  transition: 'all 0.2s',
+                  boxShadow: filterStatus === status ? '0 4px 12px rgba(211,47,47,0.2)' : 'none'
                 }}
               >
                 {status}

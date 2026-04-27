@@ -41,22 +41,17 @@ const PointsOverview: React.FC = () => {
       style={{ 
         maxWidth: '1200px', 
         margin: '0 auto', 
-        padding: '2rem 1.5rem', 
+        padding: '0', 
         fontFamily: '"Inter", sans-serif',
         minHeight: '100vh',
-        backgroundColor: '#f8fafc'
+        backgroundColor: 'transparent'
       }}
     >
       {/* ── Page Header ── */}
-      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '3rem', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <Link to="/dashboard" style={{ display: 'flex', alignItems: 'center', color: '#64748b', textDecoration: 'none', transition: 'color 0.2s' }}>
-            <motion.div whileHover={{ x: -4 }} style={{ display: 'flex', alignItems: 'center' }}>
-              <ArrowLeft size={20} style={{ marginRight: '0.75rem' }} /> 
-              <span style={{ fontWeight: 600 }}>Back to Dashboard</span>
-            </motion.div>
-          </Link>
-        </div>
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '3rem', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+        <h1 style={{ fontSize: '2.8rem', fontWeight: 800, color: '#1a1a1a', margin: 0 }}>
+          Points <span style={{ color: '#c8102e' }}>Overview</span>
+        </h1>
         <div style={{ display: 'flex', gap: '0.75rem' }}>
           <Link to="/gamification/leaderboard" style={{ 
             padding: '0.6rem 1.25rem', 

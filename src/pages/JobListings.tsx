@@ -6,7 +6,7 @@ import {
   Building, SlidersHorizontal,
   Bookmark, BookmarkCheck,
   Plus, Info, AlertCircle,
-  Calendar, ChevronRight
+  Calendar, ChevronRight, Check
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { jobsApi } from '../services/api';
@@ -125,6 +125,7 @@ const JobListings: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('All');
   const [savedJobs, setSavedJobs] = useState<Set<string>>(new Set());
+  const [appliedJobs, setAppliedJobs] = useState<Set<string>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
@@ -179,6 +180,12 @@ const JobListings: React.FC = () => {
     setSavedJobs(newSaved);
   };
 
+  const handleApply = (id: string) => {
+    const newApplied = new Set(appliedJobs);
+    newApplied.add(id);
+    setAppliedJobs(newApplied);
+  };
+
   const filteredJobs = jobs.filter(job => {
     const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -218,73 +225,12 @@ const JobListings: React.FC = () => {
             <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: '#0F172A', marginBottom: '0.5rem', letterSpacing: '-0.02em' }}>
               Career <span style={{ color: '#d32f2f' }}>Opportunities</span>
             </h1>
-            <p style={{ color: '#64748B', fontSize: '1.1rem', maxWidth: '600px' }}>
-              Discover your next career milestone within the exclusive NeST alumni network and global ecosystem.
-            </p>
+
           </div>
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <Link
-              to="/jobs/recommended"
-              className="btn-premium"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.6rem',
-                padding: '0.8rem 1.5rem',
-                background: '#fff1f1',
-                color: '#d32f2f',
-                borderRadius: '12px',
-                fontWeight: 600,
-                fontSize: '0.95rem'
-              }}
-            >
-              <Zap size={18} /> Recommended For You
-            </Link>
-            <button
-              className="btn-premium"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.6rem',
-                padding: '0.8rem 1.5rem',
-                background: '#0F172A',
-                color: 'white',
-                borderRadius: '12px',
-                fontWeight: 600,
-                fontSize: '0.95rem'
-              }}
-            >
-              <Plus size={18} /> Post a Job
-            </button>
-          </div>
+
         </motion.div>
 
-        {/* Stats Row */}
-        <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
-          {[
-            { label: 'Active Listings', count: jobs.length, icon: Briefcase, color: '#3B82F6' },
-            { label: 'New Today', count: jobs.filter(j => j.isNew).length, icon: Clock, color: '#10B981' },
-            { label: 'Urgent Roles', count: jobs.filter(j => j.isUrgent).length, icon: AlertCircle, color: '#F59E0B' },
-            { label: 'Partner Companies', count: 12, icon: Building, color: '#6366F1' },
-          ].map((stat, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-              className="luxury-card"
-              style={{ flex: '1 1 200px', padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1.25rem' }}
-            >
-              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: `${stat.color}10`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <stat.icon size={22} color={stat.color} />
-              </div>
-              <div>
-                <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{stat.label}</p>
-                <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#0F172A' }}>{stat.count}</p>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+
       </div>
 
       {/* Search and Filters Section */}
@@ -604,20 +550,32 @@ const JobListings: React.FC = () => {
                   View Details <ChevronRight size={16} />
                 </Link>
 
-                <Link
-                  to={`/jobs/${job.id}/apply`}
+                <button
+                  onClick={() => handleApply(job.id)}
+                  disabled={appliedJobs.has(job.id)}
                   className="btn-premium"
                   style={{
                     padding: '0.6rem 1.8rem',
-                    background: '#d32f2f',
-                    color: 'white',
+                    background: appliedJobs.has(job.id) ? '#f0fdf4' : '#d32f2f',
+                    color: appliedJobs.has(job.id) ? '#15803d' : 'white',
                     borderRadius: '8px',
                     fontWeight: 700,
-                    fontSize: '0.9rem'
+                    fontSize: '0.9rem',
+                    border: appliedJobs.has(job.id) ? '1px solid #bbf7d0' : 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    cursor: appliedJobs.has(job.id) ? 'default' : 'pointer'
                   }}
                 >
-                  Apply Now
-                </Link>
+                  {appliedJobs.has(job.id) ? (
+                    <>
+                      <Check size={18} /> Applied
+                    </>
+                  ) : (
+                    'Apply Now'
+                  )}
+                </button>
               </div>
             </motion.div>
           ))

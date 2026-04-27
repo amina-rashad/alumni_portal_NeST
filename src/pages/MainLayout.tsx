@@ -19,50 +19,35 @@ const menuGroups: NavGroup[] = [
   {
     section: 'Insights', icon: <Home size={17} />,
     items: [
-      { name: 'Insights Overview', path: '/dashboard', icon: <Home size={15} /> },
+      { name: 'Insights Overview', path: '/dashboard',          icon: <Home size={15} /> },
       { name: 'Activity Feed', path: '/dashboard/activity', icon: <Activity size={15} /> },
-      { name: 'Notifications', path: '/notifications', icon: <Bell size={15} /> },
-    ]
-  },
-  {
-    section: 'Profile', icon: <User size={17} />,
-    items: [
-      { name: 'View Profile', path: '/profile', icon: <User size={15} /> },
-      { name: 'Edit Profile', path: '/profile/edit', icon: <Edit3 size={15} /> },
+      { name: 'Notifications', path: '/notifications',      icon: <Bell size={15} /> },
     ]
   },
   {
     section: 'Jobs', icon: <Briefcase size={17} />,
     items: [
-      { name: 'Job Listings', path: '/jobs', icon: <Briefcase size={15} /> },
-      { name: 'My Applications', path: '/jobs/applications', icon: <Briefcase size={15} /> },
-      { name: 'Recommended Jobs', path: '/jobs/recommended', icon: <Briefcase size={15} /> },
+      { name: 'Job Listings',      path: '/jobs',              icon: <Briefcase size={15} /> },
+      { name: 'My Applications',   path: '/jobs/applications', icon: <Briefcase size={15} /> },
+      { name: 'Recommended Jobs',  path: '/jobs/recommended',  icon: <Briefcase size={15} /> },
     ]
   },
   {
     section: 'Learning', icon: <BookOpen size={17} />,
     items: [
-      { name: 'Courses', path: '/courses', icon: <BookOpen size={15} /> },
-      { name: 'My Courses', path: '/courses/my-courses', icon: <BookOpen size={15} /> },
-      { name: 'Quizzes', path: '/assessments/quiz', icon: <Edit3 size={15} /> },
+      { name: 'Courses',    path: '/courses',           icon: <BookOpen size={15} /> },
+      { name: 'My Courses', path: '/courses/my-courses',icon: <BookOpen size={15} /> },
+      { name: 'Quizzes',   path: '/assessments/quiz',      icon: <Edit3 size={15} /> },
       { name: 'Analytics', path: '/assessments/analytics', icon: <Activity size={15} /> },
-      { name: 'Points Overview', path: '/gamification', icon: <Award size={15} /> },
-      { name: 'Leaderboard', path: '/gamification/leaderboard', icon: <Award size={15} /> },
+      { name: 'Points Overview', path: '/gamification',            icon: <Award size={15} /> },
+      { name: 'Leaderboard',     path: '/gamification/leaderboard',icon: <Award size={15} /> },
     ]
   },
   {
     section: 'Events', icon: <Calendar size={17} />,
     items: [
-      { name: 'Events Listing', path: '/events', icon: <Calendar size={15} /> },
-      { name: 'My Events', path: '/events/my-events', icon: <Calendar size={15} /> },
-    ]
-  },
-  {
-    section: 'Settings', icon: <Settings size={17} />,
-    items: [
-      { name: 'Account Settings', path: '/settings', icon: <Settings size={15} /> },
-      { name: 'Privacy', path: '/settings/privacy', icon: <Settings size={15} /> },
-      { name: 'Password', path: '/settings/password', icon: <Settings size={15} /> },
+      { name: 'Events Listing', path: '/events',           icon: <Calendar size={15} /> },
+      { name: 'My Events',      path: '/events/my-events', icon: <Calendar size={15} /> },
     ]
   },
 ];
@@ -104,26 +89,37 @@ const Dropdown: React.FC<DropdownProps> = ({ group, activePath, onClose, style }
       {group.section}
     </div>
 
-    {group.items.map((item, i) => {
-      const isActive = activePath === item.path;
-      return (
-        <Link
-          key={i}
-          to={item.path}
-          onClick={onClose}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            padding: '10px 12px',
-            borderRadius: '10px',
-            textDecoration: 'none',
-            color: isActive ? '#c8102e' : '#334155',
-            background: isActive ? '#fff1f1' : 'transparent',
-            fontWeight: isActive ? 600 : 400,
-            fontSize: '14px',
-            transition: 'all 0.15s',
-          }}
+      {group.items.map((item, i) => {
+        const isExact = activePath === item.path;
+        const isSubPath = activePath.startsWith(item.path + '/') || activePath.startsWith(item.path + '?');
+        
+        // In the Jobs group, /jobs matches /jobs/1, /jobs/apply, etc.
+        // But /jobs/applications and /jobs/recommended are separate items.
+        // So we only count it as active if it's an exact match OR it's a subpath AND no other item in the group is an exact/subpath match.
+        const otherMatches = group.items.filter(other => 
+          other.path !== item.path && 
+          (activePath === other.path || activePath.startsWith(other.path + '/') || activePath.startsWith(other.path + '?'))
+        );
+        
+        const isActive = isExact || (isSubPath && otherMatches.length === 0);
+        
+        return (
+          <Link
+            key={i}
+            to={item.path}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              padding: '10px 12px',
+              borderRadius: '10px',
+              textDecoration: 'none',
+              color: isActive ? '#c8102e' : '#334155',
+              background: isActive ? '#fff1f1' : 'transparent',
+              fontWeight: isActive ? 600 : 400,
+              fontSize: '14px',
+              transition: 'all 0.15s',
+            }}
           onMouseEnter={e => {
             if (!isActive) (e.currentTarget as HTMLElement).style.background = '#f8fafc';
           }}
@@ -131,7 +127,6 @@ const Dropdown: React.FC<DropdownProps> = ({ group, activePath, onClose, style }
             if (!isActive) (e.currentTarget as HTMLElement).style.background = 'transparent';
           }}
         >
-          <span style={{ color: isActive ? '#c8102e' : '#64748b', flexShrink: 0 }}>{item.icon}</span>
           {item.name}
         </Link>
       );
@@ -148,14 +143,22 @@ interface NavButtonProps {
 }
 
 const NavButton: React.FC<NavButtonProps> = ({ group, activePath, isOpen, onClick }) => {
-  const hasActive = group.items.some(i => activePath === i.path);
+  const navigate = useNavigate();
+  const hasActive = group.items.some(item => {
+    const isExact = activePath === item.path;
+    const isSubPath = activePath.startsWith(item.path + '/') || activePath.startsWith(item.path + '?');
+    return isExact || isSubPath;
+  });
   const ref = useRef<HTMLButtonElement>(null);
+  const isSingle = group.items.length === 1;
 
   return (
     <button
       ref={ref}
       onClick={() => {
-        if (ref.current) {
+        if (isSingle) {
+          navigate(group.items[0].path);
+        } else if (ref.current) {
           onClick(ref.current.getBoundingClientRect());
         }
       }}
@@ -167,7 +170,7 @@ const NavButton: React.FC<NavButtonProps> = ({ group, activePath, isOpen, onClic
         borderRadius: '12px',
         border: 'none',
         background: isOpen ? '#fff1f1' : hasActive ? '#fff1f1' : 'transparent',
-        color: hasActive || isOpen ? '#c8102e' : '#334155',
+        color: hasActive || isOpen ? '#c8102e' : '#000000',
         fontWeight: hasActive || isOpen ? 700 : 500,
         fontSize: '13.5px',
         cursor: 'pointer',
@@ -176,17 +179,7 @@ const NavButton: React.FC<NavButtonProps> = ({ group, activePath, isOpen, onClic
         flexShrink: 0,
       }}
     >
-      <span style={{ color: hasActive || isOpen ? '#c8102e' : '#64748b' }}>{group.icon}</span>
       {group.section}
-      <ChevronDown
-        size={13}
-        style={{
-          marginLeft: '2px',
-          transform: isOpen ? 'rotate(180deg)' : 'none',
-          transition: '0.2s',
-          opacity: 0.6
-        }}
-      />
     </button>
   );
 };
@@ -200,6 +193,7 @@ interface MobileMenuProps {
 }
 
 const MobileMenu: React.FC<MobileMenuProps> = ({ activePath, onClose, onLogout, user }) => {
+  const navigate = useNavigate();
   const [expanded, setExpanded] = useState<string | null>(null);
 
   return (
@@ -234,24 +228,39 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ activePath, onClose, onLogout, 
             return (
               <div key={gi}>
                 <button
-                  onClick={() => setExpanded(isExp ? null : group.section)}
+                  onClick={() => {
+                    if (group.items.length === 1) {
+                      navigate(group.items[0].path);
+                      onClose();
+                    } else {
+                      setExpanded(isExp ? null : group.section);
+                    }
+                  }}
                   style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 20px', background: 'none', border: 'none', cursor: 'pointer', color: hasActive ? '#c8102e' : '#334155', fontWeight: hasActive ? 700 : 500, fontSize: '14px' }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ color: hasActive ? '#c8102e' : '#64748b' }}>{group.icon}</span>
                     {group.section}
                   </div>
-                  <motion.span animate={{ rotate: isExp ? 180 : 0 }} style={{ display: 'flex', color: '#94a3b8' }}><ChevronDown size={14} /></motion.span>
+
                 </button>
                 <AnimatePresence>
-                  {isExp && (
+                  {isExp && group.items.length > 1 && (
                     <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} style={{ overflow: 'hidden' }}>
-                      {group.items.map((item, ii) => (
-                        <Link key={ii} to={item.path} onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 20px 9px 44px', textDecoration: 'none', color: activePath === item.path ? '#c8102e' : '#475569', background: activePath === item.path ? '#fff1f1' : 'transparent', fontWeight: activePath === item.path ? 600 : 400, fontSize: '13.5px' }}>
-                          <span style={{ color: activePath === item.path ? '#c8102e' : '#94a3b8' }}>{item.icon}</span>
-                          {item.name}
-                        </Link>
-                      ))}
+                      {group.items.map((item, ii) => {
+                        const isExact = activePath === item.path;
+                        const isSubPath = activePath.startsWith(item.path + '/') || activePath.startsWith(item.path + '?');
+                        const otherMatches = group.items.filter(other => 
+                          other.path !== item.path && 
+                          (activePath === other.path || activePath.startsWith(other.path + '/') || activePath.startsWith(other.path + '?'))
+                        );
+                        const isActive = isExact || (isSubPath && otherMatches.length === 0);
+                        
+                        return (
+                          <Link key={ii} to={item.path} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 20px 9px 44px', textDecoration: 'none', color: isActive ? '#c8102e' : '#475569', background: isActive ? '#fff1f1' : 'transparent', fontWeight: isActive ? 600 : 400, fontSize: '13.5px' }}>
+                            {item.name}
+                          </Link>
+                        );
+                      })}
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -261,7 +270,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ activePath, onClose, onLogout, 
         </div>
         <div style={{ padding: '16px 20px', borderTop: '1px solid #f1f5f9' }}>
           <button onClick={() => { onClose(); onLogout(); }} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontWeight: 600, fontSize: '14px' }}>
-            <LogOut size={18} /> Logout
+            Logout
           </button>
         </div>
       </div>
@@ -283,6 +292,13 @@ const MainLayout: React.FC = () => {
     const currentUser = getUser() as unknown as AuthUser;
     if (currentUser) setUserData(currentUser);
   }, []);
+
+  // Close everything on path change
+  useEffect(() => {
+    setOpenGroup(null);
+    setMobileOpen(false);
+    setProfileDropdownOpen(false);
+  }, [location.pathname]);
 
   // Close everything on click outside or scroll
   useEffect(() => {
@@ -320,75 +336,10 @@ const MainLayout: React.FC = () => {
     navigate('/login');
   };
 
-<<<<<<< HEAD
-  const menuItems = [
-    {
-      section: 'Dashboard', items: [
-        { name: 'Overview', path: '/dashboard', icon: <Home size={18} /> },
-        { name: 'Activity Feed', path: '/dashboard/activity', icon: <Activity size={18} /> },
-        { name: 'Notifications', path: '/notifications', icon: <Bell size={18} /> },
-      ]
-    },
-    {
-      section: 'Profile', items: [
-        { name: 'View Profile', path: '/profile', icon: <User size={18} /> },
-        { name: 'Edit Profile', path: '/profile/edit', icon: <Edit3 size={18} /> },
-      ]
-    },
-    {
-      section: 'Networking', items: [
-        { name: 'Directory', path: '/networking', icon: <Users size={18} /> },
-        { name: 'Connections', path: '/networking/connections', icon: <Users size={18} /> },
-      ]
-    },
-    {
-      section: 'Jobs', items: [
-        { name: 'Job Listings', path: '/jobs', icon: <Briefcase size={18} /> },
-        { name: 'My Applications', path: '/jobs/applications', icon: <Briefcase size={18} /> },
-        { name: 'Recommended Jobs', path: '/jobs/recommended', icon: <Briefcase size={18} /> },
-      ]
-    },
-    {
-      section: 'Learning', items: [
-        { name: 'Courses', path: '/courses', icon: <BookOpen size={18} /> },
-        { name: 'My Courses', path: '/courses/my-courses', icon: <BookOpen size={18} /> },
-      ]
-    },
-    {
-      section: 'Assessments', items: [
-        { name: 'Assessment Center', path: '/assessments/quiz', icon: <Award size={18} /> },
-        { name: 'Analytics', path: '/assessments/analytics', icon: <Activity size={18} /> },
-      ]
-    },
-    {
-      section: 'Gamification', items: [
-        { name: 'Points Overview', path: '/gamification', icon: <Award size={18} /> },
-        { name: 'Leaderboard', path: '/gamification/leaderboard', icon: <Award size={18} /> },
-      ]
-    },
-    {
-      section: 'Events', items: [
-        { name: 'Events Listing', path: '/events', icon: <Calendar size={18} /> },
-        { name: 'My Events', path: '/events/my-events', icon: <Calendar size={18} /> },
-      ]
-    },
-    {
-      section: 'Social', items: [
-        { name: 'Feed', path: '/social/feed', icon: <MessageSquare size={18} /> },
-      ]
-    },
-    {
-      section: 'Settings', items: [
-        { name: 'Account Settings', path: '/settings', icon: <Settings size={18} /> },
-      ]
-    }
-  ];
-=======
   const initials = user ? user.full_name?.charAt(0).toUpperCase() : 'U';
->>>>>>> b5a55a284d9dbff01cfc419439be311dfe2096da
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#f4f6f8', overflow: 'hidden', fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#f4f6f8', overflow: 'hidden', fontFamily: "'Montserrat', sans-serif" }}>
 
       {/* ── TOP NAVBAR ── */}
       <header style={{
@@ -410,17 +361,16 @@ const MainLayout: React.FC = () => {
           <img src={nestMainLogo} alt="NeST Digital" style={{ height: '32px', objectFit: 'contain' }} />
         </Link>
 
-        {/* Divider */}
-        <div style={{ width: '1px', height: '28px', background: '#e2e8f0', flexShrink: 0, margin: '0 4px' }} />
+        {/* Spacer to push nav to right */}
+        <div style={{ flex: 1 }} />
 
         {/* Sidewise Scrolling Nav */}
-        <nav
+        <nav 
           ref={navRef}
           style={{
             display: 'flex',
             alignItems: 'center',
             gap: '4px',
-            flex: 1,
             overflowX: 'auto',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
@@ -483,7 +433,7 @@ const MainLayout: React.FC = () => {
               }}
               style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '5px 12px', borderRadius: '12px', transition: '0.15s', background: profileDropdownOpen ? '#f8fafc' : 'transparent' }}
               onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
-              onMouseLeave={e => { if (!profileDropdownOpen) e.currentTarget.style.background = 'transparent' }}
+              onMouseLeave={e => { if(!profileDropdownOpen) e.currentTarget.style.background = 'transparent' }}
             >
               {user?.profile_picture ? (
                 <img src={user.profile_picture} alt={user.full_name} style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #f1f5f9' }} />
@@ -493,10 +443,26 @@ const MainLayout: React.FC = () => {
                 </div>
               )}
               <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1, userSelect: 'none' }}>
-                <span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>{user?.full_name || 'Guest'}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>{user?.full_name || 'Guest'}</span>
+                  {user?.status === 'open_to_work' && (
+                    <span style={{ 
+                      fontSize: '9px', 
+                      background: '#ebfbee', 
+                      color: '#2b8a3e', 
+                      padding: '2px 6px', 
+                      borderRadius: '10px', 
+                      fontWeight: 700,
+                      border: '1px solid #d3f9d8',
+                      letterSpacing: '0.2px'
+                    }}>
+                      OPEN TO WORK
+                    </span>
+                  )}
+                </div>
                 <span style={{ fontSize: '11px', color: '#94a3b8' }}>{user?.user_type || 'User'}</span>
               </div>
-              <ChevronDown size={14} color="#94a3b8" style={{ transform: profileDropdownOpen ? 'rotate(180deg)' : 'none', transition: '0.2s' }} />
+
             </div>
 
             <AnimatePresence>
@@ -520,14 +486,14 @@ const MainLayout: React.FC = () => {
                   }}
                 >
                   <Link to="/profile" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', textDecoration: 'none', color: '#334155', fontSize: '14px', transition: '0.15s' }} onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                    <User size={16} /> View Profile
+                    View Profile
                   </Link>
                   <Link to="/settings" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', textDecoration: 'none', color: '#334155', fontSize: '14px', transition: '0.15s' }} onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                    <Settings size={16} /> Account Settings
+                    Account Settings
                   </Link>
                   <div style={{ height: '1px', background: '#f1f5f9', margin: '4px 8px' }} />
                   <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', width: '100%', textAlign: 'left', color: '#ef4444', fontSize: '14px', fontWeight: 600, transition: '0.15s' }} onMouseEnter={e => (e.currentTarget.style.background = '#fff1f1')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                    <LogOut size={16} /> Logout
+                    Logout
                   </button>
                 </motion.div>
               )}

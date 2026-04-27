@@ -89,7 +89,10 @@ async function apiRequest<T = unknown>(
         const retryResponse = await fetch(url, { ...options, headers });
         return await retryResponse.json();
       } else {
-        clearTokens();
+        const token = getAccessToken();
+        if (token && token !== 'mock_token' && token !== 'social_mock_token') {
+          clearTokens();
+        }
       }
     }
 
@@ -150,6 +153,7 @@ export interface AuthUser {
   user_type: string;
   role: string;
   profile_picture?: string | null;
+  status?: string;
 }
 
 export interface AuthData {
@@ -227,17 +231,11 @@ export const adminApi = {
   getAllUsers: () => 
     apiRequest<{ users: any[] }>('/admin/users'),
 
-  getUserById: (userId: string) => 
-    apiRequest<{ user: any }>(`/admin/users/${userId}`),
-
   createUser: (data: any) => 
     apiRequest('/admin/users', { method: 'POST', body: JSON.stringify(data) }),
 
   updateUser: (userId: string, data: any) => 
     apiRequest(`/admin/users/${userId}`, { method: 'PATCH', body: JSON.stringify(data) }),
-
-  deleteUser: (userId: string) => 
-    apiRequest(`/admin/users/${userId}`, { method: 'DELETE' }),
 
   getInterns: () => 
     apiRequest<{ users: any[] }>('/admin/users?type=Intern'),
@@ -259,18 +257,6 @@ export const adminApi = {
 
   getApplications: () => 
     apiRequest<{ applications: any[] }>('/admin/applications'),
-
-  getEvents: () =>
-    apiRequest<{ events: any[] }>('/admin/events'),
-
-  addEvent: (data: any) =>
-    apiRequest('/admin/events', { method: 'POST', body: JSON.stringify(data) }),
-
-  getPendingAssessments: () =>
-    apiRequest<{ pending_assessments: any[] }>('/admin/assessments/pending'),
-
-  reviewAssessment: (attemptId: string, data: { action: 'approve' | 'reject', stage: number, feedback?: string, score?: number }) =>
-    apiRequest(`/admin/assessments/${attemptId}/review`, { method: 'PATCH', body: JSON.stringify(data) }),
 };
 
 // ── Courses API ──
@@ -281,40 +267,6 @@ export const coursesApi = {
 
   getCourseById: (courseId: string) =>
     apiRequest(`/courses/${courseId}`, { method: 'GET' }),
-
-  enroll: (courseId: string) =>
-    apiRequest(`/assessments/enroll/${courseId}`, { method: 'POST' }),
-
-  getMyCourses: () =>
-    apiRequest<{ courses: any[] }>('/assessments/my-courses', { method: 'GET' }),
-
-  updateProgress: (courseId: string, progress: number) =>
-    apiRequest('/assessments/update-progress', { 
-      method: 'POST', 
-      body: JSON.stringify({ course_id: courseId, progress }) 
-    }),
-
-  addCourse: (data: any) =>
-    apiRequest('/admin/courses', { method: 'POST', body: JSON.stringify(data) }),
-
-  updateCourse: (id: string, data: any) =>
-    apiRequest(`/admin/courses/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-
-  deleteCourse: (id: string) =>
-    apiRequest(`/admin/courses/${id}`, { method: 'DELETE' }),
-};
-
-// ── Assessments API ──
-
-export const assessmentsApi = {
-  getAssessmentStatus: (courseId: string) =>
-    apiRequest<{ attempt: any }>(`/assessments/status/${courseId}`, { method: 'GET' }),
-
-  submitStage: (courseId: string, stage: number, data: any) =>
-    apiRequest(`/assessments/submit/${courseId}/${stage}`, { 
-      method: 'POST', 
-      body: JSON.stringify(data) 
-    }),
 };
 
 // ── Jobs API ──
@@ -325,22 +277,6 @@ export const jobsApi = {
 
   getJobById: (jobId: string) =>
     apiRequest(`/jobs/${jobId}`, { method: 'GET' }),
-};
-
-// ── Applications API ──
-
-export const applicationsApi = {
-  applyForJob: (data: { job_id: string; cover_letter?: string; resume_url?: string }) =>
-    apiRequest('/applications', { 
-      method: 'POST', 
-      body: JSON.stringify(data) 
-    }),
-
-  getMyApplications: () =>
-    apiRequest<{ applications: any[] }>('/applications/me', { method: 'GET' }),
-
-  withdrawApplication: (appId: string) =>
-    apiRequest(`/applications/${appId}`, { method: 'DELETE' }),
 };
 
 // ── Events API ──
@@ -381,18 +317,21 @@ export const socialApi = {
     apiRequest(`/social/posts/${postId}/comments`, { method: 'POST', body: JSON.stringify({ text }) }),
 };
 
-// ── Notifications API ──
+// ── Recruiter API ──
 
-export const notificationsApi = {
-  getNotifications: (page: number = 1, perPage: number = 30) =>
-    apiRequest(`/notifications?page=${page}&per_page=${perPage}`, { method: 'GET' }),
+export const recruiterApi = {
+  getApplications: () => 
+    apiRequest<{ applications: any[] }>('/recruiter/applications'),
 
-  markAsRead: (notificationId: string) =>
-    apiRequest(`/notifications/${notificationId}/read`, { method: 'PATCH' }),
+  getMyJobs: () => 
+    apiRequest<{ jobs: any[] }>('/recruiter/jobs'),
 
-  markAllAsRead: () =>
-    apiRequest('/notifications/read-all', { method: 'PATCH' }),
+  deleteJob: (jobId: string) => 
+    apiRequest(`/recruiter/jobs/${jobId}`, { method: 'DELETE' }),
 
-  deleteNotification: (notificationId: string) =>
-    apiRequest(`/notifications/${notificationId}`, { method: 'DELETE' }),
+  addJob: (data: any) => 
+    apiRequest('/recruiter/jobs', { method: 'POST', body: JSON.stringify(data) }),
+
+  getStats: () => 
+    apiRequest<{ stats: any }>('/recruiter/stats', { method: 'GET' }),
 };

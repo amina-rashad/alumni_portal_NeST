@@ -37,6 +37,7 @@ def _serialize_user(user: dict) -> dict:
         "is_email_verified": user.get("is_email_verified", False),
         "created_at": user.get("created_at", "").isoformat() if user.get("created_at") else None,
         "last_login": user.get("last_login", "").isoformat() if user.get("last_login") else None,
+        "status": user.get("status", "none"), # e.g. "open_to_work", "hiring", "none"
     }
 
 
@@ -75,7 +76,7 @@ def update_profile():
     allowed_fields = [
         "full_name", "phone", "batch", "specialization",
         "bio", "linkedin_url", "skills", "profile_picture",
-        "resume_url", "resume_data", "is_resume_created"
+        "resume_url", "resume_data", "is_resume_created", "status"
     ]
 
     update_data = {}

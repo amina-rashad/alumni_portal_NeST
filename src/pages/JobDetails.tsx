@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, MapPin, Briefcase, Clock, Building, CheckCircle2, Star, Share2, Upload } from 'lucide-react';
+import { ArrowLeft, MapPin, Briefcase, Clock, Building, CheckCircle2, Star, Share2, Upload, Check } from 'lucide-react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { jobsApi } from '../services/api';
 
 // Comprehensive mock data covering the jobs from JobListings
 const DETAILED_JOBS: Record<string, any> = {
@@ -65,67 +64,14 @@ const DETAILED_JOBS: Record<string, any> = {
 const JobDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [job, setJob] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [isApplied, setIsApplied] = useState(false);
+  
+  // Use mock data for ID 1 if ID doesn't exist to prevent crashing on demo
+  const job = id && DETAILED_JOBS[id] ? DETAILED_JOBS[id] : DETAILED_JOBS['1'];
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    const fetchJobDetails = async () => {
-      if (!id) return;
-      
-      // If it's a mock ID (has a hyphen), use mock data
-      if (id.includes('-') || id.length < 5) {
-        setJob(DETAILED_JOBS[id] || DETAILED_JOBS['1']);
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      const res = await jobsApi.getJobById(id);
-      if (res.success && res.data && (res.data as any).job) {
-        const j = (res.data as any).job;
-        
-        // Map backend to UI format
-        let desc = j.description || '';
-        let dept = 'Engineering';
-        const deptMatch = desc.match(/^\[(.*?)\]/);
-        if (deptMatch) {
-          dept = deptMatch[1];
-          desc = desc.replace(/^\[.*?\]\s*/, ''); 
-          desc = desc.replace(/^\[.*?\]\s*/, ''); 
-        }
-
-        setJob({
-          id: j.id,
-          title: j.title,
-          department: dept,
-          location: j.location,
-          type: j.type,
-          experience: j.experience_level || 'Not specified',
-          postedAt: j.createdAt ? new Date(j.createdAt).toLocaleDateString() : 'Recently',
-          salary: j.salary,
-          aboutContext: desc,
-          responsibilities: j.requirements || [],
-          requirements: j.requirements || [], // Backend uses requirements for both for now
-          skills: j.skills_required || [],
-          urgent: true
-        });
-      } else {
-        // Fallback for demo
-        setJob(DETAILED_JOBS['1']);
-      }
-      setLoading(false);
-    };
-    fetchJobDetails();
-  }, [id]);
-
-  if (loading || !job) {
-    return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8f9fa' }}>
-        <p style={{ color: '#64748b' }}>Consulting NeST Talents database...</p>
-      </div>
-    );
-  }
+  }, []);
 
   return (
     <div style={{ minHeight: '100vh', padding: '4rem 2rem', background: '#f8f9fa', color: '#1a1a1a', fontFamily: 'Inter, sans-serif' }}>
@@ -133,14 +79,7 @@ const JobDetails: React.FC = () => {
         
         {/* Navigation & Actions */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
-          <Link 
-            to="/jobs" 
-            style={{ display: 'inline-flex', alignItems: 'center', color: '#666666', fontSize: '0.95rem', fontWeight: 500, transition: 'color 0.3s' }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--primary)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = '#666666'; }}
-          >
-            <ArrowLeft size={18} style={{ marginRight: '0.5rem' }} /> Back to Jobs
-          </Link>
+<div></div>
           <div style={{ display: 'flex', gap: '1rem' }}>
             <button 
               style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', border: '1px solid #ced4da', background: '#ffffff', padding: '0.5rem 1rem', borderRadius: '8px', color: '#4a4a4a', fontWeight: 500, cursor: 'pointer', transition: 'background 0.2s' }}
@@ -216,10 +155,11 @@ const JobDetails: React.FC = () => {
               </div>
             </div>
             <button 
-              onClick={() => navigate(`/jobs/${job.id}/apply`)}
+              onClick={() => setIsApplied(true)}
+              disabled={isApplied}
               style={{
-                background: 'var(--primary)',
-                color: 'white',
+                background: isApplied ? '#e3fbee' : 'var(--primary)',
+                color: isApplied ? '#2b8a3e' : 'white',
                 padding: '1rem 3rem',
                 borderRadius: '8px',
                 fontSize: '1.1rem',
@@ -227,23 +167,35 @@ const JobDetails: React.FC = () => {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.5rem',
-                cursor: 'pointer',
-                border: 'none',
-                transition: 'background 0.3s, transform 0.2s, box-shadow 0.3s',
-                boxShadow: '0 4px 12px rgba(200, 16, 46, 0.2)'
+                cursor: isApplied ? 'default' : 'pointer',
+                border: isApplied ? '1px solid #b2f2bb' : 'none',
+                transition: 'all 0.3s',
+                boxShadow: isApplied ? 'none' : '0 4px 12px rgba(200, 16, 46, 0.2)'
               }}
               onMouseEnter={(e) => { 
-                e.currentTarget.style.background = 'var(--primary-hover)'; 
-                e.currentTarget.style.transform = 'translateY(-2px)'; 
-                e.currentTarget.style.boxShadow = '0 6px 16px rgba(200, 16, 46, 0.3)';
+                if (!isApplied) {
+                  e.currentTarget.style.background = 'var(--primary-hover)'; 
+                  e.currentTarget.style.transform = 'translateY(-2px)'; 
+                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(200, 16, 46, 0.3)';
+                }
               }}
               onMouseLeave={(e) => { 
-                e.currentTarget.style.background = 'var(--primary)'; 
-                e.currentTarget.style.transform = 'translateY(0)'; 
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(200, 16, 46, 0.2)';
+                if (!isApplied) {
+                  e.currentTarget.style.background = 'var(--primary)'; 
+                  e.currentTarget.style.transform = 'translateY(0)'; 
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(200, 16, 46, 0.2)';
+                }
               }}
             >
-              Apply Now <Upload size={18} />
+              {isApplied ? (
+                <>
+                  <Check size={18} /> Applied
+                </>
+              ) : (
+                <>
+                  Apply Now <Upload size={18} />
+                </>
+              )}
             </button>
           </div>
         </motion.div>
