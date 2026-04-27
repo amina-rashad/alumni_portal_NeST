@@ -200,9 +200,28 @@ const Home: React.FC = () => {
             transition={{ duration: 0.9 }}
             className="hero-text-area"
           >
-            <motion.span className="hero-badge" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
-              🚀 Talent Engagement &amp; Alumni Tracking Portal
-            </motion.span>
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }} 
+              animate={{ opacity: 1, x: 0 }} 
+              transition={{ delay: 0.3 }}
+              style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '1.5rem' }}
+            >
+              <span style={{ 
+                fontFamily: 'Sora, sans-serif', 
+                fontWeight: 800, 
+                fontSize: '1.6rem', 
+                color: '#fff', 
+                letterSpacing: '-0.04em' 
+              }}>NDA</span>
+              <span style={{ 
+                fontFamily: 'Inter, sans-serif', 
+                fontWeight: 400, 
+                fontSize: '1.6rem', 
+                color: 'rgba(255, 255, 255, 0.75)', 
+                letterSpacing: '-0.02em' 
+              }}>Connect</span>
+              <div style={{ width: '6px', height: '6px', backgroundColor: '#c8102e', borderRadius: '50%', marginTop: 'auto', marginBottom: '8px', marginLeft: '2px' }} />
+            </motion.div>
             <h1 className="hero-title">TRACK. ENGAGE. HIRE.</h1>
             <p className="hero-subtitle">
               A centralized platform to maintain long-term relationships with alumni, interns,
@@ -298,7 +317,7 @@ const Home: React.FC = () => {
             <span className="section-tag">Our Vision</span>
             <h2>Bridging the Gap Between Talent &amp; Opportunity</h2>
             <p>
-              The Talent Engagement &amp; Alumni Tracking Portal is designed to maintain lifelong
+              <strong>NDA Connect</strong> is designed to maintain lifelong
               connections. Whether you're an alumnus sharing wisdom or a trainee looking for your
               first break, we provide the platform to thrive.
             </p>
