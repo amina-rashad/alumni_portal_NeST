@@ -1,17 +1,33 @@
 import React, { useEffect, useState } from 'react';
-import { motion, type Variants } from 'framer-motion';
+import { motion, type Variants, AnimatePresence } from 'framer-motion';
 import { 
   Briefcase, Calendar, Users, Star, 
   Activity, Image as ImageIcon, MapPin, 
   Clock, MessageSquare, ThumbsUp, Share2,
-  Award, ChevronRight,
+  Award, ChevronRight, ChevronLeft,
   MoreHorizontal, FileText, ArrowRight,
-  BrainCircuit, BookOpen
+  BrainCircuit, BookOpen, Heart, ShieldCheck, Sparkles
 } from 'lucide-react';
 import { getUser, coursesApi, jobsApi, type AuthUser } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 
+// Premium Job Backgrounds
+import architectBg from '../assets/jobs/software_architect.png';
+import aiBg from '../assets/jobs/ai_engineer.png';
+import cyberBg from '../assets/jobs/cybersecurity.png';
+import designerBg from '../assets/jobs/designer.png';
+import devopsBg from '../assets/jobs/devops_sre.png';
+import bannerImg from '../assets/dashboard_banner.png';
+
 // --- MOCK DATA ---
+const dummyJobs = [
+  { id: 'd1', title: 'Principal Software Architect', company: 'NeST Digital', location: 'Trivandrum, KL', salary: '₹35L - ₹50L', logo: 'https://nestdigital.io/wp-content/uploads/2022/04/nest-digital-logo.png', type: 'Full-time', tags: ['Engineering', 'Leadership'], backgroundImage: architectBg },
+  { id: 'd2', title: 'Senior AI Research Engineer', company: 'NeST AI Labs', location: 'Kochi, KL', salary: '₹30L - ₹45L', logo: 'https://nestdigital.io/wp-content/uploads/2022/04/nest-digital-logo.png', type: 'Hybrid', tags: ['AI/ML', 'Research'], backgroundImage: aiBg },
+  { id: 'd3', title: 'Infrastructure Security Lead', company: 'NeST CyberSec', location: 'Bangalore, KA', salary: '₹32L - ₹48L', logo: 'https://nestdigital.io/wp-content/uploads/2022/04/nest-digital-logo.png', type: 'Full-time', tags: ['Security', 'Cloud'], backgroundImage: cyberBg },
+  { id: 'd4', title: 'Product Experience Designer', company: 'NeST Digital', location: 'Remote', salary: '₹25L - ₹38L', logo: 'https://nestdigital.io/wp-content/uploads/2022/04/nest-digital-logo.png', type: 'Remote', tags: ['UI/UX', 'Design'], backgroundImage: designerBg },
+  { id: 'd5', title: 'DevOps & Site Reliability Engineer', company: 'NeST Digital', location: 'Trivandrum, KL', salary: '₹28L - ₹42L', logo: 'https://nestdigital.io/wp-content/uploads/2022/04/nest-digital-logo.png', type: 'Full-time', tags: ['DevOps', 'Cloud'], backgroundImage: devopsBg }
+];
+
 const feed = [
   { 
     id: 1, 
@@ -32,17 +48,12 @@ const feed = [
     image: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=1200&auto=format&fit=crop' 
   }
 ];
-import bannerImg from '../assets/dashboard_banner.png';
 
 const recommendations = [
   { name: 'Priya Sharma', title: 'Product Manager @ Google', avatar: 'https://i.pravatar.cc/150?img=9', mutual: 12 },
   { name: 'Michael Chen', title: 'Senior DevOps Engineer', avatar: 'https://i.pravatar.cc/150?img=12', mutual: 8 },
   { name: 'Emily Davis', title: 'UX Research Lead @ Meta', avatar: 'https://i.pravatar.cc/150?img=1', mutual: 24 }
 ];
-
-// Global dummy jobs removed - fetching from database!
-
-// Global dummy courses removed - fetching from database!
 
 const events = [
   { id: 1, title: 'Annual Alumni Tech Summit', date: 'Oct 15', time: '09:00 AM PST', attendees: 450, color: '#0F172A' },
@@ -55,7 +66,6 @@ const quizzes = [
 ];
 
 // --- ANIMATION VARIANTS ---
-// Premium sophisticated spring
 const smoothSpring = { type: 'spring' as const, stiffness: 100, damping: 20, mass: 1 };
 
 const sectionVariants: Variants = {
@@ -81,10 +91,12 @@ const Dashboard: React.FC = () => {
   const [user, setUserData] = useState<AuthUser | null>(null);
   const [courses, setCourses] = useState<any[]>([]);
   const [jobs, setJobs] = useState<any[]>([]);
-  const [likedPosts, setLikedPosts] = useState<number[]>([]);
+  const [likedPosts, setLikedPosts] = useState<Set<number>>(new Set());
+  const [isHovered, setIsHovered] = useState(false);
   const navigate = useNavigate();
 
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedJob, setSelectedJob] = useState<any | null>(null);
 
   useEffect(() => {
     // Load the authenticated user from local storage
@@ -107,31 +119,49 @@ const Dashboard: React.FC = () => {
     };
     fetchCourses();
     
-    // Fetch live jobs
+    // Fetch live jobs and filter by user profile + NeST focus
     const fetchJobs = async () => {
       try {
         const res = await jobsApi.getAllJobs();
         const data = res.data as any;
-        if (res.success && data && data.jobs) {
-          setJobs(data.jobs);
+        let filteredJobs = [];
+        
+        if (res.success && data && data.jobs && data.jobs.length > 0) {
+          filteredJobs = data.jobs.filter((j: any) => 
+            j.company.toLowerCase().includes('nest') || 
+            (user && j.title.toLowerCase().includes(user.full_name.split(' ')[0].toLowerCase())) // Mock profile matching
+          );
+        }
+        
+        if (filteredJobs.length === 0) {
+           // Fallback to elite NeST dummy jobs that match typical alumni profiles
+           setJobs(dummyJobs);
+        } else {
+           setJobs(filteredJobs);
         }
       } catch (err) {
         console.error("Failed to load jobs", err);
+        setJobs(dummyJobs);
       }
     };
     fetchJobs();
-  }, []);
+  }, [user]);
 
-  // Job Auto-Marquee Timer
+  const handleLike = (id: number) => {
+    setLikedPosts(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) newSet.delete(id);
+      else newSet.add(id);
+      return newSet;
+    });
+  };
+
+  const marqueeRef = React.useRef<HTMLDivElement>(null);
+
+  // Removed Marquee Motion logic for static morphological layout
   useEffect(() => {
-    if (jobs.length <= 1) return;
-    
-    const timer = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % Math.min(jobs.length, 6));
-    }, 5500); // 5.5s cycle (5s pause + 0.5s transition)
-    
-    return () => clearInterval(timer);
-  }, [jobs]);
+    return () => {};
+  }, [jobs, isHovered]);
 
   return (
     <div className="font-sans" style={{ 
@@ -167,49 +197,83 @@ const Dashboard: React.FC = () => {
           position: relative;
         }
 
-        /* Ultra-Luxury Job Splash Card */
-        .job-splash-card {
-           min-width: 650px;
-           height: 320px;
-           background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.8) 100%);
-           border-radius: 32px;
-           padding: 2.5rem;
-           display: flex;
-           flex-direction: column;
-           justify-content: space-between;
-           border: 1px solid rgba(255, 255, 255, 0.6);
-           box-shadow: 0 15px 45px -10px rgba(0, 0, 0, 0.06);
-           transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
-           position: relative;
-           overflow: hidden;
+         .job-marquee-container {
+            width: 100%;
+            overflow: hidden; 
+            padding: 2rem 0 4rem;
+            position: relative;
+            cursor: grab;
+         }
+         .job-marquee-container:active {
+            cursor: grabbing;
+         }
+         .marquee-track {
+            display: flex;
+            gap: 2.5rem;
+            width: max-content;
+         }
+         .job-splash-card {
+            min-width: 320px;
+            height: 280px;
+            background: #0f172a;
+            border-radius: 32px;
+            padding: 1.75rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+            position: relative;
+            overflow: hidden;
+            color: white;
+            z-index: 1;
         }
-        .job-splash-card:hover {
-           transform: scale(1.02);
-           box-shadow: 0 30px 70px -15px rgba(211, 47, 47, 0.15);
-           border-color: rgba(211, 47, 47, 0.2);
+        .job-card-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.6) 50%, rgba(15, 23, 42, 0.9) 100%);
+            z-index: 2;
+            transition: opacity 0.5s;
         }
-        .job-marquee-container {
-           width: 100%;
-           overflow: hidden; /* We handle scrolling via translateX */
-           padding: 1rem 0 3rem;
-           position: relative;
+        .job-splash-card:hover .job-card-overlay {
+            opacity: 0.85;
         }
-        .marquee-track {
-           display: flex;
-           gap: 2.5rem;
-           transition: transform 0.8s cubic-bezier(0.65, 0, 0.35, 1);
+        .job-bg-image {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 1;
+            transition: transform 1.2s cubic-bezier(0.22, 1, 0.36, 1);
         }
-          box-shadow: 0 12px 40px -10px rgba(0, 0, 0, 0.08);
-          transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-          display: flex;
-          flex-direction: column;
-          gap: 1.5rem;
+        .job-splash-card:hover .job-bg-image {
+            transform: scale(1.1);
         }
-        .job-flash-card:hover {
-          transform: scale(1.03) translateY(-10px);
-          box-shadow: 0 30px 60px -12px rgba(211, 47, 47, 0.15);
-          border-color: rgba(211, 47, 47, 0.3);
-          background: #fff;
+        .job-card-content {
+            position: relative;
+            z-index: 3;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .job-splash-card::after {
+           content: "";
+           position: absolute;
+           top: -2px; left: -2px; right: -2px; bottom: -2px;
+           background: linear-gradient(45deg, #d32f2f, #3b82f6, #9a0007, #d32f2f);
+           background-size: 400%;
+           z-index: -1;
+           filter: blur(15px);
+           opacity: 0;
+           transition: opacity 0.5s;
+           border-radius: 36px;
+           animation: glow-rotate 20s linear infinite;
+        }
+        .job-splash-card:hover::after {
+           opacity: 0.4;
         }
 
         /* High-End Animated Noise */
@@ -502,82 +566,145 @@ const Dashboard: React.FC = () => {
              </button>
           </div>
 
-          <div className="job-marquee-container">
-            <motion.div 
-              className="marquee-track"
-              animate={{ x: -(currentIndex * (650 + 40)) }} /* Card width + gap */
-              style={{ paddingRight: '200px' }}
-            >
-              {jobs.length === 0 ? (
-                <p style={{ color: '#64748B', fontSize: '1.1rem', fontWeight: 500 }}>Curating career paths for your expertise...</p>
-              ) : jobs.slice(0, 10).map((job, i) => (
+          <div 
+            className="job-marquee-container" 
+            style={{ overflow: 'hidden', position: 'relative' }}
+          >
+             <div style={{ padding: '1rem 0' }}>
+               <div style={{ 
+                 display: 'grid', 
+                 gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', 
+                 gap: '2.5rem',
+                 width: '100%'
+               }}>
+                {jobs.map((job, i) => (
                   <motion.div 
-                    key={job.id || i} 
+                    layoutId={`card-${job.id}`}
+                    key={job.id || i}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    whileHover={{ scale: 1.02 }}
                     className="job-splash-card"
-                    onClick={() => navigate(`/jobs/${job.id}`)}
-                    style={{ cursor: 'pointer' }}
+                    style={{ minWidth: 'auto', width: '100%', cursor: 'pointer', height: '280px' }}
+                    onClick={() => setSelectedJob(job)}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div style={{ background: '#fff', border: '1px solid rgba(15,23,42,0.05)', padding: '1.25rem', borderRadius: '24px', boxShadow: '0 10px 20px rgba(0,0,0,0.04)' }}>
-                          {job.logo ? (
-                            <img src={job.logo} alt={job.company} style={{ width: '64px', height: '64px', objectFit: 'contain' }} />
-                          ) : (
-                            <div style={{ width: '64px', height: '64px', background: 'linear-gradient(135deg, #2D2254, #1a2652)', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 900, fontSize: '28px' }}>
-                              {(job.company || 'J').charAt(0).toUpperCase()}
-                            </div>
-                          )}
+                    <img 
+                      src={job.backgroundImage || architectBg} 
+                      className="job-bg-image" 
+                      alt="Job Background"
+                    />
+                    <div className="job-card-overlay" />
+                    
+                    <div className="job-card-content" style={{ position: 'relative', zIndex: 10 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <span style={{ 
+                            background: 'rgba(255, 255, 255, 0.15)', 
+                            color: '#fff', 
+                            padding: '8px 18px', 
+                            borderRadius: '99px', 
+                            fontSize: '0.75rem', 
+                            fontWeight: 900, 
+                            textTransform: 'uppercase', 
+                            letterSpacing: '0.08em',
+                            backdropFilter: 'blur(10px)',
+                            border: '1px solid rgba(255,255,255,0.1)'
+                          }}>
+                            NeST Internal
+                          </span>
+                      </div>
+  
+                      <div>
+                        <h4 style={{ margin: '0 0 0.5rem', fontSize: '1.6rem', fontWeight: 900, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1.2, textShadow: '0 2px 10px rgba(0,0,0,0.3)' }}>
+                          {job.title}
+                        </h4>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1.8rem', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '1rem', color: '#E2E8F0', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                            <Users size={16} color="#d32f2f" /> {job.company}
+                          </span>
+                          <span style={{ fontSize: '0.9rem', color: '#CBD5E1', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                            <MapPin size={16} color="#d32f2f" /> {job.location}
+                          </span>
                         </div>
-                        <div style={{ display: 'flex', gap: '1rem' }}>
-                          <span style={{ background: '#f1f5f9', color: '#475569', padding: '8px 18px', borderRadius: '999px', fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase' }}>Full Time</span>
-                          <button style={{ background: 'transparent', border: 'none', color: '#94A3B8' }}><Star size={24} /></button>
-                        </div>
-                    </div>
-
-                    <div style={{ marginTop: '1.5rem' }}>
-                      <h4 style={{ margin: '0 0 0.75rem', fontSize: '2rem', fontWeight: 900, color: '#1e293b', letterSpacing: '-0.02em', lineHeight: 1.1 }}>{job.title}</h4>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: '1.1rem', color: '#475569', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                          <Users size={18} color="#d32f2f" /> {job.company}
-                        </span>
-                        <span style={{ fontSize: '1.05rem', color: '#64748B', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <MapPin size={18}/> {job.location}
-                        </span>
                       </div>
                     </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(0,0,0,0.03)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        {job.salary && <span style={{ fontSize: '1.1rem', color: '#10B981', fontWeight: 800, background: '#10B98110', padding: '6px 16px', borderRadius: '12px' }}>{job.salary}</span>}
-                        <span style={{ color: '#94A3B8', fontSize: '0.9rem', fontWeight: 600 }}>Posted 2 days ago</span>
-                      </div>
-                      <button className="btn-premium" style={{ background: '#1e293b', color: 'white', border: 'none', padding: '12px 28px', borderRadius: '16px', fontWeight: 700, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        Apply Now <ArrowRight size={18} />
-                      </button>
-                    </div>
-
-                    {/* Decorative Background Accent */}
-                    <div style={{ position: 'absolute', bottom: '-40px', right: '-40px', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(211, 47, 47, 0.03) 0%, transparent 70%)', borderRadius: '50%', zIndex: -1 }} />
                   </motion.div>
-              ))}
-            </motion.div>
-
-            {/* Stepper / Progress Dots */}
-            <div style={{ display: 'flex', gap: '8px', marginTop: '2rem', justifyContent: 'center' }}>
-              {jobs.slice(0, 6).map((_, i) => (
-                <div 
-                  key={i} 
-                  onClick={() => setCurrentIndex(i)}
-                  style={{ 
-                    width: currentIndex === i ? '24px' : '8px', 
-                    height: '8px', 
-                    background: currentIndex === i ? '#d32f2f' : '#cbd5e1', 
-                    borderRadius: '999px', 
-                    transition: 'all 0.5s ease',
-                    cursor: 'pointer'
-                  }} 
-                />
-              ))}
+                ))}
+              </div>
             </div>
+
+            {/* FULL SECTION MORPHING OVERLAY (🔥 ELITE UI) */}
+            <AnimatePresence>
+              {selectedJob && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  style={{
+                    position: 'fixed',
+                    inset: 0,
+                    zIndex: 10000,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '2rem',
+                    background: 'rgba(5, 10, 25, 0.4)',
+                    backdropFilter: 'blur(30px)'
+                  }}
+                  onClick={() => setSelectedJob(null)}
+                >
+                  <motion.div 
+                    layoutId={`card-${selectedJob.id}`}
+                    style={{
+                      width: '100%',
+                      maxWidth: '1300px',
+                      height: '85vh',
+                      background: '#0f172a',
+                      borderRadius: '48px',
+                      overflow: 'hidden',
+                      position: 'relative',
+                      boxShadow: '0 50px 100px -20px rgba(0,0,0,0.8)',
+                      border: '1px solid rgba(255,255,255,0.08)'
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <img 
+                      src={selectedJob.backgroundImage || architectBg} 
+                      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }} 
+                      alt="Job detail"
+                    />
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, #0f172a 30%, transparent 100%)' }} />
+                    
+                    <div style={{ position: 'relative', zIndex: 10, padding: '5rem', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+                      <motion.button 
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        whileHover={{ scale: 1.1, background: '#d32f2f' }}
+                        style={{ position: 'absolute', top: '3rem', right: '3rem', background: 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', width: '56px', height: '56px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(10px)' }}
+                        onClick={() => setSelectedJob(null)}
+                      >
+                        <X size={24} />
+                      </motion.button>
+
+                      <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, type: "spring", damping: 20 }}>
+                        <span style={{ background: 'linear-gradient(90deg, #d32f2f, #9a0007)', color: '#fff', padding: '10px 28px', borderRadius: '99px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.15em', fontSize: '0.8rem', boxShadow: '0 10px 20px rgba(211,47,47,0.3)' }}>Elite Career Track</span>
+                        <h2 style={{ fontSize: '5rem', fontWeight: 950, color: '#fff', margin: '1.5rem 0 1rem', letterSpacing: '-0.05em', lineHeight: 0.95 }}>{selectedJob.title}</h2>
+                        <div style={{ display: 'flex', gap: '4rem', fontSize: '1.3rem', color: '#E2E8F0', fontWeight: 700, marginBottom: '2.5rem' }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}><Users size={24} color="#d32f2f" /> {selectedJob.company}</span>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}><MapPin size={24} color="#d32f2f" /> {selectedJob.location}</span>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}><Briefcase size={24} color="#d32f2f" /> Leadership Track</span>
+                        </div>
+                        <p style={{ fontSize: '1.5rem', color: '#CBD5E1', lineHeight: 1.5, maxWidth: '900px', opacity: 0.85, fontWeight: 500 }}>Join NeST Digital's top-tier engineering taskforce. We are looking for visionaries to lead our next generation of distributed systems and industrial automation frameworks.</p>
+                        <div style={{ marginTop: '4rem', display: 'flex', gap: '2rem' }}>
+                          <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => navigate(`/jobs/${selectedJob.id}`)} style={{ background: '#d32f2f', color: '#fff', border: 'none', padding: '1.5rem 4rem', borderRadius: '24px', fontWeight: 800, fontSize: '1.2rem', cursor: 'pointer' }}>Apply for Opportunity</motion.button>
+                          <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setSelectedJob(null)} style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.15)', padding: '1.5rem 2.5rem', borderRadius: '24px', fontWeight: 700, fontSize: '1.2rem', cursor: 'pointer', backdropFilter: 'blur(10px)' }}>Close Detail</motion.button>
+                        </div>
+                      </motion.div>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </motion.section>
 
@@ -666,96 +793,90 @@ const Dashboard: React.FC = () => {
               ))}
           </div>
         </motion.section>
-
-        {/* 4. ACTIVITY FEED (USER POSTS) */}
+        
+        {/* CURATED SENIOR INSIGHTS (ALUMNI STORIES OVERVIEW) */}
         <motion.section 
           variants={sectionVariants} 
           initial="hidden" 
           whileInView="visible" 
           viewport={{ once: true, margin: "-10%" }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
-            <div style={{ background: '#FF9500', padding: '10px', borderRadius: '14px', display: 'flex' }}>
-              <Activity size={22} color="white" />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div style={{ background: '#FF9500', padding: '10px', borderRadius: '14px', display: 'flex' }}>
+                <Activity size={22} color="white" />
+              </div>
+              <h2 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 800, color: '#1e293b', letterSpacing: '-0.02em', fontFamily: 'Montserrat, sans-serif' }}>Alumni Stories</h2>
             </div>
-            <h2 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 800, color: '#1e293b', letterSpacing: '-0.02em' }}>Nexus Feed</h2>
+            <button onClick={() => navigate('/feed')} className="link-hover" style={{ background: 'transparent', border: 'none', color: '#64748B', fontWeight: 700 }}>View Stories</button>
           </div>
 
-          <motion.div variants={itemVariants} className="luxury-card" style={{ padding: '2rem', marginBottom: '2.5rem' }}>
-            <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <img 
-                src={user?.profile_picture || `https://ui-avatars.com/api/?name=${user?.full_name || 'User'}&background=d32f2f&color=fff`} 
-                alt={user?.full_name || 'You'} 
-                style={{ width: '64px', height: '64px', borderRadius: '50%', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }} 
-              />
-              <button 
-                className="btn-premium"
-                style={{ flex: 1, textAlign: 'left', background: '#f8fafc', border: '1px solid #e2e8f0', padding: '1.25rem 2rem', borderRadius: '16px', color: '#94a3b8', fontWeight: 500, fontSize: '1.1rem' }}
-              >
-                Spark a conversation or share a milestone...
-              </button>
-            </div>
-            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-              {[{ icon: ImageIcon, text: 'Media', color: '#3B82F6' }, { icon: Calendar, text: 'Event', color: '#10B981' }, { icon: FileText, text: 'Article', color: '#F59E0B' }].map((item, i) => (
-                <button key={i} className="btn-premium luxury-card" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '12px 24px', borderRadius: '16px', fontWeight: 700, fontSize: '0.9rem', color: '#1e293b' }}>
-                  <item.icon size={20} color={item.color} /> {item.text}
-                </button>
-              ))}
-            </div>
-          </motion.div>
-
-           <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
             {feed.map((post) => (
-              <motion.div key={post.id} variants={itemVariants} className="luxury-card">
-                <div style={{ padding: '2.5rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
-                    <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
-                      <img src={post.author.avatar.replace('background=0F172A', 'background=d32f2f')} alt={post.author.name} style={{ width: '60px', height: '60px', borderRadius: post.isOfficial ? '16px' : '50%', border: '2px solid #fff', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }} />
+              <motion.div key={post.id} variants={itemVariants} className="luxury-card" style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '24px', overflow: 'hidden' }}>
+                <div style={{ padding: '2rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                      <img 
+                        src={post.author.avatar.replace('background=0F172A', 'background=d32f2f')} 
+                        alt={post.author.name} 
+                        style={{ width: '50px', height: '50px', borderRadius: '50%', border: '2px solid #fff', boxShadow: '0 4px 10px rgba(0,0,0,0.05)' }} 
+                      />
                       <div>
-                        <h4 className="link-hover" style={{ margin: '0 0 0.4rem', fontSize: '1.2rem', fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          {post.author.name}
-                          {post.isOfficial && <span style={{ background: '#d32f2f', color: 'white', padding: '3px 10px', borderRadius: '8px', fontSize: '0.6rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Official</span>}
-                        </h4>
-                        <p style={{ margin: 0, fontSize: '0.9rem', color: '#64748B', fontWeight: 600 }}>{post.author.title}</p>
-                        <p style={{ margin: '0.4rem 0 0', fontSize: '0.8rem', color: '#94A3B8', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Clock size={14} /> {post.time}</p>
+                        <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#1e293b' }}>{post.author.name}</h4>
+                        <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748B', fontWeight: 600 }}>{post.author.title} • {post.time}</p>
                       </div>
                     </div>
-                    <button className="btn-premium" style={{ padding: '10px', borderRadius: '14px', background: '#f8fafc', border: '1px solid #e2e8f0' }}><MoreHorizontal size={22} color="#64748B" /></button>
                   </div>
                   
-                  <p style={{ margin: '0 0 2rem', color: '#1e293b', lineHeight: 1.8, fontSize: '1.1rem', fontWeight: 450 }}>{post.content}</p>
-                </div>
-                
-                {post.image && (
-                  <div style={{ maxHeight: '500px', overflow: 'hidden' }}>
-                    <img src={post.image} alt="Feed" style={{ width: '100%', objectFit: 'cover' }} />
-                  </div>
-                )}
-                
-                <div style={{ padding: '1.5rem 2.5rem 2.5rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '1.5rem', borderBottom: '1px solid #f1f5f9', marginBottom: '1rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#64748B', fontSize: '0.9rem', fontWeight: 600 }}>
-                      <div style={{ display: 'flex' }}>
-                        {[...Array(2)].map((_, i) => <div key={i} style={{ background: i===0 ? '#d32f2f' : '#2D2254', borderRadius: '50%', padding: '6px', border: '3px solid white', marginLeft: i===0 ? 0 : '-10px', zIndex: 2-i }}><ThumbsUp size={12} color="white" /></div>)}
-                      </div>
-                      <span style={{ color: '#1e293b', fontWeight: 800 }}>{post.likes}</span> Elite Recognitions
+                  <p style={{ margin: '0 0 1.5rem', color: '#334155', lineHeight: 1.6, fontSize: '1.05rem', fontWeight: 450 }}>{post.content}</p>
+                  
+                  {post.image && (
+                    <div style={{ borderRadius: '16px', overflow: 'hidden', marginBottom: '1.5rem', maxHeight: '400px' }}>
+                      <img src={post.image} alt="Insight" style={{ width: '100%', objectFit: 'cover' }} />
                     </div>
-                    <span className="link-hover" style={{ fontSize: '0.9rem', color: '#64748B', fontWeight: 600 }}>{post.comments} thoughts shared</span>
-                  </div>
-                  
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
-                    {[{ icon: ThumbsUp, text: 'Recognize' }, { icon: MessageSquare, text: 'Contribute' }, { icon: Share2, text: 'Amplify' }].map((action, i) => (
-                      <button key={i} className="btn-premium luxury-card" style={{ background: 'rgba(248, 250, 252, 0.5)', border: 'none', padding: '1rem', borderRadius: '16px', color: '#64748B', fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' }}>
-                        <action.icon size={20} /> {action.text}
-                      </button>
-                    ))}
+                  )}
+
+                  {/* READ-ONLY INTERACTION BAR */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '1.25rem', borderTop: '1px solid #F1F5F9' }}>
+                    <div style={{ display: 'flex', gap: '1.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64748B', fontSize: '0.8rem', fontWeight: 600 }}>
+                        <ShieldCheck size={14} color="#10B981" /> Verified Archive
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64748B', fontSize: '0.8rem', fontWeight: 600 }}>
+                        <Sparkles size={14} color="#F59E0B" /> Alumni Story
+                      </div>
+                    </div>
+
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => handleLike(post.id)}
+                      style={{ 
+                        background: likedPosts.has(post.id) ? 'rgba(211, 47, 47, 0.05)' : 'transparent',
+                        border: '1px solid',
+                        borderColor: likedPosts.has(post.id) ? 'rgba(211, 47, 47, 0.2)' : '#E2E8F0',
+                        padding: '8px 20px',
+                        borderRadius: '10px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.6rem',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      <motion.div animate={{ scale: likedPosts.has(post.id) ? [1, 1.4, 1] : 1 }}>
+                        <Heart size={18} color={likedPosts.has(post.id) ? '#d32f2f' : '#64748B'} fill={likedPosts.has(post.id) ? '#d32f2f' : 'transparent'} />
+                      </motion.div>
+                      <span style={{ fontWeight: 800, color: likedPosts.has(post.id) ? '#d32f2f' : '#1e293b', fontSize: '0.9rem' }}>{post.likes + (likedPosts.has(post.id) ? 1 : 0)}</span>
+                    </motion.button>
                   </div>
                 </div>
               </motion.div>
             ))}
           </div>
         </motion.section>
-        
+
         <div style={{ paddingBottom: '6rem' }} />
       </div>
     </div>
