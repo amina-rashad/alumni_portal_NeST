@@ -1,314 +1,205 @@
-/**
- * API Service Layer
- * Handles all HTTP communication with the Flask backend.
- * Manages authentication tokens in localStorage.
- */
+import axios from 'axios';
 
-const API_BASE_URL = '/api';
+// Create an Axios instance
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
-// ── Token Management ──
+// Interceptor for attaching auth tokens
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
-export const getAccessToken = (): string | null => {
-  return localStorage.getItem('access_token');
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// --- COURSE MANAGER API ---
+export const courseManagerAPI = {
+  fetchCourses: async () => {
+    await delay(800);
+    return {
+      data: [
+        { id: 1, title: 'Advanced Full-Stack Architecture', level: 'Advanced', duration: '12 Weeks', students: 156, status: 'Active' },
+        { id: 2, title: 'Cloud Infrastructure with AWS', level: 'Intermediate', duration: '8 Weeks', students: 84, status: 'Active' },
+        { id: 3, title: 'UX Design Fundamentals', level: 'Beginner', duration: '6 Weeks', students: 210, status: 'Draft' },
+      ]
+    };
+  },
+  createCourse: async (courseData: any) => {
+    await delay(1500);
+    return { data: { message: 'Course created successfully', id: Math.random() } };
+  },
+  updateCourse: async (id: number, data: any) => {
+    await delay(500);
+    return { data: { message: 'Course updated' } };
+  },
+  deleteCourse: async (id: number) => {
+    await delay(500);
+    return { data: { message: 'Course deleted' } };
+  },
+  fetchStudents: async () => {
+    await delay(1000);
+    return {
+      data: [
+        { id: 'STU-001', name: 'Alex Johnson', email: 'alex.j@example.com', course: 'Advanced Full-Stack Architecture', progress: 45, status: 'Learning', lastActive: '2 hours ago' },
+        { id: 'STU-002', name: 'Maria Garcia', email: 'm.garcia@example.com', course: 'Cloud Infrastructure with AWS', progress: 85, status: 'Assessment', lastActive: '1 day ago' },
+        { id: 'STU-003', name: 'David Chen', email: 'd.chen@example.com', course: 'UX Design Fundamentals', progress: 100, status: 'Completed', lastActive: '3 days ago' },
+      ]
+    };
+  },
+  fetchSubmissions: async () => {
+    await delay(1000);
+    return {
+      data: [
+        { id: 'sub-001', studentName: 'Alex Johnson', course: 'Advanced Full-Stack Architecture', assessmentType: 'Project', submittedAt: '2 hours ago', content: { type: 'github', url: 'https://github.com/alexj/microservices-final' }, status: 'Pending' },
+        { id: 'sub-002', studentName: 'Maria Garcia', course: 'UX Design Fundamentals', assessmentType: 'Video Demo', submittedAt: '5 hours ago', content: { type: 'video', url: 'https://loom.com/share/123456789' }, status: 'Pending' },
+      ]
+    };
+  },
+  updateSubmissionStatus: async (id: string, status: 'Approved' | 'Rejected') => {
+    await delay(800);
+    return { data: { message: 'Status updated successfully' } };
+  }
 };
 
-export const getRefreshToken = (): string | null => {
-  return localStorage.getItem('refresh_token');
+// --- AUTH & USER API ---
+export const authApi = {
+  sendOtp: async (email: string) => {
+    await delay(500);
+    return { success: true, message: 'OTP sent' };
+  },
+  loginWithOtp: async (payload: any) => {
+    await delay(800);
+    let role = 'user';
+    if (payload.email.toLowerCase().includes('manager')) role = 'course_manager';
+    if (payload.email.toLowerCase().includes('admin')) role = 'course_manager';
+    if (payload.email.toLowerCase().includes('owner')) role = 'admin';
+
+    return { 
+      success: true, 
+      data: { 
+        access_token: 'mock_access', 
+        refresh_token: 'mock_refresh', 
+        user: { 
+          full_name: payload.email.split('@')[0], 
+          email: payload.email, 
+          role,
+          user_type: role === 'course_manager' ? 'Staff' : 'Alumni'
+        } 
+      } 
+    };
+  },
+  logout: async () => {
+    localStorage.clear();
+    return { success: true };
+  }
 };
 
-export const setTokens = (accessToken: string, refreshToken: string): void => {
-  localStorage.setItem('access_token', accessToken);
-  localStorage.setItem('refresh_token', refreshToken);
+export const usersApi = {
+  getProfile: async () => {
+    await delay(500);
+    return { success: true, data: { user: JSON.parse(localStorage.getItem('user') || '{}') } };
+  },
+  updateProfile: async (data: any) => {
+    await delay(800);
+    return { success: true, data: { user: data } };
+  }
 };
 
-export const clearTokens = (): void => {
-  localStorage.removeItem('access_token');
-  localStorage.removeItem('refresh_token');
-  localStorage.removeItem('user');
+// --- GENERAL MOCK APIS ---
+export const coursesApi = {
+  getAllCourses: async () => {
+    await delay(800);
+    return {
+      success: true,
+      data: {
+        courses: [
+          {
+            id: '1',
+            title: 'Advanced Cloud Architecture & DevOps',
+            instructor: 'Dr. Rajesh Nair',
+            level: 'Advanced',
+            duration: '36 Hours',
+            description: 'Master the complexities of modern cloud infrastructure and automated delivery pipelines with NeST digital experts.'
+          },
+          {
+            id: '2',
+            title: 'Full Stack Development with React & Node',
+            instructor: 'Priya Sharma',
+            level: 'Intermediate',
+            duration: '48 Hours',
+            description: 'Build enterprise-grade web applications from scratch using the most popular JavaScript ecosystem.'
+          },
+          {
+            id: '3',
+            title: 'Data Science & Machine Learning Essentials',
+            instructor: 'Dr. Arun Menon',
+            level: 'Beginner',
+            duration: '30 Hours',
+            description: 'Unlock the power of data through statistical modeling and modern machine learning algorithms.'
+          },
+          {
+            id: '4',
+            title: 'Cybersecurity Fundamentals & Ethical Hacking',
+            instructor: 'Karthik Iyer',
+            level: 'Intermediate',
+            duration: '42 Hours',
+            description: 'Protect digital assets and learn how to secure modern network architectures against evolving threats.'
+          }
+        ]
+      }
+    };
+  },
+  getCourseById: async (id: string) => {
+    await delay(500);
+    const courses = [
+      { id: '1', title: 'Advanced Cloud Architecture & DevOps', instructor: 'Dr. Rajesh Nair', level: 'Advanced', duration: '36 Hours' },
+      { id: '2', title: 'Full Stack Development with React & Node', instructor: 'Priya Sharma', level: 'Intermediate', duration: '48 Hours' },
+      { id: '3', title: 'Data Science & Machine Learning Essentials', instructor: 'Dr. Arun Menon', level: 'Beginner', duration: '30 Hours' },
+      { id: '4', title: 'Cybersecurity Fundamentals & Ethical Hacking', instructor: 'Karthik Iyer', level: 'Intermediate', duration: '42 Hours' },
+    ];
+    const course = courses.find(c => c.id === id) || courses[0];
+    return {
+      success: true,
+      data: { course }
+    };
+  }
+};
+export const jobsApi = { getAll: async () => ({ data: [] }) };
+export const eventsApi = { getAll: async () => ({ data: [] }) };
+export const socialApi = { getFeed: async () => ({ data: [] }) };
+export const networkingApi = { getDirectory: async () => ({ data: [] }) };
+export const adminApi = { getStats: async () => ({ data: {} }) };
+
+// --- TOKEN HELPERS ---
+export const setTokens = (access: string, refresh: string) => {
+  localStorage.setItem('token', access);
+  localStorage.setItem('refresh_token', refresh);
 };
 
-export const setUser = (user: unknown): void => {
+export const setUser = (user: any) => {
   localStorage.setItem('user', JSON.stringify(user));
 };
 
-export const getUser = (): Record<string, unknown> | null => {
-  const stored = localStorage.getItem('user');
-  if (!stored) return null;
-  try {
-    return JSON.parse(stored);
-  } catch {
-    return null;
-  }
+export const getUser = () => {
+  const user = localStorage.getItem('user');
+  return user ? JSON.parse(user) : null;
 };
 
-export const isAuthenticated = (): boolean => {
-  return !!getAccessToken();
-};
-
-
-// ── HTTP Client ──
-
-interface ApiResponse<T = unknown> {
-  success: boolean;
-  message?: string;
-  errors?: string[];
-  data?: T;
-}
-
-async function apiRequest<T = unknown>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<ApiResponse<T>> {
-  const url = `${API_BASE_URL}${endpoint}`;
-
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(options.headers as Record<string, string> || {}),
-  };
-
-  // Attach JWT token if available
-  const token = getAccessToken();
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
-  try {
-    const response = await fetch(url, {
-      ...options,
-      headers,
-    });
-
-    const data: ApiResponse<T> = await response.json();
-
-    // Handle 401 — try refresh token
-    if (response.status === 401 && getRefreshToken()) {
-      const refreshed = await refreshAccessToken();
-      if (refreshed) {
-        // Retry the original request with new token
-        headers['Authorization'] = `Bearer ${getAccessToken()}`;
-        const retryResponse = await fetch(url, { ...options, headers });
-        return await retryResponse.json();
-      } else {
-        clearTokens();
-      }
-    }
-
-    return data;
-  } catch (error) {
-    return {
-      success: false,
-      message: 'Network error. Please check your connection and try again.',
-    };
-  }
-}
-
-async function refreshAccessToken(): Promise<boolean> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${getRefreshToken()}`,
-      },
-    });
-
-    if (!response.ok) return false;
-
-    const data = await response.json();
-    if (data.success && data.data?.access_token) {
-      localStorage.setItem('access_token', data.data.access_token);
-      return true;
-    }
-    return false;
-  } catch {
-    return false;
-  }
-}
-
-
-// ── Auth API ──
-
-export interface LoginPayload {
-  email: string;
-  password: string;
-}
-
-export interface RegisterPayload {
+export type AuthUser = {
   full_name: string;
   email: string;
-  password: string;
-  phone: string;
-  user_type: string;
-  batch: string;
-  specialization: string;
-}
-
-export interface AuthUser {
-  id: string;
-  full_name: string;
-  email: string;
-  user_type: string;
   role: string;
-  profile_picture?: string | null;
-}
-
-export interface AuthData {
-  user: AuthUser;
-  access_token: string;
-  refresh_token: string;
-}
-
-export const authApi = {
-  login: (payload: LoginPayload) =>
-    apiRequest<AuthData>('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    }),
-
-  register: (payload: RegisterPayload) =>
-    apiRequest<AuthData>('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    }),
-
-  sendOtp: (email: string) =>
-    apiRequest('/auth/send-otp', {
-      method: 'POST',
-      body: JSON.stringify({ email }),
-    }),
-
-  loginWithOtp: (payload: { email: string; otp: string }) =>
-    apiRequest<AuthData>('/auth/login-otp', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    }),
-
-  verify: () =>
-    apiRequest<{ user: AuthUser }>('/auth/verify', {
-      method: 'GET',
-    }),
-
-  logout: () =>
-    apiRequest('/auth/logout', {
-      method: 'POST',
-    }),
+  user_type?: string;
 };
 
-
-// ── Users API ──
-
-export const usersApi = {
-  getProfile: () =>
-    apiRequest('/users/me', { method: 'GET' }),
-
-  updateProfile: (data: Record<string, unknown>) =>
-    apiRequest('/users/me', {
-      method: 'PATCH',
-      body: JSON.stringify(data),
-    }),
-
-  getUserById: (userId: string) =>
-    apiRequest(`/users/${userId}`, { method: 'GET' }),
-};
-
-
-// ── Health API ──
-
-export const healthApi = {
-  check: () =>
-    apiRequest('/health', { method: 'GET' }),
-};
-
-// ── Admin API ──
-export const adminApi = {
-  getStats: () => 
-    apiRequest<{ stats: { total_users: number, interns: number, active_jobs: number, applications: number } }>('/admin/stats'),
-
-  getAllUsers: () => 
-    apiRequest<{ users: any[] }>('/admin/users'),
-
-  createUser: (data: any) => 
-    apiRequest('/admin/users', { method: 'POST', body: JSON.stringify(data) }),
-
-  updateUser: (userId: string, data: any) => 
-    apiRequest(`/admin/users/${userId}`, { method: 'PATCH', body: JSON.stringify(data) }),
-
-  getInterns: () => 
-    apiRequest<{ users: any[] }>('/admin/users?type=Intern'),
-
-  addJob: (data: any) => 
-    apiRequest('/admin/jobs', { method: 'POST', body: JSON.stringify(data) }),
-
-  deleteJob: (jobId: string) => 
-    apiRequest(`/admin/jobs/${jobId}`, { method: 'DELETE' }),
-
-  getVisits: () => 
-    apiRequest<{ visits: any[] }>('/admin/visits'),
-
-  addVisit: (data: any) => 
-    apiRequest('/admin/visits', { method: 'POST', body: JSON.stringify(data) }),
-
-  deleteVisit: (visitId: string) => 
-    apiRequest(`/admin/visits/${visitId}`, { method: 'DELETE' }),
-
-  getApplications: () => 
-    apiRequest<{ applications: any[] }>('/admin/applications'),
-};
-
-// ── Courses API ──
-
-export const coursesApi = {
-  getAllCourses: () =>
-    apiRequest('/courses', { method: 'GET' }),
-
-  getCourseById: (courseId: string) =>
-    apiRequest(`/courses/${courseId}`, { method: 'GET' }),
-};
-
-// ── Jobs API ──
-
-export const jobsApi = {
-  getAllJobs: () =>
-    apiRequest('/jobs', { method: 'GET' }),
-
-  getJobById: (jobId: string) =>
-    apiRequest(`/jobs/${jobId}`, { method: 'GET' }),
-};
-
-// ── Events API ──
-
-export const eventsApi = {
-  getAllEvents: () =>
-    apiRequest('/events', { method: 'GET' }),
-
-  getEventById: (eventId: string) =>
-    apiRequest(`/events/${eventId}`, { method: 'GET' }),
-
-  registerForEvent: (eventId: string) =>
-    apiRequest(`/events/${eventId}/register`, { method: 'POST' }),
-};
-
-// ── Networking API ──
-
-export const networkingApi = {
-  listAllUsers: (params?: { q?: string; batch?: string; spec?: string }) => {
-    const query = new URLSearchParams(params as any).toString();
-    return apiRequest(`/users?${query}`, { method: 'GET' });
-  },
-};
-
-// ── Social API ──
-
-export const socialApi = {
-  getFeed: (page: number = 1, perPage: number = 20) =>
-    apiRequest(`/social/feed?page=${page}&per_page=${perPage}&t=${Date.now()}`, { method: 'GET', cache: 'no-store' }),
-
-  createPost: (data: { content: string; image_url?: string }) =>
-    apiRequest('/social/posts', { method: 'POST', body: JSON.stringify(data) }),
-
-  likePost: (postId: string) =>
-    apiRequest(`/social/posts/${postId}/like`, { method: 'POST' }),
-
-  addComment: (postId: string, text: string) =>
-    apiRequest(`/social/posts/${postId}/comments`, { method: 'POST', body: JSON.stringify({ text }) }),
-};
+export default api;

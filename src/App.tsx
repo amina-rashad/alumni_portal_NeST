@@ -106,6 +106,7 @@ import AdminAddEvent from './pages/admin/AdminAddEvent';
 import AdminAddCourse from './pages/admin/AdminAddCourse';
 import AdminCertification from './pages/admin/AdminCertification';
 
+<<<<<<< Updated upstream
 // Event Manager Pages
 import EventManagerLayout from './pages/event_manager/EventManagerLayout';
 import EventManagerDashboard from './pages/event_manager/EventManagerDashboard';
@@ -116,6 +117,19 @@ import EventManagerRegistrations from './pages/event_manager/EventManagerRegistr
 import EventManagerReports from './pages/event_manager/EventManagerReports';
 import EventManagerSettings from './pages/event_manager/EventManagerSettings';
 import EventManagerPlaceholder from './pages/event_manager/EventManagerPlaceholder';
+=======
+// Course Manager Pages
+import CourseManagerLayout from './pages/course_manager/CourseManagerLayout';
+import CM_Dashboard from './pages/course_manager/Dashboard';
+import CM_Courses from './pages/course_manager/Courses';
+import CM_CreateCourse from './pages/course_manager/CreateCourse';
+import CM_Students from './pages/course_manager/Students';
+import CM_Assessments from './pages/course_manager/Assessments';
+import CM_Certificates from './pages/course_manager/Certificates';
+import CM_Attendance from './pages/course_manager/Attendance';
+import CM_Login from './pages/course_manager/Login';
+
+>>>>>>> Stashed changes
 
 /* -- Luxury Splash Screen with Mask Reveal -- */
 import heroBg from './assets/hero-bg.jpg';
@@ -394,6 +408,7 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="settings" element={<PageTransition><Settings /></PageTransition>} />
         </Route>
 
+<<<<<<< Updated upstream
         {/* Event Manager Protected Routes */}
         <Route path="/event-manager" element={<EventManagerLayout />}>
           <Route index element={<Navigate to="/event-manager/dashboard" replace />} />
@@ -407,6 +422,21 @@ const AnimatedRoutes: React.FC = () => {
         </Route>
 
         {/* Fallback Catch-all Route */}
+=======
+        {/* Course Manager Routes */}
+        <Route path="/course-manager/login" element={<PageTransition><CM_Login /></PageTransition>} />
+        <Route path="/course-manager" element={<CourseManagerLayout />}>
+          <Route index element={<Navigate to="/course-manager/dashboard" replace />} />
+          <Route path="dashboard" element={<PageTransition><CM_Dashboard /></PageTransition>} />
+          <Route path="courses" element={<PageTransition><CM_Courses /></PageTransition>} />
+          <Route path="courses/create" element={<PageTransition><CM_CreateCourse /></PageTransition>} />
+          <Route path="students" element={<PageTransition><CM_Students /></PageTransition>} />
+          <Route path="assessments" element={<PageTransition><CM_Assessments /></PageTransition>} />
+          <Route path="certificates" element={<PageTransition><CM_Certificates /></PageTransition>} />
+          <Route path="attendance" element={<PageTransition><CM_Attendance /></PageTransition>} />
+        </Route>
+
+>>>>>>> Stashed changes
         <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
     </React.Fragment>
