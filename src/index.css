@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@300;400;500;600;700;800&family=Raleway:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
 
 :root {
   /* NeST Digital Brand Colors */
@@ -17,7 +17,7 @@
   --card-border: rgba(255, 255, 255, 0.1);
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
-  font-family: 'Inter', 'Raleway', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   line-height: 1.5;
   font-weight: 400;
   color-scheme: dark;
@@ -65,16 +65,12 @@ button {
 }
 
 h1,
+h2,
 h3,
 h4,
 h5,
 h6 {
-  font-family: 'Raleway', sans-serif;
-  font-weight: 700;
-}
-
-h2 {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Montserrat', sans-serif;
   font-weight: 700;
 }
 

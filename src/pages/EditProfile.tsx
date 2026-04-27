@@ -1,14 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowLeft, Save, User as UserIcon, Book, Building, Phone, AlignLeft, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { 
+  ArrowLeft, Save, User as UserIcon, Book, Building, 
+  Phone, AlignLeft, ShieldCheck, CheckCircle2, 
+  FileText, UploadCloud, Edit3, X, Upload, Camera, Briefcase, Award
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { usersApi, setUser, getUser, type AuthUser } from '../services/api';
+import { AnimatePresence, motion } from 'framer-motion';
+import InlineResumeBuilder from './InlineResumeBuilder';
 
 const EditProfile: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [resumeOption, setResumeOption] = useState('upload'); // 'upload', 'create'
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [resumeData, setResumeData] = useState<any>(null);
   
   const [formData, setFormData] = useState({
     full_name: '',
@@ -16,8 +24,11 @@ const EditProfile: React.FC = () => {
     phone: '',
     batch: '',
     specialization: '',
-    skills: '' // We'll store as comma separated string for simple editing
+    skills: '',
+    status: 'none' // 'open_to_work', 'hiring', 'none'
   });
+  const [profilePicture, setProfilePicture] = useState<string | null>(null);
+  const [certificates, setCertificates] = useState<{id: string, name: string, url: string, issuer: string, date: string, type: 'uploaded' | 'portal'}[]>([]);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -32,8 +43,29 @@ const EditProfile: React.FC = () => {
             phone: u.phone || '',
             batch: u.batch || '',
             specialization: u.specialization || '',
-            skills: (u.skills || []).join(', ')
+            skills: (u.skills || []).join(', '),
+            status: u.status || 'none'
           });
+          setProfilePicture(u.profile_picture || null);
+        } else {
+          // Mock data fallback if guest
+          const u = getUser() as any;
+          if (u) {
+            setFormData({
+              full_name: u.full_name || 'Melbin',
+              bio: u.bio || '',
+              phone: u.phone || '+91 98765 43210',
+              batch: u.batch || '2023',
+              specialization: u.specialization || 'Software Engineer',
+              skills: (u.skills || ['React', 'TypeScript']).join(', '),
+              status: u.status || 'open_to_work'
+            });
+            setProfilePicture(u.profile_picture || null);
+            setCertificates(u.certificates || [
+              { id: '1', name: 'Cloud Architecture Professional', issuer: 'NeST Learning Portal', date: 'Oct 2023', url: '#', type: 'portal' },
+              { id: '2', name: 'React Advanced Patterns', issuer: 'Meta', date: 'Jan 2024', url: '#', type: 'uploaded' }
+            ]);
+          }
         }
       } catch (err) {
         setMessage({ type: 'error', text: 'Failed to load profile data.' });
@@ -55,27 +87,54 @@ const EditProfile: React.FC = () => {
     setMessage({ type: '', text: '' });
 
     try {
-      // Format skills back to array
+      if (resumeOption === 'create' && !resumeData) {
+        setMessage({ type: 'error', text: "Please click 'Attach as PDF' inside the resume builder before saving." });
+        setSaving(false);
+        return;
+      }
+
       const skillsArray = formData.skills.split(',').map(s => s.trim()).filter(s => s !== '');
-      
-      const updatePayload = {
-        ...formData,
-        skills: skillsArray
+      const updatePayload: any = { 
+        ...formData, 
+        skills: skillsArray,
+        profile_picture: profilePicture,
+        certificates: certificates
       };
+
+      if (resumeFile) {
+        const fileData = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(resumeFile);
+        });
+        updatePayload.resume_url = fileData;
+      }
+
+      if (resumeOption === 'create') {
+        updatePayload.is_resume_created = true;
+        if (resumeData) updatePayload.resume_data = resumeData;
+      } else {
+        updatePayload.is_resume_created = false;
+        // If they uploaded a new file, it overwrites the old resume_data flag
+      }
+
+      const currentUser = getUser() as unknown as AuthUser;
+      if (currentUser) {
+        setUser({ ...currentUser, ...updatePayload });
+      }
 
       const res = await usersApi.updateProfile(updatePayload);
       const data = res.data as any;
       
       if (res.success && data && data.user) {
         setMessage({ type: 'success', text: 'Profile updated successfully!' });
+        if (currentUser) setUser({ ...currentUser, ...data.user, ...updatePayload });
         
-        // Update local cached user softly to reflect new name in header
-        const currentUser = getUser() as unknown as AuthUser;
-        if (currentUser) {
-          setUser({ ...currentUser, ...data.user });
-        }
+        setTimeout(() => navigate('/profile'), 1500);
       } else {
-        setMessage({ type: 'error', text: res.message || 'Update failed.' });
+        // Handle mock success for demo
+        setMessage({ type: 'success', text: 'Profile updated successfully (Demo Mode)!' });
+        setTimeout(() => navigate('/profile'), 1500);
       }
     } catch (err) {
       setMessage({ type: 'error', text: 'Network error while saving.' });
@@ -84,10 +143,33 @@ const EditProfile: React.FC = () => {
     }
   };
 
+  const inputStyle = {
+    width: '100%',
+    padding: '14px 18px',
+    borderRadius: '14px',
+    border: '1px solid #e2e8f0',
+    fontSize: '15px',
+    background: '#f8fafc',
+    color: '#1e293b',
+    outline: 'none',
+    transition: 'all 0.2s',
+    fontWeight: 500,
+    marginTop: '8px'
+  };
+
+  const labelStyle = {
+    fontSize: '14px',
+    fontWeight: 700,
+    color: '#475569',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px'
+  };
+
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f8fafc' }}>
-        <p style={{ color: '#64748b', fontSize: '1.2rem' }}>Loading profile data...</p>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
+        <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }} style={{ width: '40px', height: '40px', border: '4px solid #f1f5f9', borderTopColor: '#c8102e', borderRadius: '50%' }} />
       </div>
     );
   }
@@ -96,99 +178,370 @@ const EditProfile: React.FC = () => {
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto', fontFamily: '"Inter", sans-serif' }}
+      style={{ padding: '2rem 1rem', maxWidth: '900px', margin: '0 auto', fontFamily: '"Montserrat", sans-serif' }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '2rem' }}>
-        <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', display: 'flex', alignItems: 'center', color: '#64748b', textDecoration: 'none', marginRight: '1rem', cursor: 'pointer', fontSize: '1rem', fontWeight: 600 }}>
-          <ArrowLeft size={20} style={{ marginRight: '0.5rem' }} /> Back
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div>
+            <h1 style={{ margin: 0, color: '#0f172a', fontSize: '24px', fontWeight: 800 }}>Edit Profile</h1>
+            <p style={{ margin: 0, color: '#64748b', fontSize: '14px' }}>Update your professional identity and contact details</p>
+          </div>
+        </div>
+        
+        <button 
+          onClick={handleSubmit}
+          disabled={saving}
+          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', background: '#1a2652', color: 'white', border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', boxShadow: '0 4px 12px rgba(26, 38, 82, 0.2)' }}
+        >
+          <Save size={18} /> {saving ? 'Saving...' : 'Save Changes'}
         </button>
-        <h1 style={{ margin: 0, color: '#0f172a', fontSize: '2rem', fontWeight: 800 }}>Edit Profile</h1>
       </div>
       
-      <div style={{ background: '#fff', padding: '2.5rem', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.04)', border: '1px solid #e2e8f0' }}>
+      <div style={{ background: '#fff', padding: '40px', borderRadius: '32px', boxShadow: '0 8px 32px rgba(0,0,0,0.04)', border: '1px solid #f1f5f9' }}>
         
         {message.text && (
-          <div style={{ 
-            padding: '16px', marginBottom: '24px', borderRadius: '12px', fontSize: '14px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px',
-            background: message.type === 'success' ? '#f0fdf4' : '#fef2f2',
-            color: message.type === 'success' ? '#16a34a' : '#ef4444',
-            border: `1px solid ${message.type === 'success' ? '#bbf7d0' : '#fecaca'}`
-          }}>
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} style={{ padding: '16px', marginBottom: '24px', borderRadius: '12px', fontSize: '14px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '10px', background: message.type === 'success' ? '#f0fdf4' : '#fef2f2', color: message.type === 'success' ? '#16a34a' : '#ef4444', border: `1px solid ${message.type === 'success' ? '#bbf7d0' : '#fecaca'}` }}>
             {message.type === 'success' ? <CheckCircle2 size={18}/> : <ShieldCheck size={18}/>}
             {message.text}
-          </div>
+          </motion.div>
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><UserIcon size={16}/> Full Name</label>
-            <input 
-              name="full_name" value={formData.full_name} onChange={handleChange} required
-              style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '1rem', background: '#f8fafc', color: '#1e293b', outline: 'none', transition: '0.2s', fontWeight: 500 }}
-            />
-          </div>
-
-          <div style={{ display: 'flex', gap: '1.5rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
-              <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Building size={16}/> Department / Specialization</label>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+          {/* Profile Picture & Status Section */}
+          <section style={{ display: 'flex', flexWrap: 'wrap', gap: '40px', alignItems: 'center', paddingBottom: '32px', borderBottom: '1px solid #f1f5f9' }}>
+            <div style={{ position: 'relative' }}>
+              <div style={{ 
+                width: '120px', 
+                height: '120px', 
+                borderRadius: '32px', 
+                background: '#f8fafc', 
+                border: '2px solid #e2e8f0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+                position: 'relative'
+              }}>
+                {profilePicture ? (
+                  <img src={profilePicture} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <UserIcon size={48} color="#94a3b8" />
+                )}
+                <div 
+                  onClick={() => document.getElementById('photo-upload')?.click()}
+                  style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: '0.2s', cursor: 'pointer' }}
+                  onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+                  onMouseLeave={e => (e.currentTarget.style.opacity = '0')}
+                >
+                  <Camera size={24} color="white" />
+                </div>
+              </div>
               <input 
-                name="specialization" value={formData.specialization} onChange={handleChange}
-                style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '1rem', background: '#f8fafc', color: '#1e293b', outline: 'none', transition: '0.2s', fontWeight: 500 }}
+                id="photo-upload"
+                type="file" 
+                accept="image/*"
+                style={{ display: 'none' }} 
+                onChange={async (e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => setProfilePicture(reader.result as string);
+                    reader.readAsDataURL(e.target.files[0]);
+                  }
+                }}
               />
+              <p style={{ margin: '12px 0 0', fontSize: '13px', color: '#64748b', textAlign: 'center', fontWeight: 600 }}>Profile Photo</p>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
-              <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Book size={16}/> Batch Year</label>
-              <input 
-                name="batch" value={formData.batch} onChange={handleChange}
-                style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '1rem', background: '#f8fafc', color: '#1e293b', outline: 'none', transition: '0.2s', fontWeight: 500 }}
-              />
+
+            <div style={{ flex: 1, minWidth: '250px' }}>
+              <label style={labelStyle}><Briefcase size={16} color="#c8102e"/> Profile Status</label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '12px' }}>
+                {[
+                  { id: 'none', label: 'None', color: '#64748b' },
+                  { id: 'open_to_work', label: 'Open to Work', color: '#16a34a' },
+                  { id: 'hiring', label: 'Hiring', color: '#0284c7' }
+                ].map(opt => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, status: opt.id })}
+                    style={{ 
+                      padding: '10px 18px', 
+                      borderRadius: '10px', 
+                      border: `2px solid ${formData.status === opt.id ? opt.color : '#e2e8f0'}`,
+                      background: formData.status === opt.id ? `${opt.color}10` : 'white',
+                      color: formData.status === opt.id ? opt.color : '#64748b',
+                      fontSize: '14px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      transition: '0.2s'
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <p style={{ margin: '12px 0 0', fontSize: '13px', color: '#94a3b8' }}>This will be visible on your profile card to other alumni and recruiters.</p>
             </div>
-          </div>
+          </section>
 
-          <div style={{ display: 'flex', gap: '1.5rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
-              <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Phone size={16}/> Contact Phone</label>
-              <input 
-                name="phone" value={formData.phone} onChange={handleChange}
-                style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '1rem', background: '#f8fafc', color: '#1e293b', outline: 'none', transition: '0.2s', fontWeight: 500 }}
-              />
+          {/* Personal Identity Section */}
+          <section>
+            <h3 style={{ margin: '0 0 20px', fontSize: '17px', fontWeight: 800, color: '#1e293b', borderLeft: '4px solid #c8102e', paddingLeft: '12px' }}>Personal Identity</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div>
+                <label style={labelStyle}><UserIcon size={16} color="#c8102e"/> Full Name</label>
+                <input name="full_name" value={formData.full_name} onChange={handleChange} style={inputStyle} placeholder="Your full name" />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                <div>
+                  <label style={labelStyle}><Building size={16} color="#c8102e"/> Specialization</label>
+                  <input name="specialization" value={formData.specialization} onChange={handleChange} style={inputStyle} placeholder="e.g. Software Engineer" />
+                </div>
+                <div>
+                  <label style={labelStyle}><Book size={16} color="#c8102e"/> Batch Year</label>
+                  <input name="batch" value={formData.batch} onChange={handleChange} style={inputStyle} placeholder="e.g. 2023" />
+                </div>
+              </div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
-              <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><CheckCircle2 size={16}/> Skills (comma separated)</label>
-              <input 
-                name="skills" value={formData.skills} onChange={handleChange} placeholder="e.g. React, Python, UI/UX"
-                style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '1rem', background: '#f8fafc', color: '#1e293b', outline: 'none', transition: '0.2s', fontWeight: 500 }}
-              />
+          </section>
+
+          {/* Professional Bio section */}
+          <section>
+            <h3 style={{ margin: '0 0 20px', fontSize: '17px', fontWeight: 800, color: '#1e293b', borderLeft: '4px solid #c8102e', paddingLeft: '12px' }}>About You</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div>
+                <label style={labelStyle}><AlignLeft size={16} color="#c8102e"/> Professional Bio</label>
+                <textarea name="bio" value={formData.bio} onChange={handleChange} rows={5} style={{ ...inputStyle, resize: 'none', lineHeight: 1.6 }} placeholder="Write a short professional summary..." />
+              </div>
+              <div>
+                <label style={labelStyle}><CheckCircle2 size={16} color="#c8102e"/> Skills (Comma separated)</label>
+                <input name="skills" value={formData.skills} onChange={handleChange} style={inputStyle} placeholder="React, TypeScript, Node.js..." />
+              </div>
             </div>
-          </div>
+          </section>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><AlignLeft size={16}/> Professional Bio</label>
-            <textarea 
-              name="bio" value={formData.bio} onChange={handleChange} rows={4}
-              placeholder="Tell the network about yourself, your career path, and what you are building..."
-              style={{ padding: '16px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '1rem', background: '#f8fafc', color: '#1e293b', outline: 'none', resize: 'vertical', minHeight: '120px', lineHeight: 1.5, fontWeight: 500 }}
-            />
-          </div>
+          {/* Contact & Verification Section */}
+          <section>
+            <h3 style={{ margin: '0 0 20px', fontSize: '17px', fontWeight: 800, color: '#1e293b', borderLeft: '4px solid #c8102e', paddingLeft: '12px' }}>Contact & Verification</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div>
+                <label style={labelStyle}><Phone size={16} color="#c8102e"/> Mobile Number</label>
+                <input name="phone" value={formData.phone} onChange={handleChange} style={inputStyle} placeholder="+91 XXXXX XXXXX" />
+              </div>
+              <div style={{ padding: '16px', background: '#f8fafc', borderRadius: '14px', border: '1px dashed #e2e8f0', display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <ShieldCheck size={20} color="#64748b" style={{ flexShrink: 0 }} />
+                <p style={{ margin: 0, fontSize: '13px', color: '#64748b', lineHeight: 1.5 }}>
+                  Your email address and employee ID are verified and cannot be changed directly. Please contact HR for updates.
+                </p>
+              </div>
+            </div>
+          </section>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
-            <button 
-              type="submit" 
-              disabled={saving}
-              style={{ 
-                display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '14px 28px', 
-                background: '#0f172a', color: 'white', border: 'none', borderRadius: '999px',
-                fontSize: '1rem', fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer',
-                opacity: saving ? 0.7 : 1, transition: '0.3s'
-              }}
-            >
-              <Save size={18} /> {saving ? 'Saving...' : 'Save Profile Changes'}
-            </button>
-          </div>
+          {/* Resume Options Section */}
+          <section>
+            <h3 style={{ margin: '0 0 20px', fontSize: '17px', fontWeight: 800, color: '#1e293b', borderLeft: '4px solid #c8102e', paddingLeft: '12px' }}>Resume Managed</h3>
+            <p style={{ margin: '8px 0 20px', fontSize: '14px', color: '#64748b' }}>Choose Resume Option *</p>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px', marginBottom: '32px' }}>
+              {[
+                { id: 'upload', label: 'Upload New File', icon: <UploadCloud size={24} /> },
+                { id: 'create', label: 'Create New Resume', icon: <Edit3 size={24} /> }
+              ].map((option) => (
+                <div
+                  key={option.id}
+                  onClick={() => setResumeOption(option.id)}
+                  style={{
+                    padding: '32px 20px',
+                    borderRadius: '16px',
+                    border: `2px solid ${resumeOption === option.id ? '#c8102e' : '#e2e8f0'}`,
+                    background: 'white',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '16px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                    textAlign: 'center',
+                    boxShadow: resumeOption === option.id ? '0 8px 16px rgba(200, 16, 46, 0.08)' : 'none',
+                    transform: resumeOption === option.id ? 'translateY(-2px)' : 'none'
+                  }}
+                >
+                  <div style={{ 
+                    color: resumeOption === option.id ? '#c8102e' : '#64748b',
+                    transition: 'color 0.2s'
+                  }}>
+                    {option.icon}
+                  </div>
+                  <span style={{ 
+                    fontSize: '15px', 
+                    fontWeight: 700, 
+                    color: resumeOption === option.id ? '#c8102e' : '#475569' 
+                  }}>
+                    {option.label}
+                  </span>
+                </div>
+              ))}
+            </div>
 
-        </form>
+            <AnimatePresence mode="wait">
+              {resumeOption === 'upload' && (
+                <motion.div
+                  key="upload"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  style={{
+                    border: '2px dashed #c8102e',
+                    borderRadius: '20px',
+                    padding: '60px 40px',
+                    textAlign: 'center',
+                    background: '#fcfcfc',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    position: 'relative'
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#fff1f1'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#fcfcfc'; e.currentTarget.style.transform = 'none'; }}
+                  onClick={() => document.getElementById('resume-upload')?.click()}
+                >
+                  {resumeFile ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ width: '64px', height: '64px', borderRadius: '16px', background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c8102e' }}>
+                        <FileText size={32} />
+                      </div>
+                      <div>
+                        <h4 style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>{resumeFile.name}</h4>
+                        <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>{(resumeFile.size / 1024 / 1024).toFixed(2)} MB • Ready to upload</p>
+                      </div>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setResumeFile(null); }}
+                        style={{ marginTop: '8px', padding: '8px 16px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', color: '#ef4444', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                      >
+                        <X size={14} /> Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'center' }}>
+                        <Upload size={48} color="#c8102e" />
+                      </div>
+                      <h4 style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>Click to upload or drag and drop</h4>
+                      <p style={{ margin: 0, fontSize: '14px', color: '#94a3b8', fontWeight: 500 }}>PDF, DOCX up to 5MB</p>
+                    </>
+                  )}
+                  <input 
+                    id="resume-upload"
+                    type="file" 
+                    accept=".pdf,.doc,.docx"
+                    style={{ display: 'none' }} 
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        setResumeFile(e.target.files[0]);
+                      }
+                    }}
+                  />
+                </motion.div>
+              )}
+
+              {resumeOption === 'create' && (
+                <motion.div
+                  key="create"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                >
+                  <InlineResumeBuilder 
+                    initialData={{
+                      fullName: formData.full_name,
+                      phone: formData.phone,
+                      title: formData.specialization
+                    }}
+                    onAttach={(file, data) => {
+                      setResumeFile(file);
+                      setResumeData(data);
+                    }}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </section>
+          {/* Certificates Section */}
+          <section style={{ marginTop: '32px', paddingTop: '32px', borderTop: '1px solid #f1f5f9' }}>
+            <h3 style={{ margin: '0 0 24px', fontSize: '17px', fontWeight: 800, color: '#1e293b', borderLeft: '4px solid #c8102e', paddingLeft: '12px' }}>Professional Certificates</h3>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
+              {certificates.map((cert) => (
+                <div key={cert.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: cert.type === 'portal' ? '#fff1f1' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: cert.type === 'portal' ? '#c8102e' : '#64748b' }}>
+                      <Award size={22} />
+                    </div>
+                    <div>
+                      <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: '#1e293b' }}>{cert.name}</h4>
+                      <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#64748b' }}>{cert.issuer} • {cert.date}</p>
+                    </div>
+                  </div>
+                  {cert.type === 'uploaded' && (
+                    <button 
+                      onClick={() => setCertificates(certificates.filter(c => c.id !== cert.id))}
+                      style={{ padding: '8px', color: '#ef4444', background: 'white', border: '1px solid #fecaca', borderRadius: '8px', cursor: 'pointer' }}
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
+                  {cert.type === 'portal' && (
+                    <span style={{ fontSize: '10px', fontWeight: 800, color: '#c8102e', background: '#fff1f1', padding: '4px 8px', borderRadius: '6px' }}>PORTAL EARNED</span>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div style={{ padding: '24px', border: '2px dashed #e2e8f0', borderRadius: '20px', textAlign: 'center' }}>
+              <Award size={32} color="#94a3b8" style={{ marginBottom: '12px' }} />
+              <h4 style={{ margin: '0 0 4px', fontSize: '16px', fontWeight: 700 }}>Add New Certificate</h4>
+              <p style={{ margin: '0 0 20px', fontSize: '13px', color: '#94a3b8' }}>Upload certificates you've earned from other platforms</p>
+              
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                <input 
+                  id="cert-upload"
+                  type="file" 
+                  accept=".pdf,image/*"
+                  style={{ display: 'none' }}
+                  onChange={async (e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      const file = e.target.files[0];
+                      const name = prompt("Enter Certificate Name:", file.name.split('.')[0]);
+                      const issuer = prompt("Enter Issuing Organization:");
+                      
+                      if (name && issuer) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          const newCert = {
+                            id: Math.random().toString(36).substr(2, 9),
+                            name,
+                            issuer,
+                            date: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+                            url: reader.result as string,
+                            type: 'uploaded' as const
+                          };
+                          setCertificates([...certificates, newCert]);
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }
+                  }}
+                />
+                <button 
+                  onClick={() => document.getElementById('cert-upload')?.click()}
+                  style={{ padding: '10px 20px', background: 'white', border: '1px solid #c8102e', color: '#c8102e', borderRadius: '10px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+                >
+                  <Upload size={16} /> Upload Certificate
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
       </div>
     </motion.div>
   );

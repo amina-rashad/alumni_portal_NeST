@@ -46,17 +46,13 @@ const CourseListing: React.FC = () => {
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem 1rem', fontFamily: '"Inter", sans-serif' }}
+      style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem 1rem', fontFamily: '"Montserrat", sans-serif' }}
     >
       {/* Header Section */}
-      <div style={{ marginBottom: '3rem', textAlign: 'center' }}>
+      <div style={{ marginBottom: '3rem', textAlign: 'left' }}>
         <h1 style={{ fontSize: '3rem', fontWeight: 900, color: '#0d2046', marginBottom: '1rem', letterSpacing: '-0.02em' }}>
           Upgrade Your <span style={{ color: 'var(--primary)' }}>Future</span>
         </h1>
-        <p style={{ maxWidth: '700px', margin: '0 auto', fontSize: '1.15rem', color: '#64748b', lineHeight: '1.6' }}>
-          Professional development courses designed exclusively for the NeST Alumni community. 
-          Learn from industry leaders and keep your edge sharp.
-        </p>
       </div>
 
       {/* Search & Filter Bar */}

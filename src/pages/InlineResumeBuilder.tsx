@@ -136,9 +136,9 @@ const InlineResumeBuilder: React.FC<InlineResumeBuilderProps> = ({ onAttach, ini
         </div>
       </div>
       
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '1.5rem', padding: '1.5rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem', padding: '1.5rem' }}>
         {/* Form Section */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: '600px', overflowY: 'auto', paddingRight: '1rem', scrollbarWidth: 'thin' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div>
             <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#4a4a4a', marginBottom: '0.3rem', display: 'block' }}>Full Name</label>
             <input name="fullName" value={data.fullName} onChange={handleChange} placeholder="LAURICE MORETTI" style={{ width: '100%', padding: '0.6rem', border: '1px solid #ced4da', borderRadius: '8px', boxSizing: 'border-box', background: '#f8f9fa' }} />

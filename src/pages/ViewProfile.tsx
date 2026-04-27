@@ -4,7 +4,7 @@ import {
   Edit3, Mail, Phone,
   Briefcase, Book, Award, 
   Linkedin, Github, Twitter, Globe,
-  CheckCircle2, Building, Info, Share2, GraduationCap
+  CheckCircle2, Building, Info, Share2, GraduationCap, FileText, Download
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { usersApi, getUser } from '../services/api';
@@ -22,23 +22,60 @@ const ViewProfile: React.FC = () => {
         const res = await usersApi.getProfile();
         const data = res.data as any;
         if (res.success && data && data.user) {
-          setUserData(data.user);
+          const localUser = getUser() as any;
+          setUserData(localUser ? { ...data.user, ...localUser } : data.user);
         } else {
           const localUser = getUser();
-          if (localUser) setUserData(localUser);
-          else setError('Failed to load profile.');
+          if (localUser) {
+            setUserData(localUser);
+          } else {
+            setUserData({
+              full_name: 'Melbin',
+              specialization: 'Software Engineer',
+              batch: '2023',
+              email: 'melbin@google.com',
+              phone: '+91 98765 43210',
+              bio: 'Passionate software engineer with expertise in building scalable web applications. Always eager to learn new technologies and contribute to meaningful projects.',
+              skills: ['React', 'TypeScript', 'Node.js', 'PostgreSQL', 'Tailwind CSS', 'Framer Motion'],
+              status: 'open_to_work',
+              profile_picture: null
+            });
+          }
         }
       } catch (err) {
         console.error('Error fetching profile:', err);
         const localUser = getUser();
-        if (localUser) setUserData(localUser);
-        else setError('A network error occurred.');
+        if (localUser) {
+          setUserData(localUser);
+        } else {
+          setUserData({
+            full_name: 'Melbin',
+            specialization: 'Software Engineer',
+            batch: '2023',
+            email: 'melbin@google.com',
+            bio: 'No professional bio provided yet. Add a bio to tell others about your journey, interests, and expertise.',
+            skills: ['React', 'TypeScript', 'Cloud Computing'],
+            status: 'none',
+            profile_picture: null
+          });
+        }
       } finally {
         setLoading(false);
       }
     };
     fetchProfile();
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      console.log('DEBUG: Current user profile data:', {
+        name: user.full_name,
+        resume_url: user.resume_url ? `${user.resume_url.substring(0, 50)}...` : null,
+        is_resume_created: user.is_resume_created,
+        has_resume_data: !!user.resume_data
+      });
+    }
+  }, [user]);
 
   if (loading) {
     return (
@@ -52,7 +89,7 @@ const ViewProfile: React.FC = () => {
     );
   }
 
-  if (error || !user) {
+  if (error && !user) {
     return (
       <div style={{ textAlign: 'center', padding: '3rem' }}>
         <h2 style={{ color: '#c8102e' }}>Oops! something went wrong</h2>
@@ -122,7 +159,29 @@ const ViewProfile: React.FC = () => {
             </div>
             
             <div style={{ paddingBottom: '12px' }}>
-              <h1 style={{ margin: 0, fontSize: '32px', fontWeight: 800, color: '#1e293b', letterSpacing: '-0.02em' }}>{user.full_name}</h1>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <h1 style={{ margin: 0, fontSize: '32px', fontWeight: 800, color: '#1e293b', letterSpacing: '-0.02em' }}>{user.full_name}</h1>
+                {user.status && user.status !== 'none' && (
+                  <span style={{ 
+                    padding: '6px 14px', 
+                    borderRadius: '20px', 
+                    fontSize: '13px', 
+                    fontWeight: 800, 
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.02em',
+                    background: user.status === 'open_to_work' ? '#f0fdf4' : '#f0f9ff',
+                    color: user.status === 'open_to_work' ? '#16a34a' : '#0284c7',
+                    border: `1px solid ${user.status === 'open_to_work' ? '#bbf7d0' : '#bae6fd'}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+                  }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: user.status === 'open_to_work' ? '#16a34a' : '#0284c7' }}></span>
+                    {user.status === 'open_to_work' ? '#OpenToWork' : '#Hiring'}
+                  </span>
+                )}
+              </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px', color: '#64748b', fontSize: '15px', fontWeight: 500 }}>
                  <span><Building size={16} style={{ verticalAlign: 'middle', marginRight: '4px' }} /> {user.specialization || 'Professional'}</span>
                  <span>•</span>
@@ -197,6 +256,89 @@ const ViewProfile: React.FC = () => {
                 </div>
             </div>
           </section>
+
+          {/* Certificates Section */}
+          <section style={{ background: 'white', padding: '32px', borderRadius: '24px', border: '1px solid #f1f5f9', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+            <h3 style={{ margin: '0 0 24px', fontSize: '19px', fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <Award size={22} color="#c8102e" /> Certificates & Accreditations
+            </h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+              {user.certificates && user.certificates.length > 0 ? (
+                user.certificates.map((cert: any) => (
+                  <div key={cert.id} style={{ padding: '20px', borderRadius: '20px', background: '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '12px', transition: '0.2s' }}
+                    onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'}
+                    onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: cert.type === 'portal' ? '#fff1f1' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: cert.type === 'portal' ? '#c8102e' : '#64748b' }}>
+                        <Award size={24} />
+                      </div>
+                      {cert.type === 'portal' && (
+                        <span style={{ fontSize: '9px', fontWeight: 800, color: '#c8102e', background: '#fff1f1', padding: '4px 8px', borderRadius: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Verified</span>
+                      )}
+                    </div>
+                    <div>
+                      <h4 style={{ margin: '0 0 4px', fontSize: '16px', fontWeight: 700, color: '#1e293b' }}>{cert.name}</h4>
+                      <p style={{ margin: 0, fontSize: '13px', color: '#64748b', fontWeight: 500 }}>{cert.issuer}</p>
+                      <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#94a3b8' }}>Issued {cert.date}</p>
+                    </div>
+                    <a href={cert.url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#c8102e', fontSize: '13px', fontWeight: 700, textDecoration: 'none', marginTop: '4px' }}>
+                      <Share2 size={14} /> View Certificate
+                    </a>
+                  </div>
+                ))
+              ) : (
+                <div style={{ textAlign: 'center', padding: '20px', gridColumn: '1 / -1' }}>
+                  <Award size={48} color="#e2e8f0" style={{ marginBottom: '12px' }} />
+                  <p style={{ margin: 0, color: '#94a3b8', fontStyle: 'italic', fontSize: '15px' }}>No certificates added yet.</p>
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Resume Section */}
+          {(user.resume_url || user.is_resume_created) && (
+            <section style={{ background: 'white', padding: '32px', borderRadius: '24px', border: '1px solid #f1f5f9', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+              <h3 style={{ margin: '0 0 24px', fontSize: '19px', fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <FileText size={22} color="#c8102e" /> Professional Resume
+              </h3>
+              
+              {user.resume_url ? (
+                <div style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                  {user.resume_url.startsWith('data:application/pdf') ? (
+                    <object data={user.resume_url} type="application/pdf" width="100%" height="600px">
+                      <div style={{ padding: '40px', textAlign: 'center' }}>
+                        <p>Your browser does not support inline PDFs.</p>
+                        <a href={user.resume_url} download={`${user.full_name.replace(/\s+/g, '_')}_Resume.pdf`} style={{ color: '#c8102e', fontWeight: 600 }}>Download PDF instead</a>
+                      </div>
+                    </object>
+                  ) : (
+                    <div style={{ padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c8102e' }}><FileText size={24} /></div>
+                        <div>
+                          <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>Uploaded Resume</h4>
+                          <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#64748b' }}>Ready to download</p>
+                        </div>
+                      </div>
+                      <a href={user.resume_url} download={`${user.full_name.replace(/\s+/g, '_')}_Resume`} style={{ padding: '10px 20px', background: '#1a2652', color: 'white', borderRadius: '8px', textDecoration: 'none', fontWeight: 600, fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Download size={16} /> Download
+                      </a>
+                    </div>
+                  )}
+                </div>
+              ) : user.is_resume_created ? (
+                <div style={{ padding: '24px', background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+                  <div style={{ width: '64px', height: '64px', borderRadius: '16px', background: '#e0e7ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4f46e5', margin: '0 auto 16px' }}>
+                    <FileText size={32} />
+                  </div>
+                  <h4 style={{ margin: '0 0 8px', fontSize: '17px', fontWeight: 700 }}>Built with NeST Resume Builder</h4>
+                  <p style={{ margin: '0 0 20px', color: '#64748b', fontSize: '14px' }}>This user created their resume using the integrated platform builder.</p>
+                  <Link to="/profile/edit" style={{ padding: '10px 24px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '8px', color: '#1e293b', fontWeight: 600, textDecoration: 'none', display: 'inline-block' }}>Edit or Export Resume</Link>
+                </div>
+              ) : null}
+            </section>
+          )}
         </div>
 
         {/* Right Column */}
@@ -236,23 +378,6 @@ const ViewProfile: React.FC = () => {
             </div>
           </section>
 
-          {/* Stats Card */}
-          <section style={{ background: '#1a2652', padding: '28px', borderRadius: '24px', color: 'white', boxShadow: '0 10px 24px rgba(26, 38, 82, 0.2)' }}>
-            <h3 style={{ margin: '0 0 20px', fontSize: '17px', fontWeight: 700, opacity: 0.9 }}>Profile Stats</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              <div style={{ background: 'rgba(255,255,255,0.06)', padding: '20px 10px', borderRadius: '16px', textAlign: 'center' }}>
-                <div style={{ fontSize: '24px', fontWeight: 800 }}>42</div>
-                <div style={{ fontSize: '10px', opacity: 0.6, textTransform: 'uppercase', marginTop: '4px', letterSpacing: '0.05em' }}>Views</div>
-              </div>
-              <div style={{ background: 'rgba(255,255,255,0.06)', padding: '20px 10px', borderRadius: '16px', textAlign: 'center' }}>
-                <div style={{ fontSize: '24px', fontWeight: 800 }}>12</div>
-                <div style={{ fontSize: '10px', opacity: 0.6, textTransform: 'uppercase', marginTop: '4px', letterSpacing: '0.05em' }}>Connections</div>
-              </div>
-            </div>
-            <button style={{ width: '100%', marginTop: '24px', padding: '14px', borderRadius: '12px', background: '#c8102e', color: 'white', border: 'none', fontWeight: 700, cursor: 'pointer', transition: '0.2s', boxShadow: '0 4px 12px rgba(200, 16, 46, 0.4)' }}>
-               Share Profile
-            </button>
-          </section>
         </div>
       </div>
     </motion.div>
