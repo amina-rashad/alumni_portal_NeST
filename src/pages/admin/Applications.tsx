@@ -26,6 +26,7 @@ const Applications: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [applications, setApplications] = useState<Application[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchApps = async () => {

@@ -106,9 +106,19 @@ import AdminAddEvent from './pages/admin/AdminAddEvent';
 import AdminAddCourse from './pages/admin/AdminAddCourse';
 import AdminCertification from './pages/admin/AdminCertification';
 
+// Event Manager Pages
+import EventManagerLayout from './pages/event_manager/EventManagerLayout';
+import EventManagerDashboard from './pages/event_manager/EventManagerDashboard';
+import EventManagerEvents from './pages/event_manager/EventManagerEvents';
+import EventManagerAttendees from './pages/event_manager/EventManagerAttendees';
+import EventManagerPosts from './pages/event_manager/EventManagerPosts';
+import EventManagerRegistrations from './pages/event_manager/EventManagerRegistrations';
+import EventManagerReports from './pages/event_manager/EventManagerReports';
+import EventManagerSettings from './pages/event_manager/EventManagerSettings';
+import EventManagerPlaceholder from './pages/event_manager/EventManagerPlaceholder';
+
 /* -- Luxury Splash Screen with Mask Reveal -- */
 import heroBg from './assets/hero-bg.jpg';
-
 const SplashScreen: React.FC = () => (
   <motion.div
     className="splash-screen"
@@ -384,6 +394,19 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="settings" element={<PageTransition><Settings /></PageTransition>} />
         </Route>
 
+        {/* Event Manager Protected Routes */}
+        <Route path="/event-manager" element={<EventManagerLayout />}>
+          <Route index element={<Navigate to="/event-manager/dashboard" replace />} />
+          <Route path="dashboard" element={<PageTransition><EventManagerDashboard /></PageTransition>} />
+          <Route path="events" element={<PageTransition><EventManagerEvents /></PageTransition>} />
+          <Route path="attendees" element={<PageTransition><EventManagerAttendees /></PageTransition>} />
+          <Route path="posts" element={<PageTransition><EventManagerPosts /></PageTransition>} />
+          <Route path="registrations" element={<PageTransition><EventManagerRegistrations /></PageTransition>} />
+          <Route path="reports" element={<PageTransition><EventManagerReports /></PageTransition>} />
+          <Route path="settings" element={<PageTransition><EventManagerSettings /></PageTransition>} />
+        </Route>
+
+        {/* Fallback Catch-all Route */}
         <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
     </React.Fragment>
