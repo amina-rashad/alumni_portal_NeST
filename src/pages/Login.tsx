@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, LogIn, Shield, Users, Linkedin, CheckCircle, Menu, X } from 'lucide-react';
+import { Mail, Lock, LogIn, ArrowLeft, Shield, Eye, EyeOff, Users, Linkedin, CheckCircle, X, Menu } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import nestMainLogo from '../assets/nest_logo.png';
 import nestIcon from '../assets/nest_icon.png';
@@ -137,7 +137,12 @@ const Login: React.FC = () => {
 
   const handleSuccessClose = () => {
     setShowSuccessPopup(false);
-    const targetPath = loggedInUser?.role === 'admin' ? '/admin' : '/dashboard';
+    let targetPath = '/dashboard';
+    if (loggedInUser?.role === 'admin') {
+      targetPath = '/admin';
+    } else if (loggedInUser?.role === 'event_manager') {
+      targetPath = '/event-manager';
+    }
     navigate(targetPath);
   };
 

@@ -316,3 +316,22 @@ export const socialApi = {
   addComment: (postId: string, text: string) =>
     apiRequest(`/social/posts/${postId}/comments`, { method: 'POST', body: JSON.stringify({ text }) }),
 };
+
+// ── Recruiter API ──
+
+export const recruiterApi = {
+  getApplications: () => 
+    apiRequest<{ applications: any[] }>('/recruiter/applications'),
+
+  getMyJobs: () => 
+    apiRequest<{ jobs: any[] }>('/recruiter/jobs'),
+
+  deleteJob: (jobId: string) => 
+    apiRequest(`/recruiter/jobs/${jobId}`, { method: 'DELETE' }),
+
+  addJob: (data: any) => 
+    apiRequest('/recruiter/jobs', { method: 'POST', body: JSON.stringify(data) }),
+
+  getStats: () => 
+    apiRequest<{ stats: any }>('/recruiter/stats', { method: 'GET' }),
+};
