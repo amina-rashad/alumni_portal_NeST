@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  CalendarDays, Users, Building, GraduationCap, Plus, ChevronDown, 
+import {
+  CalendarDays, Users, Building, GraduationCap, Plus, ChevronDown,
   Download, Edit2, Trash2, Search, Filter, RefreshCw
 } from 'lucide-react';
 import { adminApi } from '../../services/api';
@@ -11,6 +11,7 @@ const AdminIVStudents: React.FC = () => {
   const [visits, setVisits] = useState<any[]>([]);
   const [filteredVisits, setFilteredVisits] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+<<<<<<< HEAD
   const [searchQuery, setSearchQuery] = useState('');
   const [batchFilter, setBatchFilter] = useState('All');
   const [collegeFilter, setCollegeFilter] = useState('All');
@@ -29,6 +30,9 @@ const AdminIVStudents: React.FC = () => {
     }
     setIsLoading(false);
   };
+=======
+  const nestNavy = '#1a2652';
+>>>>>>> b5a55a284d9dbff01cfc419439be311dfe2096da
 
   useEffect(() => {
     fetchVisits();
@@ -38,7 +42,7 @@ const AdminIVStudents: React.FC = () => {
     let result = visits;
 
     if (searchQuery) {
-      result = result.filter(v => 
+      result = result.filter(v =>
         v.college?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         v.branch?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         v.specialization?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -70,12 +74,15 @@ const AdminIVStudents: React.FC = () => {
     }
   };
 
+<<<<<<< HEAD
   const resetAll = () => {
     setSearchQuery('');
     setBatchFilter('All');
     setCollegeFilter('All');
     setSpecFilter('All');
   };
+=======
+>>>>>>> b5a55a284d9dbff01cfc419439be311dfe2096da
 
   const batches = Array.from(new Set(visits.map(v => v.batch))).filter(Boolean).sort().reverse();
   const colleges = Array.from(new Set(visits.map(v => v.college))).filter(Boolean).sort();
@@ -91,12 +98,12 @@ const AdminIVStudents: React.FC = () => {
           <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#1a2652', margin: 0 }}>IV Management</h1>
           <p style={{ color: '#64748b', fontSize: '15px', marginTop: '6px', fontWeight: 500 }}>Management and scheduling of institutional Industrial Visits.</p>
         </div>
-        <button 
+        <button
           onClick={() => navigate('/admin/iv-students/add')}
-          style={{ 
-            display: 'flex', alignItems: 'center', gap: '8px', 
-            background: nestNavy, color: '#fff', border: 'none', 
-            padding: '12px 24px', borderRadius: '12px', fontSize: '14px', 
+          style={{
+            display: 'flex', alignItems: 'center', gap: '8px',
+            background: nestNavy, color: '#fff', border: 'none',
+            padding: '12px 24px', borderRadius: '12px', fontSize: '14px',
             fontWeight: 700, cursor: 'pointer', transition: '0.2s',
             boxShadow: '0 4px 12px rgba(26, 38, 82, 0.15)'
           }}
@@ -119,20 +126,20 @@ const AdminIVStudents: React.FC = () => {
 
         <div style={{ flex: 1, position: 'relative' }}>
           <Search size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-          <input 
-            type="text" 
-            placeholder="Search college, department, coordinator..." 
+          <input
+            type="text"
+            placeholder="Search college, department, coordinator..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ 
-              width: '100%', padding: '14px 44px 14px 48px', borderRadius: '16px', 
+            style={{
+              width: '100%', padding: '14px 44px 14px 48px', borderRadius: '16px',
               border: '1px solid #e2e8f0', outline: 'none', fontSize: '14px',
               background: '#fff', color: '#1e293b', fontWeight: 600,
               boxShadow: '0 2px 8px rgba(0,0,0,0.01)'
-            }} 
+            }}
           />
           {searchQuery && (
-            <button 
+            <button
               onClick={() => setSearchQuery('')}
               style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex' }}
             >
@@ -142,14 +149,14 @@ const AdminIVStudents: React.FC = () => {
         </div>
 
         <div style={{ position: 'relative' }}>
-          <button 
+          <button
             onClick={() => setShowFilters(!showFilters)}
-            style={{ 
-              display: 'flex', alignItems: 'center', gap: '8px', 
-              background: showFilters ? nestNavy : '#fff', 
-              color: showFilters ? '#fff' : '#475569', 
-              border: '1px solid #e2e8f0', 
-              padding: '14px 20px', borderRadius: '16px', 
+            style={{
+              display: 'flex', alignItems: 'center', gap: '8px',
+              background: showFilters ? nestNavy : '#fff',
+              color: showFilters ? '#fff' : '#475569',
+              border: '1px solid #e2e8f0',
+              padding: '14px 20px', borderRadius: '16px',
               fontSize: '14px', fontWeight: 700, cursor: 'pointer'
             }}
           >
@@ -157,9 +164,9 @@ const AdminIVStudents: React.FC = () => {
           </button>
 
           {showFilters && (
-            <div className="glass-morphism" style={{ 
-              position: 'absolute', top: 'calc(100% + 12px)', right: 0, 
-              width: '280px', padding: '24px', borderRadius: '24px', 
+            <div className="glass-morphism" style={{
+              position: 'absolute', top: 'calc(100% + 12px)', right: 0,
+              width: '280px', padding: '24px', borderRadius: '24px',
               zIndex: 100, border: '1px solid rgba(255,255,255,0.4)',
               boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)'
             }}>
@@ -187,8 +194,8 @@ const AdminIVStudents: React.FC = () => {
                 </select>
               </div>
 
-              <button 
-                onClick={resetAll} 
+              <button
+                onClick={resetAll}
                 style={{ width: '100%', background: '#fff1f2', border: `1px solid #fecdd3`, color: nestRed, padding: '12px', borderRadius: '12px', fontSize: '13px', fontWeight: 800, cursor: 'pointer', transition: '0.2s' }}
               >
                 Reset All Filters

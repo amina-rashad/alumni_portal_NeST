@@ -224,6 +224,8 @@ const ViewProfile: React.FC = () => {
                </div>
             </div>
           </section>
+
+
         </div>
 
         {/* Right Column: Contact and Network */}

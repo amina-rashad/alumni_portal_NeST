@@ -171,6 +171,18 @@ export const authApi = {
       body: JSON.stringify(payload),
     }),
 
+  sendOtp: (email: string) =>
+    apiRequest('/auth/send-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+
+  loginWithOtp: (payload: { email: string; otp: string }) =>
+    apiRequest<AuthData>('/auth/login-otp', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
   verify: () =>
     apiRequest<{ user: AuthUser }>('/auth/verify', {
       method: 'GET',

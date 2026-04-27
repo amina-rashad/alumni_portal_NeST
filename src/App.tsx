@@ -108,56 +108,174 @@ import AdminAddEvent from './pages/admin/AdminAddEvent';
 import AdminAddCourse from './pages/admin/AdminAddCourse';
 import AdminCertification from './pages/admin/AdminCertification';
 
-/* -- Splash Screen -- */
+// Event Manager Pages
+import EventManagerLayout from './pages/event_manager/EventManagerLayout';
+import EventManagerDashboard from './pages/event_manager/EventManagerDashboard';
+import EventManagerEvents from './pages/event_manager/EventManagerEvents';
+import EventManagerAttendees from './pages/event_manager/EventManagerAttendees';
+import EventManagerPosts from './pages/event_manager/EventManagerPosts';
+import EventManagerRegistrations from './pages/event_manager/EventManagerRegistrations';
+import EventManagerReports from './pages/event_manager/EventManagerReports';
+import EventManagerSettings from './pages/event_manager/EventManagerSettings';
+import EventManagerPlaceholder from './pages/event_manager/EventManagerPlaceholder';
+
+/* -- Luxury Splash Screen with Mask Reveal -- */
+import heroBg from './assets/hero-bg.jpg';
 const SplashScreen: React.FC = () => (
   <motion.div
     className="splash-screen"
     initial={{ opacity: 1 }}
-    exit={{ opacity: 0, transition: { duration: 0.8, ease: 'easeInOut' } }}
+    exit={{
+      opacity: 0,
+      scale: 1.05,
+      filter: 'blur(10px)',
+      transition: { duration: 2.0, ease: [0.16, 1, 0.3, 1] }
+    }}
+    style={{ overflow: 'hidden' }}
   >
+    {/* Ambient Ambient Blurred Background */}
     <motion.div
-      className="splash-logo"
-      initial={{ scale: 0.8, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ duration: 0.5 }}
-    >
+      style={{
+        position: 'absolute',
+        inset: -20,
+        backgroundImage: `url(${heroBg})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        filter: 'blur(30px) brightness(0.25)',
+        zIndex: 1
+      }}
+      initial={{ scale: 1.1, opacity: 0 }}
+      animate={{
+        scale: 1,
+        opacity: 0.6,
+        rotate: [0, 1, 0, -1, 0]
+      }}
+      transition={{
+        duration: 8,
+        opacity: { duration: 1.5 },
+        rotate: { duration: 20, repeat: Infinity, ease: 'linear' }
+      }}
+    />
+
+    {/* Luxury Particles / Grain overlay (pseudo) */}
+    <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at center, transparent 0%, rgba(5,13,30,0.8) 100%)', zIndex: 2 }} />
+
+    <div className="splash-logo" style={{ position: 'relative', zIndex: 3 }}>
       <div className="splash-brand" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '32px' }}>
-        <motion.div 
-          style={{ 
-            background: 'rgba(255, 255, 255, 0.95)', 
-            backdropFilter: 'blur(10px)', 
-            padding: '24px 40px', 
-            borderRadius: '20px', 
-            boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: '4px solid rgba(200, 16, 46, 0.1)'
-          }}
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-        >
-          <img src={nestMainLogo} alt="NeST Digital" style={{ height: '70px', objectFit: 'contain' }} />
-        </motion.div>
-        <p style={{ margin: 0, letterSpacing: '6px', color: '#ffffff', fontSize: '13px', fontWeight: 800, textTransform: 'uppercase' }}>ENGINEERING TRANSFORMATION</p>
+
+        {/* Logo Container with Mask Reveal Effect */}
+        <div style={{ position: 'relative' }}>
+          <motion.div
+            style={{
+              background: 'rgba(255, 255, 255, 0.98)',
+              backdropFilter: 'blur(20px)',
+              padding: '24px 44px',
+              borderRadius: '24px',
+              boxShadow: '0 30px 60px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,0.4)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              position: 'relative'
+            }}
+            initial={{ y: 20, opacity: 0, scale: 0.95 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+          >
+            {/* The Logo with a horizontal mask wipe reveal */}
+            <motion.div
+              style={{ overflow: 'hidden', display: 'flex', alignItems: 'center' }}
+              initial={{ width: 0 }}
+              animate={{ width: '100%' }}
+              transition={{ duration: 1.4, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <img src={nestMainLogo} alt="NeST Digital" style={{ height: '70px', objectFit: 'contain' }} />
+            </motion.div>
+          </motion.div>
+
+          {/* Luxury Reflection Shine across the logo */}
+          <motion.div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.8) 50%, transparent 70%)',
+              zIndex: 5,
+              borderRadius: '24px',
+              pointerEvents: 'none'
+            }}
+            initial={{ left: '-100%', opacity: 0 }}
+            animate={{ left: '100%', opacity: [0, 1, 0] }}
+            transition={{ duration: 1.5, delay: 1.2, ease: "easeInOut" }}
+          />
+        </div>
+
+        {/* Animated Text: Engineering Transformation */}
+        <div style={{ overflow: 'hidden', paddingTop: '10px' }}>
+          <motion.p
+            style={{
+              margin: 0,
+              letterSpacing: '12px',
+              color: '#ffffff',
+              fontSize: '11px',
+              fontWeight: 900,
+              textTransform: 'uppercase',
+              opacity: 0.8
+            }}
+            initial={{ y: '100%', opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.8, delay: 1.4, ease: "easeOut" }}
+          >
+            ENGINEERING TRANSFORMATION
+          </motion.p>
+        </div>
       </div>
-      <div className="loader-bar">
+
+      {/* Elegant minimalist loader bar */}
+      <div
+        style={{
+          width: '240px',
+          height: '1px',
+          background: 'rgba(255,255,255,0.08)',
+          borderRadius: '10px',
+          overflow: 'hidden',
+          margin: '40px auto 0',
+          position: 'relative'
+        }}
+      >
         <motion.div
-          className="loader-progress"
-          initial={{ width: 0 }}
-          animate={{ width: '100%' }}
-          transition={{ duration: 1.5, ease: 'linear' }}
+          style={{
+            height: '100%',
+            background: 'linear-gradient(90deg, transparent, #c8102e, white, #c8102e, transparent)',
+            backgroundSize: '200% 100%'
+          }}
+          initial={{ left: '-100%' }}
+          animate={{ left: '100%', backgroundPosition: ['200% center', '-200% center'] }}
+          transition={{
+            left: { duration: 1.8, ease: 'easeInOut' },
+            backgroundPosition: { duration: 3, repeat: Infinity, ease: 'linear' }
+          }}
         />
       </div>
-    </motion.div>
+    </div>
   </motion.div>
 );
 
-/* -- Apple-style Crossfade Page Transition -- */
+/* -- Apple-level Scale + Blur + Fade Page Transition -- */
 const pageTransitionVariants = {
-  initial: { opacity: 0 },
-  animate: { opacity: 1 },
-  exit: { opacity: 0 },
+  initial: {
+    opacity: 0,
+    scale: 1.04,
+    filter: 'blur(15px)'
+  },
+  animate: {
+    opacity: 1,
+    scale: 1,
+    filter: 'blur(0px)'
+  },
+  exit: {
+    opacity: 0,
+    scale: 0.96,
+    filter: 'blur(15px)'
+  },
 };
 
 const PageTransition: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -166,7 +284,10 @@ const PageTransition: React.FC<{ children: React.ReactNode }> = ({ children }) =
     initial="initial"
     animate="animate"
     exit="exit"
-    transition={{ duration: 0.45, ease: [0.42, 0, 0.58, 1] }}
+    transition={{
+      duration: 0.7,
+      ease: [0.16, 1, 0.3, 1] // Custom Apple-style cubic bezier
+    }}
     style={{ minHeight: '100vh', width: '100%' }}
   >
     {children}
@@ -177,7 +298,12 @@ const PageTransition: React.FC<{ children: React.ReactNode }> = ({ children }) =
 const ScrollToTop: React.FC = () => {
   const { pathname } = useLocation();
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const scrollContainer = document.getElementById('main-content-scroll');
+    if (scrollContainer) {
+      scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }, [pathname]);
   return null;
 };
@@ -187,12 +313,14 @@ const AnimatedRoutes: React.FC = () => {
   const location = useLocation();
 
   return (
-    <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
+    <React.Fragment>
+      <ScrollToTop />
+      <Routes location={location}>
         {/* Public Routes */}
         <Route path="/" element={<PageTransition><Home /></PageTransition>} />
         <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
         <Route path="/register" element={<PageTransition><Register /></PageTransition>} />
+
         <Route path="/forgot-password" element={<PageTransition><ForgotPassword /></PageTransition>} />
         <Route path="/reset-password" element={<PageTransition><ResetPassword /></PageTransition>} />
         <Route path="/email-verification" element={<PageTransition><EmailVerification /></PageTransition>} />
@@ -271,10 +399,22 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="settings" element={<PageTransition><Settings /></PageTransition>} />
         </Route>
 
+        {/* Event Manager Protected Routes */}
+        <Route path="/event-manager" element={<EventManagerLayout />}>
+          <Route index element={<Navigate to="/event-manager/dashboard" replace />} />
+          <Route path="dashboard" element={<PageTransition><EventManagerDashboard /></PageTransition>} />
+          <Route path="events" element={<PageTransition><EventManagerEvents /></PageTransition>} />
+          <Route path="attendees" element={<PageTransition><EventManagerAttendees /></PageTransition>} />
+          <Route path="posts" element={<PageTransition><EventManagerPosts /></PageTransition>} />
+          <Route path="registrations" element={<PageTransition><EventManagerRegistrations /></PageTransition>} />
+          <Route path="reports" element={<PageTransition><EventManagerReports /></PageTransition>} />
+          <Route path="settings" element={<PageTransition><EventManagerSettings /></PageTransition>} />
+        </Route>
+
         {/* Fallback Catch-all Route */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </AnimatePresence>
+    </React.Fragment>
   );
 };
 
@@ -282,7 +422,8 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const loadTimer = setTimeout(() => setIsLoading(false), 1800);
+    // Luxury loading delay
+    const loadTimer = setTimeout(() => setIsLoading(false), 2500);
     return () => clearTimeout(loadTimer);
   }, []);
 
@@ -297,7 +438,11 @@ const App: React.FC = () => {
             key="content"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
+<<<<<<< HEAD
             transition={{ duration: 0.5 }}
+=======
+            transition={{ duration: 1.5, ease: 'easeOut' }}
+>>>>>>> b5a55a284d9dbff01cfc419439be311dfe2096da
           >
             <AnimatedRoutes />
           </motion.div>

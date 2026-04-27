@@ -12,8 +12,20 @@ const CreatePost: React.FC = () => {
   const [content, setContent] = useState('');
   const [tags, setTags] = useState<string[]>(['NeSTLife']);
   const [newTag, setNewTag] = useState('');
+  const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [visibility, setVisibility] = useState<'Public' | 'Connections'>('Public');
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newImages = Array.from(e.target.files).map(file => URL.createObjectURL(file));
+      setSelectedImages(prev => [...prev, ...newImages]);
+    }
+  };
+
+  const handleRemoveImage = (indexToRemove: number) => {
+    setSelectedImages(prev => prev.filter((_, idx) => idx !== indexToRemove));
+  };
 
   const handlePostSubmit = () => {
     if (!content.trim()) return;
@@ -102,7 +114,7 @@ const CreatePost: React.FC = () => {
           onChange={(e) => setContent(e.target.value)}
           style={{ 
             width: '100%', 
-            minHeight: '200px', 
+            minHeight: '150px', 
             border: 'none', 
             background: 'transparent', 
             fontSize: '1.25rem', 
@@ -113,6 +125,28 @@ const CreatePost: React.FC = () => {
             marginBottom: '1rem'
           }}
         />
+
+        {/* Image Previews */}
+        {selectedImages.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginBottom: '1.5rem' }}>
+            {selectedImages.map((img, idx) => (
+              <motion.div 
+                key={idx}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                style={{ position: 'relative', width: '120px', height: '120px', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
+              >
+                <img src={img} alt="Upload preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <button 
+                  onClick={() => handleRemoveImage(idx)}
+                  style={{ position: 'absolute', top: '6px', right: '6px', background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                >
+                  <X size={14} />
+                </button>
+              </motion.div>
+            ))}
+          </div>
+        )}
 
         {/* Tags */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', marginBottom: '2rem' }}>
@@ -143,11 +177,24 @@ const CreatePost: React.FC = () => {
           />
         </div>
 
-        {/* Media Attachments (Mock) */}
+        {/* Media Attachments */}
         <div style={{ display: 'flex', gap: '0.75rem', padding: '1.5rem 0', borderTop: '1px solid #F1F5F9' }}>
-          <button style={{ flex: 1, padding: '1rem', borderRadius: '14px', border: '1px solid #E2E8F0', background: '#fff', color: '#64748B', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', cursor: 'pointer', transition: 'all 0.2s' }}>
-            <ImageIcon size={20} color="#10B981" /> Photo / Video
-          </button>
+          <div style={{ flex: 1 }}>
+            <input 
+              type="file" 
+              id="user-photo-upload" 
+              multiple 
+              accept="image/*" 
+              style={{ display: 'none' }} 
+              onChange={handleImageUpload} 
+            />
+            <label 
+              htmlFor="user-photo-upload" 
+              style={{ padding: '1rem', borderRadius: '14px', border: '1px solid #E2E8F0', background: '#fff', color: '#64748B', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', cursor: 'pointer', transition: 'all 0.2s', width: '100%' }}
+            >
+              <ImageIcon size={20} color="#10B981" /> Photo / Video
+            </label>
+          </div>
           <button style={{ flex: 1, padding: '1rem', borderRadius: '14px', border: '1px solid #E2E8F0', background: '#fff', color: '#64748B', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', cursor: 'pointer', transition: 'all 0.2s' }}>
             <FileText size={20} color="#3B82F6" /> Document
           </button>

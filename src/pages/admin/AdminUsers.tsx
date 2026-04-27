@@ -1,28 +1,41 @@
 import React, { useState, useEffect, useRef } from 'react';
+<<<<<<< HEAD
 import { useNavigate, Link } from 'react-router-dom';
-import { 
+=======
+import { Link, useNavigate } from 'react-router-dom';
+import { adminApi } from '../../services/api';
+>>>>>>> b5a55a284d9dbff01cfc419439be311dfe2096da
+import {
   Search, Plus, UserPlus,
   Eye, Edit2, MoreHorizontal,
   ChevronDown, Filter
 } from 'lucide-react';
+<<<<<<< HEAD
 import { adminApi } from '../../services/api';
+=======
+
+>>>>>>> b5a55a284d9dbff01cfc419439be311dfe2096da
 
 const AdminUsers: React.FC = () => {
   const nestNavy = '#1a2652';
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   // Filter States
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [roleFilter, setRoleFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
   const [skillFilter, setSkillFilter] = useState('');
   const [experienceFilter, setExperienceFilter] = useState('');
-  
+
   const filterRef = useRef<HTMLDivElement>(null);
 
   const [users, setUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+<<<<<<< HEAD
+=======
+
+>>>>>>> b5a55a284d9dbff01cfc419439be311dfe2096da
 
   // Handle outside click for filter dropdown
   useEffect(() => {
@@ -50,13 +63,13 @@ const AdminUsers: React.FC = () => {
   }, []);
 
   const filteredUsers = users.filter(user => {
-    const matchesSearch = 
-      (user.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-       user.email?.toLowerCase().includes(searchQuery.toLowerCase()));
-    
+    const matchesSearch =
+      (user.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.email?.toLowerCase().includes(searchQuery.toLowerCase()));
+
     const matchesIdentity = roleFilter === 'All' || user.user_type === roleFilter;
     const matchesStatus = statusFilter === 'All' || (user.is_active ? 'Active' : 'Inactive') === statusFilter;
-    
+
     return matchesSearch && matchesIdentity && matchesStatus;
   });
 
@@ -97,7 +110,7 @@ const AdminUsers: React.FC = () => {
           <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#1e293b', margin: 0 }}>User Governance</h1>
           <p style={{ color: '#64748b', fontSize: '15px', marginTop: '4px' }}>Manage user access, roles, and platform permissions.</p>
         </div>
-        <button 
+        <button
           onClick={() => navigate('/admin/users/add')}
           style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', background: nestNavy, color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(26, 38, 82, 0.2)' }}
         >
@@ -109,38 +122,38 @@ const AdminUsers: React.FC = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div style={{ display: 'flex', gap: '16px', flex: 1, alignItems: 'center' }}>
           {/* Search Bar */}
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            background: '#fff', 
-            border: '1px solid #e2e8f0', 
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            background: '#fff',
+            border: '1px solid #e2e8f0',
             borderRadius: '12px',
             padding: '8px 16px',
             width: '100%',
             maxWidth: '360px'
           }}>
             <Search size={18} color="#94a3b8" />
-            <input 
-              type="text" 
-              placeholder="Search users..." 
+            <input
+              type="text"
+              placeholder="Search users..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ 
-                border: 'none', 
-                outline: 'none', 
-                marginLeft: '10px', 
+              style={{
+                border: 'none',
+                outline: 'none',
+                marginLeft: '10px',
                 width: '100%',
                 fontSize: '14px',
                 color: '#1e293b',
                 fontWeight: 600,
                 background: 'transparent'
-              }} 
+              }}
             />
           </div>
 
           {/* Filter Button */}
           <div style={{ position: 'relative' }} ref={filterRef}>
-            <button 
+            <button
               onClick={() => setIsFilterOpen(!isFilterOpen)}
               style={{
                 display: 'flex',
@@ -157,7 +170,7 @@ const AdminUsers: React.FC = () => {
                 transition: 'background 0.2s'
               }}
             >
-              <Filter size={18} /> 
+              <Filter size={18} />
               Filters
               {(roleFilter !== 'All' || statusFilter !== 'All' || skillFilter !== '' || experienceFilter !== '') && (
                 <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#3b82f6', marginLeft: '4px' }}></div>
@@ -227,7 +240,7 @@ const AdminUsers: React.FC = () => {
                 `}</style>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontWeight: 800, color: '#1e293b', fontSize: '15px' }}>Filter Users</span>
-                  <span 
+                  <span
                     onClick={() => {
                       setRoleFilter('All');
                       setStatusFilter('All');
@@ -336,14 +349,14 @@ const AdminUsers: React.FC = () => {
                   </td>
                   <td style={{ padding: '16px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ 
-                        width: '42px', 
-                        height: '42px', 
-                        borderRadius: '50%', 
-                        background: '#3b82f6', 
-                        color: '#fff', 
-                        display: 'flex', 
-                        alignItems: 'center', 
+                      <div style={{
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '50%',
+                        background: '#3b82f6',
+                        color: '#fff',
+                        display: 'flex',
+                        alignItems: 'center',
                         justifyContent: 'center',
                         fontSize: '16px',
                         fontWeight: 700,
@@ -361,11 +374,11 @@ const AdminUsers: React.FC = () => {
                     {user.email}
                   </td>
                   <td style={{ padding: '16px' }}>
-                    <span style={{ 
-                      padding: '4px 12px', 
-                      borderRadius: '999px', 
-                      fontSize: '12px', 
-                      fontWeight: 600, 
+                    <span style={{
+                      padding: '4px 12px',
+                      borderRadius: '999px',
+                      fontSize: '12px',
+                      fontWeight: 600,
                       background: '#f1f5f9',
                       color: '#475569',
                       border: '1px solid #e2e8f0',
@@ -375,11 +388,11 @@ const AdminUsers: React.FC = () => {
                     </span>
                   </td>
                   <td style={{ padding: '16px' }}>
-                    <span style={{ 
-                      padding: '4px 12px', 
-                      borderRadius: '999px', 
-                      fontSize: '12px', 
-                      fontWeight: 600, 
+                    <span style={{
+                      padding: '4px 12px',
+                      borderRadius: '999px',
+                      fontSize: '12px',
+                      fontWeight: 600,
                       background: user.is_active ? '#eff6ff' : '#fef2f2',
                       color: user.is_active ? '#2563eb' : '#dc2626',
                       border: user.is_active ? '1px solid #dbeafe' : '1px solid #fee2e2'
@@ -389,18 +402,18 @@ const AdminUsers: React.FC = () => {
                   </td>
                   <td style={{ padding: '16px', position: 'relative' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <button 
-                         onClick={() => navigate(`/admin/users/edit/${user.id}`)}
-                         style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', transition: 'color 0.2s' }}
-                         onMouseEnter={e => e.currentTarget.style.color = nestNavy}
-                         onMouseLeave={e => e.currentTarget.style.color = '#94a3b8'}
-                         title="Edit"
+                      <button
+                        onClick={() => navigate(`/admin/users/edit/${user.id}`)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', transition: 'color 0.2s' }}
+                        onMouseEnter={e => e.currentTarget.style.color = nestNavy}
+                        onMouseLeave={e => e.currentTarget.style.color = '#94a3b8'}
+                        title="Edit"
                       >
                         <Edit2 size={18} />
                       </button>
-                      
+
                       <div style={{ position: 'relative' }}>
-                        <button 
+                        <button
                           onClick={() => setActiveMenu(activeMenu === user.id ? null : user.id)}
                           style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', transition: 'color 0.2s' }}
                           onMouseEnter={e => e.currentTarget.style.color = nestNavy}
@@ -409,9 +422,9 @@ const AdminUsers: React.FC = () => {
                         >
                           <MoreHorizontal size={18} />
                         </button>
-                        
+
                         {activeMenu === user.id && (
-                          <div 
+                          <div
                             ref={menuRef}
                             style={{
                               position: 'absolute',
@@ -427,7 +440,7 @@ const AdminUsers: React.FC = () => {
                               marginTop: '8px'
                             }}
                           >
-                            <button 
+                            <button
                               onClick={() => { handleToggleStatus(user); setActiveMenu(null); }}
                               style={{ width: '100%', padding: '12px 16px', textAlign: 'left', background: 'none', border: 'none', fontSize: '13px', fontWeight: 500, color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'background 0.2s' }}
                               onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
@@ -436,7 +449,7 @@ const AdminUsers: React.FC = () => {
                               {user.is_active ? 'Deactivate User' : 'Activate User'}
                             </button>
                             <div style={{ height: '1px', background: '#f1f5f9' }}></div>
-                            <button 
+                            <button
                               onClick={() => { handleDeleteUser(user); setActiveMenu(null); }}
                               style={{ width: '100%', padding: '12px 16px', textAlign: 'left', background: 'none', border: 'none', fontSize: '13px', fontWeight: 500, color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'background 0.2s' }}
                               onMouseEnter={e => e.currentTarget.style.background = '#fef2f2'}

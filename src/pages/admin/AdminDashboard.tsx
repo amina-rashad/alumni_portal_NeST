@@ -1,16 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Users, UserCheck, Briefcase, FileText, 
+import {
+  Users, UserCheck, Briefcase, FileText,
   Plus, Activity
 } from 'lucide-react';
+<<<<<<< HEAD
+=======
+
+>>>>>>> b5a55a284d9dbff01cfc419439be311dfe2096da
 import { adminApi } from '../../services/api';
 
 const nestNavy = '#1a2652';
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
+
   const [statsData, setStatsData] = useState({
     total_users: 0,
     interns: 0,
@@ -46,17 +51,17 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-      
+
       {/* Stats - Compact Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
         {stats.map((stat, i) => (
-          <motion.div 
+          <motion.div
             key={stat.title}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05 }}
-            style={{ 
-              background: '#fff', padding: '20px', borderRadius: '24px', 
+            style={{
+              background: '#fff', padding: '20px', borderRadius: '24px',
               boxShadow: '0 4px 20px rgba(0,0,0,0.02)', border: '1px solid #f1f5f9',
               display: 'flex', flexDirection: 'column', gap: '12px'
             }}
@@ -65,11 +70,11 @@ const AdminDashboard: React.FC = () => {
               <stat.icon size={18} color={stat.color} />
             </div>
             <div>
-               <div style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{stat.title}</div>
-               <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-                 <span style={{ fontSize: '18px', fontWeight: 800, color: '#1e293b' }}>{stat.value}</span>
-                 <span style={{ fontSize: '10px', fontWeight: 800, color: '#22c55e' }}>{stat.trend}</span>
-               </div>
+              <div style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{stat.title}</div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                <span style={{ fontSize: '18px', fontWeight: 800, color: '#1e293b' }}>{stat.value}</span>
+                <span style={{ fontSize: '10px', fontWeight: 800, color: '#22c55e' }}>{stat.trend}</span>
+              </div>
             </div>
           </motion.div>
         ))}
@@ -77,132 +82,132 @@ const AdminDashboard: React.FC = () => {
 
       {/* Analytics Row: Pie Graph & Bar Graph */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '24px' }}>
-         {/* PIE GRAPH: Platform Overview */}
-         <section style={{ background: '#fff', borderRadius: '32px', padding: '32px', border: '1px solid #f1f5f9', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
-            <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#1e293b', marginBottom: '24px' }}>Platform Distribution</h3>
-            <div style={{ position: 'relative', height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-               <motion.svg 
-                  initial={{ scale: 0.8, rotate: -90, opacity: 0 }}
-                  animate={{ scale: 1, rotate: 0, opacity: 1 }}
-                  transition={{ duration: 1.2, ease: "backOut" }}
-                  width="180" height="180" viewBox="0 0 100 100">
-                  <motion.circle 
-                    initial={{ strokeDasharray: "0 251.2" }}
-                    animate={{ strokeDasharray: "157 251.2" }}
-                    transition={{ duration: 1.5, delay: 0.2 }}
-                    cx="50" cy="50" r="40" fill="transparent" stroke={nestNavy} strokeWidth="20" transform="rotate(-90 50 50)" />
-                  <motion.circle 
-                    initial={{ strokeDasharray: "0 251.2" }}
-                    animate={{ strokeDasharray: "50 251.2" }}
-                    transition={{ duration: 1.5, delay: 0.4 }}
-                    cx="50" cy="50" r="40" fill="transparent" stroke="#3b82f6" strokeWidth="20" transform="rotate(135 50 50)" />
-                  <motion.circle 
-                    initial={{ strokeDasharray: "0 251.2" }}
-                    animate={{ strokeDasharray: "25 251.2" }}
-                    transition={{ duration: 1.5, delay: 0.6 }}
-                    cx="50" cy="50" r="40" fill="transparent" stroke="#f59e0b" strokeWidth="20" transform="rotate(207 50 50)" />
-                  <motion.circle 
-                    initial={{ strokeDasharray: "0 251.2" }}
-                    animate={{ strokeDasharray: "18 251.2" }}
-                    transition={{ duration: 1.5, delay: 0.8 }}
-                    cx="50" cy="50" r="40" fill="transparent" stroke="#ef4444" strokeWidth="20" transform="rotate(243 50 50)" />
-                  <circle cx="50" cy="50" r="28" fill="#fff" />
-               </motion.svg>
-               <motion.div 
-                 initial={{ opacity: 0, scale: 0.5 }}
-                 animate={{ opacity: 1, scale: 1 }}
-                 transition={{ delay: 1.5 }}
-                 style={{ position: 'absolute', textAlign: 'center' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8' }}>TOTAL</div>
-                  <div style={{ fontSize: '20px', fontWeight: 800, color: '#1e293b' }}>5.2K</div>
-               </motion.div>
+        {/* PIE GRAPH: Platform Overview */}
+        <section style={{ background: '#fff', borderRadius: '32px', padding: '32px', border: '1px solid #f1f5f9', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
+          <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#1e293b', marginBottom: '24px' }}>Platform Distribution</h3>
+          <div style={{ position: 'relative', height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <motion.svg
+              initial={{ scale: 0.8, rotate: -90, opacity: 0 }}
+              animate={{ scale: 1, rotate: 0, opacity: 1 }}
+              transition={{ duration: 1.2, ease: "backOut" }}
+              width="180" height="180" viewBox="0 0 100 100">
+              <motion.circle
+                initial={{ strokeDasharray: "0 251.2" }}
+                animate={{ strokeDasharray: "157 251.2" }}
+                transition={{ duration: 1.5, delay: 0.2 }}
+                cx="50" cy="50" r="40" fill="transparent" stroke={nestNavy} strokeWidth="20" transform="rotate(-90 50 50)" />
+              <motion.circle
+                initial={{ strokeDasharray: "0 251.2" }}
+                animate={{ strokeDasharray: "50 251.2" }}
+                transition={{ duration: 1.5, delay: 0.4 }}
+                cx="50" cy="50" r="40" fill="transparent" stroke="#3b82f6" strokeWidth="20" transform="rotate(135 50 50)" />
+              <motion.circle
+                initial={{ strokeDasharray: "0 251.2" }}
+                animate={{ strokeDasharray: "25 251.2" }}
+                transition={{ duration: 1.5, delay: 0.6 }}
+                cx="50" cy="50" r="40" fill="transparent" stroke="#f59e0b" strokeWidth="20" transform="rotate(207 50 50)" />
+              <motion.circle
+                initial={{ strokeDasharray: "0 251.2" }}
+                animate={{ strokeDasharray: "18 251.2" }}
+                transition={{ duration: 1.5, delay: 0.8 }}
+                cx="50" cy="50" r="40" fill="transparent" stroke="#ef4444" strokeWidth="20" transform="rotate(243 50 50)" />
+              <circle cx="50" cy="50" r="28" fill="#fff" />
+            </motion.svg>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 1.5 }}
+              style={{ position: 'absolute', textAlign: 'center' }}>
+              <div style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8' }}>TOTAL</div>
+              <div style={{ fontSize: '20px', fontWeight: 800, color: '#1e293b' }}>5.2K</div>
+            </motion.div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#64748b', fontWeight: 700 }}>
+              <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: nestNavy }}></div> Alumni
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '24px' }}>
-               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#64748b', fontWeight: 700 }}>
-                  <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: nestNavy }}></div> Alumni
-               </div>
-               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#64748b', fontWeight: 700 }}>
-                  <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#3b82f6' }}></div> IV Students
-               </div>
-               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#64748b', fontWeight: 700 }}>
-                  <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#f59e0b' }}></div> Interns
-               </div>
-               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#64748b', fontWeight: 700 }}>
-                  <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#ef4444' }}></div> Staff
-               </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#64748b', fontWeight: 700 }}>
+              <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#3b82f6' }}></div> IV Students
             </div>
-         </section>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#64748b', fontWeight: 700 }}>
+              <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#f59e0b' }}></div> Interns
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#64748b', fontWeight: 700 }}>
+              <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#ef4444' }}></div> Staff
+            </div>
+          </div>
+        </section>
 
-         {/* BAR GRAPH: Growth Analytics */}
-         <section style={{ background: '#fff', borderRadius: '32px', padding: '32px', border: '1px solid #f1f5f9', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-               <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#1e293b', margin: 0 }}>Enrollment & Engagement Growth</h3>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '220px', padding: '0 10px' }}>
-               {[60, 40, 85, 30, 95, 70, 50, 110, 80, 130, 90, 105].map((h, i) => (
-                 <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', flex: 1 }}>
-                   <div style={{ position: 'relative', width: '20px', height: '100%', display: 'flex', alignItems: 'flex-end' }}>
-                      <motion.div 
-                        initial={{ height: 0 }}
-                        animate={{ height: `${h}px` }}
-                        transition={{ delay: i * 0.05, duration: 0.8 }}
-                        style={{ width: '100%', background: i === 9 ? nestNavy : 'rgba(26, 38, 82, 0.15)', borderRadius: '6px' }}
-                      ></motion.div>
-                   </div>
-                   <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 700 }}>{['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'][i]}</span>
-                 </div>
-               ))}
-            </div>
-         </section>
+        {/* BAR GRAPH: Growth Analytics */}
+        <section style={{ background: '#fff', borderRadius: '32px', padding: '32px', border: '1px solid #f1f5f9', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+            <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#1e293b', margin: 0 }}>Enrollment & Engagement Growth</h3>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '220px', padding: '0 10px' }}>
+            {[60, 40, 85, 30, 95, 70, 50, 110, 80, 130, 90, 105].map((h, i) => (
+              <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', flex: 1 }}>
+                <div style={{ position: 'relative', width: '20px', height: '100%', display: 'flex', alignItems: 'flex-end' }}>
+                  <motion.div
+                    initial={{ height: 0 }}
+                    animate={{ height: `${h}px` }}
+                    transition={{ delay: i * 0.05, duration: 0.8 }}
+                    style={{ width: '100%', background: i === 9 ? nestNavy : 'rgba(26, 38, 82, 0.15)', borderRadius: '6px' }}
+                  ></motion.div>
+                </div>
+                <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 700 }}>{['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'][i]}</span>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
 
       {/* Bottom Content Row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: '32px' }}>
-        
+
         {/* Recent Activity Section */}
         <section style={{ background: '#fff', borderRadius: '32px', padding: '32px', border: '1px solid #f1f5f9', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
           <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#1e293b', marginBottom: '28px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-             <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(26, 38, 82, 0.08)', color: nestNavy }}><Activity size={18} /></div> Recent Activities
+            <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(26, 38, 82, 0.08)', color: nestNavy }}><Activity size={18} /></div> Recent Activities
           </h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
-             {recentActivity.map((act, i) => (
-               <motion.div 
-                key={i} 
+            {recentActivity.map((act, i) => (
+              <motion.div
+                key={i}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.1 }}
                 style={{ padding: '20px', borderRadius: '24px', background: '#f8fafc', border: '1px solid #f1f5f9', display: 'flex', gap: '16px' }}
-               >
-                  <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: nestNavy, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 800, flexShrink: 0 }}>
-                    {act.avatar}
-                  </div>
-                  <div>
-                     <div style={{ fontSize: '14px', fontWeight: 800, color: '#1e293b' }}>{act.user}</div>
-                     <div style={{ fontSize: '12px', color: '#475569', margin: '4px 0', fontWeight: 500 }}>{act.action}</div>
-                     <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 600 }}>{act.time}</div>
-                  </div>
-               </motion.div>
-             ))}
+              >
+                <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: nestNavy, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 800, flexShrink: 0 }}>
+                  {act.avatar}
+                </div>
+                <div>
+                  <div style={{ fontSize: '14px', fontWeight: 800, color: '#1e293b' }}>{act.user}</div>
+                  <div style={{ fontSize: '12px', color: '#475569', margin: '4px 0', fontWeight: 500 }}>{act.action}</div>
+                  <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 600 }}>{act.time}</div>
+                </div>
+              </motion.div>
+            ))}
           </div>
         </section>
 
         {/* Global Actions */}
         <section style={{ background: '#fff', borderRadius: '32px', padding: '32px', border: `2px solid ${nestNavy}15`, boxShadow: '0 10px 30px rgba(26, 38, 82, 0.04)', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-           <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#1e293b', margin: 0 }}>Quick Actions</h3>
-           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <button 
-                onClick={() => navigate('/admin/events/add')}
-                style={{ width: '100%', padding: '14px', borderRadius: '16px', border: 'none', background: '#f43f5e', color: '#fff', fontWeight: 800, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', boxShadow: '0 4px 12px rgba(244, 63, 94, 0.2)' }}
-              >
-                <Plus size={16} /> Host Event
-              </button>
-              <button 
-                onClick={() => navigate('/admin/add-courses')}
-                style={{ width: '100%', padding: '14px', borderRadius: '16px', border: 'none', background: nestNavy, color: '#fff', fontWeight: 800, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', boxShadow: '0 4px 12px rgba(26, 38, 82, 0.2)' }}
-              >
-                <Plus size={16} /> Add Course
-              </button>
-           </div>
+          <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#1e293b', margin: 0 }}>Quick Actions</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <button
+              onClick={() => navigate('/admin/events/add')}
+              style={{ width: '100%', padding: '14px', borderRadius: '16px', border: 'none', background: '#f43f5e', color: '#fff', fontWeight: 800, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', boxShadow: '0 4px 12px rgba(244, 63, 94, 0.2)' }}
+            >
+              <Plus size={16} /> Host Event
+            </button>
+            <button
+              onClick={() => navigate('/admin/add-courses')}
+              style={{ width: '100%', padding: '14px', borderRadius: '16px', border: 'none', background: nestNavy, color: '#fff', fontWeight: 800, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', boxShadow: '0 4px 12px rgba(26, 38, 82, 0.2)' }}
+            >
+              <Plus size={16} /> Add Course
+            </button>
+          </div>
         </section>
       </div>
     </div>

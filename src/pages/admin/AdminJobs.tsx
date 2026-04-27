@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  Briefcase, Plus, 
+import {
+  Briefcase, Plus,
   Download, Eye, Edit2, MoreHorizontal,
   Search, Calendar, AlertTriangle
 } from 'lucide-react';
@@ -11,8 +11,12 @@ const AdminJobs: React.FC = () => {
   const [jobs, setJobs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+<<<<<<< HEAD
   const [jobToDelete, setJobToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+=======
+  const nestNavy = '#1a2652';
+>>>>>>> b5a55a284d9dbff01cfc419439be311dfe2096da
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -43,8 +47,8 @@ const AdminJobs: React.FC = () => {
     setIsDeleting(false);
   };
 
-  const filteredJobs = jobs.filter(job => 
-    job.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+  const filteredJobs = jobs.filter(job =>
+    job.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     job.company?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -59,20 +63,20 @@ const AdminJobs: React.FC = () => {
       <div style={{ display: 'flex', gap: '16px' }}>
         <div style={{ flex: 1, background: '#fff', borderRadius: '16px', padding: '16px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div style={{ background: '#fef3c7', padding: '12px', borderRadius: '12px', color: '#f59e0b' }}>
-             <Briefcase size={24} />
+            <Briefcase size={24} />
           </div>
           <div>
-             <div style={{ fontSize: '20px', fontWeight: 700, color: '#1e293b' }}>{jobs.length}</div>
-             <div style={{ fontSize: '13px', color: '#64748b' }}>Active Job Postings</div>
+            <div style={{ fontSize: '20px', fontWeight: 700, color: '#1e293b' }}>{jobs.length}</div>
+            <div style={{ fontSize: '13px', color: '#64748b' }}>Active Job Postings</div>
           </div>
         </div>
         <div style={{ flex: 2 }} />
 
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <Link to="/admin/jobs/post" style={{ textDecoration: 'none' }}>
-            <button style={{ 
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', 
-              background: '#1A2652', color: '#fff', border: 'none', padding: '14px 24px', 
+            <button style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              background: '#1A2652', color: '#fff', border: 'none', padding: '14px 24px',
               borderRadius: '14px', fontSize: '14px', fontWeight: 800, cursor: 'pointer',
               width: '100%', boxShadow: '0 8px 24px rgba(26, 38, 82, 0.2)'
             }}>
@@ -85,30 +89,30 @@ const AdminJobs: React.FC = () => {
 
       {/* Toolbar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          background: '#fff', 
-          border: '1px solid #e2e8f0', 
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          background: '#fff',
+          border: '1px solid #e2e8f0',
           borderRadius: '8px',
           padding: '8px 12px',
           width: '300px'
         }}>
           <Search size={16} color="#94a3b8" />
-          <input 
-            type="text" 
-            placeholder="Search jobs..." 
+          <input
+            type="text"
+            placeholder="Search jobs..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ 
-              border: 'none', 
-              outline: 'none', 
-              marginLeft: '8px', 
+            style={{
+              border: 'none',
+              outline: 'none',
+              marginLeft: '8px',
               width: '100%',
               fontSize: '13px',
               color: '#1e293b',
               background: 'transparent'
-            }} 
+            }}
           />
         </div>
       </div>
@@ -137,9 +141,9 @@ const AdminJobs: React.FC = () => {
                 <tr key={job.id} style={{ borderBottom: index !== filteredJobs.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
                   <td style={{ padding: '16px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ 
-                        width: '36px', height: '36px', borderRadius: '8px', 
-                        background: '#eff6ff', display: 'flex', 
+                      <div style={{
+                        width: '36px', height: '36px', borderRadius: '8px',
+                        background: '#eff6ff', display: 'flex',
                         alignItems: 'center', justifyContent: 'center'
                       }}>
                         <Briefcase size={18} color="#3b82f6" />
@@ -175,16 +179,16 @@ const AdminJobs: React.FC = () => {
               <p style={{ margin: '0 0 24px 0', fontSize: '14px', color: '#64748b' }}>
                 Are you sure you want to delete this job posting? This action cannot be undone.
               </p>
-              
+
               <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
-                <button 
+                <button
                   onClick={() => setJobToDelete(null)}
                   disabled={isDeleting}
                   style={{ flex: 1, padding: '12px', background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 600, cursor: isDeleting ? 'not-allowed' : 'pointer' }}
                 >
                   Cancel
                 </button>
-                <button 
+                <button
                   onClick={confirmDelete}
                   disabled={isDeleting}
                   style={{ flex: 1, padding: '12px', background: '#ef4444', color: '#ffffff', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 600, cursor: isDeleting ? 'not-allowed' : 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}

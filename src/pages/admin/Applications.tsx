@@ -4,13 +4,28 @@ import {
   Clock, XCircle, Search, Filter, MoreVertical,
   Download, Send, Eye, Brain
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { adminApi } from '../../services/api';
+
+interface Application {
+  id: string;
+  candidate: {
+    name: string;
+    email: string;
+    avatar: string;
+  };
+  role: string;
+  date: string;
+  aiScore: number;
+  matchQuality: 'High' | 'Medium' | 'Low';
+  status: 'Pending' | 'Reviewing' | 'Interview' | 'Hired' | 'Rejected';
+}
 
 const Applications: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [applications, setApplications] = useState<any[]>([]);
+  const [applications, setApplications] = useState<Application[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchApps = async () => {

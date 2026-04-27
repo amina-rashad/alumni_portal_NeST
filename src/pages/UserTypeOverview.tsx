@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  ArrowLeft, Users, Target, Rocket, Award, 
-  Zap, Menu, X, ArrowRight, Globe, Share2,
-  ShieldCheck, Briefcase, GraduationCap, MapPin, Calendar
+import {
+  ArrowLeft, Users, Target, Rocket, Award,
+  Zap, Menu, X, Globe,
+  ShieldCheck, Briefcase, GraduationCap, MapPin
 } from 'lucide-react';
 import '../App.css';
 import nestMainLogo from '../assets/nest_logo.png';
@@ -97,28 +97,6 @@ const userTypeData: Record<string, any> = {
       { icon: Zap, title: 'Tech Workshops', desc: 'Attend short power-talks by our senior architects during your visit.' },
       { icon: Rocket, title: 'Future Careers', desc: 'Understand the different roles available and find your calling in tech.' }
     ]
-  },
-  'event-leads': {
-    title: 'Event Network',
-    tagline: 'Connecting through shared tech interests.',
-    description: 'Our events bring together tech enthusiasts, innovators, and leaders from across the globe. From hackathons to tech summits, we provide the platform to showcase talent and share knowledge.',
-    heroImage: 'https://images.unsplash.com/photo-1505373877841-8d25f7d46678?q=80&w=1600&auto=format&fit=crop',
-    color: '#8B5CF6',
-    pillars: [
-      { title: 'Global Summits', desc: 'Annual tech summits featuring speakers from major global organizations.', icon: Calendar },
-      { icon: Target, title: 'Hackatons', desc: 'Intensive 48-hour coding challenges with significant prize pools and hiring opportunities.' },
-      { icon: Share2, title: 'Networking Portal', desc: 'Exclusive access to our attendee networking portal for 1 month post-event.' }
-    ],
-    details: [
-      { label: 'Frequency', value: '2+ major events per month including webinars, meetups, and summits.' },
-      { label: 'Inclusivity', value: 'Events designed for everyone from beginners to seasoned architects.' },
-      { label: 'Reach', value: 'Online events reach over 100,000+ tech enthusiasts annually.' }
-    ],
-    features: [
-      { icon: Rocket, title: 'Hackathons', desc: 'Participate in high-stakes innovation challenges and win amazing prizes.' },
-      { icon: Users, title: 'Tech Summits', desc: 'Hear from FAANG leaders and local heroes during our quarterly summits.' },
-      { icon: Zap, title: 'Global Networking', desc: 'Build connections that transcend borders via our event portal.' }
-    ]
   }
 };
 
@@ -138,8 +116,8 @@ const UserTypeOverview: React.FC = () => {
   if (!data) {
     return (
       <div style={{ padding: '6rem 2rem', textAlign: 'center', backgroundColor: '#050d1e', minHeight: '100vh', color: 'white' }}>
-         <h2>Information not found.</h2>
-         <Link to="/" style={{ color: '#c8102e', textDecoration: 'underline' }}>Go Back Home</Link>
+        <h2>Information not found.</h2>
+        <Link to="/" style={{ color: '#c8102e', textDecoration: 'underline' }}>Go Back Home</Link>
       </div>
     );
   }
@@ -160,7 +138,7 @@ const UserTypeOverview: React.FC = () => {
 
   return (
     <div style={{ backgroundColor: '#ffffff', minHeight: '100vh', color: '#111827', fontFamily: '"Outfit", sans-serif', overflowX: 'hidden' }}>
-      
+
       {/* ── Header ── */}
       <header className={`header ${isScrolled ? 'header-scrolled' : 'header-glass'}`}>
         <div className="container header-container">
@@ -186,8 +164,8 @@ const UserTypeOverview: React.FC = () => {
 
       {/* ── Hero Hub ── */}
       <section style={{ position: 'relative', height: '65vh', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', backgroundColor: '#050d1e' }}>
-        <motion.img 
-          src={data.heroImage} 
+        <motion.img
+          src={data.heroImage}
           alt={data.title}
           initial={{ scale: 1.15, filter: 'blur(5px)' }}
           animate={{ scale: 1.05, filter: 'blur(0px)' }}
@@ -195,14 +173,14 @@ const UserTypeOverview: React.FC = () => {
           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }}
         />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 0%, #ffffff 100%)' }} />
-        
+
         <div className="container" style={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
           <motion.div {...pageTransition}>
             <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'white', textDecoration: 'none', background: 'rgba(255,255,255,0.12)', padding: '10px 24px', borderRadius: '50px', marginBottom: '32px', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.15)', fontSize: '14px', fontWeight: 600 }}>
               <ArrowLeft size={16} /> Hub Overview
             </Link>
             <h1 style={{ fontSize: 'clamp(2.5rem, 7vw, 5rem)', fontWeight: 900, marginBottom: '20px', color: '#111827', textTransform: 'uppercase', letterSpacing: '-0.04em', lineHeight: 1 }}>
-              <span style={{ 
+              <span style={{
                 background: `linear-gradient(135deg, ${data.color} 0%, #111827 100%)`,
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
@@ -219,7 +197,7 @@ const UserTypeOverview: React.FC = () => {
       <section style={{ padding: '60px 0 100px' }}>
         <div className="container">
           <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '80px', alignItems: 'start' }}>
-            
+
             <motion.div {...pageTransition} transition={{ delay: 0.2 }}>
               <h2 style={{ fontSize: '2.8rem', fontWeight: 800, marginBottom: '24px', letterSpacing: '-0.02em' }}>Everything you need to know</h2>
               <p style={{ fontSize: '1.2rem', lineHeight: 1.8, color: '#4b5563', marginBottom: '48px' }}>
@@ -283,11 +261,11 @@ const UserTypeOverview: React.FC = () => {
             {data.features.map((feature: any, i: number) => {
               const Icon = feature.icon;
               return (
-                <motion.div 
-                   key={i} 
-                   {...pageTransition} 
-                   transition={{ delay: 0.1 * i }}
-                   style={{ background: 'white', padding: '40px', borderRadius: '32px', border: '1px solid #f1f5f9' }}
+                <motion.div
+                  key={i}
+                  {...pageTransition}
+                  transition={{ delay: 0.1 * i }}
+                  style={{ background: 'white', padding: '40px', borderRadius: '32px', border: '1px solid #f1f5f9' }}
                 >
                   <div style={{ width: '60px', height: '60px', borderRadius: '16px', background: `${data.color}10`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: data.color, marginBottom: '24px' }}>
                     <Icon size={28} />

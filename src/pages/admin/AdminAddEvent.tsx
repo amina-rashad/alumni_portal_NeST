@@ -3,7 +3,7 @@ import {
   ArrowLeft, Calendar, Clock, MapPin, 
   Upload, X, Image as ImageIcon,
   Info, ChevronDown,
-  ShieldCheck, AlertCircle
+  ShieldCheck, AlertCircle, Video
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { adminApi } from '../../services/api';
@@ -116,7 +116,8 @@ const AdminAddEvent: React.FC = () => {
     startTime: '',
     endTime: '',
     venue: '',
-    audience: 'Platform Wide'
+    audience: 'Platform Wide',
+    mode: 'offline'
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -126,6 +127,7 @@ const AdminAddEvent: React.FC = () => {
 
   const setCategory = (val: string) => setFormData(prev => ({ ...prev, category: val }));
   const setAudience = (val: string) => setFormData(prev => ({ ...prev, audience: val }));
+  const setMode = (val: string) => setFormData(prev => ({ ...prev, mode: val }));
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -368,14 +370,18 @@ const AdminAddEvent: React.FC = () => {
                 />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Venue / Online Link</label>
+                <label style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>{formData.mode === 'online' ? 'Meeting Link' : 'Venue / Online Link'}</label>
                 <div style={{ position: 'relative' }}>
-                  <MapPin size={16} color={nestNavy} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+                  {formData.mode === 'online' ? (
+                    <Video size={16} color={nestNavy} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+                  ) : (
+                    <MapPin size={16} color={nestNavy} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+                  )}
                   <input 
                     name="venue"
                     value={formData.venue}
                     onChange={handleInputChange}
-                    placeholder="Grand Ballroom or Zoom Link" 
+                    placeholder={formData.mode === 'online' ? 'Zoom, Meet, or Teams Link' : 'Grand Ballroom or Physical Address'} 
                     style={{ ...glossyInputStyle, paddingLeft: '40px' }} 
                   />
                 </div>
@@ -391,11 +397,11 @@ const AdminAddEvent: React.FC = () => {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <GlassSelect 
-                label="Target Audience"
-                name="audience"
-                value={formData.audience}
-                options={['Platform Wide', 'Exclusively Alumni', 'Intern Special']}
-                onChange={setAudience}
+                label="Event Mode"
+                name="mode"
+                value={formData.mode}
+                options={['online', 'offline']}
+                onChange={setMode}
               />
             </div>
           </section>

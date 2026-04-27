@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Search, MapPin, Briefcase, Clock, 
-  TrendingUp, Zap, 
-  Building, SlidersHorizontal, 
+import {
+  Search, MapPin, Briefcase, Clock,
+  TrendingUp, Zap,
+  Building, SlidersHorizontal,
   Bookmark, BookmarkCheck,
   Plus, Info, AlertCircle,
   Calendar, ChevronRight
@@ -180,12 +180,12 @@ const JobListings: React.FC = () => {
   };
 
   const filteredJobs = jobs.filter(job => {
-    const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          job.skills.some(s => s.toLowerCase().includes(searchTerm.toLowerCase()));
-    
+    const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      job.skills.some(s => s.toLowerCase().includes(searchTerm.toLowerCase()));
+
     const matchesType = filterType === 'All' || job.type === filterType;
-    
+
     return matchesSearch && matchesType;
   });
 
@@ -206,10 +206,10 @@ const JobListings: React.FC = () => {
 
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto', paddingBottom: '4rem' }}>
-      
+
       {/* Header & Stats Section */}
       <div style={{ marginBottom: '3rem' }}>
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2rem' }}
@@ -223,36 +223,36 @@ const JobListings: React.FC = () => {
             </p>
           </div>
           <div style={{ display: 'flex', gap: '1rem' }}>
-            <Link 
-              to="/jobs/recommended" 
+            <Link
+              to="/jobs/recommended"
               className="btn-premium"
-              style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '0.6rem', 
-                padding: '0.8rem 1.5rem', 
-                background: '#fff1f1', 
-                color: '#d32f2f', 
-                borderRadius: '12px', 
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.6rem',
+                padding: '0.8rem 1.5rem',
+                background: '#fff1f1',
+                color: '#d32f2f',
+                borderRadius: '12px',
                 fontWeight: 600,
                 fontSize: '0.95rem'
               }}
             >
               <Zap size={18} /> Recommended For You
             </Link>
-            <button 
+            <button
               className="btn-premium"
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '0.6rem', 
-                  padding: '0.8rem 1.5rem', 
-                  background: '#0F172A', 
-                  color: 'white', 
-                  borderRadius: '12px', 
-                  fontWeight: 600,
-                  fontSize: '0.95rem'
-                }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.6rem',
+                padding: '0.8rem 1.5rem',
+                background: '#0F172A',
+                color: 'white',
+                borderRadius: '12px',
+                fontWeight: 600,
+                fontSize: '0.95rem'
+              }}
             >
               <Plus size={18} /> Post a Job
             </button>
@@ -267,7 +267,7 @@ const JobListings: React.FC = () => {
             { label: 'Urgent Roles', count: jobs.filter(j => j.isUrgent).length, icon: AlertCircle, color: '#F59E0B' },
             { label: 'Partner Companies', count: 12, icon: Building, color: '#6366F1' },
           ].map((stat, i) => (
-            <motion.div 
+            <motion.div
               key={i}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -289,10 +289,10 @@ const JobListings: React.FC = () => {
 
       {/* Search and Filters Section */}
       <div style={{ marginBottom: '2.5rem' }}>
-        <div style={{ 
-          background: 'white', 
-          borderRadius: '20px', 
-          padding: '1.5rem', 
+        <div style={{
+          background: 'white',
+          borderRadius: '20px',
+          padding: '1.5rem',
           boxShadow: '0 4px 20px rgba(0,0,0,0.04)',
           border: '1px solid #E2E8F0',
           display: 'flex',
@@ -302,16 +302,16 @@ const JobListings: React.FC = () => {
         }}>
           <div style={{ flex: 1, minWidth: '300px', position: 'relative' }}>
             <Search style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} size={20} />
-            <input 
-              type="text" 
+            <input
+              type="text"
               placeholder="Search by title, company, or skills..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ 
-                width: '100%', 
-                padding: '0.8rem 1rem 0.8rem 3rem', 
-                borderRadius: '12px', 
-                border: '1px solid #E2E8F0', 
+              style={{
+                width: '100%',
+                padding: '0.8rem 1rem 0.8rem 3rem',
+                borderRadius: '12px',
+                border: '1px solid #E2E8F0',
                 background: '#F8FAFC',
                 fontSize: '1rem',
                 outline: 'none',
@@ -321,16 +321,16 @@ const JobListings: React.FC = () => {
               onBlur={(e) => e.target.style.borderColor = '#E2E8F0'}
             />
           </div>
-          
+
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             {['All', 'Full-time', 'Contract', 'Hybrid', 'Remote'].map((type) => (
               <button
                 key={type}
                 onClick={() => setFilterType(type)}
-                style={{ 
-                  padding: '0.7rem 1.2rem', 
-                  borderRadius: '10px', 
-                  fontSize: '0.9rem', 
+                style={{
+                  padding: '0.7rem 1.2rem',
+                  borderRadius: '10px',
+                  fontSize: '0.9rem',
                   fontWeight: 600,
                   transition: 'all 0.2s',
                   background: filterType === type ? '#d32f2f' : '#ffffff',
@@ -343,12 +343,12 @@ const JobListings: React.FC = () => {
             ))}
           </div>
 
-          <button 
+          <button
             onClick={() => setShowFilters(!showFilters)}
-            style={{ 
-              padding: '0.7rem', 
-              borderRadius: '10px', 
-              background: '#F1F5F9', 
+            style={{
+              padding: '0.7rem',
+              borderRadius: '10px',
+              background: '#F1F5F9',
               color: '#0F172A',
               border: '1px solid #E2E8F0',
               display: 'flex',
@@ -406,7 +406,7 @@ const JobListings: React.FC = () => {
       </div>
 
       {/* Main Listings Grid */}
-      <motion.div 
+      <motion.div
         variants={containerVariants}
         initial="hidden"
         animate="show"
@@ -414,10 +414,10 @@ const JobListings: React.FC = () => {
       >
         {loading ? (
           <div style={{ textAlign: 'center', padding: '4rem', gridColumn: '1 / -1' }}>
-            <motion.div 
-               animate={{ rotate: 360 }}
-               transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-               style={{ display: 'inline-block' }}
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+              style={{ display: 'inline-block' }}
             >
               <TrendingUp size={40} color="#d32f2f" />
             </motion.div>
@@ -425,14 +425,14 @@ const JobListings: React.FC = () => {
           </div>
         ) : filteredJobs.length > 0 ? (
           filteredJobs.map((job) => (
-            <motion.div 
-              key={job.id} 
+            <motion.div
+              key={job.id}
               variants={itemVariants}
               className="luxury-card"
-              style={{ 
-                padding: '2rem', 
-                position: 'relative', 
-                display: 'flex', 
+              style={{
+                padding: '2rem',
+                position: 'relative',
+                display: 'flex',
                 flexDirection: 'column',
                 gap: '1.25rem',
                 transition: 'all 0.3s ease',
@@ -471,7 +471,7 @@ const JobListings: React.FC = () => {
               )}
 
               {/* Bookmark Icon */}
-              <button 
+              <button
                 onClick={() => toggleSaveJob(job.id)}
                 style={{
                   position: 'absolute',
@@ -496,20 +496,20 @@ const JobListings: React.FC = () => {
               <div style={{ marginBottom: '0.5rem' }}>
                 <span style={{ color: '#d32f2f', fontWeight: 700, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{job.department}</span>
                 {job.isNew && (
-                  <span style={{ 
+                  <span style={{
                     marginLeft: '1rem',
-                    background: '#f0fdf4', 
-                    color: '#15803d', 
-                    fontSize: '0.65rem', 
-                    fontWeight: 700, 
-                    padding: '2px 8px', 
+                    background: '#f0fdf4',
+                    color: '#15803d',
+                    fontSize: '0.65rem',
+                    fontWeight: 700,
+                    padding: '2px 8px',
                     borderRadius: '4px',
                     border: '1px solid #dcfce7',
                     textTransform: 'uppercase'
                   }}>New</span>
                 )}
               </div>
-              
+
               <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.5rem', fontWeight: 800, color: '#0F172A', lineHeight: 1.2 }}>{job.title}</h3>
 
               <p style={{ color: '#64748B', lineHeight: 1.6, marginBottom: '0.5rem', fontSize: '0.95rem', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
@@ -517,9 +517,9 @@ const JobListings: React.FC = () => {
               </p>
 
               {/* Info Grid */}
-              <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: '1fr 1fr', 
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
                 gap: '1rem',
                 margin: '0.5rem 0'
               }}>
@@ -540,14 +540,14 @@ const JobListings: React.FC = () => {
               {/* Skill Capsules */}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
                 {job.skills.slice(0, 4).map(skill => (
-                  <span 
-                    key={skill} 
-                    style={{ 
-                      background: '#F8FAFC', 
-                      color: '#64748B', 
-                      padding: '0.3rem 0.8rem', 
-                      borderRadius: '12px', 
-                      fontSize: '0.75rem', 
+                  <span
+                    key={skill}
+                    style={{
+                      background: '#F8FAFC',
+                      color: '#64748B',
+                      padding: '0.3rem 0.8rem',
+                      borderRadius: '12px',
+                      fontSize: '0.75rem',
                       fontWeight: 600,
                       border: '1px solid #E2E8F0'
                     }}
@@ -589,11 +589,11 @@ const JobListings: React.FC = () => {
 
               {/* Footer Actions */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
-                <Link 
+                <Link
                   to={`/jobs/${job.id}`}
-                  style={{ 
-                    color: '#0F172A', 
-                    fontWeight: 700, 
+                  style={{
+                    color: '#0F172A',
+                    fontWeight: 700,
                     fontSize: '0.95rem',
                     display: 'flex',
                     alignItems: 'center',
@@ -603,17 +603,17 @@ const JobListings: React.FC = () => {
                 >
                   View Details <ChevronRight size={16} />
                 </Link>
-                
-                <Link 
+
+                <Link
                   to={`/jobs/${job.id}/apply`}
                   className="btn-premium"
-                  style={{ 
-                    padding: '0.6rem 1.8rem', 
-                    background: '#d32f2f', 
-                    color: 'white', 
-                    borderRadius: '8px', 
-                    fontWeight: 700, 
-                    fontSize: '0.9rem' 
+                  style={{
+                    padding: '0.6rem 1.8rem',
+                    background: '#d32f2f',
+                    color: 'white',
+                    borderRadius: '8px',
+                    fontWeight: 700,
+                    fontSize: '0.9rem'
                   }}
                 >
                   Apply Now
@@ -626,7 +626,7 @@ const JobListings: React.FC = () => {
             <Info size={48} color="#94A3B8" style={{ marginBottom: '1.5rem' }} />
             <h3 style={{ fontSize: '1.5rem', color: '#0F172A', marginBottom: '0.5rem' }}>No jobs found matching your criteria</h3>
             <p style={{ color: '#64748B' }}>Try adjusting your search terms or filters to see more results.</p>
-            <button 
+            <button
               onClick={() => { setSearchTerm(''); setFilterType('All'); }}
               style={{ marginTop: '1.5rem', color: '#d32f2f', fontWeight: 700, textDecoration: 'underline' }}
             >

@@ -9,6 +9,7 @@ import {
   BrainCircuit, BookOpen
 } from 'lucide-react';
 import { getUser, coursesApi, jobsApi, type AuthUser } from '../services/api';
+import { useNavigate } from 'react-router-dom';
 
 // --- MOCK DATA ---
 const feed = [
@@ -79,6 +80,8 @@ const Dashboard: React.FC = () => {
   const [user, setUserData] = useState<AuthUser | null>(null);
   const [courses, setCourses] = useState<any[]>([]);
   const [jobs, setJobs] = useState<any[]>([]);
+  const [likedPosts, setLikedPosts] = useState<number[]>([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Load the authenticated user from local storage
@@ -142,6 +145,53 @@ const Dashboard: React.FC = () => {
           border-color: rgba(226, 232, 240, 1);
         }
 
+        /* High-End Animated Noise */
+        @keyframes jitter {
+          0% { transform: translate(0,0) }
+          10% { transform: translate(-1%,-1%) }
+          20% { transform: translate(1%,1%) }
+          30% { transform: translate(-2%,1%) }
+          40% { transform: translate(2%,-1%) }
+          50% { transform: translate(-1%,2%) }
+          60% { transform: translate(1%,-2%) }
+          70% { transform: translate(-2%,-2%) }
+          80% { transform: translate(2%,2%) }
+          90% { transform: translate(-1%,1%) }
+          100% { transform: translate(0,0) }
+        }
+
+        .noise-container {
+          position: absolute;
+          inset: -200%;
+          width: 400%;
+          height: 400%;
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+          opacity: 0.04;
+          pointer-events: none;
+          animation: jitter 0.2s steps(4) infinite;
+          z-index: 0;
+        }
+
+        .premium-banner-wrapper {
+          position: relative;
+          padding: 3.5rem;
+          background: #ffffff;
+          border-radius: 32px;
+          border: 1px solid rgba(15, 23, 42, 0.08);
+          overflow: hidden;
+          margin-bottom: -1rem;
+          box-shadow: 0 30px 60px -12px rgba(15, 23, 42, 0.08), 0 18px 36px -18px rgba(15, 23, 42, 0.1), inset 0 0 2px rgba(255,255,255,0.8);
+        }
+
+        .luxury-blob {
+          position: absolute;
+          border-radius: 50%;
+          filter: blur(80px);
+          z-index: 1;
+          opacity: 0.15;
+          pointer-events: none;
+        }
+
         /* High-End Button Hovers */
         .btn-premium {
           transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
@@ -178,6 +228,67 @@ const Dashboard: React.FC = () => {
           color: #2563EB !important;
           text-decoration: underline;
         }
+
+        @keyframes gradientFlow {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+
+        @keyframes shimmerEffect {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+
+        .premium-heading-welcome {
+          background: linear-gradient(110deg, #0F172A 0%, #0F172A 45%, #ffffff 50%, #0F172A 55%, #0F172A 100%);
+          background-size: 250% 100%;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          animation: sweepTextBanner 6s infinite ease-in-out;
+          display: inline;
+          position: relative;
+          overflow: hidden;
+        }
+
+        @keyframes sweepTextBanner {
+          0% { background-position: -125% 0; }
+          25% { background-position: 125% 0; }
+          100% { background-position: 125% 0; }
+        }
+
+        .premium-heading-name {
+          background: linear-gradient(90deg, #d32f2f 0%, #ff5252 25%, #d32f2f 50%, #ff5252 75%, #d32f2f 100%);
+          background-size: 200% auto;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          animation: gradientFlow 6s ease-in-out infinite;
+          display: inline;
+          text-transform: capitalize;
+          position: relative;
+        }
+
+        /* Subtle Shimmer Overlay */
+        .premium-heading-welcome::after, .premium-heading-name::after {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; width: 100%; height: 100%;
+          background: linear-gradient(
+            120deg,
+            transparent 0%,
+            transparent 40%,
+            rgba(255, 255, 255, 0.4) 50%,
+            transparent 60%,
+            transparent 100%
+          );
+          background-attachment: fixed;
+          background-size: 200% 100%;
+          pointer-events: none;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          animation: gradientFlow 4s linear infinite;
+          z-index: 10;
+        }
       `}</style>
 
       {/* 
@@ -186,20 +297,85 @@ const Dashboard: React.FC = () => {
       */}
       <div style={{ maxWidth: '860px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '3rem' }}>
         
-        {/* WELCOME BANNER */}
+        {/* WELCOME BANNER WITH NOISE & GRADIENT */}
         <motion.div 
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-          style={{ marginBottom: '-1rem' }}
+          className="premium-banner-wrapper"
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <p style={{ margin: '0 0 0.25rem', color: '#64748B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.85rem' }}>Dashboard Overview</p>
-            {user && <span style={{ padding: '2px 8px', background: '#e2e8f0', color: '#475569', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 700 }}>{user.user_type}</span>}
+          {/* Animated Background Elements - Luxury Mesh Gradient */}
+          <motion.div 
+            className="luxury-blob"
+            animate={{
+              x: [0, 180, -80, 0],
+              y: [0, 100, 150, 0],
+              scale: [1, 1.4, 0.85, 1],
+            }}
+            transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+            style={{ width: '600px', height: '600px', top: '-150px', left: '-200px', background: 'radial-gradient(circle, #d32f2f 0%, transparent 70%)', opacity: 0.12 }}
+          />
+          <motion.div 
+            className="luxury-blob"
+            animate={{
+              x: [0, -120, 150, 0],
+              y: [0, -80, 50, 0],
+              scale: [1, 1.2, 1.5, 1],
+            }}
+            transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+            style={{ width: '500px', height: '500px', bottom: '-200px', right: '-150px', background: 'radial-gradient(circle, #0F172A 0%, transparent 70%)', opacity: 0.1 }}
+          />
+          <motion.div 
+            className="luxury-blob"
+            animate={{
+              x: [0, 100, -60, 0],
+              y: [0, 60, -100, 0],
+              scale: [1, 1.3, 0.7, 1],
+            }}
+            transition={{ duration: 22, repeat: Infinity, ease: "linear" }}
+            style={{ width: '400px', height: '400px', top: '20%', right: '15%', background: 'radial-gradient(circle, #3B82F6 0%, transparent 70%)', opacity: 0.08 }}
+          />
+          <motion.div 
+            className="luxury-blob"
+            animate={{
+              x: [0, -50, 50, 0],
+              y: [0, 150, -50, 0],
+              scale: [0.8, 1.1, 0.9, 0.8],
+            }}
+            transition={{ duration: 35, repeat: Infinity, ease: "linear" }}
+            style={{ width: '450px', height: '450px', bottom: '10%', left: '20%', background: 'radial-gradient(circle, #d32f2f 0%, transparent 70%)', opacity: 0.05 }}
+          />
+
+          <div className="noise-container" />
+          
+          <div style={{ position: 'relative', zIndex: 2 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '0.5rem' }}>
+              <p style={{ margin: 0, color: '#64748B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.8rem' }}>Dashboard Overview</p>
+              {user && (
+                <span style={{ 
+                  padding: '4px 12px', 
+                  background: 'rgba(15, 23, 42, 0.05)', 
+                  backdropFilter: 'blur(4px)',
+                  color: '#1e293b', 
+                  borderRadius: '999px', 
+                  fontSize: '0.65rem', 
+                  fontWeight: 800,
+                  border: '1px solid rgba(15, 23, 42, 0.1)'
+                }}>
+                  {user.user_type}
+                </span>
+              )}
+            </div>
+            <h1 style={{ margin: 0, fontSize: '3.5rem', fontWeight: 900, letterSpacing: '-0.04em', lineHeight: 1, display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '0.6rem' }}>
+              <span className="premium-heading-welcome" style={{ fontSize: '1em' }}>Welcome back,</span>
+              <span className="premium-heading-name" style={{ fontSize: '1em' }}>
+                {user ? user.full_name.split(' ')[0] : 'noble'}.
+              </span>
+            </h1>
+            <p style={{ margin: '1rem 0 0', color: '#64748B', fontSize: '1.1rem', fontWeight: 500, maxWidth: '500px', lineHeight: 1.5 }}>
+              Your alumni network is growing. Check out the latest updates and opportunities from classmates.
+            </p>
           </div>
-          <h1 style={{ margin: 0, fontSize: '2.5rem', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.03em' }}>
-            Welcome back{user ? `, ${user.full_name.split(' ')[0]}` : ''}.
-          </h1>
         </motion.div>
 
         {/* --- NEW DISCOVERY SECTION (Users Only) --- */}
@@ -292,14 +468,14 @@ const Dashboard: React.FC = () => {
           viewport={{ once: true, margin: "-10%" }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-            <Activity size={24} color="#0F172A" />
+            <Activity size={24} color="#d32f2f" />
             <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#0F172A' }}>Activity Feed</h2>
           </div>
 
           <motion.div variants={itemVariants} className="luxury-card" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
             <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1.5rem' }}>
               <img 
-                src={user?.profile_picture || `https://ui-avatars.com/api/?name=${user?.full_name || 'User'}&background=0F172A&color=fff`} 
+                src={user?.profile_picture || `https://ui-avatars.com/api/?name=${user?.full_name || 'User'}&background=d32f2f&color=fff`} 
                 alt={user?.full_name || 'You'} 
                 style={{ width: '56px', height: '56px', borderRadius: '50%', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }} 
               />
@@ -310,30 +486,42 @@ const Dashboard: React.FC = () => {
                 Share an update, milestone, or ask a question...
               </button>
             </div>
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              <button className="btn-premium btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem', borderRadius: '999px', fontWeight: 600 }}>
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+              <button 
+                onClick={() => { const i = document.createElement('input'); i.type = 'file'; i.click(); }}
+                className="btn-premium btn-outline" 
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem', borderRadius: '999px', fontWeight: 600 }}
+              >
                 <ImageIcon size={18} color="#3B82F6" /> Add Media
               </button>
-              <button className="btn-premium btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem', borderRadius: '999px', fontWeight: 600 }}>
+              <button 
+                onClick={() => navigate('/events')}
+                className="btn-premium btn-outline" 
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem', borderRadius: '999px', fontWeight: 600 }}
+              >
                 <Calendar size={18} color="#10B981" /> Host Event
               </button>
-              <button className="btn-premium btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem', borderRadius: '999px', fontWeight: 600 }}>
+              <button 
+                onClick={() => navigate('/social/post/create')}
+                className="btn-premium btn-outline" 
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem', borderRadius: '999px', fontWeight: 600 }}
+              >
                 <FileText size={18} color="#F59E0B" /> Write Article
               </button>
             </div>
           </motion.div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+           <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
             {feed.map((post) => (
               <motion.div key={post.id} variants={itemVariants} className="luxury-card">
                 <div style={{ padding: '2rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
                     <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                      <img src={post.author.avatar} alt={post.author.name} style={{ width: '56px', height: '56px', borderRadius: post.isOfficial ? '12px' : '50%', border: '1px solid #E2E8F0' }} />
+                      <img src={post.author.avatar.replace('background=0F172A', 'background=d32f2f')} alt={post.author.name} style={{ width: '56px', height: '56px', borderRadius: post.isOfficial ? '12px' : '50%', border: '1px solid #E2E8F0' }} />
                       <div>
                         <h4 className="link-hover" style={{ margin: '0 0 0.25rem', fontSize: '1.1rem', fontWeight: 700, color: '#0F172A', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                           {post.author.name}
-                          {post.isOfficial && <span style={{ background: '#0F172A', color: 'white', padding: '2px 8px', borderRadius: '999px', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Official</span>}
+                          {post.isOfficial && <span style={{ background: '#d32f2f', color: 'white', padding: '2px 8px', borderRadius: '999px', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Official</span>}
                         </h4>
                         <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748B' }}>{post.author.title}</p>
                         <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#94A3B8', display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Clock size={12} /> {post.time}</p>
@@ -364,11 +552,35 @@ const Dashboard: React.FC = () => {
                   </div>
                   
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
-                    {[{ icon: ThumbsUp, label: 'Like' }, { icon: MessageSquare, label: 'Comment' }, { icon: Share2, label: 'Share' }].map((action, i) => (
-                      <button key={i} className="btn-premium" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', background: '#F8FAFC', border: 'none', color: '#475569', fontWeight: 600, padding: '1rem', borderRadius: '12px', fontSize: '0.95rem' }}>
-                        <action.icon size={18} /> <span>{action.label}</span>
-                      </button>
-                    ))}
+                    <button 
+                      onClick={() => {
+                        setLikedPosts(prev => prev.includes(post.id) ? prev.filter(id => id !== post.id) : [...prev, post.id]);
+                      }}
+                      className="btn-premium" 
+                      style={{ 
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', 
+                        background: likedPosts.includes(post.id) ? '#EFF6FF' : '#F8FAFC', 
+                        border: 'none', 
+                        color: likedPosts.includes(post.id) ? '#2563EB' : '#475569', 
+                        fontWeight: 600, padding: '1rem', borderRadius: '12px', fontSize: '0.95rem' 
+                      }}
+                    >
+                      <ThumbsUp size={18} fill={likedPosts.includes(post.id) ? '#2563EB' : 'none'} /> <span>Like</span>
+                    </button>
+                    <button 
+                      onClick={() => navigate(`/social/post/${post.id}`)}
+                      className="btn-premium" 
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', background: '#F8FAFC', border: 'none', color: '#475569', fontWeight: 600, padding: '1rem', borderRadius: '12px', fontSize: '0.95rem' }}
+                    >
+                      <MessageSquare size={18} /> <span>Comment</span>
+                    </button>
+                    <button 
+                      onClick={() => { navigator.clipboard.writeText(window.location.origin + `/social/post/${post.id}`); alert('Link copied to clipboard!'); }}
+                      className="btn-premium" 
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', background: '#F8FAFC', border: 'none', color: '#475569', fontWeight: 600, padding: '1rem', borderRadius: '12px', fontSize: '0.95rem' }}
+                    >
+                      <Share2 size={18} /> <span>Share</span>
+                    </button>
                   </div>
                 </div>
               </motion.div>
@@ -380,22 +592,32 @@ const Dashboard: React.FC = () => {
         <motion.section variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-10%" }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <Users size={24} color="#0F172A" />
+                <Users size={24} color="#d32f2f" />
                 <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#0F172A' }}>People You May Know</h2>
              </div>
-             <button className="link-hover" style={{ background: 'transparent', border: 'none', fontSize: '0.95rem', fontWeight: 600, color: '#2563EB', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+             <button onClick={() => navigate('/networking')} className="link-hover" style={{ background: 'transparent', border: 'none', fontSize: '0.95rem', fontWeight: 600, color: '#d32f2f', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                 See All <ChevronRight size={16} />
              </button>
           </div>
           
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
              {recommendations.map((user, i) => (
-                <motion.div key={i} variants={itemVariants} className="luxury-card btn-premium" style={{ cursor: 'default', padding: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                <motion.div 
+                  key={i} 
+                  variants={itemVariants} 
+                  className="luxury-card btn-premium" 
+                  style={{ cursor: 'pointer', padding: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}
+                  onClick={() => navigate('/networking')}
+                >
                    <img src={user.avatar} alt={user.name} style={{ width: '80px', height: '80px', borderRadius: '50%', marginBottom: '1rem', border: '4px solid #F1F5F9' }} />
                    <h4 style={{ margin: '0 0 0.5rem', fontSize: '1.1rem', fontWeight: 700, color: '#0F172A' }}>{user.name}</h4>
                    <p style={{ margin: '0 0 1rem', fontSize: '0.85rem', color: '#64748B', lineHeight: 1.4, flex: 1 }}>{user.title}</p>
                    <p style={{ margin: '0 0 1.5rem', fontSize: '0.75rem', color: '#94A3B8', fontWeight: 600 }}>{user.mutual} mutual connections</p>
-                   <button className="btn-premium btn-outline" style={{ width: '100%', padding: '0.75rem', borderRadius: '999px', fontSize: '0.9rem', fontWeight: 700, color: '#2563EB', borderColor: '#2563EB' }}>
+                   <button 
+                    onClick={(e) => { e.stopPropagation(); alert(`Connection request sent to ${user.name}!`); }}
+                    className="btn-premium btn-outline" 
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '999px', fontSize: '0.9rem', fontWeight: 700, color: '#d32f2f', borderColor: '#d32f2f' }}
+                   >
                       Connect
                    </button>
                 </motion.div>
@@ -407,10 +629,10 @@ const Dashboard: React.FC = () => {
         <motion.section variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-10%" }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <Briefcase size={24} color="#0F172A" />
+                <Briefcase size={24} color="#d32f2f" />
                 <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#0F172A' }}>Recommended Jobs</h2>
              </div>
-             <button className="link-hover" style={{ background: 'transparent', border: 'none', fontSize: '0.95rem', fontWeight: 600, color: '#2563EB', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+             <button onClick={() => navigate('/jobs')} className="link-hover" style={{ background: 'transparent', border: 'none', fontSize: '0.95rem', fontWeight: 600, color: '#d32f2f', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                 View Job Board <ArrowRight size={16} />
              </button>
           </div>
@@ -418,8 +640,14 @@ const Dashboard: React.FC = () => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '1.5rem' }}>
             {jobs.length === 0 ? (
               <p style={{ color: '#64748B', fontSize: '0.9rem' }}>Fetching recommended jobs...</p>
-            ) : jobs.map((job, i) => (
-               <motion.div key={job.id || i} variants={itemVariants} className="luxury-card btn-premium" style={{ cursor: 'pointer', padding: '1.5rem', display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+            ) : jobs.slice(0, 4).map((job, i) => (
+               <motion.div 
+                key={job.id || i} 
+                variants={itemVariants} 
+                className="luxury-card btn-premium" 
+                style={{ cursor: 'pointer', padding: '1.5rem', display: 'flex', gap: '1.5rem', alignItems: 'center' }}
+                onClick={() => navigate(`/jobs/${job.id}`)}
+               >
                   <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '0.75rem', borderRadius: '12px', flexShrink: 0 }}>
                      {job.logo ? (
                        <img src={job.logo} alt={job.company} style={{ width: '48px', height: '48px', objectFit: 'contain' }} onError={(e) => { e.currentTarget.src = `https://ui-avatars.com/api/?name=${job.company || 'C'}&background=random`; }} />
@@ -445,13 +673,19 @@ const Dashboard: React.FC = () => {
         {/* 4. UPCOMING EVENTS OVERVIEW */}
         <motion.section variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-10%" }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-             <Calendar size={24} color="#0F172A" />
+             <Calendar size={24} color="#d32f2f" />
              <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#0F172A' }}>Upcoming Events</h2>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
              {events.map((event, i) => (
-                <motion.div key={i} variants={itemVariants} className="luxury-card btn-premium" style={{ cursor: 'pointer', display: 'flex', alignItems: 'stretch' }}>
+                <motion.div 
+                  key={i} 
+                  variants={itemVariants} 
+                  className="luxury-card btn-premium" 
+                  style={{ cursor: 'pointer', display: 'flex', alignItems: 'stretch' }}
+                  onClick={() => navigate(`/events/${event.id}`)}
+                >
                    <div style={{ width: '120px', background: event.color, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', padding: '1.5rem' }}>
                       <span style={{ fontSize: '1rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{event.date.split(' ')[0]}</span>
                       <span style={{ fontSize: '2rem', fontWeight: 800, lineHeight: 1.1 }}>{event.date.split(' ')[1]}</span>
@@ -464,7 +698,11 @@ const Dashboard: React.FC = () => {
                             <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Users size={16} /> {event.attendees} Attending</span>
                          </div>
                       </div>
-                      <button className="btn-premium" style={{ background: '#0F172A', color: 'white', border: 'none', padding: '0.75rem 2rem', borderRadius: '999px', fontSize: '0.95rem', fontWeight: 600 }}>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); navigate(`/events/${event.id}/register`); }}
+                        className="btn-premium" 
+                        style={{ background: '#d32f2f', color: 'white', border: 'none', padding: '0.75rem 2rem', borderRadius: '999px', fontSize: '0.95rem', fontWeight: 600 }}
+                      >
                          Register
                       </button>
                    </div>
@@ -479,7 +717,7 @@ const Dashboard: React.FC = () => {
            {/* Courses */}
            <motion.section variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-10%" }}>
              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                <Award size={24} color="#0F172A" />
+                <Award size={24} color="#d32f2f" />
                 <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#0F172A' }}>Resume Courses</h2>
              </div>
              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -497,7 +735,7 @@ const Dashboard: React.FC = () => {
                          </div>
                          <p style={{ margin: '0 0 0.5rem', fontSize: '0.85rem', color: '#64748B' }}>Instructor: <span style={{ color: '#0f172a', fontWeight: 500 }}>{course.instructor}</span></p>
                          <p style={{ margin: '0 0 0.5rem', fontSize: '0.8rem', color: '#94a3b8', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{course.description}</p>
-                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: '#2563eb', fontWeight: 600 }}>
+                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: '#d32f2f', fontWeight: 600 }}>
                             <Clock size={14} /> {course.duration || 'Self-paced'}
                          </div>
                       </div>
@@ -509,12 +747,18 @@ const Dashboard: React.FC = () => {
            {/* Quizzes */}
            <motion.section variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-10%" }}>
              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                <BrainCircuit size={24} color="#0F172A" />
+                <BrainCircuit size={24} color="#d32f2f" />
                 <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#0F172A' }}>Assessments & Quizzes</h2>
              </div>
              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 {quizzes.map((quiz, i) => (
-                   <motion.div key={i} variants={itemVariants} className="luxury-card btn-premium" style={{ padding: '1.5rem', cursor: 'pointer' }}>
+                   <motion.div 
+                    key={i} 
+                    variants={itemVariants} 
+                    className="luxury-card btn-premium" 
+                    style={{ padding: '1.5rem', cursor: 'pointer' }}
+                    onClick={() => navigate('/assessments/quiz/instructions')}
+                   >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                          <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#0F172A', maxWidth: '70%' }}>{quiz.title}</h4>
                          <span style={{ padding: '4px 12px', background: `${quiz.color}15`, color: quiz.color, borderRadius: '999px', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase' }}>{quiz.difficulty}</span>
@@ -526,7 +770,7 @@ const Dashboard: React.FC = () => {
                          <span style={{ fontSize: '0.85rem', color: '#64748B', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <Clock size={16}/> {quiz.time}
                          </span>
-                         <button className="btn-premium" style={{ border: 'none', background: 'transparent', color: '#2563EB', fontWeight: 700, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                         <button className="btn-premium" style={{ border: 'none', background: 'transparent', color: '#d32f2f', fontWeight: 700, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                             Start <ArrowRight size={16}/>
                          </button>
                       </div>
