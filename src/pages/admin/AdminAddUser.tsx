@@ -53,8 +53,6 @@ const AdminAddUser: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
-<<<<<<< HEAD
-
   <AnimatePresence>
     {showPopup && (
       <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(8px)' }}>
@@ -114,8 +112,6 @@ const AdminAddUser: React.FC = () => {
   </AnimatePresence>
 
   {/* Header */ }
-=======
->>>>>>> b5a55a284d9dbff01cfc419439be311dfe2096da
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
         <button 
           onClick={() => navigate('/admin/users')}
@@ -170,12 +166,7 @@ const AdminAddUser: React.FC = () => {
                 <label style={{ fontSize: '13px', fontWeight: 700, color: '#475569' }}>Last Name</label>
                 <input required type="text" placeholder="Enter last name" value={formData.last_name} onChange={e => setFormData({...formData, last_name: e.target.value})} style={{ padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '14px', color: '#1e293b', background: '#fff' }} />
               </div>
-<<<<<<< HEAD
-
-  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', gridColumn: 'span 2' }}>
-=======
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
->>>>>>> b5a55a284d9dbff01cfc419439be311dfe2096da
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', gridColumn: 'span 2' }}>
       <label style={{ fontSize: '13px', fontWeight: 700, color: '#475569' }}>Email Address</label>
       <div style={{ position: 'relative' }}>
         <div style={{ position: 'absolute', top: '50%', left: '16px', transform: 'translateY(-50%)', color: '#94a3b8', display: 'flex' }}>
@@ -192,16 +183,12 @@ const AdminAddUser: React.FC = () => {
 
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
       <label style={{ fontSize: '13px', fontWeight: 700, color: '#475569' }}>Salary / Stipend</label>
-<<<<<<< HEAD
-  <input type="text" placeholder="e.g. 25,000" value={formData.salary} onChange={e => setFormData({ ...formData, salary: e.target.value })} style={{ padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '14px', color: '#1e293b', background: '#fff' }} />
-=======
                 <div style={{ position: 'relative' }}>
                   <div style={{ position: 'absolute', top: '50%', left: '16px', transform: 'translateY(-50%)', color: '#94a3b8', display: 'flex' }}>
                     <Banknote size={16} />
                   </div>
                   <input type="text" placeholder="e.g. 25,000" value={formData.salary} onChange={e => setFormData({...formData, salary: e.target.value})} style={{ padding: '12px 16px 12px 42px', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '14px', color: '#1e293b', width: '100%', boxSizing: 'border-box', background: '#fff' }} />
                 </div>
->>>>>>> b5a55a284d9dbff01cfc419439be311dfe2096da
               </div >
 
   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>

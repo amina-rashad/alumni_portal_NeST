@@ -5,10 +5,7 @@ import {
   Users, UserCheck, Briefcase, FileText,
   Plus, Activity
 } from 'lucide-react';
-<<<<<<< HEAD
-=======
 
->>>>>>> b5a55a284d9dbff01cfc419439be311dfe2096da
 import { adminApi } from '../../services/api';
 
 const nestNavy = '#1a2652';

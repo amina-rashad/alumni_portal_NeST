@@ -54,7 +54,6 @@ const AdminAddIntern: React.FC = () => {
   const nestNavy = '#1a2652';
 
   return (
-<<<<<<< HEAD
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '1000px', margin: '0 auto', width: '100%', paddingBottom: '40px' }}>
 
       <AnimatePresence>
@@ -117,21 +116,10 @@ const AdminAddIntern: React.FC = () => {
       </AnimatePresence>
 
       {/* Header */}
-=======
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
->>>>>>> b5a55a284d9dbff01cfc419439be311dfe2096da
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <button
             onClick={() => navigate('/admin/interns')}
             style={{
-<<<<<<< HEAD
-              background: '#fff',
-              border: '1px solid #e2e8f0',
-              borderRadius: '10px',
-              width: '44px',
-              height: '44px',
-=======
->>>>>>> b5a55a284d9dbff01cfc419439be311dfe2096da
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -142,13 +130,8 @@ const AdminAddIntern: React.FC = () => {
               border: '1px solid #e2e8f0',
               color: '#64748b',
               cursor: 'pointer',
-<<<<<<< HEAD
-              color: '#475569',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
-=======
-            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-            transition: 'all 0.2s'
->>>>>>> b5a55a284d9dbff01cfc419439be311dfe2096da
+              boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+              transition: 'all 0.2s'
             }}
           >
             <ArrowLeft size={20} />

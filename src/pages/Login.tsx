@@ -1,10 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-<<<<<<< HEAD
 import { Mail, Lock, LogIn, ArrowLeft, Shield, Eye, EyeOff, Users, Linkedin, CheckCircle, Menu, X } from 'lucide-react';
-=======
-import { Mail, Lock, LogIn, ArrowLeft, Shield, Eye, EyeOff, Users, Linkedin, CheckCircle, X, Menu } from 'lucide-react';
->>>>>>> b5a55a284d9dbff01cfc419439be311dfe2096da
 import { Link, useNavigate } from 'react-router-dom';
 import nestMainLogo from '../assets/nest_logo.png';
 import nestIcon from '../assets/nest_icon.png';

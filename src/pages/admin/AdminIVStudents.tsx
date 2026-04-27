@@ -11,7 +11,6 @@ const AdminIVStudents: React.FC = () => {
   const [visits, setVisits] = useState<any[]>([]);
   const [filteredVisits, setFilteredVisits] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-<<<<<<< HEAD
   const [searchQuery, setSearchQuery] = useState('');
   const [batchFilter, setBatchFilter] = useState('All');
   const [collegeFilter, setCollegeFilter] = useState('All');
@@ -30,9 +29,6 @@ const AdminIVStudents: React.FC = () => {
     }
     setIsLoading(false);
   };
-=======
-  const nestNavy = '#1a2652';
->>>>>>> b5a55a284d9dbff01cfc419439be311dfe2096da
 
   useEffect(() => {
     fetchVisits();
@@ -74,15 +70,12 @@ const AdminIVStudents: React.FC = () => {
     }
   };
 
-<<<<<<< HEAD
   const resetAll = () => {
     setSearchQuery('');
     setBatchFilter('All');
     setCollegeFilter('All');
     setSpecFilter('All');
   };
-=======
->>>>>>> b5a55a284d9dbff01cfc419439be311dfe2096da
 
   const batches = Array.from(new Set(visits.map(v => v.batch))).filter(Boolean).sort().reverse();
   const colleges = Array.from(new Set(visits.map(v => v.college))).filter(Boolean).sort();

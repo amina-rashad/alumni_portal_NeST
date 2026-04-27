@@ -11,12 +11,9 @@ const AdminJobs: React.FC = () => {
   const [jobs, setJobs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-<<<<<<< HEAD
   const [jobToDelete, setJobToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-=======
   const nestNavy = '#1a2652';
->>>>>>> b5a55a284d9dbff01cfc419439be311dfe2096da
 
   useEffect(() => {
     const fetchJobs = async () => {

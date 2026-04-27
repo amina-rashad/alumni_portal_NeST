@@ -438,11 +438,7 @@ const App: React.FC = () => {
             key="content"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-<<<<<<< HEAD
-            transition={{ duration: 0.5 }}
-=======
             transition={{ duration: 1.5, ease: 'easeOut' }}
->>>>>>> b5a55a284d9dbff01cfc419439be311dfe2096da
           >
             <AnimatedRoutes />
           </motion.div>

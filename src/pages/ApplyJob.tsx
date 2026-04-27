@@ -2,11 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, UploadCloud, CheckCircle2, AlertCircle, MapPin, Building, Briefcase, FileText, PenBox } from 'lucide-react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-<<<<<<< HEAD
 import { jobsApi, applicationsApi } from '../services/api';
-=======
 import InlineResumeBuilder from './InlineResumeBuilder';
->>>>>>> b5a55a284d9dbff01cfc419439be311dfe2096da
 
 // Simple mock data for context
 const JOB_CONTEXT: Record<string, any> = {
@@ -27,8 +24,6 @@ const ApplyJob: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [resumeFile, setResumeFile] = useState<File | null>(null);
-<<<<<<< HEAD
-
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -37,9 +32,7 @@ const ApplyJob: React.FC = () => {
     linkedin: '',
     coverLetter: ''
   });
-=======
   const [resumeOption, setResumeOption] = useState<'profile' | 'upload' | 'build'>('upload');
->>>>>>> b5a55a284d9dbff01cfc419439be311dfe2096da
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -278,37 +271,37 @@ const ApplyJob: React.FC = () => {
                   <span style={{ fontWeight: 600, color: resumeOption === 'upload' ? 'var(--primary)' : '#4a4a4a', fontSize: '0.95rem' }}>Upload New File</span>
                 </button>
 
-<<<<<<< HEAD
-  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-    <label style={{ fontWeight: 600, color: '#4a4a4a', fontSize: '0.9rem' }}>Cover Letter (Optional)</label>
-    <textarea
-      rows={6}
-      placeholder="Briefly tell us why you're a great fit for this role..."
-      value={formData.coverLetter}
-      onChange={e => setFormData({ ...formData, coverLetter: e.target.value })}
-      style={{ background: '#ffffff', color: '#1a1a1a', padding: '1rem', borderRadius: '8px', border: '1px solid #ced4da', outline: 'none', fontSize: '1rem', width: '100%', resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box' }}
-    />
-=======
                 <button
-      type="button"
-      onClick={() => setResumeOption('build')}
-      style={{
-        padding: '1rem',
-        borderRadius: '12px',
-        border: `2px solid ${resumeOption === 'build' ? 'var(--primary)' : '#e9ecef'}`,
-        background: resumeOption === 'build' ? '#fff1f1' : '#ffffff',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: '0.8rem',
-        cursor: 'pointer',
-        transition: 'all 0.2s'
-      }}
-    >
-      <PenBox size={24} color={resumeOption === 'build' ? 'var(--primary)' : '#6c757d'} />
-      <span style={{ fontWeight: 600, color: resumeOption === 'build' ? 'var(--primary)' : '#4a4a4a', fontSize: '0.95rem' }}>Create New Resume</span>
-    </button>
-  </div>
+                  type="button"
+                  onClick={() => setResumeOption('build')}
+                  style={{
+                    padding: '1rem',
+                    borderRadius: '12px',
+                    border: `2px solid ${resumeOption === 'build' ? 'var(--primary)' : '#e9ecef'}`,
+                    background: resumeOption === 'build' ? '#fff1f1' : '#ffffff',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '0.8rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <PenBox size={24} color={resumeOption === 'build' ? 'var(--primary)' : '#6c757d'} />
+                  <span style={{ fontWeight: 600, color: resumeOption === 'build' ? 'var(--primary)' : '#4a4a4a', fontSize: '0.95rem' }}>Create New Resume</span>
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '2.5rem' }}>
+                <label style={{ fontWeight: 600, color: '#4a4a4a', fontSize: '0.9rem' }}>Cover Letter (Optional)</label>
+                <textarea
+                  rows={6}
+                  placeholder="Briefly tell us why you're a great fit for this role..."
+                  value={formData.coverLetter}
+                  onChange={e => setFormData({ ...formData, coverLetter: e.target.value })}
+                  style={{ background: '#ffffff', color: '#1a1a1a', padding: '1rem', borderRadius: '8px', border: '1px solid #ced4da', outline: 'none', fontSize: '1rem', width: '100%', resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box' }}
+                />
+              </div>
 
   {
     resumeOption === 'profile' && (
