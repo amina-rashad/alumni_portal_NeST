@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft, Clock, Star, 
@@ -10,12 +10,32 @@ import { coursesApi } from '../services/api';
 
 const CourseDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [course, setCourse] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchCourse = async () => {
       if (!id) return;
+      console.log('Fetching course with ID:', id);
+
+      const MOCK_DATA = [
+        { id: '1', title: 'Advanced Cloud Architecture & DevOps', instructor: 'Dr. Rajesh Nair', level: 'Advanced', duration: '36 Hours', description: 'Master industry-standard cloud engineering and DevOps practices.' },
+        { id: '2', title: 'Full Stack Development with React & Node', instructor: 'Priya Sharma', level: 'Intermediate', duration: '48 Hours', description: 'Build modern, scalable web applications from scratch.' },
+        { id: '3', title: 'Data Science & Machine Learning Essentials', instructor: 'Dr. Arun Menon', level: 'Beginner', duration: '30 Hours', description: 'Begin your journey into data analysis and machine learning.' },
+        { id: '4', title: 'Cybersecurity Fundamentals & Ethical Hacking', instructor: 'Karthik Iyer', level: 'Intermediate', duration: '42 Hours', description: 'Learn to protect systems and understand ethical hacking.' },
+        { id: '5', title: 'AI-Powered Product Management', instructor: 'Sneha George', level: 'Advanced', duration: '28 Hours', description: 'Leverage AI to build and manage world-class products.' },
+        { id: '6', title: 'System Design & Scalable Architecture', instructor: 'Dr. Vikram Das', level: 'Advanced', duration: '40 Hours', description: 'Design complex, distributed systems that scale to millions.' }
+      ];
+
+      const mockMatch = MOCK_DATA.find(c => c.id === String(id));
+      if (mockMatch) {
+        console.log('Found mock match:', mockMatch);
+        setCourse(mockMatch);
+        setLoading(false);
+        return;
+      }
+
       try {
         const res = await coursesApi.getCourseById(id);
         const data = res.data as any;
@@ -23,7 +43,7 @@ const CourseDetails: React.FC = () => {
           setCourse(data.course);
         }
       } catch (err) {
-        console.error('Failed to fetch course details:', err);
+        console.error('Failed to fetch course details from API:', err);
       } finally {
         setLoading(false);
       }
@@ -56,13 +76,11 @@ const CourseDetails: React.FC = () => {
   ];
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc', paddingBottom: '5rem', overflowX: 'hidden', fontFamily: '"Inter", sans-serif' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc', paddingBottom: '5rem', overflowX: 'hidden', fontFamily: '"Inter", sans-serif', margin: '-28px -32px 0 -32px' }}>
       {/* Dynamic Header / Hero Area */}
-      <div style={{ backgroundColor: '#0d2046', color: 'white', padding: '4rem 1rem 6rem 1rem', position: 'relative' }}>
+      <div style={{ backgroundColor: '#0d2046', color: 'white', padding: '4rem 2rem 6rem 2rem', position: 'relative' }}>
          <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-            <Link to="/courses" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#94a3b8', marginBottom: '2rem', fontSize: '0.875rem', fontWeight: 700 }}>
-               <ArrowLeft size={18} /> Back to Catalog
-            </Link>
+
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '4rem', alignItems: 'center' }}>
                <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }}>
@@ -104,9 +122,9 @@ const CourseDetails: React.FC = () => {
                   <div style={{ background: 'linear-gradient(135deg, rgba(200,16,46,0.3) 0%, rgba(255,255,255,0.1) 100%)', borderRadius: '2rem', padding: '1rem', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden' }}>
                      <div style={{ position: 'relative', borderRadius: '1.5rem', overflow: 'hidden' }}>
                         <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop" alt={course.title} style={{ width: '100%', display: 'block' }} />
-                        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(13,32,70,0.4)', cursor: 'pointer' }}>
+                        <Link to={`/courses/${id}/play`} style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(13,32,70,0.4)', cursor: 'pointer' }}>
                            <PlayCircle size={80} color="white" />
-                        </div>
+                        </Link>
                      </div>
                   </div>
                </motion.div>
@@ -115,12 +133,12 @@ const CourseDetails: React.FC = () => {
       </div>
 
       {/* Main Content Sections */}
-      <div style={{ maxWidth: '1200px', margin: '-4rem auto 0 auto', padding: '0 1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '3rem' }}>
+      <div style={{ maxWidth: '1200px', margin: '-4rem auto 0 auto', padding: '0 2rem', display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 380px', gap: '3rem' }}>
          {/* Left Side: Learning and Info */}
-         <div style={{ gridColumn: 'span 2' }}>
-            <div style={{ background: 'white', padding: '3rem', borderRadius: '2rem', boxShadow: '0 10px 30px rgba(0,0,0,0.03)', border: '1px solid #f1f5f9', marginBottom: '3rem' }}>
+         <div>
+            <div style={{ background: 'white', padding: '3rem', borderRadius: '2rem', boxShadow: '0 20px 40px rgba(0,0,0,0.04)', border: '1px solid #f1f5f9', marginBottom: '3rem', position: 'relative', zIndex: 2 }}>
                <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0d2046', marginBottom: '1.5rem' }}>Course Overview</h3>
-               <p style={{ color: '#475569', lineHeight: '1.8', fontSize: '1.05rem' }}>
+               <p style={{ color: '#1e293b', lineHeight: '1.8', fontSize: '1.05rem' }}>
                   This comprehensive course is designed for professionals looking to master the intricacies of {course.title}. 
                   Our industry-expert instructors provide a blend of theoretical foundation and hands-on practical exercises.
                </p>
@@ -130,7 +148,7 @@ const CourseDetails: React.FC = () => {
                      <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#0d2046', marginBottom: '1.25rem' }}>What You'll Learn</h4>
                      <ul style={{ listStyle: 'none', padding: 0 }}>
                         {['Deep dive foundations', 'Advanced techniques', 'Industry best practices', 'Portfolio projects'].map(item => (
-                           <li key={item} style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem', color: '#475569', fontSize: '0.95rem', fontWeight: 600 }}>
+                           <li key={item} style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem', color: '#1e293b', fontSize: '0.95rem', fontWeight: 600 }}>
                               <CheckCircle2 size={18} color="var(--primary)" style={{ flexShrink: 0 }} /> {item}
                            </li>
                         ))}
@@ -144,7 +162,7 @@ const CourseDetails: React.FC = () => {
                {curriculum.map((item, idx) => (
                   <div key={idx} style={{ background: 'white', padding: '1.5rem 2rem', borderRadius: '1.25rem', border: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                      <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                        <span style={{ width: '40px', height: '40px', backgroundColor: '#f1f5f9', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.875rem' }}>{idx + 1}</span>
+                        <span style={{ width: '40px', height: '40px', backgroundColor: '#f1f5f9', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.875rem', color: '#0d2046' }}>{idx + 1}</span>
                         <div>
                            <h5 style={{ fontWeight: 800, color: '#334155' }}>{item.title}</h5>
                            <p style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Lesson {idx + 1} • {item.duration}</p>
@@ -158,35 +176,56 @@ const CourseDetails: React.FC = () => {
 
          {/* Right Side: Instructor and Action */}
          <div>
-            <div style={{ background: 'white', padding: '2rem', borderRadius: '2rem', boxShadow: '0 10px 30px rgba(0,0,0,0.03)', border: '1px solid #f1f5f9', position: 'sticky', top: '2rem' }}>
-               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
-                  <div style={{ width: '60px', height: '60px', borderRadius: '1rem', backgroundColor: '#0d2046', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 900, fontSize: '1.5rem' }}>
+            <div style={{ background: 'white', padding: '2.5rem', borderRadius: '2.4rem', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.08)', border: '1px solid #f1f5f9', position: 'sticky', top: '2rem', zIndex: 10 }}>
+               <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '2.5rem' }}>
+                  <div style={{ width: '64px', height: '64px', borderRadius: '1.2rem', backgroundColor: '#0d2046', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 900, fontSize: '1.75rem', boxShadow: '0 10px 15px -3px rgba(13, 32, 70, 0.3)' }}>
                      {course.instructor ? course.instructor.charAt(0) : 'I'}
                   </div>
                   <div>
-                     <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase' }}>Expert Instructor</p>
-                     <h4 style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0d2046' }}>{course.instructor || "Sarah Jenkins"}</h4>
+                     <p style={{ fontSize: '0.75rem', fontWeight: 800, color: '#c8102e', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.2rem' }}>Expert Instructor</p>
+                     <h4 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#0d2046', margin: 0 }}>{course.instructor || "Sarah Jenkins"}</h4>
                   </div>
                </div>
 
-               <div style={{ marginBottom: '2rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                     <span style={{ fontWeight: 800, color: '#1e293b' }}>Course Price</span>
-                     <span style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--primary)' }}>Free for Alumni</span>
+               <div style={{ marginBottom: '2.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem', alignItems: 'baseline' }}>
+                     <span style={{ fontWeight: 800, color: '#64748b', fontSize: '0.9rem' }}>Course Price</span>
+                     <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: '1.75rem', fontWeight: 900, color: '#c8102e', display: 'block', lineHeight: 1 }}>Free</span>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#c8102e', opacity: 0.8 }}>for Alumni</span>
+                     </div>
                   </div>
-                  <p style={{ fontSize: '0.8rem', color: '#64748b' }}>Exclusively available to verified NeST graduates.</p>
+                  <p style={{ fontSize: '0.8rem', color: '#94a3b8', lineHeight: 1.5, margin: 0 }}>Exclusively available to verified NeST graduates as part of our lifelong learning commitment.</p>
                </div>
 
-               <button style={{ width: '100%', padding: '1.25rem', backgroundColor: 'var(--primary)', color: 'white', fontWeight: 900, borderRadius: '1rem', marginBottom: '1.5rem', fontSize: '1.1rem', boxShadow: '0 10px 20px rgba(200,16,46,0.2)', cursor: 'pointer' }}>
+               <button 
+                  onClick={() => navigate(`/courses/${id}/play`)}
+                  style={{ 
+                    width: '100%', 
+                    padding: '1.4rem', 
+                    backgroundColor: '#c8102e', 
+                    color: 'white', 
+                    fontWeight: 900, 
+                    borderRadius: '1.2rem', 
+                    marginBottom: '2rem', 
+                    fontSize: '1.15rem', 
+                    boxShadow: '0 15px 25px -5px rgba(200, 16, 46, 0.4)', 
+                    cursor: 'pointer', 
+                    border: 'none',
+                    transition: 'transform 0.2s, background-color 0.2s'
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#a00d25'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#c8102e'; e.currentTarget.style.transform = 'translateY(0)'; }}
+               >
                   Enroll This Course
                </button>
 
-               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: '#475569', fontSize: '0.9rem', fontWeight: 600 }}>
-                     <Award size={18} color="var(--primary)" /> Professional Certificate
+               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: '#475569', fontSize: '0.95rem', fontWeight: 600 }}>
+                     <div style={{ color: '#c8102e' }}><Award size={20} /></div> Professional Certificate
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: '#475569', fontSize: '0.9rem', fontWeight: 600 }}>
-                     <User size={18} color="var(--primary)" /> One-on-one Mentorship
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: '#475569', fontSize: '0.95rem', fontWeight: 600 }}>
+                     <div style={{ color: '#c8102e' }}><User size={20} /></div> One-on-one Mentorship
                   </div>
                </div>
             </div>

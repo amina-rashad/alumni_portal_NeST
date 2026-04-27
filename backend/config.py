@@ -16,6 +16,7 @@ class Config:
     # Flask
     SECRET_KEY = os.getenv("SECRET_KEY", "change-this-in-production")
     DEBUG = False
+    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 MB limit
 
     # MongoDB
     MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")

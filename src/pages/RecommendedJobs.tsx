@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Sparkles, MapPin, Briefcase, Clock, ChevronRight, Star, TrendingUp, Zap, Target, BookOpen, Building, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Sparkles, MapPin, Briefcase, Clock, ChevronRight, Star, TrendingUp, Zap, Target, BookOpen, Building, ExternalLink, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface RecommendedJob {
@@ -144,6 +144,7 @@ const getMatchLabel = (score: number) => {
 
 const RecommendedJobs: React.FC = () => {
   const [savedJobs, setSavedJobs] = useState<Set<string>>(new Set());
+  const [appliedJobs, setAppliedJobs] = useState<Set<string>>(new Set());
   const [sortBy, setSortBy] = useState<'match' | 'recent'>('match');
 
   const toggleSaveJob = (e: React.MouseEvent, id: string) => {
@@ -156,6 +157,12 @@ const RecommendedJobs: React.FC = () => {
       newSaved.add(id);
     }
     setSavedJobs(newSaved);
+  };
+
+  const handleApply = (id: string) => {
+    const newApplied = new Set(appliedJobs);
+    newApplied.add(id);
+    setAppliedJobs(newApplied);
   };
 
   const sortedJobs = [...RECOMMENDED_JOBS].sort((a, b) => {
@@ -174,7 +181,7 @@ const RecommendedJobs: React.FC = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', padding: '4rem 2rem', background: '#ffffff', color: '#1a1a1a', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ minHeight: '100vh', padding: '2rem', background: 'transparent', color: '#1a1a1a', fontFamily: 'Montserrat, sans-serif' }}>
       <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
 
         {/* Header */}
@@ -184,28 +191,12 @@ const RecommendedJobs: React.FC = () => {
           transition={{ duration: 0.5 }}
           style={{ marginBottom: '2.5rem' }}
         >
-          <Link
-            to="/jobs"
-            style={{ display: 'inline-flex', alignItems: 'center', color: '#666666', marginBottom: '1.5rem', fontSize: '0.9rem', transition: 'color 0.3s', textDecoration: 'none' }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--primary)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = '#666666'; }}
-          >
-            <ArrowLeft size={16} style={{ marginRight: '0.5rem' }} /> Back to Job Listings
-          </Link>
+
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '0.5rem' }}>
             <h1 style={{ fontSize: '2.8rem', color: '#1a1a1a', margin: 0 }}>
               Recommended <span style={{ color: 'var(--primary)' }}>For You</span>
             </h1>
-            <motion.div
-              animate={{ rotate: [0, 15, -15, 0] }}
-              transition={{ repeat: Infinity, duration: 2, repeatDelay: 3 }}
-            >
-              <Sparkles size={32} color="var(--primary)" />
-            </motion.div>
           </div>
-          <p style={{ fontSize: '1.05rem', color: '#4a4a4a', maxWidth: '650px' }}>
-            Personalized job recommendations powered by AI, matched to your skills, experience, and career goals from your alumni profile.
-          </p>
         </motion.div>
 
         {/* Profile Match Summary */}
@@ -488,24 +479,44 @@ const RecommendedJobs: React.FC = () => {
                       >
                         View Details <ChevronRight size={15} />
                       </Link>
-                      <Link
-                        to={`/jobs/${job.id}/apply`}
+                      <button
+                        onClick={() => handleApply(job.id)}
+                        disabled={appliedJobs.has(job.id)}
                         style={{
-                          background: 'var(--primary)',
-                          color: 'white',
+                          background: appliedJobs.has(job.id) ? '#ebfbee' : 'var(--primary)',
+                          color: appliedJobs.has(job.id) ? '#2b8a3e' : 'white',
                           padding: '0.55rem 1.5rem',
                           borderRadius: '8px',
                           fontWeight: 600,
                           fontSize: '0.88rem',
-                          textDecoration: 'none',
-                          display: 'inline-block',
+                          border: appliedJobs.has(job.id) ? '1px solid #b2f2bb' : 'none',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          cursor: appliedJobs.has(job.id) ? 'default' : 'pointer',
                           transition: 'all 0.2s'
                         }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--primary-hover)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--primary)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+                        onMouseEnter={(e) => { 
+                          if (!appliedJobs.has(job.id)) {
+                            e.currentTarget.style.background = 'var(--primary-hover)'; 
+                            e.currentTarget.style.transform = 'translateY(-1px)'; 
+                          }
+                        }}
+                        onMouseLeave={(e) => { 
+                          if (!appliedJobs.has(job.id)) {
+                            e.currentTarget.style.background = 'var(--primary)'; 
+                            e.currentTarget.style.transform = 'translateY(0)'; 
+                          }
+                        }}
                       >
-                        Apply Now
-                      </Link>
+                        {appliedJobs.has(job.id) ? (
+                          <>
+                            <Check size={16} /> Applied
+                          </>
+                        ) : (
+                          'Apply Now'
+                        )}
+                      </button>
                       <motion.button
                         onClick={(e) => toggleSaveJob(e, job.id)}
                         style={{
@@ -533,45 +544,7 @@ const RecommendedJobs: React.FC = () => {
           })}
         </motion.div>
 
-        {/* Improve Recommendations CTA */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          style={{
-            background: 'linear-gradient(135deg, #f8f9fa 0%, #fff8f8 100%)',
-            border: '1px solid #e9ecef',
-            borderRadius: '16px',
-            padding: '2.5rem',
-            textAlign: 'center',
-            marginTop: '2rem'
-          }}
-        >
-          <Sparkles size={28} color="var(--primary)" style={{ marginBottom: '0.8rem' }} />
-          <h3 style={{ fontSize: '1.3rem', color: '#1a1a1a', marginBottom: '0.5rem' }}>Want Better Recommendations?</h3>
-          <p style={{ color: '#6c757d', fontSize: '0.95rem', maxWidth: '500px', margin: '0 auto 1.5rem auto', lineHeight: 1.6 }}>
-            Complete your alumni profile with updated skills, certifications, and career preferences for more accurate AI-powered job matches.
-          </p>
-          <Link
-            to="/profile/edit"
-            style={{
-              background: 'var(--primary)',
-              color: 'white',
-              padding: '0.8rem 2rem',
-              borderRadius: '8px',
-              fontWeight: 600,
-              textDecoration: 'none',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              transition: 'background 0.3s'
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--primary-hover)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--primary)'; }}
-          >
-            <Target size={16} /> Update My Profile
-          </Link>
-        </motion.div>
+
       </div>
     </div>
   );

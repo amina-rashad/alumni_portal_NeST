@@ -171,7 +171,7 @@ const MyCourses: React.FC = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', padding: '4rem 2rem', background: '#ffffff', color: '#1a1a1a', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ minHeight: '100vh', padding: '0', background: 'transparent', color: '#1a1a1a', fontFamily: 'Inter, sans-serif' }}>
       <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
 
         {/* Header */}
@@ -181,20 +181,9 @@ const MyCourses: React.FC = () => {
           transition={{ duration: 0.5 }}
           style={{ marginBottom: '2.5rem' }}
         >
-          <Link
-            to="/courses"
-            style={{ display: 'inline-flex', alignItems: 'center', color: '#666666', marginBottom: '1.5rem', fontSize: '0.9rem', transition: 'color 0.3s', textDecoration: 'none' }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--primary)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = '#666666'; }}
-          >
-            <ArrowLeft size={16} style={{ marginRight: '0.5rem' }} /> Back to Course Catalog
-          </Link>
-          <h1 style={{ fontSize: '2.8rem', marginBottom: '0.5rem', color: '#1a1a1a' }}>
+          <h1 style={{ fontSize: '2.8rem', marginBottom: '1.5rem', color: '#1a1a1a' }}>
             My <span style={{ color: 'var(--primary)' }}>Courses</span>
           </h1>
-          <p style={{ fontSize: '1.05rem', color: '#4a4a4a', maxWidth: '600px' }}>
-            Track your learning journey. Continue where you left off and earn professional certificates.
-          </p>
         </motion.div>
 
         {/* Stats Cards */}
@@ -554,7 +543,7 @@ const MyCourses: React.FC = () => {
                             ) : (
                               <>
                                 <button
-                                  onClick={() => navigate(`/courses/${course.courseId}`)}
+                                  onClick={() => navigate(`/courses/${course.courseId}/play`)}
                                   style={{
                                     padding: '0.6rem 1.2rem',
                                     borderRadius: '8px',

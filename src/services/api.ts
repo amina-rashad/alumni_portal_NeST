@@ -89,7 +89,10 @@ async function apiRequest<T = unknown>(
         const retryResponse = await fetch(url, { ...options, headers });
         return await retryResponse.json();
       } else {
-        clearTokens();
+        const token = getAccessToken();
+        if (token && token !== 'mock_token' && token !== 'social_mock_token') {
+          clearTokens();
+        }
       }
     }
 
@@ -150,6 +153,7 @@ export interface AuthUser {
   user_type: string;
   role: string;
   profile_picture?: string | null;
+  status?: string;
 }
 
 export interface AuthData {

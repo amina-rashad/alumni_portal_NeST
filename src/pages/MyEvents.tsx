@@ -42,18 +42,13 @@ const MyEvents: React.FC = () => {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
         >
-          <Link 
-            to="/dashboard" 
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64748B', textDecoration: 'none', fontSize: '0.9rem', marginBottom: '1rem' }}
-          >
-            <ArrowLeft size={16} /> Back to Dashboard
-          </Link>
+
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
             <div>
               <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', marginBottom: '0.5rem' }}>
                 My <span style={{ color: '#d32f2f' }}>Events</span>
               </h1>
-              <p style={{ color: '#64748B', fontSize: '1.1rem' }}>Manage your registrations and view your event history.</p>
+
             </div>
             
             <div style={{ display: 'flex', background: '#F1F5F9', padding: '0.4rem', borderRadius: '14px', gap: '0.25rem' }}>
