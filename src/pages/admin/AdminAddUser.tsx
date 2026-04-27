@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  UserPlus, Mail, Shield, Lock, Phone, ArrowLeft, Calendar, DollarSign
+  UserPlus, Mail, Shield, ChevronDown, Lock, Phone, ArrowLeft, Banknote, Calendar, DollarSign
 } from 'lucide-react';
 import { adminApi } from '../../services/api';
 
@@ -50,21 +50,22 @@ const AdminAddUser: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
-      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
         <button 
           onClick={() => navigate('/admin/users')}
           style={{ 
-            background: '#fff', 
-            border: '1px solid #e2e8f0', 
-            borderRadius: '8px', 
-            width: '40px', 
-            height: '40px', 
             display: 'flex', 
             alignItems: 'center', 
-            justifyContent: 'center',
+            justifyContent: 'center', 
+            width: '40px', 
+            height: '40px', 
+            borderRadius: '12px', 
+            background: '#fff', 
+            border: '1px solid #e2e8f0', 
+            color: '#64748b', 
             cursor: 'pointer',
-            color: '#475569'
+            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+            transition: 'all 0.2s'
           }}
         >
           <ArrowLeft size={20} />
@@ -87,10 +88,10 @@ const AdminAddUser: React.FC = () => {
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
           
-          {/* Section: Basic Details */}
-          <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden' }}>
-            <div style={{ background: '#f8fafc', padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '8px', color: '#1e293b', fontWeight: 700, fontSize: '15px' }}>
-              <Mail size={18} color="#475569" /> Basic Details
+          <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', background: '#f8fafc', overflow: 'hidden' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Mail size={18} color={nestNavy} />
+              <span style={{ fontSize: '15px', fontWeight: 700, color: '#1e293b' }}>Basic Details</span>
             </div>
             <div style={{ padding: '24px', display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '24px' }}>
               
@@ -103,7 +104,6 @@ const AdminAddUser: React.FC = () => {
                 <label style={{ fontSize: '13px', fontWeight: 700, color: '#475569' }}>Last Name</label>
                 <input required type="text" placeholder="Enter last name" value={formData.last_name} onChange={e => setFormData({...formData, last_name: e.target.value})} style={{ padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '14px', color: '#1e293b', background: '#fff' }} />
               </div>
-
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <label style={{ fontSize: '13px', fontWeight: 700, color: '#475569' }}>Email Address</label>
                 <div style={{ position: 'relative' }}>
@@ -128,7 +128,7 @@ const AdminAddUser: React.FC = () => {
                 <label style={{ fontSize: '13px', fontWeight: 700, color: '#475569' }}>Salary / Stipend</label>
                 <div style={{ position: 'relative' }}>
                   <div style={{ position: 'absolute', top: '50%', left: '16px', transform: 'translateY(-50%)', color: '#94a3b8', display: 'flex' }}>
-                    <DollarSign size={16} />
+                    <Banknote size={16} />
                   </div>
                   <input type="text" placeholder="e.g. 25,000" value={formData.salary} onChange={e => setFormData({...formData, salary: e.target.value})} style={{ padding: '12px 16px 12px 42px', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '14px', color: '#1e293b', width: '100%', boxSizing: 'border-box', background: '#fff' }} />
                 </div>

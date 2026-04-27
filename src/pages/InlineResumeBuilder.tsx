@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Download, CheckCheck, Loader2 } from 'lucide-react';
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
+// import html2canvas from 'html2canvas';
+// import { jsPDF } from 'jspdf';
 
 interface InlineResumeBuilderProps {
   onAttach: (file: File, data: any) => void;
@@ -45,7 +45,8 @@ const InlineResumeBuilder: React.FC<InlineResumeBuilderProps> = ({ onAttach, ini
     setData({ ...data, [e.target.name]: e.target.value });
   };
 
-  const generatePDF = async () => {
+  const generatePDF = async (): Promise<any> => {
+    /* 
     if (!resumeRef.current) return null;
     const canvas = await html2canvas(resumeRef.current, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
     const imgData = canvas.toDataURL('image/png');
@@ -55,6 +56,9 @@ const InlineResumeBuilder: React.FC<InlineResumeBuilderProps> = ({ onAttach, ini
     
     pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
     return pdf;
+    */
+    alert("PDF generation is temporarily disabled due to environment install issues. Please run npm install manually.");
+    return null;
   };
 
   const handleDownload = async () => {
