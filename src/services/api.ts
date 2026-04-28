@@ -93,7 +93,8 @@ export const authApi = {
           full_name: payload.email.split('@')[0], 
           email: payload.email, 
           role,
-          user_type: role === 'course_manager' ? 'Staff' : 'Alumni'
+          user_type: role === 'course_manager' ? 'Staff' : 'Alumni',
+          profile_picture: 'https://i.pravatar.cc/150?u=' + payload.email
         } 
       } 
     };
@@ -434,6 +435,7 @@ export type AuthUser = {
   email: string;
   role: string;
   user_type?: string;
+  profile_picture?: string;
 };
 
 export default api;

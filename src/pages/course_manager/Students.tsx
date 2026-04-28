@@ -37,7 +37,7 @@ const CM_Students: React.FC = () => {
       try {
         setIsLoading(true);
         const response = await courseManagerAPI.fetchStudents();
-        setStudents(response.data);
+        setStudents(response.data as Student[]);
       } catch (err) {
         setError('Failed to load students. Please try again later.');
       } finally {
