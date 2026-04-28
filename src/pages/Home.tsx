@@ -200,10 +200,25 @@ const Home: React.FC = () => {
             transition={{ duration: 0.9 }}
             className="hero-text-area"
           >
-            <motion.span className="hero-badge" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
-              🚀 Talent Engagement &amp; Alumni Tracking Portal
-            </motion.span>
-            <h1 className="hero-title">TRACK. ENGAGE. HIRE.</h1>
+            <h1 className="hero-title" style={{ fontFamily: 'Sora, sans-serif', display: 'flex', alignItems: 'baseline', gap: '0.5rem', margin: 0, marginBottom: '1rem' }}>
+              <span style={{ fontWeight: 800 }}>NDA</span>
+              <span style={{ fontWeight: 300 }}>Connect</span>
+              <div style={{ width: '14px', height: '14px', backgroundColor: '#c8102e', borderRadius: '50%', display: 'inline-block', marginLeft: '4px' }} />
+            </h1>
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }} 
+              animate={{ opacity: 1, x: 0 }} 
+              transition={{ delay: 0.3 }}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1.5rem' }}
+            >
+              <span style={{ 
+                fontFamily: 'Inter, sans-serif', 
+                fontWeight: 600, 
+                fontSize: '1.2rem', 
+                color: 'rgba(255, 255, 255, 0.85)', 
+                letterSpacing: '0.2em' 
+              }}>TRACK. ENGAGE. HIRE.</span>
+            </motion.div>
             <p className="hero-subtitle">
               A centralized platform to maintain long-term relationships with alumni, interns,
               trainees, and event participants — and identify the best candidates for your next opportunity.
@@ -298,7 +313,7 @@ const Home: React.FC = () => {
             <span className="section-tag">Our Vision</span>
             <h2>Bridging the Gap Between Talent &amp; Opportunity</h2>
             <p>
-              The Talent Engagement &amp; Alumni Tracking Portal is designed to maintain lifelong
+              <strong>NDA Connect</strong> is designed to maintain lifelong
               connections. Whether you're an alumnus sharing wisdom or a trainee looking for your
               first break, we provide the platform to thrive.
             </p>

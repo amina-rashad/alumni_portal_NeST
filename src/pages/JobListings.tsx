@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, MapPin, Briefcase, Clock,
@@ -6,7 +6,7 @@ import {
   Building, SlidersHorizontal,
   Bookmark, BookmarkCheck,
   Plus, Info, AlertCircle,
-  Calendar, ChevronRight
+  Calendar, ChevronRight, Check
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { jobsApi } from '../services/api';
@@ -125,7 +125,9 @@ const JobListings: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('All');
   const [savedJobs, setSavedJobs] = useState<Set<string>>(new Set());
+  const [appliedJobs, setAppliedJobs] = useState<Set<string>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
+  const sliderRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -145,11 +147,36 @@ const JobListings: React.FC = () => {
     fetchJobs();
   }, []);
 
+  // Auto-scrolling logic for the featured slider (5s interval)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (sliderRef.current) {
+        const container = sliderRef.current;
+        const scrollAmount = 850 + 32; // card width + gap
+        
+        // If we've scrolled near the end, loop back to the start
+        if (container.scrollLeft + container.clientWidth >= container.scrollWidth - 10) {
+          container.scrollTo({ left: 0, behavior: 'smooth' });
+        } else {
+          container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+        }
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const toggleSaveJob = (id: string) => {
     const newSaved = new Set(savedJobs);
     if (newSaved.has(id)) newSaved.delete(id);
     else newSaved.add(id);
     setSavedJobs(newSaved);
+  };
+
+  const handleApply = (id: string) => {
+    const newApplied = new Set(appliedJobs);
+    newApplied.add(id);
+    setAppliedJobs(newApplied);
   };
 
   const filteredJobs = jobs.filter(job => {
@@ -178,85 +205,100 @@ const JobListings: React.FC = () => {
   };
 
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto', paddingBottom: '4rem' }}>
+    <div style={{ maxWidth: '1400px', margin: '0 auto', paddingBottom: '4rem', padding: '0 1rem' }}>
 
-      {/* Header & Stats Section */}
-      <div style={{ marginBottom: '3rem' }}>
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2rem' }}
+      {/* Wide Cinematic Slider Featured Career Section */}
+      <div style={{ marginBottom: '4.5rem', marginTop: '2rem', position: 'relative' }}>
+        <div 
+          ref={sliderRef}
+          style={{ display: 'flex', gap: '2rem', overflowX: 'auto', padding: '1rem 0', scrollbarWidth: 'none', msOverflowStyle: 'none', scrollSnapType: 'x mandatory', scrollBehavior: 'smooth' }}
         >
-          <div>
-            <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: '#0F172A', marginBottom: '0.5rem', letterSpacing: '-0.02em' }}>
-              Career <span style={{ color: '#d32f2f' }}>Opportunities</span>
-            </h1>
-            <p style={{ color: '#64748B', fontSize: '1.1rem', maxWidth: '600px' }}>
-              Discover your next career milestone within the exclusive NeST alumni network and global ecosystem.
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <Link
-              to="/jobs/recommended"
-              className="btn-premium"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.6rem',
-                padding: '0.8rem 1.5rem',
-                background: '#fff1f1',
-                color: '#d32f2f',
-                borderRadius: '12px',
-                fontWeight: 600,
-                fontSize: '0.95rem'
-              }}
-            >
-              <Zap size={18} /> Recommended For You
-            </Link>
-            <button
-              className="btn-premium"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.6rem',
-                padding: '0.8rem 1.5rem',
-                background: '#0F172A',
-                color: 'white',
-                borderRadius: '12px',
-                fontWeight: 600,
-                fontSize: '0.95rem'
-              }}
-            >
-              <Plus size={18} /> Post a Job
-            </button>
-          </div>
-        </motion.div>
-
-        {/* Stats Row */}
-        <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
           {[
-            { label: 'Active Listings', count: jobs.length, icon: Briefcase, color: '#3B82F6' },
-            { label: 'New Today', count: jobs.filter(j => j.isNew).length, icon: Clock, color: '#10B981' },
-            { label: 'Urgent Roles', count: jobs.filter(j => j.isUrgent).length, icon: AlertCircle, color: '#F59E0B' },
-            { label: 'Partner Companies', count: 12, icon: Building, color: '#6366F1' },
-          ].map((stat, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-              className="luxury-card"
-              style={{ flex: '1 1 200px', padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1.25rem' }}
+            { title: 'Global Opportunities', subtitle: 'Work with the world\'s leading tech giants.', img: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1600&q=80', color: '#0F172A' },
+            { title: 'Career Growth', subtitle: 'Personalized pathways for every alumnus.', img: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=1600&q=80', color: '#d32f2f' },
+            { title: 'Remote Work', subtitle: 'Freedom to innovate from anywhere.', img: 'https://images.unsplash.com/photo-1593642532973-d31b6557fa68?auto=format&fit=crop&w=1600&q=80', color: '#10B981' }
+          ].map((addon, idx) => (
+            <motion.div 
+              key={idx}
+              initial={{ opacity: 0, x: 80 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 1.2, delay: idx * 0.2 + 0.2, ease: [0.16, 1, 0.3, 1] }}
+              whileHover="hover"
+              style={{ 
+                flex: '0 0 850px',
+                height: '450px',
+                borderRadius: '40px',
+                overflow: 'hidden',
+                position: 'relative',
+                boxShadow: '0 30px 60px rgba(0,0,0,0.15)',
+                cursor: 'pointer',
+                background: addon.color,
+                scrollSnapAlign: 'start'
+              }}
             >
-              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: `${stat.color}10`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <stat.icon size={22} color={stat.color} />
-              </div>
-              <div>
-                <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{stat.label}</p>
-                <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#0F172A' }}>{stat.count}</p>
-              </div>
+              <motion.img 
+                variants={{ hover: { scale: 1.05, opacity: 0.8 } }}
+                transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
+                src={addon.img} 
+                alt={addon.title} 
+                style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }} 
+              />
+              <motion.div 
+                style={{ 
+                  position: 'absolute', 
+                  inset: 0, 
+                  background: 'linear-gradient(90deg, rgba(15,23,42,0.95) 0%, rgba(15,23,42,0) 60%)',
+                  padding: '4rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center'
+                }}
+              >
+                <motion.h2 
+                  variants={{ hover: { y: -5, textShadow: '0 10px 30px rgba(0,0,0,0.8)' } }}
+                  transition={{ duration: 0.4, ease: 'easeOut' }}
+                  style={{ color: '#ffffff', fontSize: '3.5rem', fontWeight: 900, marginBottom: '1rem', letterSpacing: '-0.04em' }}
+                >
+                  {addon.title}
+                </motion.h2>
+                <motion.p 
+                  variants={{ hover: { y: -3, color: 'rgba(255,255,255,0.95)' } }}
+                  transition={{ duration: 0.4, ease: 'easeOut', delay: 0.05 }}
+                  style={{ color: 'rgba(255,255,255,0.7)', fontSize: '1.4rem', maxWidth: '500px', lineHeight: '1.4' }}
+                >
+                  {addon.subtitle}
+                </motion.p>
+                <motion.button 
+                  variants={{ hover: { scale: 1.04, y: -2, boxShadow: '0 15px 30px rgba(0,0,0,0.4)' } }}
+                  transition={{ duration: 0.3 }}
+                  style={{ 
+                    marginTop: '2.5rem', 
+                    width: 'fit-content', 
+                    padding: '1rem 2rem', 
+                    borderRadius: '16px', 
+                    background: 'white', 
+                    color: '#0F172A', 
+                    border: 'none', 
+                    fontWeight: 800, 
+                    fontSize: '1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Explore Roles <ChevronRight size={20} />
+                </motion.button>
+              </motion.div>
             </motion.div>
           ))}
+        </div>
+        
+        {/* Navigation Dots */}
+        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '2rem', justifyContent: 'center' }}>
+          <div style={{ width: '40px', height: '6px', borderRadius: '3px', background: '#d32f2f' }}></div>
+          <div style={{ width: '12px', height: '6px', borderRadius: '3px', background: '#E2E8F0' }}></div>
+          <div style={{ width: '12px', height: '6px', borderRadius: '3px', background: '#E2E8F0' }}></div>
         </div>
       </div>
 
@@ -397,22 +439,26 @@ const JobListings: React.FC = () => {
             <p style={{ marginTop: '1rem', color: '#64748B' }}>Fetching career opportunities...</p>
           </div>
         ) : filteredJobs.length > 0 ? (
-          filteredJobs.map((job) => (
-            <motion.div
-              key={job.id}
-              variants={itemVariants}
-              className="luxury-card"
-              style={{
-                padding: '2rem',
-                position: 'relative',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '1.25rem',
-                transition: 'all 0.3s ease',
-                overflow: 'hidden'
-              }}
-            >
-              {/* Urgent Ribbon */}
+          filteredJobs.map((job, index) => (
+            <React.Fragment key={job.id}>
+              <motion.div
+                variants={{
+                  hidden: { opacity: 0, y: 20 },
+                  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } }
+                }}
+                whileHover={{ y: -4, boxShadow: '0 12px 24px rgba(0,0,0,0.06)' }}
+                className="luxury-card"
+                style={{
+                  padding: '2rem',
+                  position: 'relative',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1.25rem',
+                  transition: 'box-shadow 0.3s ease',
+                  overflow: 'hidden'
+                }}
+              >
+                {/* Urgent Ribbon */}
               {job.isUrgent && (
                 <div style={{
                   position: 'absolute',
@@ -577,22 +623,99 @@ const JobListings: React.FC = () => {
                   View Details <ChevronRight size={16} />
                 </Link>
 
-                <Link
-                  to={`/jobs/${job.id}/apply`}
+                <button
+                  onClick={() => handleApply(job.id)}
+                  disabled={appliedJobs.has(job.id)}
                   className="btn-premium"
                   style={{
                     padding: '0.6rem 1.8rem',
-                    background: '#d32f2f',
-                    color: 'white',
+                    background: appliedJobs.has(job.id) ? '#f0fdf4' : '#d32f2f',
+                    color: appliedJobs.has(job.id) ? '#15803d' : 'white',
                     borderRadius: '8px',
                     fontWeight: 700,
-                    fontSize: '0.9rem'
+                    fontSize: '0.9rem',
+                    border: appliedJobs.has(job.id) ? '1px solid #bbf7d0' : 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    cursor: appliedJobs.has(job.id) ? 'default' : 'pointer'
                   }}
                 >
-                  Apply Now
-                </Link>
+                  {appliedJobs.has(job.id) ? (
+                    <>
+                      <Check size={18} /> Applied
+                    </>
+                  ) : (
+                    'Apply Now'
+                  )}
+                </button>
               </div>
             </motion.div>
+
+            {/* In-Between Add-on Banner for Jobs */}
+            {index === 3 && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.98 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                style={{ 
+                  gridColumn: '1 / -1', 
+                  background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 100%)', 
+                  borderRadius: '2rem', 
+                  padding: '3rem 4rem', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'space-between',
+                  boxShadow: '0 20px 40px rgba(15,23,42,0.15)',
+                  marginTop: '1rem',
+                  marginBottom: '1rem',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}
+              >
+                <div style={{ position: 'absolute', right: '-10%', top: '-50%', opacity: 0.1 }}>
+                  <Briefcase size={400} color="white" />
+                </div>
+                <motion.div 
+                  initial="hidden"
+                  whileInView="show"
+                  viewport={{ once: true }}
+                  variants={{
+                    hidden: { opacity: 0 },
+                    show: { opacity: 1, transition: { staggerChildren: 0.15 } }
+                  }}
+                  style={{ position: 'relative', zIndex: 1, maxWidth: '600px' }}
+                >
+                  <motion.span 
+                    variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } } }}
+                    style={{ display: 'inline-block', background: 'rgba(255,255,255,0.2)', color: 'white', padding: '0.4rem 1rem', borderRadius: '50px', fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}
+                  >
+                    NeST Premium Placement
+                  </motion.span>
+                  <motion.h2 
+                    variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } } }}
+                    style={{ color: 'white', fontSize: '2.5rem', fontWeight: 900, marginTop: '1rem', marginBottom: '1rem', lineHeight: '1.2' }}
+                  >
+                    Stand out to top recruiters automatically.
+                  </motion.h2>
+                  <motion.p 
+                    variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } } }}
+                    style={{ color: 'rgba(255,255,255,0.8)', fontSize: '1.1rem', marginBottom: '2rem' }}
+                  >
+                    Get your resume highlighted at the top of partner employer queues.
+                  </motion.p>
+                  <motion.button 
+                    variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } } }}
+                    whileHover={{ scale: 1.05 }}
+                    style={{ background: '#d32f2f', color: 'white', border: 'none', padding: '1rem 2rem', borderRadius: '1rem', fontSize: '1rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                  >
+                    Boost Profile <ChevronRight size={18} />
+                  </motion.button>
+                </motion.div>
+              </motion.div>
+            )}
+            </React.Fragment>
           ))
         ) : (
           <div style={{ textAlign: 'center', padding: '4rem', background: '#F8FAFC', borderRadius: '30px', border: '2px dashed #E2E8F0', gridColumn: '1 / -1' }}>

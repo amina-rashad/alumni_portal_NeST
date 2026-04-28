@@ -129,8 +129,10 @@ interface NavButtonProps {
 }
 
 const NavButton: React.FC<NavButtonProps> = ({ group, activePath, isOpen, onClick }) => {
+  const navigate = useNavigate();
   const hasActive = group.items.some(i => activePath.startsWith(i.path));
   const ref = useRef<HTMLButtonElement>(null);
+  const isSingle = group.items.length === 1;
 
   const nestNavy = '#1a2652';
 
@@ -138,7 +140,9 @@ const NavButton: React.FC<NavButtonProps> = ({ group, activePath, isOpen, onClic
     <button
       ref={ref}
       onClick={() => {
-        if (ref.current) {
+        if (isSingle) {
+          navigate(group.items[0].path);
+        } else if (ref.current) {
           onClick(ref.current.getBoundingClientRect());
         }
       }}
@@ -161,15 +165,17 @@ const NavButton: React.FC<NavButtonProps> = ({ group, activePath, isOpen, onClic
     >
       <span style={{ color: hasActive || isOpen ? nestNavy : '#64748b' }}>{group.icon}</span>
       {group.section}
-      <ChevronDown 
-        size={13} 
-        style={{ 
-          marginLeft: '2px', 
-          transform: isOpen ? 'rotate(180deg)' : 'none', 
-          transition: '0.2s',
-          opacity: 0.6
-        }} 
-      />
+      {!isSingle && (
+        <ChevronDown 
+          size={13} 
+          style={{ 
+            marginLeft: '2px', 
+            transform: isOpen ? 'rotate(180deg)' : 'none', 
+            transition: '0.2s',
+            opacity: 0.6
+          }} 
+        />
+      )}
     </button>
   );
 };
@@ -260,8 +266,8 @@ const AdminLayout: React.FC = () => {
           <span style={{ marginLeft: '12px', fontSize: '18px', fontWeight: 800, color: nestNavy, letterSpacing: '-0.01em' }}>Admin</span>
         </Link>
 
-        {/* Divider */}
-        <div style={{ width: '1px', height: '24px', background: '#e2e8f0', flexShrink: 0, margin: '0 4px' }} />
+        {/* Spacer to push nav to right */}
+        <div style={{ flex: 1 }} />
 
         {/* Desktop Admin Nav (Scrolling) */}
         <nav 
@@ -270,7 +276,6 @@ const AdminLayout: React.FC = () => {
             display: 'flex',
             alignItems: 'center',
             gap: '4px',
-            flex: 1,
             overflowX: 'auto',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',

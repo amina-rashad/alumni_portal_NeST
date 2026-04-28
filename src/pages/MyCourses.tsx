@@ -171,7 +171,7 @@ const MyCourses: React.FC = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', padding: '4rem 2rem', background: '#ffffff', color: '#1a1a1a', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ minHeight: '100vh', padding: '0', background: 'transparent', color: '#1a1a1a', fontFamily: 'Inter, sans-serif' }}>
       <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
 
         {/* Header */}
@@ -181,58 +181,12 @@ const MyCourses: React.FC = () => {
           transition={{ duration: 0.5 }}
           style={{ marginBottom: '2.5rem' }}
         >
-          <Link
-            to="/courses"
-            style={{ display: 'inline-flex', alignItems: 'center', color: '#666666', marginBottom: '1.5rem', fontSize: '0.9rem', transition: 'color 0.3s', textDecoration: 'none' }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--primary)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = '#666666'; }}
-          >
-            <ArrowLeft size={16} style={{ marginRight: '0.5rem' }} /> Back to Course Catalog
-          </Link>
-          <h1 style={{ fontSize: '2.8rem', marginBottom: '0.5rem', color: '#1a1a1a' }}>
+          <h1 style={{ fontSize: '2.8rem', marginBottom: '1.5rem', color: '#1a1a1a' }}>
             My <span style={{ color: 'var(--primary)' }}>Courses</span>
           </h1>
-          <p style={{ fontSize: '1.05rem', color: '#4a4a4a', maxWidth: '600px' }}>
-            Track your learning journey. Continue where you left off and earn professional certificates.
-          </p>
         </motion.div>
 
-        {/* Stats Cards */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '1rem', marginBottom: '2.5rem' }}
-        >
-          {[
-            { label: 'Total Enrolled', count: MOCK_COURSES.length, color: '#1a1a1a', bg: '#f8f9fa', icon: <BookOpen size={20} /> },
-            { label: 'In Progress', count: statusCounts['In Progress'] || 0, color: '#1971c2', bg: '#e7f5ff', icon: <PlayCircle size={20} /> },
-            { label: 'Completed', count: statusCounts['Completed'] || 0, color: '#2b8a3e', bg: '#ebfbee', icon: <CheckCircle2 size={20} /> },
-            { label: 'Avg Progress', count: totalProgress, color: 'var(--primary)', bg: '#fff5f5', icon: <BarChart3 size={20} />, suffix: '%' },
-          ].map((stat) => (
-            <motion.div
-              key={stat.label}
-              whileHover={{ y: -3, boxShadow: '0 8px 20px rgba(0,0,0,0.06)' }}
-              style={{
-                background: stat.bg,
-                borderRadius: '14px',
-                padding: '1.4rem 1.5rem',
-                border: '1px solid #e9ecef',
-                textAlign: 'center',
-                transition: 'all 0.3s',
-                cursor: 'default'
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.6rem', color: stat.color, opacity: 0.7 }}>
-                {stat.icon}
-              </div>
-              <p style={{ fontSize: '2rem', fontWeight: 800, color: stat.color, margin: '0 0 0.2rem 0' }}>
-                {stat.count}{stat.suffix || ''}
-              </p>
-              <p style={{ fontSize: '0.82rem', color: '#6c757d', fontWeight: 500, margin: 0 }}>{stat.label}</p>
-            </motion.div>
-          ))}
-        </motion.div>
+
 
         {/* Filter & Search Bar */}
         <motion.div
@@ -554,7 +508,7 @@ const MyCourses: React.FC = () => {
                             ) : (
                               <>
                                 <button
-                                  onClick={() => navigate(`/courses/${course.courseId}`)}
+                                  onClick={() => navigate(`/courses/${course.courseId}/play`)}
                                   style={{
                                     padding: '0.6rem 1.2rem',
                                     borderRadius: '8px',
