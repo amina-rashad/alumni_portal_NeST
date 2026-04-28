@@ -117,6 +117,23 @@ import EventManagerReports from './pages/event_manager/EventManagerReports';
 import EventManagerSettings from './pages/event_manager/EventManagerSettings';
 import EventManagerPlaceholder from './pages/event_manager/EventManagerPlaceholder';
 
+// Course Manager Pages
+import CourseManagerLayout from './pages/course_manager/CourseManagerLayout';
+import CM_Dashboard from './pages/course_manager/Dashboard';
+import CM_Courses from './pages/course_manager/Courses';
+import CM_CreateCourse from './pages/course_manager/CreateCourse';
+import CM_Students from './pages/course_manager/Students';
+import CM_Assessments from './pages/course_manager/Assessments';
+import CM_Certificates from './pages/course_manager/Certificates';
+import CM_Attendance from './pages/course_manager/Attendance';
+import CM_Reminders from './pages/course_manager/ReminderCenter';
+import CM_Forum from './pages/course_manager/ForumModeration';
+import CM_Achievements from './pages/course_manager/AchievementManager';
+import CM_RecommendationSetup from './pages/course_manager/RecommendationSetup';
+import CM_CompletionInsights from './pages/course_manager/CompletionInsights';
+import CM_Login from './pages/course_manager/Login';
+
+
 /* -- Luxury Splash Screen with Mask Reveal -- */
 import heroBg from './assets/hero-bg.jpg';
 const SplashScreen: React.FC = () => (
@@ -407,7 +424,24 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="settings" element={<PageTransition><EventManagerSettings /></PageTransition>} />
         </Route>
 
-        {/* Fallback Catch-all Route */}
+        {/* Course Manager Routes */}
+        <Route path="/course-manager/login" element={<PageTransition><CM_Login /></PageTransition>} />
+        <Route path="/course-manager" element={<CourseManagerLayout />}>
+          <Route index element={<Navigate to="/course-manager/dashboard" replace />} />
+          <Route path="dashboard" element={<PageTransition><CM_Dashboard /></PageTransition>} />
+          <Route path="courses" element={<PageTransition><CM_Courses /></PageTransition>} />
+          <Route path="courses/create" element={<PageTransition><CM_CreateCourse /></PageTransition>} />
+          <Route path="students" element={<PageTransition><CM_Students /></PageTransition>} />
+          <Route path="assessments" element={<PageTransition><CM_Assessments /></PageTransition>} />
+          <Route path="certificates" element={<PageTransition><CM_Certificates /></PageTransition>} />
+          <Route path="attendance" element={<PageTransition><CM_Attendance /></PageTransition>} />
+          <Route path="reminders" element={<PageTransition><CM_Reminders /></PageTransition>} />
+          <Route path="forum" element={<PageTransition><CM_Forum /></PageTransition>} />
+          <Route path="achievements" element={<PageTransition><CM_Achievements /></PageTransition>} />
+          <Route path="recommendations" element={<PageTransition><CM_RecommendationSetup /></PageTransition>} />
+          <Route path="insights" element={<PageTransition><CM_CompletionInsights /></PageTransition>} />
+        </Route>
+
         <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
     </React.Fragment>

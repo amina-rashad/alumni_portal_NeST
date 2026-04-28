@@ -8,7 +8,7 @@ import {
   MoreHorizontal, FileText, ArrowRight,
   BrainCircuit, BookOpen, Heart, ShieldCheck, Sparkles, X
 } from 'lucide-react';
-import { getUser, coursesApi, jobsApi, type AuthUser } from '../services/api';
+import { getUser, coursesApi, jobsApi, type AuthUser, studentAPI } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 
 // Premium Job Backgrounds
@@ -105,19 +105,28 @@ const Dashboard: React.FC = () => {
       setUserData(currentUser);
     }
     
-    // Fetch live courses
-    const fetchCourses = async () => {
+    // Fetch all dashboard data
+    const fetchAllData = async () => {
       try {
-        const res = await coursesApi.getAllCourses();
-        const data = res.data as any;
-        if (res.success && data && data.courses) {
-          setCourses(data.courses);
-        }
+        const [courseRes, jobRes, insightRes, pathwayRes, queryRes] = await Promise.all([
+          coursesApi.getAllCourses(),
+          jobsApi.getAllJobs(),
+          studentAPI.fetchPersonalInsights(),
+          studentAPI.fetchRecommendedPathways(),
+          studentAPI.fetchMyQueries()
+        ]);
+
+        if (courseRes.success) setCourses(courseRes.data.courses);
+        if (jobRes.success) setJobs(jobRes.data.jobs);
+        if (insightRes.success) setInsights(insightRes.data);
+        if (pathwayRes.success) setPathways(pathwayRes.data);
+        if (queryRes.success) setQueries(queryRes.data);
       } catch (err) {
-        console.error("Failed to load courses", err);
+        console.error("Dashboard data load error", err);
+      } finally {
+        setIsLoadingExtras(false);
       }
     };
-    fetchCourses();
     
     // Fetch live jobs and filter by user profile + NeST focus
     const fetchJobs = async () => {
@@ -545,6 +554,72 @@ const Dashboard: React.FC = () => {
              <img src={bannerImg} alt="Alumni Group" className="banner-image" />
           </div>
         </motion.div>
+        
+        {/* NEW: LEARNING HEALTH SECTION */}
+        <motion.section 
+          variants={sectionVariants} 
+          initial="hidden" 
+          animate="visible"
+          className="grid grid-cols-1 md:grid-cols-3 gap-6"
+        >
+          <div className="luxury-card p-8 bg-gradient-to-br from-[#1a2652] to-[#0f172a] text-white overflow-hidden relative group">
+            <div className="relative z-10">
+              <div className="flex items-center gap-2 text-orange-400 mb-6">
+                <Flame size={20} fill="currentColor" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-indigo-300">Active Streak</span>
+              </div>
+              <div className="text-4xl font-black mb-1 tracking-tight">{insights?.streak || 0} Days</div>
+              <p className="text-indigo-200 text-xs font-medium italic">"You're on fire! Keep it up."</p>
+            </div>
+            <div className="absolute -right-8 -bottom-8 opacity-10 group-hover:scale-110 transition-transform duration-700">
+              <Flame size={160} fill="currentColor" />
+            </div>
+          </div>
+
+          <div className="luxury-card p-8 bg-white border border-slate-100 flex flex-col justify-between">
+            <div className="flex justify-between items-start">
+              <div>
+                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Experience</div>
+                <div className="text-3xl font-black text-[#1e293b] tracking-tight">{insights?.xp || 0} XP</div>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                <Zap size={20} fill="currentColor" />
+              </div>
+            </div>
+            <div className="mt-6 space-y-2">
+              <div className="flex justify-between text-[10px] font-black uppercase">
+                <span className="text-slate-400">Next Level</span>
+                <span className="text-blue-600">{insights?.nextMilestone}</span>
+              </div>
+              <div className="h-2 bg-slate-50 rounded-full overflow-hidden border border-slate-100">
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: '82%' }}
+                  className="h-full bg-blue-600 rounded-full"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="luxury-card p-8 bg-white border border-slate-100 flex flex-col justify-between">
+            <div>
+              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Recent Badges</div>
+              <div className="flex -space-x-3">
+                {insights?.badges.map((b: any, i: number) => (
+                  <div key={i} title={b.name} className="w-12 h-12 rounded-2xl border-4 border-white flex items-center justify-center shadow-lg" style={{ backgroundColor: b.color }}>
+                    <Award size={20} className="text-white" />
+                  </div>
+                ))}
+                <div className="w-12 h-12 rounded-2xl border-4 border-white bg-slate-50 flex items-center justify-center text-[10px] font-black text-slate-400 shadow-sm">
+                  +4
+                </div>
+              </div>
+            </div>
+            <button className="mt-6 text-[#d32f2f] font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:gap-3 transition-all">
+              View All Achievements <ArrowRight size={14} />
+            </button>
+          </div>
+        </motion.section>
 
         {/* 1. RECOMMENDED JOBS (MARQUEE SPLASH CARDS) */}
         <motion.section 

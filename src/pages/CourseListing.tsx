@@ -1,13 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { BookOpen, Search, Clock, Star, ChevronRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  BookOpen, 
+  Search, 
+  Clock, 
+  Star, 
+  ChevronRight, 
+  Filter,
+  ArrowUpRight,
+  Loader2,
+  AlertCircle
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { coursesApi } from '../services/api';
 
 const CourseListing: React.FC = () => {
   const [courses, setCourses] = useState<any[]>([]);
   const [filteredCourses, setFilteredCourses] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const navigate = useNavigate();
@@ -15,16 +26,16 @@ const CourseListing: React.FC = () => {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
+        setIsLoading(true);
         const res = await coursesApi.getAllCourses();
-        const data = res.data as any;
-        if (res.success && data && data.courses) {
-          setCourses(data.courses);
-          setFilteredCourses(data.courses);
+        if (res.success && res.data && res.data.courses) {
+          setCourses(res.data.courses);
+          setFilteredCourses(res.data.courses);
         }
       } catch (err) {
-        console.error('Failed to fetch courses:', err);
+        setError('Failed to load courses. Please try again later.');
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
     fetchCourses();
@@ -124,63 +135,41 @@ const CourseListing: React.FC = () => {
         <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#e2e8f0' }}></div>
       </div>
 
-      {/* Search & Filter Bar */}
-      <div style={{ 
-        background: '#ffffff', 
-        padding: '1rem', 
-        borderRadius: '1.5rem', 
-        boxShadow: '0 4px 20px rgba(0,0,0,0.05)', 
-        border: '1px solid #f1f5f9', 
-        marginBottom: '3rem', 
-        display: 'flex', 
-        flexDirection: 'column',
-        gap: '1rem'
-      }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ position: 'relative', flex: '1 1 300px' }}>
-            <Search style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={20} />
+      {/* Main Content Area */}
+      <div className="max-w-7xl mx-auto px-6 -mt-24 relative z-20">
+        {/* Search & Filter Bar */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="bg-white/80 backdrop-blur-xl p-4 rounded-[32px] border border-white shadow-2xl shadow-slate-200/50 flex flex-col lg:flex-row gap-4 items-center mb-16"
+        >
+          <div className="relative flex-1 group w-full">
+            <Search size={20} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#1a2652] transition-colors" />
             <input 
-              type="text"
-              placeholder="Search courses, instructors..."
+              type="text" 
+              placeholder="Search by title, instructor or technology..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ 
-                width: '100%', 
-                padding: '1rem 1rem 1rem 3.5rem', 
-                backgroundColor: '#f8fafc', 
-                border: 'none', 
-                borderRadius: '1rem', 
-                fontSize: '1rem',
-                outline: 'none',
-                color: '#1e293b'
-              }}
+              className="w-full bg-slate-50 border border-slate-100 py-4 pl-14 pr-6 rounded-[20px] text-sm font-bold focus:outline-none focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500/30 transition-all text-[#1e293b] placeholder:text-slate-400"
             />
           </div>
-          
-          <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
+          <div className="flex gap-2 w-full lg:w-auto overflow-x-auto pb-1 lg:pb-0 no-scrollbar">
             {levels.map(level => (
               <button
                 key={level}
                 onClick={() => setSelectedCategory(level)}
-                style={{ 
-                  padding: '0.6rem 1.25rem', 
-                  borderRadius: '0.75rem', 
-                  fontSize: '0.875rem', 
-                  fontWeight: 600, 
-                  transition: 'all 0.2s',
-                  whiteSpace: 'nowrap',
-                  cursor: 'pointer',
-                  backgroundColor: selectedCategory === level ? '#0d2046' : '#ffffff',
-                  color: selectedCategory === level ? '#ffffff' : '#64748b',
-                  border: selectedCategory === level ? '1px solid #0d2046' : '1px solid #e2e8f0'
-                }}
+                className={`px-6 py-4 rounded-[20px] text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+                  selectedCategory === level 
+                    ? 'bg-[#1a2652] text-white shadow-lg shadow-indigo-900/20' 
+                    : 'bg-white text-slate-500 border border-slate-200 hover:border-slate-300'
+                }`}
               >
                 {level}
               </button>
             ))}
           </div>
-        </div>
-      </div>
+        </motion.div>
 
       {/* Course Grid */}
       {loading ? (
@@ -348,14 +337,16 @@ const CourseListing: React.FC = () => {
       )}
       
       <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
         }
       `}</style>
-    </motion.div>
+    </div>
   );
 };
 
 export default CourseListing;
-
