@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { 
-  ArrowLeft, TrendingUp, Award, Target, 
+  TrendingUp, Award, Target, 
   BarChart3, Activity,
   Zap, Users,
   ChevronRight
@@ -27,16 +27,9 @@ const PerformanceAnalytics: React.FC = () => {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
         >
-          <Link 
-            to="/dashboard" 
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64748B', textDecoration: 'none', fontSize: '0.9rem', marginBottom: '1rem' }}
-          >
-            <ArrowLeft size={16} /> Back to Dashboard
-          </Link>
           <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', marginBottom: '0.5rem' }}>
             Performance <span style={{ color: '#d32f2f' }}>Analytics</span>
           </h1>
-          <p style={{ color: '#64748B', fontSize: '1.1rem' }}>Data-driven insights into your professional growth and technical mastery.</p>
         </motion.div>
       </div>
 

@@ -200,29 +200,25 @@ const Home: React.FC = () => {
             transition={{ duration: 0.9 }}
             className="hero-text-area"
           >
+            <h1 className="hero-title" style={{ fontFamily: 'Sora, sans-serif', display: 'flex', alignItems: 'baseline', gap: '0.5rem', margin: 0, marginBottom: '1rem' }}>
+              <span style={{ fontWeight: 800 }}>NDA</span>
+              <span style={{ fontWeight: 300 }}>Connect</span>
+              <div style={{ width: '14px', height: '14px', backgroundColor: '#c8102e', borderRadius: '50%', display: 'inline-block', marginLeft: '4px' }} />
+            </h1>
             <motion.div 
               initial={{ opacity: 0, x: -20 }} 
               animate={{ opacity: 1, x: 0 }} 
               transition={{ delay: 0.3 }}
-              style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '1.5rem' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1.5rem' }}
             >
               <span style={{ 
-                fontFamily: 'Sora, sans-serif', 
-                fontWeight: 800, 
-                fontSize: '1.6rem', 
-                color: '#fff', 
-                letterSpacing: '-0.04em' 
-              }}>NDA</span>
-              <span style={{ 
                 fontFamily: 'Inter, sans-serif', 
-                fontWeight: 400, 
-                fontSize: '1.6rem', 
-                color: 'rgba(255, 255, 255, 0.75)', 
-                letterSpacing: '-0.02em' 
-              }}>Connect</span>
-              <div style={{ width: '6px', height: '6px', backgroundColor: '#c8102e', borderRadius: '50%', marginTop: 'auto', marginBottom: '8px', marginLeft: '2px' }} />
+                fontWeight: 600, 
+                fontSize: '1.2rem', 
+                color: 'rgba(255, 255, 255, 0.85)', 
+                letterSpacing: '0.2em' 
+              }}>TRACK. ENGAGE. HIRE.</span>
             </motion.div>
-            <h1 className="hero-title">TRACK. ENGAGE. HIRE.</h1>
             <p className="hero-subtitle">
               A centralized platform to maintain long-term relationships with alumni, interns,
               trainees, and event participants — and identify the best candidates for your next opportunity.

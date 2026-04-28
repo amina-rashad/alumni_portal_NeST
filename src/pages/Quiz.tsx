@@ -5,7 +5,7 @@ import {
   CheckCircle2, ChevronRight, Play,
   Star, Zap, ShieldCheck
 } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 interface Question {
   id: string;
@@ -75,15 +75,9 @@ const Quiz: React.FC = () => {
           >
             {/* Lobby Header */}
             <div style={{ marginBottom: '3rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64748B', textDecoration: 'none', fontSize: '0.9rem', marginBottom: '1rem' }}>
-                <Link to="/dashboard" style={{ color: 'inherit', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                   <ArrowLeft size={16} /> Back to Dashboard
-                </Link>
-              </div>
               <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', marginBottom: '0.5rem' }}>
                 Assessment <span style={{ color: '#d32f2f' }}>Center</span>
               </h1>
-              <p style={{ color: '#64748B', fontSize: '1.1rem' }}>Validate your technical expertise and earn exclusive badges for your profile.</p>
             </div>
 
             {/* Quick Stats */}

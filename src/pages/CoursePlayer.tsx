@@ -6,7 +6,7 @@ import {
   List, MessageSquare, FileText, Settings, 
   Maximize, Volume2, CheckCircle2, Lock, 
   ChevronRight, ChevronDown, Download, Star,
-  Info, Clock
+  Info, Clock, Award
 } from 'lucide-react';
 import { coursesApi } from '../services/api';
 

@@ -381,7 +381,7 @@ const ActivityFeed: React.FC = () => {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
                    {trendingTopics.map((item, i) => (
-                      <div key={i} style={{ group: 'true' }}>
+                      <div key={i}>
                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.4rem' }}>
                             <span style={{ fontWeight: 700, color: '#1e293b' }}>#{item.topic.replace(' ', '')}</span>
                             <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#10B981', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: '6px' }}>{item.growth}</span>

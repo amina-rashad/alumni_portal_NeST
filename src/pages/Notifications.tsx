@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Bell, Check, Trash2, ArrowLeft, 
+  Bell, Check, Trash2, 
   MessageSquare, UserPlus, Heart, 
   Briefcase, Calendar, Shield
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
 
 // --- MOCK NOTIFICATIONS ---
 const mockNotifications = [
@@ -150,9 +149,6 @@ const Notifications: React.FC = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <Link to="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748B', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.75rem' }} className="link-hover">
-              <ArrowLeft size={16} /> Back to Dashboard
-            </Link>
             <h1 style={{ margin: 0, fontSize: '2.25rem', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
               Notifications
             </h1>

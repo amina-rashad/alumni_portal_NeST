@@ -186,42 +186,7 @@ const MyCourses: React.FC = () => {
           </h1>
         </motion.div>
 
-        {/* Stats Cards */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '1rem', marginBottom: '2.5rem' }}
-        >
-          {[
-            { label: 'Total Enrolled', count: MOCK_COURSES.length, color: '#1a1a1a', bg: '#f8f9fa', icon: <BookOpen size={20} /> },
-            { label: 'In Progress', count: statusCounts['In Progress'] || 0, color: '#1971c2', bg: '#e7f5ff', icon: <PlayCircle size={20} /> },
-            { label: 'Completed', count: statusCounts['Completed'] || 0, color: '#2b8a3e', bg: '#ebfbee', icon: <CheckCircle2 size={20} /> },
-            { label: 'Avg Progress', count: totalProgress, color: 'var(--primary)', bg: '#fff5f5', icon: <BarChart3 size={20} />, suffix: '%' },
-          ].map((stat) => (
-            <motion.div
-              key={stat.label}
-              whileHover={{ y: -3, boxShadow: '0 8px 20px rgba(0,0,0,0.06)' }}
-              style={{
-                background: stat.bg,
-                borderRadius: '14px',
-                padding: '1.4rem 1.5rem',
-                border: '1px solid #e9ecef',
-                textAlign: 'center',
-                transition: 'all 0.3s',
-                cursor: 'default'
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.6rem', color: stat.color, opacity: 0.7 }}>
-                {stat.icon}
-              </div>
-              <p style={{ fontSize: '2rem', fontWeight: 800, color: stat.color, margin: '0 0 0.2rem 0' }}>
-                {stat.count}{stat.suffix || ''}
-              </p>
-              <p style={{ fontSize: '0.82rem', color: '#6c757d', fontWeight: 500, margin: 0 }}>{stat.label}</p>
-            </motion.div>
-          ))}
-        </motion.div>
+
 
         {/* Filter & Search Bar */}
         <motion.div
