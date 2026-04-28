@@ -106,36 +106,34 @@ import AdminAddEvent from './pages/admin/AdminAddEvent';
 import AdminAddCourse from './pages/admin/AdminAddCourse';
 import AdminCertification from './pages/admin/AdminCertification';
 
-// Event Manager Pages
-import EventManagerLayout from './pages/event_manager/EventManagerLayout';
-import EventManagerDashboard from './pages/event_manager/EventManagerDashboard';
-import EventManagerEvents from './pages/event_manager/EventManagerEvents';
-import EventManagerAttendees from './pages/event_manager/EventManagerAttendees';
-import EventManagerPosts from './pages/event_manager/EventManagerPosts';
-import EventManagerRegistrations from './pages/event_manager/EventManagerRegistrations';
-import EventManagerReports from './pages/event_manager/EventManagerReports';
-import EventManagerSettings from './pages/event_manager/EventManagerSettings';
-import EventManagerPlaceholder from './pages/event_manager/EventManagerPlaceholder';
+// Recruiter Pages
+import RecruiterLayout from './pages/recruiter/RecruiterLayout';
+import RecruiterDashboard from './pages/recruiter/RecruiterDashboard';
+import RecruiterJobs from './pages/recruiter/RecruiterJobs';
+import RecruiterPostJob from './pages/recruiter/RecruiterPostJob';
+import RecruiterApplications from './pages/recruiter/RecruiterApplications';
 
 /* -- Luxury Splash Screen with Mask Reveal -- */
 import heroBg from './assets/hero-bg.jpg';
+
+/* -- Splash Screen -- */
 const SplashScreen: React.FC = () => (
   <motion.div
     className="splash-screen"
     initial={{ opacity: 1 }}
-    exit={{ 
-      opacity: 0, 
+    exit={{
+      opacity: 0,
       scale: 1.05,
       filter: 'blur(10px)',
-      transition: { duration: 2.0, ease: [0.16, 1, 0.3, 1] } 
+      transition: { duration: 2.0, ease: [0.16, 1, 0.3, 1] }
     }}
     style={{ overflow: 'hidden' }}
   >
     {/* Ambient Ambient Blurred Background */}
-    <motion.div 
-      style={{ 
-        position: 'absolute', 
-        inset: -20, 
+    <motion.div
+      style={{
+        position: 'absolute',
+        inset: -20,
         backgroundImage: `url(${heroBg})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
@@ -143,13 +141,13 @@ const SplashScreen: React.FC = () => (
         zIndex: 1
       }}
       initial={{ scale: 1.1, opacity: 0 }}
-      animate={{ 
-        scale: 1, 
+      animate={{
+        scale: 1,
         opacity: 0.6,
         rotate: [0, 1, 0, -1, 0]
       }}
-      transition={{ 
-        duration: 8, 
+      transition={{
+        duration: 8,
         opacity: { duration: 1.5 },
         rotate: { duration: 20, repeat: Infinity, ease: 'linear' }
       }}
@@ -160,15 +158,15 @@ const SplashScreen: React.FC = () => (
 
     <div className="splash-logo" style={{ position: 'relative', zIndex: 3 }}>
       <div className="splash-brand" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '32px' }}>
-        
+
         {/* Logo Container with Mask Reveal Effect */}
         <div style={{ position: 'relative' }}>
-          <motion.div 
-            style={{ 
-              background: 'rgba(255, 255, 255, 0.98)', 
-              backdropFilter: 'blur(20px)', 
-              padding: '24px 44px', 
-              borderRadius: '24px', 
+          <motion.div
+            style={{
+              background: 'rgba(255, 255, 255, 0.98)',
+              backdropFilter: 'blur(20px)',
+              padding: '24px 44px',
+              borderRadius: '24px',
               boxShadow: '0 30px 60px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,0.4)',
               display: 'flex',
               alignItems: 'center',
@@ -191,7 +189,7 @@ const SplashScreen: React.FC = () => (
           </motion.div>
 
           {/* Luxury Reflection Shine across the logo */}
-          <motion.div 
+          <motion.div
             style={{
               position: 'absolute',
               inset: 0,
@@ -208,13 +206,13 @@ const SplashScreen: React.FC = () => (
 
         {/* Animated Text: Engineering Transformation */}
         <div style={{ overflow: 'hidden', paddingTop: '10px' }}>
-          <motion.p 
-            style={{ 
-              margin: 0, 
-              letterSpacing: '12px', 
-              color: '#ffffff', 
-              fontSize: '11px', 
-              fontWeight: 900, 
+          <motion.p
+            style={{
+              margin: 0,
+              letterSpacing: '12px',
+              color: '#ffffff',
+              fontSize: '11px',
+              fontWeight: 900,
               textTransform: 'uppercase',
               opacity: 0.8
             }}
@@ -228,26 +226,26 @@ const SplashScreen: React.FC = () => (
       </div>
 
       {/* Elegant minimalist loader bar */}
-      <div 
-        style={{ 
-          width: '240px', 
-          height: '1px', 
-          background: 'rgba(255,255,255,0.08)', 
-          borderRadius: '10px', 
-          overflow: 'hidden', 
+      <div
+        style={{
+          width: '240px',
+          height: '1px',
+          background: 'rgba(255,255,255,0.08)',
+          borderRadius: '10px',
+          overflow: 'hidden',
           margin: '40px auto 0',
           position: 'relative'
         }}
       >
         <motion.div
-          style={{ 
-            height: '100%', 
+          style={{
+            height: '100%',
             background: 'linear-gradient(90deg, transparent, #c8102e, white, #c8102e, transparent)',
             backgroundSize: '200% 100%'
           }}
           initial={{ left: '-100%' }}
           animate={{ left: '100%', backgroundPosition: ['200% center', '-200% center'] }}
-          transition={{ 
+          transition={{
             left: { duration: 1.8, ease: 'easeInOut' },
             backgroundPosition: { duration: 3, repeat: Infinity, ease: 'linear' }
           }}
@@ -259,20 +257,20 @@ const SplashScreen: React.FC = () => (
 
 /* -- Apple-level Scale + Blur + Fade Page Transition -- */
 const pageTransitionVariants = {
-  initial: { 
-    opacity: 0, 
-    scale: 1.04, 
-    filter: 'blur(15px)' 
+  initial: {
+    opacity: 0,
+    scale: 1.04,
+    filter: 'blur(15px)'
   },
-  animate: { 
-    opacity: 1, 
-    scale: 1, 
-    filter: 'blur(0px)' 
+  animate: {
+    opacity: 1,
+    scale: 1,
+    filter: 'blur(0px)'
   },
-  exit: { 
-    opacity: 0, 
-    scale: 0.96, 
-    filter: 'blur(15px)' 
+  exit: {
+    opacity: 0,
+    scale: 0.96,
+    filter: 'blur(15px)'
   },
 };
 
@@ -282,8 +280,8 @@ const PageTransition: React.FC<{ children: React.ReactNode }> = ({ children }) =
     initial="initial"
     animate="animate"
     exit="exit"
-    transition={{ 
-      duration: 0.7, 
+    transition={{
+      duration: 0.7,
       ease: [0.16, 1, 0.3, 1] // Custom Apple-style cubic bezier
     }}
     style={{ minHeight: '100vh', width: '100%' }}
@@ -326,7 +324,7 @@ const AnimatedRoutes: React.FC = () => {
         <Route path="/user-type-overview/:id" element={<PageTransition><UserTypeOverview /></PageTransition>} />
 
         <Route path="/courses/:id/play" element={<PageTransition><CoursePlayer /></PageTransition>} />
-        
+
         {/* User Protected Routes with MainLayout */}
         <Route element={<MainLayout />}>
           <Route path="/dashboard" element={<PageTransition><Dashboard /></PageTransition>} />
@@ -395,21 +393,20 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="settings" element={<PageTransition><Settings /></PageTransition>} />
         </Route>
 
-        {/* Event Manager Protected Routes */}
-        <Route path="/event-manager" element={<EventManagerLayout />}>
-          <Route index element={<Navigate to="/event-manager/dashboard" replace />} />
-          <Route path="dashboard" element={<PageTransition><EventManagerDashboard /></PageTransition>} />
-          <Route path="events" element={<PageTransition><EventManagerEvents /></PageTransition>} />
-          <Route path="attendees" element={<PageTransition><EventManagerAttendees /></PageTransition>} />
-          <Route path="posts" element={<PageTransition><EventManagerPosts /></PageTransition>} />
-          <Route path="registrations" element={<PageTransition><EventManagerRegistrations /></PageTransition>} />
-          <Route path="reports" element={<PageTransition><EventManagerReports /></PageTransition>} />
-          <Route path="settings" element={<PageTransition><EventManagerSettings /></PageTransition>} />
+        {/* Recruiter Protected Routes with RecruiterLayout */}
+        <Route path="/recruiter" element={<RecruiterLayout />}>
+          <Route index element={<Navigate to="/recruiter/dashboard" replace />} />
+          <Route path="dashboard" element={<PageTransition><RecruiterDashboard /></PageTransition>} />
+          <Route path="jobs" element={<PageTransition><RecruiterJobs /></PageTransition>} />
+          <Route path="jobs/post" element={<PageTransition><RecruiterPostJob /></PageTransition>} />
+          <Route path="applications" element={<PageTransition><RecruiterApplications /></PageTransition>} />
+          <Route path="shortlisted" element={<PageTransition><RecruiterApplications /></PageTransition>} />
+          <Route path="settings" element={<PageTransition><div style={{ padding: '40px', background: '#fff', borderRadius: '24px' }}><h3>Settings</h3><p>Recruiter profile settings coming soon...</p></div></PageTransition>} />
         </Route>
 
         {/* Fallback Catch-all Route */}
         <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+      </Routes>
     </React.Fragment>
   );
 };

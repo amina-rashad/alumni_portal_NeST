@@ -290,14 +290,19 @@ const MainLayout: React.FC = () => {
 
   useEffect(() => {
     const currentUser = getUser() as unknown as AuthUser;
-    if (currentUser) setUserData(currentUser);
-  }, []);
-
-  // Close everything on path change
-  useEffect(() => {
-    setOpenGroup(null);
-    setMobileOpen(false);
-    setProfileDropdownOpen(false);
+    if (currentUser) {
+      if (currentUser.role === 'recruiter') {
+        navigate('/recruiter');
+        return;
+      }
+      if (currentUser.role === 'admin') {
+        navigate('/admin');
+        return;
+      }
+      setUserData(currentUser);
+    } else {
+        navigate('/login');
+    }
   }, [location.pathname]);
 
   // Close everything on click outside or scroll
@@ -330,6 +335,7 @@ const MainLayout: React.FC = () => {
     setProfileDropdownOpen(false);
     setMobileOpen(false);
   }, [location.pathname]);
+
 
   const handleLogout = () => {
     authApi.logout();

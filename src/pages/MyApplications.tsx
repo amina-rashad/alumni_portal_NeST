@@ -4,7 +4,7 @@ import { ArrowLeft, Briefcase, MapPin, Clock, CheckCircle2, XCircle, AlertCircle
 import { Link } from 'react-router-dom';
 
 // Status type
-type ApplicationStatus = 'Under Review' | 'Shortlisted' | 'Interview Scheduled' | 'Offered' | 'Rejected' | 'Withdrawn';
+type ApplicationStatus = 'Aptitude' | 'Shortlisted' | 'Interview Scheduled' | 'Offered' | 'Rejected' | 'Withdrawn';
 
 interface Application {
   id: string;
@@ -54,7 +54,7 @@ const MOCK_APPLICATIONS: Application[] = [
     location: 'Kochi, Kerala (Hybrid)',
     type: 'Full-time',
     appliedDate: '2026-03-18',
-    status: 'Under Review',
+    status: 'Aptitude',
     lastUpdated: '2026-03-18'
   },
   {
@@ -84,7 +84,7 @@ const MOCK_APPLICATIONS: Application[] = [
 ];
 
 const STATUS_CONFIG: Record<ApplicationStatus, { color: string; bg: string; border: string; icon: React.ReactNode }> = {
-  'Under Review': { color: '#e67700', bg: '#fff9db', border: '#ffd43b', icon: <Clock size={16} /> },
+  'Aptitude': { color: '#e67700', bg: '#fff9db', border: '#ffd43b', icon: <Clock size={16} /> },
   'Shortlisted': { color: '#1971c2', bg: '#e7f5ff', border: '#74c0fc', icon: <Eye size={16} /> },
   'Interview Scheduled': { color: '#7048e8', bg: '#f3f0ff', border: '#b197fc', icon: <AlertCircle size={16} /> },
   'Offered': { color: '#2b8a3e', bg: '#ebfbee', border: '#69db7c', icon: <CheckCircle2 size={16} /> },
@@ -92,7 +92,7 @@ const STATUS_CONFIG: Record<ApplicationStatus, { color: string; bg: string; bord
   'Withdrawn': { color: '#868e96', bg: '#f8f9fa', border: '#dee2e6', icon: <XCircle size={16} /> }
 };
 
-const ALL_STATUSES: ApplicationStatus[] = ['Under Review', 'Shortlisted', 'Interview Scheduled', 'Offered', 'Rejected', 'Withdrawn'];
+const ALL_STATUSES: ApplicationStatus[] = ['Aptitude', 'Shortlisted', 'Interview Scheduled', 'Offered', 'Rejected', 'Withdrawn'];
 
 const MyApplications: React.FC = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -118,9 +118,9 @@ const MyApplications: React.FC = () => {
   };
 
   const getTimelineSteps = (status: ApplicationStatus) => {
-    const steps = ['Applied', 'Under Review', 'Shortlisted', 'Interview', 'Decision'];
+    const steps = ['Applied', 'Aptitude', 'Shortlisted', 'Interview', 'Decision'];
     const statusMap: Record<ApplicationStatus, number> = {
-      'Under Review': 1,
+      'Aptitude': 1,
       'Shortlisted': 2,
       'Interview Scheduled': 3,
       'Offered': 4,
@@ -158,7 +158,7 @@ const MyApplications: React.FC = () => {
         >
           {[
             { label: 'Total', count: MOCK_APPLICATIONS.length, color: '#1a1a1a', bg: '#f8f9fa' },
-            { label: 'In Progress', count: (statusCounts['Under Review'] || 0) + (statusCounts['Shortlisted'] || 0) + (statusCounts['Interview Scheduled'] || 0), color: '#1971c2', bg: '#e7f5ff' },
+            { label: 'In Progress', count: (statusCounts['Aptitude'] || 0) + (statusCounts['Shortlisted'] || 0) + (statusCounts['Interview Scheduled'] || 0), color: '#1971c2', bg: '#e7f5ff' },
             { label: 'Offered', count: statusCounts['Offered'] || 0, color: '#2b8a3e', bg: '#ebfbee' },
             { label: 'Rejected', count: statusCounts['Rejected'] || 0, color: '#c92a2a', bg: '#fff5f5' },
           ].map((stat) => (

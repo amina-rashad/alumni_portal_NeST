@@ -10,6 +10,8 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+const nestNavy = '#1a2652';
+
 // CUSTOM REUSABLE GLASS SELECT COMPONENT - UPDATED FOR NAVY
 const GlassSelect: React.FC<{
   label: string;
@@ -20,7 +22,6 @@ const GlassSelect: React.FC<{
 }> = ({ label, options, value, onChange }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const nestNavy = '#1a2652';
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -104,7 +105,6 @@ const GlassSelect: React.FC<{
 const AdminAddCourse: React.FC = () => {
   const navigate = useNavigate();
   const [lessons, setLessons] = useState([{ id: 1, title: '', duration: '', videoUrl: '' }]);
-  const nestNavy = '#1a2652';
 
   // Form State
   const [formData, setFormData] = useState({
@@ -361,7 +361,7 @@ const AdminAddCourse: React.FC = () => {
 
           {/* Access Levels */}
           <section style={{ background: '#fff', padding: '32px', borderRadius: '32px', border: '1px solid #e2e8f0', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#1e293b', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#1e293b', marginBottom: '24px', display: 'center', alignItems: 'center', gap: '10px' }}>
               <ShieldCheck size={16} color="#10b981" /> Corporate Access
             </h3>
 

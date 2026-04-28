@@ -194,8 +194,14 @@ const AdminLayout: React.FC = () => {
 
   useEffect(() => {
     const currentUser = getUser() as unknown as AuthUser;
-    if (currentUser) setAdminUser(currentUser);
-  }, []);
+    if (currentUser) {
+      if (currentUser.role === 'recruiter') {
+        navigate('/recruiter');
+        return;
+      }
+      setAdminUser(currentUser);
+    }
+  }, [location.pathname]);
 
   // Close everything on click outside or scroll
   useEffect(() => {

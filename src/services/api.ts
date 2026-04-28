@@ -225,38 +225,56 @@ export const healthApi = {
 
 // ── Admin API ──
 export const adminApi = {
-  getStats: () => 
+  getStats: () =>
     apiRequest<{ stats: { total_users: number, interns: number, active_jobs: number, applications: number } }>('/admin/stats'),
 
-  getAllUsers: () => 
+  getAllUsers: () =>
     apiRequest<{ users: any[] }>('/admin/users'),
 
-  createUser: (data: any) => 
+  createUser: (data: any) =>
     apiRequest('/admin/users', { method: 'POST', body: JSON.stringify(data) }),
 
-  updateUser: (userId: string, data: any) => 
+  updateUser: (userId: string, data: any) =>
     apiRequest(`/admin/users/${userId}`, { method: 'PATCH', body: JSON.stringify(data) }),
 
-  getInterns: () => 
+  getInterns: () =>
     apiRequest<{ users: any[] }>('/admin/users?type=Intern'),
 
-  addJob: (data: any) => 
+  addJob: (data: any) =>
     apiRequest('/admin/jobs', { method: 'POST', body: JSON.stringify(data) }),
 
-  deleteJob: (jobId: string) => 
+  deleteJob: (jobId: string) =>
     apiRequest(`/admin/jobs/${jobId}`, { method: 'DELETE' }),
 
-  getVisits: () => 
+  getVisits: () =>
     apiRequest<{ visits: any[] }>('/admin/visits'),
 
-  addVisit: (data: any) => 
+  addVisit: (data: any) =>
     apiRequest('/admin/visits', { method: 'POST', body: JSON.stringify(data) }),
 
-  deleteVisit: (visitId: string) => 
+  deleteVisit: (visitId: string) =>
     apiRequest(`/admin/visits/${visitId}`, { method: 'DELETE' }),
 
-  getApplications: () => 
+  getApplications: () =>
     apiRequest<{ applications: any[] }>('/admin/applications'),
+};
+
+// ── Recruiter API ──
+export const recruiterApi = {
+  getStats: () => 
+    apiRequest<{ stats: { total_jobs: number, total_applications: number, shortlisted: number, hired: number, pending: number } }>('/recruiter/stats'),
+
+  getMyJobs: () => 
+    apiRequest<{ jobs: any[] }>('/recruiter/jobs'),
+
+  addJob: (data: any) => 
+    apiRequest('/recruiter/jobs', { method: 'POST', body: JSON.stringify(data) }),
+
+  getApplications: () => 
+    apiRequest<{ applications: any[] }>('/recruiter/applications'),
+
+  updateApplicationStatus: (appId: string, status: string) => 
+    apiRequest(`/recruiter/applications/${appId}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
 };
 
 // ── Courses API ──
@@ -317,21 +335,4 @@ export const socialApi = {
     apiRequest(`/social/posts/${postId}/comments`, { method: 'POST', body: JSON.stringify({ text }) }),
 };
 
-// ── Recruiter API ──
 
-export const recruiterApi = {
-  getApplications: () => 
-    apiRequest<{ applications: any[] }>('/recruiter/applications'),
-
-  getMyJobs: () => 
-    apiRequest<{ jobs: any[] }>('/recruiter/jobs'),
-
-  deleteJob: (jobId: string) => 
-    apiRequest(`/recruiter/jobs/${jobId}`, { method: 'DELETE' }),
-
-  addJob: (data: any) => 
-    apiRequest('/recruiter/jobs', { method: 'POST', body: JSON.stringify(data) }),
-
-  getStats: () => 
-    apiRequest<{ stats: any }>('/recruiter/stats', { method: 'GET' }),
-};

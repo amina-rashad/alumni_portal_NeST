@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+const nestNavy = '#1a2652';
+
 // CUSTOM REUSABLE GLASS SELECT COMPONENT - UPDATED FOR NAVY
 const GlassSelect: React.FC<{
   label: string;
@@ -17,7 +19,6 @@ const GlassSelect: React.FC<{
 }> = ({ label, options, value, onChange }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const nestNavy = '#1a2652';
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -102,7 +103,6 @@ const AdminAddEvent: React.FC = () => {
   const navigate = useNavigate();
   const [dragActive, setDragActive] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const nestNavy = '#1a2652';
 
   // Form State
   const [formData, setFormData] = useState({
