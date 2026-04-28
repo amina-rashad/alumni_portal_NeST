@@ -1,15 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft, Clock, Star, 
   Award, PlayCircle, CheckCircle2, 
-  ChevronRight, Calendar, User, Globe
+  ChevronRight, Calendar, User, Globe,
+  ShieldCheck,
+  Zap,
+  BookOpen
 } from 'lucide-react';
 import { coursesApi } from '../services/api';
+import toast from 'react-hot-toast';
 
 const CourseDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [course, setCourse] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -17,13 +22,14 @@ const CourseDetails: React.FC = () => {
     const fetchCourse = async () => {
       if (!id) return;
       try {
+        setLoading(true);
         const res = await coursesApi.getCourseById(id);
-        const data = res.data as any;
-        if (res.success && data && data.course) {
-          setCourse(data.course);
+        if (res.success && res.data && res.data.course) {
+          setCourse(res.data.course);
         }
       } catch (err) {
         console.error('Failed to fetch course details:', err);
+        toast.error('Failed to load course details.');
       } finally {
         setLoading(false);
       }
@@ -33,166 +39,248 @@ const CourseDetails: React.FC = () => {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: '#f8fafc' }}>
-        <div style={{ width: '50px', height: '50px', border: '4px solid #f3f3f3', borderTop: '4px solid var(--primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+      <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center p-6">
+        <div className="w-16 h-16 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-4" />
+        <p className="text-slate-400 font-black uppercase tracking-[0.2em] text-[10px]">Retrieving Curriculum...</p>
       </div>
     );
   }
 
   if (!course) {
     return (
-      <div style={{ textAlign: 'center', padding: '5rem', backgroundColor: '#f8fafc', height: '100vh' }}>
-        <h2 style={{ fontSize: '2rem', fontWeight: 800, color: '#0d2046', marginBottom: '1.5rem' }}>Course not found</h2>
-        <Link to="/courses" style={{ color: 'var(--primary)', fontWeight: 700, textDecoration: 'underline' }}>Back to catalog</Link>
+      <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-6 text-slate-300">
+          <BookOpen size={40} />
+        </div>
+        <h2 className="text-3xl font-black text-slate-900 mb-4">Course not found</h2>
+        <Link to="/courses" className="text-indigo-600 font-bold hover:underline">Back to catalog</Link>
       </div>
     );
   }
 
   const curriculum = [
-    { title: 'Introduction to Core Concepts', duration: '45m' },
-    { title: 'Foundational Principles & Theory', duration: '1h 20m' },
-    { title: 'Hands-on Implementation Part I', duration: '2h 15m' },
-    { title: 'Advanced Scalability & Architecture', duration: '3h 10m' },
+    { title: 'Architectural Foundations & Theory', duration: '45m', type: 'Theory' },
+    { title: 'Industry Best Practices at NeST', duration: '1h 20m', type: 'Standards' },
+    { title: 'Real-world Implementation Lab', duration: '2h 15m', type: 'Practical' },
+    { title: 'Scalability & Performance Tuning', duration: '3h 10m', type: 'Advanced' },
   ];
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc', paddingBottom: '5rem', overflowX: 'hidden', fontFamily: '"Inter", sans-serif' }}>
-      {/* Dynamic Header / Hero Area */}
-      <div style={{ backgroundColor: '#0d2046', color: 'white', padding: '4rem 1rem 6rem 1rem', position: 'relative' }}>
-         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-            <Link to="/courses" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#94a3b8', marginBottom: '2rem', fontSize: '0.875rem', fontWeight: 700 }}>
-               <ArrowLeft size={18} /> Back to Catalog
-            </Link>
+    <div className="min-h-screen bg-[#f8fafc] font-['Outfit',sans-serif] pb-20">
+      {/* Luxury Hero Section */}
+      <div className="relative bg-[#1a2652] pt-32 pb-64 px-6 overflow-hidden">
+        {/* Background Effects */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 right-0 w-[50%] h-[50%] bg-indigo-500/10 rounded-full blur-[120px]" />
+          <div className="absolute bottom-0 left-0 w-[40%] h-[40%] bg-emerald-500/10 rounded-full blur-[120px]" />
+          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10" />
+        </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '4rem', alignItems: 'center' }}>
-               <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }}>
-                  <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
-                     <span style={{ backgroundColor: 'var(--primary)', padding: '0.5rem 1rem', borderRadius: '0.5rem', fontSize: '0.75rem', fontWeight: 800 }}>{course.level}</span>
-                     <span style={{ backgroundColor: 'rgba(255,255,255,0.1)', padding: '0.5rem 1rem', borderRadius: '0.5rem', fontSize: '0.75rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Star size={14} fill="var(--primary)" color="var(--primary)" /> 4.9 (240 Ratings)
-                     </span>
-                  </div>
-                  <h1 style={{ fontSize: '3rem', fontWeight: 900, marginBottom: '1.5rem', lineHeight: '1.1', letterSpacing: '-0.02em' }}>{course.title}</h1>
-                  <p style={{ fontSize: '1.25rem', color: '#cbd5e1', lineHeight: '1.6', marginBottom: '2.5rem', maxWidth: '600px' }}>{course.description || "Master industry-standard engineering practices and lead with expertise."}</p>
-                  
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem' }}>
-                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <Clock size={20} color="var(--primary)" />
-                        <div>
-                           <p style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Duration</p>
-                           <p style={{ fontWeight: 800 }}>{course.duration || "24 Hours"}</p>
-                        </div>
-                     </div>
-                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <Calendar size={20} color="var(--primary)" />
-                        <div>
-                           <p style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Start Date</p>
-                           <p style={{ fontWeight: 800 }}>On Demand</p>
-                        </div>
-                     </div>
-                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <Globe size={20} color="var(--primary)" />
-                        <div>
-                           <p style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Enrolled</p>
-                           <p style={{ fontWeight: 800 }}>2.4k Students</p>
-                        </div>
-                     </div>
-                  </div>
-               </motion.div>
+        <div className="max-w-7xl mx-auto relative z-10">
+          <motion.button
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            onClick={() => navigate('/courses')}
+            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors font-black text-xs uppercase tracking-widest mb-12"
+          >
+            <ArrowLeft size={16} /> Back to Catalog
+          </motion.button>
 
-               <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} style={{ position: 'relative' }}>
-                  <div style={{ background: 'linear-gradient(135deg, rgba(200,16,46,0.3) 0%, rgba(255,255,255,0.1) 100%)', borderRadius: '2rem', padding: '1rem', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden' }}>
-                     <div style={{ position: 'relative', borderRadius: '1.5rem', overflow: 'hidden' }}>
-                        <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop" alt={course.title} style={{ width: '100%', display: 'block' }} />
-                        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(13,32,70,0.4)', cursor: 'pointer' }}>
-                           <PlayCircle size={80} color="white" />
-                        </div>
-                     </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+            >
+              <div className="flex flex-wrap gap-3 mb-8">
+                <span className="px-4 py-1.5 bg-emerald-500/20 border border-emerald-500/30 rounded-full text-emerald-400 text-[10px] font-black uppercase tracking-widest">
+                  {course.level} Track
+                </span>
+                <span className="px-4 py-1.5 bg-white/5 border border-white/10 rounded-full text-slate-300 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                  <Star size={12} fill="#fbbf24" className="text-[#fbbf24]" /> 4.9 Mastery Rating
+                </span>
+              </div>
+
+              <h1 className="text-4xl md:text-6xl font-black text-white leading-[1.1] tracking-tight mb-8">
+                {course.title}
+              </h1>
+
+              <p className="text-slate-300 text-lg md:text-xl font-medium leading-relaxed mb-12 max-w-2xl">
+                {course.description || "Master industry-standard engineering practices and lead with expertise through our specialized professional certification track."}
+              </p>
+
+              <div className="flex flex-wrap gap-8">
+                {[
+                  { label: 'Duration', value: course.duration || '36 Hours', icon: Clock, color: 'text-indigo-400' },
+                  { label: 'Platform', value: 'NeST Learning', icon: Globe, color: 'text-emerald-400' },
+                  { label: 'Enrolled', value: '2.4k Alumni', icon: User, color: 'text-blue-400' },
+                ].map((stat, i) => (
+                  <div key={i} className="flex items-center gap-4">
+                    <div className={`p-3 bg-white/5 rounded-2xl ${stat.color} border border-white/10`}>
+                      <stat.icon size={20} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{stat.label}</p>
+                      <p className="text-sm font-black text-white">{stat.value}</p>
+                    </div>
                   </div>
-               </motion.div>
-            </div>
-         </div>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Video/Image Preview Card */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="relative"
+            >
+              <div className="bg-white/5 backdrop-blur-xl p-4 rounded-[48px] border border-white/10 shadow-2xl relative overflow-hidden group">
+                <div className="relative aspect-video rounded-[36px] overflow-hidden">
+                  <img 
+                    src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop" 
+                    alt={course.title} 
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000" 
+                  />
+                  <div className="absolute inset-0 bg-[#1a2652]/40 flex items-center justify-center">
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      className="w-20 h-20 bg-white rounded-full flex items-center justify-center text-[#1a2652] shadow-2xl"
+                    >
+                      <PlayCircle size={40} />
+                    </motion.button>
+                  </div>
+                </div>
+                <div className="absolute top-8 right-8 bg-emerald-500 text-white px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg">
+                  Preview Video
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
       </div>
 
-      {/* Main Content Sections */}
-      <div style={{ maxWidth: '1200px', margin: '-4rem auto 0 auto', padding: '0 1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '3rem' }}>
-         {/* Left Side: Learning and Info */}
-         <div style={{ gridColumn: 'span 2' }}>
-            <div style={{ background: 'white', padding: '3rem', borderRadius: '2rem', boxShadow: '0 10px 30px rgba(0,0,0,0.03)', border: '1px solid #f1f5f9', marginBottom: '3rem' }}>
-               <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0d2046', marginBottom: '1.5rem' }}>Course Overview</h3>
-               <p style={{ color: '#475569', lineHeight: '1.8', fontSize: '1.05rem' }}>
-                  This comprehensive course is designed for professionals looking to master the intricacies of {course.title}. 
-                  Our industry-expert instructors provide a blend of theoretical foundation and hands-on practical exercises.
-               </p>
-               
-               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem', marginTop: '2.5rem' }}>
-                  <div>
-                     <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#0d2046', marginBottom: '1.25rem' }}>What You'll Learn</h4>
-                     <ul style={{ listStyle: 'none', padding: 0 }}>
-                        {['Deep dive foundations', 'Advanced techniques', 'Industry best practices', 'Portfolio projects'].map(item => (
-                           <li key={item} style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem', color: '#475569', fontSize: '0.95rem', fontWeight: 600 }}>
-                              <CheckCircle2 size={18} color="var(--primary)" style={{ flexShrink: 0 }} /> {item}
-                           </li>
-                        ))}
-                     </ul>
+      {/* Content Section */}
+      <div className="max-w-7xl mx-auto px-6 -mt-32 relative z-20">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-12">
+            <div className="bg-white p-12 rounded-[48px] border border-slate-200 shadow-xl shadow-slate-200/40">
+              <h3 className="text-2xl font-black text-slate-900 mb-8 tracking-tight flex items-center gap-3">
+                <BookOpen size={24} className="text-indigo-500" /> Course Overview
+              </h3>
+              <p className="text-slate-500 text-lg font-medium leading-relaxed mb-10">
+                This comprehensive curriculum is designed for alumni looking to master the intricacies of {course.title}. 
+                Our industry-expert instructors provide a blend of theoretical foundation and hands-on practical exercises using the latest NeST Digital engineering frameworks.
+              </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-8 border-t border-slate-50">
+                <div>
+                  <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-6">Learning Outcomes</h4>
+                  <ul className="space-y-4">
+                    {[
+                      'Deep dive architectural foundations',
+                      'Advanced implementation techniques',
+                      'NeST Digital engineering standards',
+                      'Hands-on portfolio-ready projects'
+                    ].map((item, i) => (
+                      <li key={i} className="flex items-start gap-3 text-slate-600 font-bold text-sm">
+                        <CheckCircle2 size={18} className="text-emerald-500 mt-0.5 shrink-0" /> {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="bg-slate-50 p-8 rounded-[32px] border border-slate-100">
+                  <div className="flex items-center gap-3 mb-4">
+                    <ShieldCheck size={24} className="text-indigo-500" />
+                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest">Certification</h4>
                   </div>
-               </div>
+                  <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                    Earn an industry-recognized certification verified on the NeST Blockchain network upon successful completion of all assessments.
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0d2046', marginBottom: '1.5rem' }}>Curriculum Schedule</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-               {curriculum.map((item, idx) => (
-                  <div key={idx} style={{ background: 'white', padding: '1.5rem 2rem', borderRadius: '1.25rem', border: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                     <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                        <span style={{ width: '40px', height: '40px', backgroundColor: '#f1f5f9', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.875rem' }}>{idx + 1}</span>
-                        <div>
-                           <h5 style={{ fontWeight: 800, color: '#334155' }}>{item.title}</h5>
-                           <p style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Lesson {idx + 1} • {item.duration}</p>
+            <div className="space-y-6">
+              <h3 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3 ml-4">
+                <Zap size={24} className="text-emerald-500" /> Curriculum Schedule
+              </h3>
+              <div className="space-y-4">
+                {curriculum.map((item, idx) => (
+                  <motion.div 
+                    key={idx}
+                    whileHover={{ x: 10 }}
+                    className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between group transition-all"
+                  >
+                    <div className="flex items-center gap-6">
+                      <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 font-black text-sm group-hover:bg-[#1a2652] group-hover:text-white transition-colors">
+                        {idx + 1}
+                      </div>
+                      <div>
+                        <h5 className="font-black text-slate-900 group-hover:text-[#1a2652] transition-colors">{item.title}</h5>
+                        <div className="flex items-center gap-3 mt-1">
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{item.type}</span>
+                          <span className="text-slate-300">•</span>
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{item.duration}</span>
                         </div>
-                     </div>
-                     <ChevronRight size={20} color="#cbd5e1" />
-                  </div>
-               ))}
+                      </div>
+                    </div>
+                    <ChevronRight size={20} className="text-slate-200 group-hover:text-[#1a2652] transition-colors" />
+                  </motion.div>
+                ))}
+              </div>
             </div>
-         </div>
+          </div>
 
-         {/* Right Side: Instructor and Action */}
-         <div>
-            <div style={{ background: 'white', padding: '2rem', borderRadius: '2rem', boxShadow: '0 10px 30px rgba(0,0,0,0.03)', border: '1px solid #f1f5f9', position: 'sticky', top: '2rem' }}>
-               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
-                  <div style={{ width: '60px', height: '60px', borderRadius: '1rem', backgroundColor: '#0d2046', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 900, fontSize: '1.5rem' }}>
-                     {course.instructor ? course.instructor.charAt(0) : 'I'}
-                  </div>
-                  <div>
-                     <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase' }}>Expert Instructor</p>
-                     <h4 style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0d2046' }}>{course.instructor || "Sarah Jenkins"}</h4>
-                  </div>
-               </div>
+          {/* Right Sidebar */}
+          <div className="space-y-8">
+            <div className="bg-[#1a2652] p-10 rounded-[48px] text-white shadow-2xl shadow-indigo-900/30 sticky top-32">
+              <div className="flex items-center gap-4 mb-8 pb-8 border-b border-white/10">
+                <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center text-emerald-400 font-black text-xl border border-white/10">
+                  {course.instructor.charAt(0)}
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-indigo-300 uppercase tracking-widest">Expert Instructor</p>
+                  <h4 className="text-lg font-black">{course.instructor}</h4>
+                </div>
+              </div>
 
-               <div style={{ marginBottom: '2rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                     <span style={{ fontWeight: 800, color: '#1e293b' }}>Course Price</span>
-                     <span style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--primary)' }}>Free for Alumni</span>
+              <div className="space-y-8 mb-10">
+                <div className="flex justify-between items-end">
+                  <span className="text-sm font-bold text-slate-300 uppercase tracking-wider">Access Tier</span>
+                  <div className="text-right">
+                    <p className="text-2xl font-black text-emerald-400 uppercase tracking-tight">Free</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">For Alumni</p>
                   </div>
-                  <p style={{ fontSize: '0.8rem', color: '#64748b' }}>Exclusively available to verified NeST graduates.</p>
-               </div>
+                </div>
+                
+                <div className="space-y-4">
+                  {[
+                    { icon: Award, text: 'Verified Certificate' },
+                    { icon: ShieldCheck, text: 'LIFETIME ACCESS' },
+                    { icon: User, text: '1-on-1 Mentorship' },
+                  ].map((benefit, i) => (
+                    <div key={i} className="flex items-center gap-3 text-sm font-bold text-slate-300">
+                      <benefit.icon size={18} className="text-emerald-500" /> {benefit.text}
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-               <button style={{ width: '100%', padding: '1.25rem', backgroundColor: 'var(--primary)', color: 'white', fontWeight: 900, borderRadius: '1rem', marginBottom: '1.5rem', fontSize: '1.1rem', boxShadow: '0 10px 20px rgba(200,16,46,0.2)', cursor: 'pointer' }}>
-                  Enroll This Course
-               </button>
-
-               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: '#475569', fontSize: '0.9rem', fontWeight: 600 }}>
-                     <Award size={18} color="var(--primary)" /> Professional Certificate
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: '#475569', fontSize: '0.9rem', fontWeight: 600 }}>
-                     <User size={18} color="var(--primary)" /> One-on-one Mentorship
-                  </div>
-               </div>
+              <motion.button 
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => toast.success('Enrollment initiated! Unlocking your dashboard...')}
+                className="w-full bg-emerald-500 hover:bg-emerald-400 text-[#1a2652] py-5 rounded-[24px] font-black text-lg shadow-xl shadow-emerald-500/20 transition-all flex items-center justify-center gap-2"
+              >
+                Enroll Now <ArrowUpRight size={22} />
+              </motion.button>
             </div>
-         </div>
+          </div>
+        </div>
       </div>
-      <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
     </div>
   );
 };

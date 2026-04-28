@@ -106,7 +106,6 @@ import AdminAddEvent from './pages/admin/AdminAddEvent';
 import AdminAddCourse from './pages/admin/AdminAddCourse';
 import AdminCertification from './pages/admin/AdminCertification';
 
-<<<<<<< Updated upstream
 // Event Manager Pages
 import EventManagerLayout from './pages/event_manager/EventManagerLayout';
 import EventManagerDashboard from './pages/event_manager/EventManagerDashboard';
@@ -117,7 +116,7 @@ import EventManagerRegistrations from './pages/event_manager/EventManagerRegistr
 import EventManagerReports from './pages/event_manager/EventManagerReports';
 import EventManagerSettings from './pages/event_manager/EventManagerSettings';
 import EventManagerPlaceholder from './pages/event_manager/EventManagerPlaceholder';
-=======
+
 // Course Manager Pages
 import CourseManagerLayout from './pages/course_manager/CourseManagerLayout';
 import CM_Dashboard from './pages/course_manager/Dashboard';
@@ -127,9 +126,13 @@ import CM_Students from './pages/course_manager/Students';
 import CM_Assessments from './pages/course_manager/Assessments';
 import CM_Certificates from './pages/course_manager/Certificates';
 import CM_Attendance from './pages/course_manager/Attendance';
+import CM_Reminders from './pages/course_manager/ReminderCenter';
+import CM_Forum from './pages/course_manager/ForumModeration';
+import CM_Achievements from './pages/course_manager/AchievementManager';
+import CM_RecommendationSetup from './pages/course_manager/RecommendationSetup';
+import CM_CompletionInsights from './pages/course_manager/CompletionInsights';
 import CM_Login from './pages/course_manager/Login';
 
->>>>>>> Stashed changes
 
 /* -- Luxury Splash Screen with Mask Reveal -- */
 import heroBg from './assets/hero-bg.jpg';
@@ -408,7 +411,6 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="settings" element={<PageTransition><Settings /></PageTransition>} />
         </Route>
 
-<<<<<<< Updated upstream
         {/* Event Manager Protected Routes */}
         <Route path="/event-manager" element={<EventManagerLayout />}>
           <Route index element={<Navigate to="/event-manager/dashboard" replace />} />
@@ -421,8 +423,6 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="settings" element={<PageTransition><EventManagerSettings /></PageTransition>} />
         </Route>
 
-        {/* Fallback Catch-all Route */}
-=======
         {/* Course Manager Routes */}
         <Route path="/course-manager/login" element={<PageTransition><CM_Login /></PageTransition>} />
         <Route path="/course-manager" element={<CourseManagerLayout />}>
@@ -434,9 +434,13 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="assessments" element={<PageTransition><CM_Assessments /></PageTransition>} />
           <Route path="certificates" element={<PageTransition><CM_Certificates /></PageTransition>} />
           <Route path="attendance" element={<PageTransition><CM_Attendance /></PageTransition>} />
+          <Route path="reminders" element={<PageTransition><CM_Reminders /></PageTransition>} />
+          <Route path="forum" element={<PageTransition><CM_Forum /></PageTransition>} />
+          <Route path="achievements" element={<PageTransition><CM_Achievements /></PageTransition>} />
+          <Route path="recommendations" element={<PageTransition><CM_RecommendationSetup /></PageTransition>} />
+          <Route path="insights" element={<PageTransition><CM_CompletionInsights /></PageTransition>} />
         </Route>
 
->>>>>>> Stashed changes
         <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
     </React.Fragment>

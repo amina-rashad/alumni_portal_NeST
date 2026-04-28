@@ -3,7 +3,7 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   LayoutDashboard, BookOpen, Users, ClipboardCheck, Award,
-  Bell, Menu, X, ChevronDown, LogOut, Settings, User, Clock
+  Bell, Menu, X, ChevronDown, LogOut, Settings, User, Clock, MessageSquare, Trophy, TrendingUp, BookOpen as GitMerge
 } from 'lucide-react';
 import nestMainLogo from '../../assets/nest_logo.png';
 import { getUser, authApi, type AuthUser } from '../../services/api';
@@ -27,6 +27,8 @@ const cmMenuGroups: NavGroup[] = [
     items: [
       { name: 'Course Management', path: '/course-manager/courses', icon: <BookOpen size={15} /> },
       { name: 'Create Course',     path: '/course-manager/courses/create', icon: <BookOpen size={15} /> },
+      { name: 'Recommendation Setup', path: '/course-manager/recommendations', icon: <GitMerge size={15} /> },
+      { name: 'Completion Insights', path: '/course-manager/insights', icon: <TrendingUp size={15} /> },
     ]
   },
   {
@@ -35,6 +37,9 @@ const cmMenuGroups: NavGroup[] = [
       { name: 'Student Directory', path: '/course-manager/students',    icon: <Users size={15} /> },
       { name: 'Assessments',       path: '/course-manager/assessments', icon: <ClipboardCheck size={15} /> },
       { name: 'Certificates',      path: '/course-manager/certificates',icon: <Award size={15} /> },
+      { name: 'Reminder Center',   path: '/course-manager/reminders',   icon: <Bell size={15} /> },
+      { name: 'Discussion Forum',   path: '/course-manager/forum',   icon: <MessageSquare size={15} /> },
+      { name: 'Achievement Manager', path: '/course-manager/achievements', icon: <Trophy size={15} /> },
     ]
   },
   {
@@ -102,6 +107,7 @@ const Dropdown: React.FC<DropdownProps> = ({ group, activePath, onClose, style }
             fontWeight: isActive ? 600 : 400,
             fontSize: '14px',
             transition: 'all 0.15s',
+            outline: 'none',
           }}
           onMouseEnter={e => {
             if (!isActive) (e.currentTarget as HTMLElement).style.background = '#f8fafc';
@@ -150,6 +156,7 @@ const NavButton: React.FC<NavButtonProps> = ({ group, activePath, isOpen, onClic
           transition: 'all 0.15s',
           whiteSpace: 'nowrap',
           flexShrink: 0,
+          outline: 'none',
         }}
       >
         <span style={{ color: hasActive ? '#c8102e' : '#64748b' }}>{group.icon}</span>
@@ -181,6 +188,7 @@ const NavButton: React.FC<NavButtonProps> = ({ group, activePath, isOpen, onClic
         transition: 'all 0.15s',
         whiteSpace: 'nowrap',
         flexShrink: 0,
+        outline: 'none',
       }}
     >
       <span style={{ color: hasActive || isOpen ? '#c8102e' : '#64748b' }}>{group.icon}</span>

@@ -6,9 +6,10 @@ import {
   Clock, MessageSquare, ThumbsUp, Share2,
   Award, ChevronRight,
   MoreHorizontal, FileText, ArrowRight,
-  BrainCircuit, BookOpen
+  BrainCircuit, BookOpen,
+  Flame, Zap, Compass, HelpCircle, CheckCircle, ArrowUpRight, Search as SearchIcon
 } from 'lucide-react';
-import { getUser, coursesApi, jobsApi, type AuthUser } from '../services/api';
+import { getUser, coursesApi, jobsApi, type AuthUser, studentAPI } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 
 // --- MOCK DATA ---
@@ -81,6 +82,13 @@ const Dashboard: React.FC = () => {
   const [courses, setCourses] = useState<any[]>([]);
   const [jobs, setJobs] = useState<any[]>([]);
   const [likedPosts, setLikedPosts] = useState<number[]>([]);
+  
+  // NEW STATE FOR COURSE MANAGER FEATURES
+  const [insights, setInsights] = useState<any>(null);
+  const [pathways, setPathways] = useState<any[]>([]);
+  const [queries, setQueries] = useState<any[]>([]);
+  const [isLoadingExtras, setIsLoadingExtras] = useState(true);
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -90,33 +98,30 @@ const Dashboard: React.FC = () => {
       setUserData(currentUser);
     }
     
-    // Fetch live courses
-    const fetchCourses = async () => {
+    // Fetch all dashboard data
+    const fetchAllData = async () => {
       try {
-        const res = await coursesApi.getAllCourses();
-        const data = res.data as any;
-        if (res.success && data && data.courses) {
-          setCourses(data.courses);
-        }
+        const [courseRes, jobRes, insightRes, pathwayRes, queryRes] = await Promise.all([
+          coursesApi.getAllCourses(),
+          jobsApi.getAllJobs(),
+          studentAPI.fetchPersonalInsights(),
+          studentAPI.fetchRecommendedPathways(),
+          studentAPI.fetchMyQueries()
+        ]);
+
+        if (courseRes.success) setCourses(courseRes.data.courses);
+        if (jobRes.success) setJobs(jobRes.data.jobs);
+        if (insightRes.success) setInsights(insightRes.data);
+        if (pathwayRes.success) setPathways(pathwayRes.data);
+        if (queryRes.success) setQueries(queryRes.data);
       } catch (err) {
-        console.error("Failed to load courses", err);
+        console.error("Dashboard data load error", err);
+      } finally {
+        setIsLoadingExtras(false);
       }
     };
-    fetchCourses();
     
-    // Fetch live jobs
-    const fetchJobs = async () => {
-      try {
-        const res = await jobsApi.getAllJobs();
-        const data = res.data as any;
-        if (res.success && data && data.jobs) {
-          setJobs(data.jobs);
-        }
-      } catch (err) {
-        console.error("Failed to load jobs", err);
-      }
-    };
-    fetchJobs();
+    fetchAllData();
   }, []);
 
   return (
@@ -377,6 +382,72 @@ const Dashboard: React.FC = () => {
             </p>
           </div>
         </motion.div>
+        
+        {/* NEW: LEARNING HEALTH SECTION */}
+        <motion.section 
+          variants={sectionVariants} 
+          initial="hidden" 
+          animate="visible"
+          className="grid grid-cols-1 md:grid-cols-3 gap-6"
+        >
+          <div className="luxury-card p-8 bg-gradient-to-br from-[#1a2652] to-[#0f172a] text-white overflow-hidden relative group">
+            <div className="relative z-10">
+              <div className="flex items-center gap-2 text-orange-400 mb-6">
+                <Flame size={20} fill="currentColor" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-indigo-300">Active Streak</span>
+              </div>
+              <div className="text-4xl font-black mb-1 tracking-tight">{insights?.streak || 0} Days</div>
+              <p className="text-indigo-200 text-xs font-medium italic">"You're on fire! Keep it up."</p>
+            </div>
+            <div className="absolute -right-8 -bottom-8 opacity-10 group-hover:scale-110 transition-transform duration-700">
+              <Flame size={160} fill="currentColor" />
+            </div>
+          </div>
+
+          <div className="luxury-card p-8 bg-white border border-slate-100 flex flex-col justify-between">
+            <div className="flex justify-between items-start">
+              <div>
+                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Experience</div>
+                <div className="text-3xl font-black text-[#1e293b] tracking-tight">{insights?.xp || 0} XP</div>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                <Zap size={20} fill="currentColor" />
+              </div>
+            </div>
+            <div className="mt-6 space-y-2">
+              <div className="flex justify-between text-[10px] font-black uppercase">
+                <span className="text-slate-400">Next Level</span>
+                <span className="text-blue-600">{insights?.nextMilestone}</span>
+              </div>
+              <div className="h-2 bg-slate-50 rounded-full overflow-hidden border border-slate-100">
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: '82%' }}
+                  className="h-full bg-blue-600 rounded-full"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="luxury-card p-8 bg-white border border-slate-100 flex flex-col justify-between">
+            <div>
+              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Recent Badges</div>
+              <div className="flex -space-x-3">
+                {insights?.badges.map((b: any, i: number) => (
+                  <div key={i} title={b.name} className="w-12 h-12 rounded-2xl border-4 border-white flex items-center justify-center shadow-lg" style={{ backgroundColor: b.color }}>
+                    <Award size={20} className="text-white" />
+                  </div>
+                ))}
+                <div className="w-12 h-12 rounded-2xl border-4 border-white bg-slate-50 flex items-center justify-center text-[10px] font-black text-slate-400 shadow-sm">
+                  +4
+                </div>
+              </div>
+            </div>
+            <button className="mt-6 text-[#d32f2f] font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:gap-3 transition-all">
+              View All Achievements <ArrowRight size={14} />
+            </button>
+          </div>
+        </motion.section>
 
         {/* 1. CREATION & POSTS AREA (ACTIVITY FEED OVERVIEW) */}
         <motion.section 
@@ -542,6 +613,62 @@ const Dashboard: React.FC = () => {
              ))}
           </div>
         </motion.section>
+
+        {/* NEW: GUIDED PATHWAYS & FORUM QUERIES */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <motion.section variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true }}>
+            <div className="flex items-center gap-2 mb-6">
+              <Compass size={24} className="text-[#d32f2f]" />
+              <h2 className="text-xl font-black text-[#1e293b]">Guided Pathways</h2>
+            </div>
+            <div className="space-y-4">
+              {pathways.map((p, i) => (
+                <div key={i} className="luxury-card p-6 bg-white border border-slate-100 group hover:border-red-200 transition-all cursor-pointer">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-[#d32f2f]">{p.title}</span>
+                    <ArrowUpRight size={16} className="text-slate-300 group-hover:text-[#d32f2f] transition-colors" />
+                  </div>
+                  <div className="flex items-center gap-4 text-[#1e293b] font-bold mb-3">
+                    <span className="text-sm opacity-60">{p.source}</span>
+                    <ChevronRight size={14} className="text-slate-300" />
+                    <span className="text-sm">{p.target}</span>
+                  </div>
+                  <p className="text-xs text-slate-500 font-medium bg-slate-50 p-3 rounded-xl border border-slate-100 italic">
+                    "{p.reason}"
+                  </p>
+                </div>
+              ))}
+            </div>
+          </motion.section>
+
+          <motion.section variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true }}>
+            <div className="flex items-center gap-2 mb-6">
+              <HelpCircle size={24} className="text-[#d32f2f]" />
+              <h2 className="text-xl font-black text-[#1e293b]">Active Queries</h2>
+            </div>
+            <div className="space-y-4">
+              {queries.map((q, i) => (
+                <div key={i} className="luxury-card p-6 bg-white border border-slate-100 flex items-center justify-between group">
+                  <div className="flex items-center gap-4">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${q.status === 'Resolved' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                      {q.status === 'Resolved' ? <CheckCircle size={20} /> : <MessageSquare size={20} />}
+                    </div>
+                    <div>
+                      <div className="text-sm font-black text-[#1e293b] group-hover:text-[#d32f2f] transition-colors line-clamp-1">{q.title}</div>
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">{q.replies} Replies • {q.status}</div>
+                    </div>
+                  </div>
+                  <button className="p-2 hover:bg-slate-50 rounded-lg transition-colors">
+                    <ChevronRight size={18} className="text-slate-300" />
+                  </button>
+                </div>
+              ))}
+              <button className="w-full py-4 bg-slate-50 text-slate-500 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-100 transition-all">
+                Ask a New Question
+              </button>
+            </div>
+          </motion.section>
+        </div>
 
         {/* 3. RECOMMENDED JOBS / LISTINGS OVERVIEW */}
         <motion.section variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-10%" }}>
