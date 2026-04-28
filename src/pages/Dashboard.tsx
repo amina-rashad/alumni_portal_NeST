@@ -6,7 +6,7 @@ import {
   Clock, MessageSquare, ThumbsUp, Share2,
   Award, ChevronRight, ChevronLeft,
   MoreHorizontal, FileText, ArrowRight,
-  BrainCircuit, BookOpen, Heart, ShieldCheck, Sparkles
+  BrainCircuit, BookOpen, Heart, ShieldCheck, Sparkles, X
 } from 'lucide-react';
 import { getUser, coursesApi, jobsApi, type AuthUser } from '../services/api';
 import { useNavigate } from 'react-router-dom';
@@ -145,7 +145,7 @@ const Dashboard: React.FC = () => {
       }
     };
     fetchJobs();
-  }, [user]);
+  }, []);
 
   const handleLike = (id: number) => {
     setLikedPosts(prev => {
@@ -726,7 +726,7 @@ const Dashboard: React.FC = () => {
                   style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column' }}
                   onClick={() => navigate(`/events/${event.id}`)}
                 >
-                   <div style={{ h: '8px', background: `linear-gradient(90deg, ${event.color}, transparent)`, width: '100%', height: '6px' }} />
+                   <div style={{ background: `linear-gradient(90deg, ${event.color}, transparent)`, width: '100%', height: '6px' }} />
                    <div style={{ padding: '2rem', flex: 1 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
                          <div style={{ background: '#f8fafc', padding: '12px 20px', borderRadius: '16px', textAlign: 'center', border: '1px solid #f1f5f9' }}>

@@ -13,9 +13,6 @@ const Badges: React.FC = () => {
       style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}
     >
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: '2rem' }}>
-        <Link to="/" style={{ display: 'flex', alignItems: 'center', color: '#DC2626', textDecoration: 'none', marginRight: '1rem' }}>
-          <ArrowLeft size={20} style={{ marginRight: '0.5rem' }} /> Back
-        </Link>
         <h1 style={{ margin: 0, color: '#333' }}>Badges</h1>
       </div>
       
