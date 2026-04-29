@@ -57,7 +57,7 @@ const EventsListing: React.FC = () => {
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      style={{ maxWidth: '1400px', margin: '0 auto', padding: '2rem 1rem', fontFamily: '"Inter", sans-serif' }}
+      style={{ maxWidth: '1100px', margin: '0 auto', padding: '2rem 1rem', fontFamily: '"Inter", sans-serif' }}
     >
       {/* Staggered Mosaic Featured Events Section */}
       <div style={{ marginBottom: '4rem' }}>

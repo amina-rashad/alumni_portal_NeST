@@ -63,10 +63,10 @@ const CourseListing: React.FC = () => {
       <div style={{ display: 'flex', gap: '3rem', alignItems: 'center', marginBottom: '4rem', flexWrap: 'wrap' }}>
         <div style={{ flex: '1 1 300px', maxWidth: '400px' }}>
           <h1 style={{ fontSize: '3.5rem', fontWeight: 950, color: '#0d2046', marginBottom: '1.5rem', letterSpacing: '-0.04em', lineHeight: '1.1' }}>
-            Learn <i style={{ color: 'var(--primary)', fontStyle: 'italic' }}>essential</i> career and life skills
+            Master <i style={{ color: 'var(--primary)', fontStyle: 'italic' }}>future-ready</i> skills and shape your path
           </h1>
           <p style={{ color: '#64748b', fontSize: '1.1rem', lineHeight: '1.6', fontWeight: 500 }}>
-            NeST Academy helps you build in-demand skills fast and advance your career in a changing job market.
+            Elevate your professional journey with expert-led courses designed to help you stay ahead in today's dynamic landscape.
           </p>
         </div>
 

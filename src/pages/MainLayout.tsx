@@ -20,8 +20,7 @@ const menuGroups: NavGroup[] = [
     section: 'Insights', icon: <Home size={17} />,
     items: [
       { name: 'Insights Overview', path: '/dashboard',          icon: <Home size={15} /> },
-      { name: 'Activity Feed', path: '/dashboard/activity', icon: <Activity size={15} /> },
-      { name: 'Notifications', path: '/notifications',      icon: <Bell size={15} /> },
+      { name: 'Career Timeline', path: '/dashboard/activity', icon: <Activity size={15} /> },
     ]
   },
   {
@@ -38,9 +37,8 @@ const menuGroups: NavGroup[] = [
       { name: 'Courses',    path: '/courses',           icon: <BookOpen size={15} /> },
       { name: 'My Courses', path: '/courses/my-courses',icon: <BookOpen size={15} /> },
       { name: 'Quizzes',   path: '/assessments/quiz',      icon: <Edit3 size={15} /> },
-      { name: 'Analytics', path: '/assessments/analytics', icon: <Activity size={15} /> },
-      { name: 'Points Overview', path: '/gamification',            icon: <Award size={15} /> },
-      { name: 'Leaderboard',     path: '/gamification/leaderboard',icon: <Award size={15} /> },
+      { name: 'Performance Analysis', path: '/assessments/performance-analysis', icon: <Activity size={15} /> },
+
     ]
   },
   {
