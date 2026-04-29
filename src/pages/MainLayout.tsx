@@ -538,7 +538,11 @@ const MainLayout: React.FC = () => {
         className="custom-scrollbar"
         style={{ flex: 1, overflowY: 'auto', position: 'relative', scrollBehavior: 'smooth' }}
       >
-        <div style={{ padding: '28px 32px', maxWidth: '1400px', margin: '0 auto' }}>
+        <div style={{ 
+          padding: location.pathname === '/dashboard' ? '0' : '28px 32px', 
+          maxWidth: location.pathname === '/dashboard' ? 'none' : '1400px', 
+          margin: '0 auto' 
+        }}>
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}

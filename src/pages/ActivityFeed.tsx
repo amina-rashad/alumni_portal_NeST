@@ -7,6 +7,7 @@ import {
   Award, ShieldCheck, TrendingUp,
   MessageSquare, LayoutGrid, Users, Heart
 } from 'lucide-react';
+import alumniStoriesBg from '../assets/alumni_stories_bg.png';
 
 // --- PREMIUM MOCK DATA (Admin & Senior Insights Only) ---
 const feedPosts = [
@@ -153,40 +154,29 @@ const ActivityFeed: React.FC = () => {
           border-color: rgba(220, 38, 38, 0.2);
         }
         .video-banner {
-          background-image: url('C:/Users/noble.sibi/.gemini/antigravity/brain/3d6cba0c-362d-4c3a-8fe3-d6b9791566fc/alumni_stories_ultra_premium_bg_1777026603631.png');
+          background-image: url('${alumniStoriesBg}');
           background-size: cover;
           background-position: center;
-          border-radius: 24px;
-          padding: 3rem 3rem; /* Tighter padding */
-          margin-bottom: 2rem; /* Reduced margin */
+          border-radius: 0;
+          padding: 4rem 0;
+          margin-bottom: 2.5rem;
           position: relative;
           overflow: hidden;
-          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.2);
-          border: 1px solid rgba(255,255,255,0.1);
+          width: 100vw;
+          left: 50%;
+          right: 50%;
+          margin-left: -50vw;
+          margin-right: -50vw;
+          box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+          border-bottom: 1px solid rgba(255,255,255,0.1);
           color: white;
         }
         .video-banner::before {
           content: "";
           position: absolute;
           inset: 0;
-          background: linear-gradient(135deg, rgba(15, 23, 42, 0.85), rgba(30, 41, 59, 0.4)); /* Premium Overlay Layer */
+          background: linear-gradient(to right, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.6) 30%, transparent 100%);
           z-index: 1;
-        }
-        .video-banner::after {
-          content: "";
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(-45deg, rgba(211, 47, 47, 0.15), transparent, rgba(15, 23, 42, 0.2)); /* Ultra Premium Enhancement Gradient */
-          background-size: 400% 400%;
-          animation: meshGradient 18s ease infinite;
-          backdrop-filter: blur(15px);
-          -webkit-backdrop-filter: blur(15px);
-          z-index: 2;
-        }
-        @keyframes meshGradient {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50% ;}
-          100% { background-position: 0% 50%; }
         }
         .banner-noise {
           position: absolute;
@@ -206,40 +196,28 @@ const ActivityFeed: React.FC = () => {
 
       <div style={{ maxWidth: '1150px', margin: '0 auto' }}>
         
-        {/* CINEMATIC VIDEO BANNER SECTION */}
+        {/* CINEMATIC VIDEO BANNER SECTION - Full Width */}
         <motion.div 
-          initial={{ opacity: 0, y: -30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1 }}
           className="video-banner"
         >
           <div className="banner-noise" style={{ zIndex: 3 }} />
-          <div style={{ position: 'relative', zIndex: 10 }}>
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3, duration: 0.8 }}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}
-            >
-               <div style={{ background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(10px)', padding: '8px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', color: 'white', display: 'flex' }}>
-                 <LayoutGrid size={18} />
-               </div>
-               <span style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.15em', fontSize: '0.7rem' }}>Excellence Archive</span>
-            </motion.div>
+          <div style={{ maxWidth: '1150px', margin: '0 auto', padding: '0 2rem', position: 'relative', zIndex: 10 }}>
+            <h1 style={{ margin: 0, fontSize: '3.5rem', fontWeight: 950, color: '#fff', letterSpacing: '-0.04em', lineHeight: 1.1, marginBottom: '1.25rem', textShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>Alumni Stories</h1>
             
-            <h1 style={{ margin: 0, fontSize: '3rem', fontWeight: 950, color: '#fff', letterSpacing: '-0.04em', lineHeight: 1.1, marginBottom: '1rem', textShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>Alumni Stories</h1>
-            
-            <p style={{ margin: 0, color: 'rgba(255,255,255,0.7)', fontSize: '1.1rem', fontWeight: 500, maxWidth: '500px', lineHeight: 1.35, letterSpacing: '-0.01em' }}>
+            <p style={{ margin: 0, color: 'rgba(255,255,255,0.8)', fontSize: '1.2rem', fontWeight: 500, maxWidth: '550px', lineHeight: 1.4, letterSpacing: '-0.01em' }}>
               Chronicles of engineering leadership and professional breakthroughs from our global community.
             </p>
 
-            <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem' }}>
-               <button className="btn-premium" style={{ background: '#fff', color: '#0F172A', border: 'none', padding: '12px 24px', borderRadius: '10px', fontWeight: 800, fontSize: '0.9rem' }}>Latest Chronicle</button>
-               <button className="btn-premium" style={{ background: 'rgba(255,255,255,0.08)', color: '#fff', border: '1px solid rgba(255,255,255,0.15)', padding: '10px 24px', borderRadius: '10px', fontWeight: 700, fontSize: '0.9rem', backdropFilter: 'blur(10px)' }}>Archive Search</button>
+            <div style={{ marginTop: '2.5rem', display: 'flex', gap: '1.25rem' }}>
+               <button className="btn-premium" style={{ background: '#fff', color: '#0F172A', border: 'none', padding: '14px 32px', borderRadius: '12px', fontWeight: 800, fontSize: '0.95rem', cursor: 'pointer' }}>Latest Chronicle</button>
+               <button className="btn-premium" style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', padding: '12px 32px', borderRadius: '12px', fontWeight: 700, fontSize: '0.95rem', backdropFilter: 'blur(10px)', cursor: 'pointer' }}>Archive Search</button>
             </div>
           </div>
 
-          <div style={{ position: 'absolute', right: '-50px', bottom: '-50px', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(211,47,47,0.3) 0%, transparent 70%)', filter: 'blur(60px)', zIndex: 1 }} />
+          <div style={{ position: 'absolute', right: '-50px', bottom: '-50px', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(220,38,38,0.2) 0%, transparent 70%)', filter: 'blur(80px)', zIndex: 1 }} />
         </motion.div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '1.5rem' }}>
