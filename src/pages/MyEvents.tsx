@@ -107,7 +107,7 @@ const MyEvents: React.FC = () => {
               whileHover={{ y: -8, boxShadow: '0 20px 40px rgba(0,0,0,0.08)' }}
             >
               {/* Thumbnail with Overlay */}
-              <div style={{ position: 'relative', height: '180px' }}>
+              <div style={{ position: 'relative', aspectRatio: '16/9' }}>
                 <img src={event.thumbnail} alt={event.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 <div style={{ position: 'absolute', top: '1rem', right: '1rem' }}>
                   <div style={{ 

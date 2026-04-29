@@ -312,27 +312,16 @@ export const insightsAPI = {
   }
 };
 
-  try {
-    const response = await fetch(url, {
-      ...options,
-      headers,
-    });
-
-    const data: ApiResponse<T> = await response.json();
-
-    // Handle 401 — try refresh token
-    if (response.status === 401 && getRefreshToken()) {
-      const refreshed = await refreshAccessToken();
-      if (refreshed) {
-        // Retry the original request with new token
-        headers['Authorization'] = `Bearer ${getAccessToken()}`;
-        const retryResponse = await fetch(url, { ...options, headers });
-        return await retryResponse.json();
-      } else {
-        const token = getAccessToken();
-        if (token && token !== 'mock_token' && token !== 'social_mock_token') {
-          clearTokens();
-        }
+export const studentAPI = {
+  fetchPersonalInsights: async () => {
+    await new Promise(resolve => setTimeout(resolve, 800));
+    return {
+      success: true,
+      data: {
+        progress: 65,
+        attendance: 82,
+        upcomingDeadlines: 3,
+        overallRank: 'Top 15%'
       }
     };
   },
@@ -381,6 +370,60 @@ async function refreshAccessToken(): Promise<boolean> {
   }
 }
 
+
+
+export interface ApiResponse<T = any> {
+  success: boolean;
+  message?: string;
+  data?: T;
+  error?: string;
+}
+
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+export function getAccessToken() { return localStorage.getItem('token'); }
+export function getRefreshToken() { return localStorage.getItem('refresh_token'); }
+
+async function apiRequest<T = unknown>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<ApiResponse<T>> {
+  const url = `${API_BASE_URL}${endpoint}`;
+  
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options.headers as Record<string, string> || {}),
+  };
+
+  const token = getAccessToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers,
+    });
+
+    const data: ApiResponse<T> = await response.json();
+
+    if (response.status === 401 && getRefreshToken()) {
+      const refreshed = await refreshAccessToken();
+      if (refreshed) {
+        headers['Authorization'] = `Bearer ${getAccessToken()}`;
+        const retryResponse = await fetch(url, { ...options, headers });
+        return await retryResponse.json();
+      } else {
+        localStorage.clear();
+      }
+    }
+
+    return data;
+  } catch (error) {
+    return { success: false, message: 'Network error.' };
+  }
+}
 
 // ── Auth API ──
 
