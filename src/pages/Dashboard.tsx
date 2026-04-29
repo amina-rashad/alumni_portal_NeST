@@ -8,7 +8,7 @@ import {
   MoreHorizontal, FileText, ArrowRight,
   BrainCircuit, BookOpen, Heart, ShieldCheck, Sparkles, X, Play
 } from 'lucide-react';
-import { getUser, coursesApi, jobsApi, type AuthUser } from '../services/api';
+import { getUser, coursesApi, jobsApi, type AuthUser, studentAPI } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 
 // Premium Job Backgrounds
@@ -128,19 +128,28 @@ const Dashboard: React.FC = () => {
       setUserData(currentUser);
     }
     
-    // Fetch live courses
-    const fetchCourses = async () => {
+    // Fetch all dashboard data
+    const fetchAllData = async () => {
       try {
-        const res = await coursesApi.getAllCourses();
-        const data = res.data as any;
-        if (res.success && data && data.courses) {
-          setCourses(data.courses);
-        }
+        const [courseRes, jobRes, insightRes, pathwayRes, queryRes] = await Promise.all([
+          coursesApi.getAllCourses(),
+          jobsApi.getAllJobs(),
+          studentAPI.fetchPersonalInsights(),
+          studentAPI.fetchRecommendedPathways(),
+          studentAPI.fetchMyQueries()
+        ]);
+
+        if (courseRes.success) setCourses(courseRes.data.courses);
+        if (jobRes.success) setJobs(jobRes.data.jobs);
+        if (insightRes.success) setInsights(insightRes.data);
+        if (pathwayRes.success) setPathways(pathwayRes.data);
+        if (queryRes.success) setQueries(queryRes.data);
       } catch (err) {
-        console.error("Failed to load courses", err);
+        console.error("Dashboard data load error", err);
+      } finally {
+        setIsLoadingExtras(false);
       }
     };
-    fetchCourses();
     
     // Fetch live jobs and filter by user profile + NeST focus
     const fetchJobs = async () => {

@@ -4,9 +4,13 @@ import { motion } from 'framer-motion';
 import { 
   ArrowLeft, Clock, Star, 
   Award, PlayCircle, CheckCircle2, 
-  ChevronRight, Calendar, User, Globe
+  ChevronRight, Calendar, User, Globe,
+  ShieldCheck,
+  Zap,
+  BookOpen
 } from 'lucide-react';
 import { coursesApi } from '../services/api';
+import toast from 'react-hot-toast';
 
 const CourseDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -37,10 +41,10 @@ const CourseDetails: React.FC = () => {
       }
 
       try {
+        setLoading(true);
         const res = await coursesApi.getCourseById(id);
-        const data = res.data as any;
-        if (res.success && data && data.course) {
-          setCourse(data.course);
+        if (res.success && res.data && res.data.course) {
+          setCourse(res.data.course);
         }
       } catch (err) {
         console.error('Failed to fetch course details from API:', err);
@@ -53,26 +57,30 @@ const CourseDetails: React.FC = () => {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: '#f8fafc' }}>
-        <div style={{ width: '50px', height: '50px', border: '4px solid #f3f3f3', borderTop: '4px solid var(--primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+      <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center p-6">
+        <div className="w-16 h-16 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-4" />
+        <p className="text-slate-400 font-black uppercase tracking-[0.2em] text-[10px]">Retrieving Curriculum...</p>
       </div>
     );
   }
 
   if (!course) {
     return (
-      <div style={{ textAlign: 'center', padding: '5rem', backgroundColor: '#f8fafc', height: '100vh' }}>
-        <h2 style={{ fontSize: '2rem', fontWeight: 800, color: '#0d2046', marginBottom: '1.5rem' }}>Course not found</h2>
-        <Link to="/courses" style={{ color: 'var(--primary)', fontWeight: 700, textDecoration: 'underline' }}>Back to catalog</Link>
+      <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-6 text-slate-300">
+          <BookOpen size={40} />
+        </div>
+        <h2 className="text-3xl font-black text-slate-900 mb-4">Course not found</h2>
+        <Link to="/courses" className="text-indigo-600 font-bold hover:underline">Back to catalog</Link>
       </div>
     );
   }
 
   const curriculum = [
-    { title: 'Introduction to Core Concepts', duration: '45m' },
-    { title: 'Foundational Principles & Theory', duration: '1h 20m' },
-    { title: 'Hands-on Implementation Part I', duration: '2h 15m' },
-    { title: 'Advanced Scalability & Architecture', duration: '3h 10m' },
+    { title: 'Architectural Foundations & Theory', duration: '45m', type: 'Theory' },
+    { title: 'Industry Best Practices at NeST', duration: '1h 20m', type: 'Standards' },
+    { title: 'Real-world Implementation Lab', duration: '2h 15m', type: 'Practical' },
+    { title: 'Scalability & Performance Tuning', duration: '3h 10m', type: 'Advanced' },
   ];
 
   return (
@@ -127,9 +135,14 @@ const CourseDetails: React.FC = () => {
                         </Link>
                      </div>
                   </div>
-               </motion.div>
-            </div>
-         </div>
+                </div>
+                <div className="absolute top-8 right-8 bg-emerald-500 text-white px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg">
+                  Preview Video
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
       </div>
 
       {/* Main Content Sections */}
@@ -154,7 +167,11 @@ const CourseDetails: React.FC = () => {
                         ))}
                      </ul>
                   </div>
-               </div>
+                  <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                    Earn an industry-recognized certification verified on the NeST Blockchain network upon successful completion of all assessments.
+                  </p>
+                </div>
+              </div>
             </div>
 
             <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0d2046', marginBottom: '1.5rem' }}>Curriculum Schedule</h3>
@@ -167,10 +184,12 @@ const CourseDetails: React.FC = () => {
                            <h5 style={{ fontWeight: 800, color: '#334155' }}>{item.title}</h5>
                            <p style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Lesson {idx + 1} • {item.duration}</p>
                         </div>
-                     </div>
-                     <ChevronRight size={20} color="#cbd5e1" />
-                  </div>
-               ))}
+                      </div>
+                    </div>
+                    <ChevronRight size={20} className="text-slate-200 group-hover:text-[#1a2652] transition-colors" />
+                  </motion.div>
+                ))}
+              </div>
             </div>
          </div>
 
@@ -229,9 +248,9 @@ const CourseDetails: React.FC = () => {
                   </div>
                </div>
             </div>
-         </div>
+          </div>
+        </div>
       </div>
-      <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
     </div>
   );
 };

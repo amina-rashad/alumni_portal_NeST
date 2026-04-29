@@ -142,6 +142,8 @@ const Login: React.FC = () => {
       targetPath = '/admin';
     } else if (loggedInUser?.role === 'event_manager') {
       targetPath = '/event-manager';
+    } else if (loggedInUser?.role === 'course_manager') {
+      targetPath = '/course-manager/dashboard';
     }
     navigate(targetPath);
   };
@@ -306,6 +308,11 @@ const Login: React.FC = () => {
           </div>
 
           <p className="auth-footer">New to the portal? <Link to="/register">Create an account</Link></p>
+          <div style={{ marginTop: '16px', textAlign: 'center' }}>
+            <Link to="/course-manager/login" style={{ fontSize: '13px', fontWeight: 700, color: '#1a2652', textDecoration: 'none', padding: '8px 16px', border: '1px solid #e2e8f0', borderRadius: '12px', background: '#f8fafc' }}>
+              Switch to Course Manager Login
+            </Link>
+          </div>
         </div>
 
         <div className="auth-image-side">
