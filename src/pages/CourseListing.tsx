@@ -345,7 +345,8 @@ const CourseListing: React.FC = () => {
           scrollbar-width: none;
         }
       `}</style>
-    </div>
+      </div>
+    </motion.div>
   );
 };
 

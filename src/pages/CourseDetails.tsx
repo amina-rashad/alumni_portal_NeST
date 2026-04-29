@@ -135,15 +135,13 @@ const CourseDetails: React.FC = () => {
                         </Link>
                      </div>
                   </div>
-                </div>
                 <div className="absolute top-8 right-8 bg-emerald-500 text-white px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg">
                   Preview Video
                 </div>
-              </div>
-            </motion.div>
+               </motion.div>
+            </div>
           </div>
         </div>
-      </div>
 
       {/* Main Content Sections */}
       <div style={{ maxWidth: '1200px', margin: '-4rem auto 0 auto', padding: '0 2rem', display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 380px', gap: '3rem' }}>
@@ -172,7 +170,6 @@ const CourseDetails: React.FC = () => {
                   </p>
                 </div>
               </div>
-            </div>
 
             <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0d2046', marginBottom: '1.5rem' }}>Curriculum Schedule</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -185,12 +182,10 @@ const CourseDetails: React.FC = () => {
                            <p style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Lesson {idx + 1} • {item.duration}</p>
                         </div>
                       </div>
+                      <ChevronRight size={20} className="text-slate-200 group-hover:text-[#1a2652] transition-colors" />
                     </div>
-                    <ChevronRight size={20} className="text-slate-200 group-hover:text-[#1a2652] transition-colors" />
-                  </motion.div>
                 ))}
               </div>
-            </div>
          </div>
 
          {/* Right Side: Instructor and Action */}
@@ -248,7 +243,6 @@ const CourseDetails: React.FC = () => {
                   </div>
                </div>
             </div>
-          </div>
         </div>
       </div>
     </div>
