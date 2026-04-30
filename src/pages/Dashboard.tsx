@@ -468,7 +468,7 @@ const Dashboard: React.FC = () => {
 
 
         {/* CONTAINER FOR STANDARD SECTIONS */}
-        <div style={{ maxWidth: '1400px', margin: '0 auto', width: '100%', padding: '4rem 2rem', display: 'flex', flexDirection: 'column', gap: '5rem' }}>
+        <div style={{ maxWidth: '1400px', margin: '0 auto', width: '100%', padding: '4rem 2rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
           
           {/* FEATURED NETWORK EVENTS */}
         <motion.section 
@@ -553,7 +553,7 @@ const Dashboard: React.FC = () => {
           initial="hidden" 
           whileInView="visible" 
           viewport={{ once: true, margin: "-10%" }}
-          style={{ marginBottom: '2rem' }}
+          style={{ marginBottom: '0' }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -677,7 +677,7 @@ const Dashboard: React.FC = () => {
           style={{ 
             position: 'relative',
             padding: '3rem 0',
-            background: 'radial-gradient(at 10% 20%, rgba(239, 68, 68, 0.06) 0px, transparent 50%), radial-gradient(at 90% 80%, rgba(59, 130, 246, 0.06) 0px, transparent 50%), #fff',
+            background: 'radial-gradient(ellipse at 20% 30%, rgba(212, 175, 55, 0.04) 0px, transparent 50%), radial-gradient(ellipse at 80% 70%, rgba(192, 192, 192, 0.04) 0px, transparent 50%), #0B0F1A',
             borderRadius: '0',
             width: '100vw',
             left: '50%',
@@ -686,33 +686,39 @@ const Dashboard: React.FC = () => {
             marginRight: '-50vw',
             marginBottom: '1rem',
             overflow: 'hidden',
-            borderTop: '1px solid rgba(0,0,0,0.03)',
-            borderBottom: '1px solid rgba(0,0,0,0.03)'
+            borderTop: '0.5px solid rgba(212, 175, 55, 0.15)',
+            borderBottom: '0.5px solid rgba(212, 175, 55, 0.15)'
           }}
         >
-           {/* Floating Ambient Blobs for Blur visibility */}
-           <div style={{ position: 'absolute', top: '10%', left: '15%', width: '300px', height: '300px', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '50%', filter: 'blur(80px)', zIndex: 0 }} />
-           <div style={{ position: 'absolute', bottom: '10%', right: '15%', width: '400px', height: '400px', background: 'rgba(59, 130, 246, 0.05)', borderRadius: '50%', filter: 'blur(100px)', zIndex: 0 }} />
+           {/* Film Grain Overlay */}
+           <div style={{ 
+             position: 'absolute', inset: 0, zIndex: 0, opacity: 0.03, pointerEvents: 'none',
+             backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+             backgroundRepeat: 'repeat', backgroundSize: '128px'
+           }} />
+           {/* Ambient Glow Blobs */}
+           <div style={{ position: 'absolute', top: '10%', left: '15%', width: '300px', height: '300px', background: 'rgba(212, 175, 55, 0.04)', borderRadius: '50%', filter: 'blur(80px)', zIndex: 0 }} />
+           <div style={{ position: 'absolute', bottom: '10%', right: '15%', width: '400px', height: '400px', background: 'rgba(192, 192, 192, 0.03)', borderRadius: '50%', filter: 'blur(100px)', zIndex: 0 }} />
 
            <div style={{ 
                maxWidth: '1400px', 
                margin: '0 auto', 
-               background: '#ffffff', 
-               borderRadius: '40px', 
+               background: 'transparent', 
+               borderRadius: '0', 
                padding: '3rem 0',
-              boxShadow: '0 60px 120px -20px rgba(0, 0, 0, 0.08)',
-              border: '1px solid rgba(0, 0, 0, 0.03)',
+              boxShadow: 'none',
+              border: 'none',
               position: 'relative',
               zIndex: 1
             }}>
                <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem', padding: '0 3.5rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-                     <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '12px', borderRadius: '14px', display: 'flex' }}>
-                       <Activity size={24} color="#10b981" />
+                     <div style={{ background: 'rgba(212, 175, 55, 0.1)', border: '0.5px solid rgba(212, 175, 55, 0.25)', padding: '12px', borderRadius: '14px', display: 'flex' }}>
+                       <Activity size={24} color="#D4AF37" />
                      </div>
-                     <h2 style={{ margin: 0, fontSize: '2rem', fontWeight: 900, color: '#0F172A', letterSpacing: '-0.02em' }}>Community Insights</h2>
+                     <h2 style={{ margin: 0, fontSize: '2rem', fontWeight: 900, color: '#FFFFFF', letterSpacing: '-0.02em' }}>Community Insights</h2>
                   </div>
-                  <button onClick={() => navigate('/dashboard/activity')} className="btn-premium" style={{ border: '1px solid rgba(0,0,0,0.05)', background: '#fff', color: '#0F172A', fontWeight: 800, padding: '14px 32px', borderRadius: '999px', fontSize: '1rem', boxShadow: '0 10px 30px rgba(0,0,0,0.08)' }}>
+                  <button onClick={() => navigate('/dashboard/activity')} className="btn-premium" style={{ border: '0.5px solid rgba(212, 175, 55, 0.3)', background: 'rgba(212, 175, 55, 0.08)', color: '#D4AF37', fontWeight: 800, padding: '14px 32px', borderRadius: '999px', fontSize: '1rem', boxShadow: '0 0 30px rgba(212, 175, 55, 0.08), 0 0 60px rgba(212, 175, 55, 0.04)' }}>
                      Explore Feed
                   </button>
                </div>
@@ -741,17 +747,17 @@ const Dashboard: React.FC = () => {
                     {[...feed, ...feed, ...feed].map((post, i) => (
                       <motion.div 
                          key={i}
-                         whileHover={{ y: -15, boxShadow: '0 40px 80px rgba(0,0,0,0.12)', transition: { duration: 0.5, ease: [0.23, 1, 0.32, 1] } }}
+                         whileHover={{ y: -15, boxShadow: '0 30px 60px rgba(0,0,0,0.4), 0 0 20px rgba(212, 175, 55, 0.06)', transition: { duration: 0.5, ease: [0.23, 1, 0.32, 1] } }}
                          onClick={() => navigate('/dashboard/activity')}
                          className="luxury-card btn-premium"
                          style={{ 
-                           background: 'rgba(255, 255, 255, 0.65)', 
-                           backdropFilter: 'blur(30px)',
-                           WebkitBackdropFilter: 'blur(30px)',
+                           background: 'rgba(255, 255, 255, 0.04)', 
+                           backdropFilter: 'blur(24px)',
+                           WebkitBackdropFilter: 'blur(24px)',
                            padding: '2.25rem', 
                            borderRadius: '32px', 
-                           border: '1px solid rgba(255, 255, 255, 0.8)', 
-                           boxShadow: '0 20px 50px rgba(15, 23, 42, 0.04)', 
+                           border: '0.5px solid rgba(255, 255, 255, 0.08)', 
+                           boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)', 
                            cursor: 'pointer', 
                            position: 'relative', 
                            overflow: 'hidden',
@@ -761,26 +767,26 @@ const Dashboard: React.FC = () => {
                          }}
                       >
                          <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '1.5rem' }}>
-                            <img src={post.author.avatar} style={{ width: '56px', height: '56px', borderRadius: '50%', border: '3px solid rgba(255,255,255,0.9)', boxShadow: '0 8px 20px rgba(0,0,0,0.1)' }} alt="" />
+                            <img src={post.author.avatar} style={{ width: '56px', height: '56px', borderRadius: '50%', border: '2px solid rgba(212, 175, 55, 0.2)', boxShadow: '0 8px 20px rgba(0,0,0,0.3)' }} alt="" />
                             <div>
-                               <h4 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.01em' }}>{post.author.name}</h4>
-                               <p style={{ margin: 0, fontSize: '0.95rem', color: '#64748B', fontWeight: 600 }}>{post.author.title}</p>
+                               <h4 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.01em' }}>{post.author.name}</h4>
+                               <p style={{ margin: 0, fontSize: '0.95rem', color: 'rgba(212, 175, 55, 0.6)', fontWeight: 600 }}>{post.author.title}</p>
                             </div>
                          </div>
-                         <p style={{ color: '#334155', fontSize: '1.1rem', lineHeight: 1.6, marginBottom: '1.5rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', fontWeight: 500, letterSpacing: '-0.01em' }}>
+                         <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '1.1rem', lineHeight: 1.6, marginBottom: '1.5rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', fontWeight: 500, letterSpacing: '-0.01em' }}>
                             {post.content}
                          </p>
                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div style={{ display: 'flex', gap: '2rem', color: '#94A3B8', fontSize: '1.05rem', fontWeight: 700 }}>
+                            <div style={{ display: 'flex', gap: '2rem', color: 'rgba(255, 255, 255, 0.35)', fontSize: '1.05rem', fontWeight: 700 }}>
                                <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}><ThumbsUp size={20} /> {post.likes}</span>
                                <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}><MessageSquare size={20} /> {post.comments}</span>
                             </div>
-                            <span style={{ color: '#3B82F6', fontWeight: 800, fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                            <span style={{ color: '#D4AF37', fontWeight: 800, fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                               View Insight <ChevronRight size={20} />
                             </span>
                          </div>
                          {post.isOfficial && (
-                           <div style={{ position: 'absolute', top: '2rem', right: '2rem', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '10px 20px', borderRadius: '99px', fontSize: '0.8rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.15em' }}>
+                           <div style={{ position: 'absolute', top: '2rem', right: '2rem', background: 'rgba(212, 175, 55, 0.1)', color: '#D4AF37', border: '0.5px solid rgba(212, 175, 55, 0.2)', padding: '10px 20px', borderRadius: '99px', fontSize: '0.8rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.15em' }}>
                               OFFICIAL
                            </div>
                          )}
@@ -805,28 +811,176 @@ const Dashboard: React.FC = () => {
                 </div>
                 <h2 style={{ margin: 0, fontSize: '2rem', fontWeight: 900, color: '#0F172A', letterSpacing: '-0.02em' }}>Advanced Learning</h2>
               </div>
+              <button onClick={() => navigate('/learning')} className="btn-premium" style={{ border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#0F172A', fontWeight: 700, padding: '10px 24px', borderRadius: '999px', fontSize: '0.95rem' }}>
+                Browse All
+              </button>
           </div>
           
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
-              {courses.length === 0 ? (
-                <p style={{ color: '#94A3B8', fontSize: '1rem' }}>Curating elite masterclasses...</p>
-              ) : courses.slice(0, 3).map((course, i) => (
-                  <motion.div key={course.id || i} variants={itemVariants} className="luxury-card btn-premium" style={{ cursor: 'pointer' }} onClick={() => navigate(`/learning/course/${course.id}`)}>
-                    <div style={{ height: '140px', background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 21, 35, 0.8))', position: 'relative', overflow: 'hidden' }}>
-                      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyItems: 'center', justifyContent: 'center' }}>
-                        <BookOpen size={48} color="white" style={{ opacity: 0.1 }} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem' }}>
+              {[
+                { 
+                  id: 'c1', 
+                  title: 'React & Next.js Masterclass', 
+                  desc: 'Build production-grade applications with server components, streaming SSR, and advanced patterns.',
+                  image: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=800&auto=format&fit=crop',
+                  level: 'Advanced',
+                  duration: '12 Weeks',
+                  rating: 4.9,
+                  students: 2840,
+                  progress: 65,
+                  color: '#3B82F6',
+                  instructor: 'Dr. Sarah Chen'
+                },
+                { 
+                  id: 'c2', 
+                  title: 'AI & Deep Learning with Python', 
+                  desc: 'Master neural networks, transformers, and generative AI using PyTorch and TensorFlow.',
+                  image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?q=80&w=800&auto=format&fit=crop',
+                  level: 'Expert',
+                  duration: '16 Weeks',
+                  rating: 4.8,
+                  students: 3560,
+                  progress: 0,
+                  color: '#8B5CF6',
+                  instructor: 'Prof. James Liu'
+                },
+                { 
+                  id: 'c3', 
+                  title: 'Cloud Architecture on AWS', 
+                  desc: 'Design resilient, scalable cloud infrastructure with hands-on labs and real-world case studies.',
+                  image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=800&auto=format&fit=crop',
+                  level: 'Intermediate',
+                  duration: '10 Weeks',
+                  rating: 4.7,
+                  students: 1920,
+                  progress: 30,
+                  color: '#F59E0B',
+                  instructor: 'Ananya Patel'
+                },
+                { 
+                  id: 'c4', 
+                  title: 'Cybersecurity & Ethical Hacking', 
+                  desc: 'Learn penetration testing, threat modeling, and zero-trust security frameworks from industry experts.',
+                  image: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=800&auto=format&fit=crop',
+                  level: 'Advanced',
+                  duration: '14 Weeks',
+                  rating: 4.9,
+                  students: 2150,
+                  progress: 0,
+                  color: '#10B981',
+                  instructor: 'Marcus Rivera'
+                }
+              ].map((course, i) => (
+                  <motion.div 
+                    key={course.id} 
+                    variants={itemVariants} 
+                    whileHover={{ 
+                      rotateY: 4, 
+                      rotateX: -2, 
+                      scale: 1.02,
+                      boxShadow: '8px 16px 40px rgba(0,0,0,0.15), -2px -2px 20px rgba(255,255,255,0.5)',
+                      transition: { duration: 0.4, ease: [0.23, 1, 0.32, 1] }
+                    }}
+                    style={{ 
+                      cursor: 'pointer', 
+                      borderRadius: '20px', 
+                      overflow: 'hidden', 
+                      background: '#fff',
+                      border: '1px solid rgba(0,0,0,0.06)',
+                      boxShadow: '0 6px 24px rgba(0,0,0,0.04)',
+                      perspective: '800px',
+                      transformStyle: 'preserve-3d',
+                      display: 'flex',
+                      flexDirection: 'column'
+                    }} 
+                    onClick={() => navigate(`/learning/course/${course.id}`)}
+                  >
+                    {/* Image Header */}
+                    <div style={{ height: '180px', position: 'relative', overflow: 'hidden' }}>
+                      <img 
+                        src={course.image} 
+                        alt={course.title}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.6s ease' }}
+                      />
+                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15, 23, 42, 0.85) 0%, rgba(15, 23, 42, 0.1) 50%, transparent 100%)' }} />
+                      
+                      {/* Level Badge */}
+                      <div style={{ 
+                        position: 'absolute', top: '12px', right: '12px', 
+                        background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+                        padding: '5px 14px', borderRadius: '99px', 
+                        color: '#fff', fontSize: '0.65rem', fontWeight: 800, 
+                        textTransform: 'uppercase', letterSpacing: '0.08em',
+                        border: '1px solid rgba(255,255,255,0.2)'
+                      }}>
+                        {course.level}
                       </div>
-                      <div style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', padding: '4px 12px', borderRadius: '999px', color: 'white', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase' }}>
-                        {course.level || 'Mastery'}
+
+                      {/* Rating overlay */}
+                      <div style={{ 
+                        position: 'absolute', bottom: '12px', left: '14px',
+                        display: 'flex', alignItems: 'center', gap: '6px'
+                      }}>
+                        <div style={{ display: 'flex', gap: '2px' }}>
+                          {[1,2,3,4,5].map(s => (
+                            <Star key={s} size={12} fill={s <= Math.floor(course.rating) ? '#FBBF24' : 'transparent'} color="#FBBF24" />
+                          ))}
+                        </div>
+                        <span style={{ color: '#fff', fontSize: '0.75rem', fontWeight: 800 }}>{course.rating}</span>
+                        <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem', fontWeight: 600 }}>({course.students.toLocaleString()})</span>
                       </div>
                     </div>
-                    <div style={{ padding: '1.5rem' }}>
-                        <h4 style={{ margin: '0 0 0.5rem', fontSize: '1.2rem', fontWeight: 800, color: '#0F172A', lineHeight: 1.3 }}>{course.title}</h4>
-                        <p style={{ margin: '0 0 1.2rem', fontSize: '0.85rem', color: '#94A3B8', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{course.description}</p>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '1.2rem' }}>
-                          <span style={{ fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Clock size={14} color="#3b82f6" /> {course.duration || 'Flexible'}</span>
-                          <span style={{ color: '#3b82f6', fontWeight: 700, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>Start <ArrowRight size={14} /></span>
+
+                    {/* Card Content */}
+                    <div style={{ padding: '1.4rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                      <h4 style={{ margin: '0 0 0.5rem', fontSize: '1.05rem', fontWeight: 800, color: '#0F172A', lineHeight: 1.3 }}>
+                        {course.title}
+                      </h4>
+                      <p style={{ margin: '0 0 1rem', fontSize: '0.8rem', color: '#64748B', lineHeight: 1.6, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', flex: 1 }}>
+                        {course.desc}
+                      </p>
+
+                      {/* Instructor */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
+                        <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: `linear-gradient(135deg, ${course.color}, ${course.color}88)`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '0.6rem', fontWeight: 900 }}>
+                          {course.instructor.split(' ').map(n => n[0]).join('')}
                         </div>
+                        <span style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 600 }}>{course.instructor}</span>
+                      </div>
+
+                      {/* Progress Bar (if enrolled) */}
+                      {course.progress > 0 && (
+                        <div style={{ marginBottom: '1rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                            <span style={{ fontSize: '0.7rem', color: '#94A3B8', fontWeight: 700 }}>Progress</span>
+                            <span style={{ fontSize: '0.7rem', color: course.color, fontWeight: 800 }}>{course.progress}%</span>
+                          </div>
+                          <div style={{ height: '4px', borderRadius: '99px', background: '#F1F5F9', overflow: 'hidden' }}>
+                            <motion.div 
+                              initial={{ width: 0 }}
+                              whileInView={{ width: `${course.progress}%` }}
+                              viewport={{ once: true }}
+                              transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: 0.3 + i * 0.1 }}
+                              style={{ height: '100%', borderRadius: '99px', background: `linear-gradient(90deg, ${course.color}, ${course.color}CC)` }} 
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Footer */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '1rem', borderTop: '1px solid #F1F5F9' }}>
+                        <span style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <Clock size={13} color={course.color} /> {course.duration}
+                        </span>
+                        <span style={{ 
+                          fontSize: '0.75rem', fontWeight: 800, color: '#fff',
+                          background: course.progress > 0 ? course.color : '#0F172A',
+                          padding: '6px 16px', borderRadius: '99px',
+                          display: 'flex', alignItems: 'center', gap: '5px'
+                        }}>
+                          {course.progress > 0 ? 'Continue' : 'Enroll'} <ArrowRight size={12} />
+                        </span>
+                      </div>
                     </div>
                   </motion.div>
               ))}

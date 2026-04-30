@@ -220,7 +220,7 @@ const ActivityFeed: React.FC = () => {
           <div style={{ position: 'absolute', right: '-50px', bottom: '-50px', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(220,38,38,0.2) 0%, transparent 70%)', filter: 'blur(80px)', zIndex: 1 }} />
         </motion.div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '1.5rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 420px', gap: '1.5rem' }}>
           
           {/* MAIN FEED */}
           <motion.div variants={pageVariants} initial="hidden" animate="visible">
@@ -332,20 +332,34 @@ const ActivityFeed: React.FC = () => {
           {/* SIDEBAR */}
           <div style={{ position: 'sticky', top: '2rem' }}>
              
-             {/* DIRECTORATE ANNOUNCEMENT */}
-             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="insight-card" style={{ padding: '2rem', background: 'linear-gradient(135deg, #0F172A 0%, #1e293b 100%)', color: 'white', border: 'none' }}>
-                <div style={{ background: 'rgba(255,255,255,0.1)', width: '48px', height: '48px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem' }}>
-                   <Award size={24} color="#DC2626" />
-                </div>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0 0 0.75rem' }}>Verified Perspectives</h3>
-                <p style={{ opacity: 0.7, fontSize: '0.9rem', lineHeight: 1.6, margin: '0 0 1.5rem', fontWeight: 500 }}>
-                  Only content verified by NeST Admin or Leadership is visible here to maintain professional standards.
-                </p>
-                <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '0 0 1.5rem' }} />
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                   <img src="https://ui-avatars.com/api/?name=Admin&background=DC2626&color=fff" style={{ width: '32px', height: '32px', borderRadius: '50%' }} />
-                   <span style={{ fontSize: '0.8rem', fontWeight: 600, opacity: 0.9 }}>Directorate Managed</span>
-                </div>
+
+
+             {/* CINEMATIC VIDEO CARD */}
+             <motion.div 
+               initial={{ opacity: 0, scale: 0.95 }} 
+               animate={{ opacity: 1, scale: 1 }} 
+               transition={{ duration: 0.8 }}
+               style={{ 
+                 width: '100%', 
+                 height: '260px', 
+                 borderRadius: '24px', 
+                 overflow: 'hidden', 
+                 marginBottom: '1.5rem',
+                 border: '0.5px solid rgba(212, 175, 55, 0.4)',
+                 boxShadow: '0 20px 40px rgba(0,0,0,0.4), 0 0 20px rgba(212, 175, 55, 0.1)',
+                 position: 'relative',
+                 background: '#000'
+               }}
+             >
+               <video 
+                 src="https://nestdigital.com/wp-content/uploads/2026/03/Nest-HP-Video.mp4" 
+                 autoPlay 
+                 muted 
+                 loop 
+                 playsInline
+                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+               />
+               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 40%)' }} />
              </motion.div>
 
              {/* TRENDING NOW */}
@@ -374,13 +388,7 @@ const ActivityFeed: React.FC = () => {
                 </button>
              </motion.div>
 
-             {/* SENIOR ENGAGEMENT CTA */}
-             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} style={{ padding: '2rem', background: 'white', borderRadius: '24px', border: '1px solid #E2E8F0', textAlign: 'center' }}>
-                <Users size={32} color="#DC2626" style={{ marginBottom: '1rem' }} />
-                <h4 style={{ margin: '0 0 0.5rem', fontWeight: 800 }}>Engage with Experts</h4>
-                <p style={{ fontSize: '0.85rem', color: '#64748B', fontWeight: 500, margin: '0 0 1.5rem' }}>Reach out to contributors for personalized career mentorship.</p>
-                <button className="btn-premium" style={{ width: '100%', background: '#0F172A', color: 'white', border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 700 }}>Mentorship Portal</button>
-             </motion.div>
+
 
           </div>
 
