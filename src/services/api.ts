@@ -1,28 +1,15 @@
-/**
- * API Service Layer
- * Handles all HTTP communication with the Flask backend.
- * Manages authentication tokens in localStorage.
- */
+import axios from 'axios';
 
-const API_BASE_URL = '/api';
+// --- CONFIG ---
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-// ── Token Management ──
+// --- HELPERS ---
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-export const getAccessToken = (): string | null => {
-  return localStorage.getItem('access_token');
-};
-
-export const getRefreshToken = (): string | null => {
-  return localStorage.getItem('refresh_token');
-};
-
-export const setTokens = (accessToken: string, refreshToken: string): void => {
-  localStorage.setItem('access_token', accessToken);
-  localStorage.setItem('refresh_token', refreshToken);
-};
-
-export const clearTokens = (): void => {
-  localStorage.removeItem('access_token');
+export const getAccessToken = () => localStorage.getItem('token');
+export const getRefreshToken = () => localStorage.getItem('refresh_token');
+const clearTokens = () => {
+  localStorage.removeItem('token');
   localStorage.removeItem('refresh_token');
   localStorage.removeItem('user');
 };
@@ -37,7 +24,7 @@ export const setUser = (user: unknown): void => {
 
 export const getUser = (): Record<string, unknown> | null => {
   const stored = localStorage.getItem('user');
-  if (!stored) return null;
+  if (!stored || stored === 'undefined' || stored === '[object Object]') return null;
   try {
     return JSON.parse(stored);
   } catch {
@@ -49,68 +36,53 @@ export const isAuthenticated = (): boolean => {
   return !!getAccessToken();
 };
 
-
-// ── HTTP Client ──
-
-interface ApiResponse<T = unknown> {
+export interface ApiResponse<T = any> {
   success: boolean;
   message?: string;
-  errors?: string[];
   data?: T;
 }
 
-async function apiRequest<T = unknown>(
+// ── HTTP Client ──
+async function apiRequest<T = any>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
-  console.log(`[API Request] ${options.method || 'GET'} ${endpoint}`, options.body ? '(with body)' : '');
-  const url = `${API_BASE_URL}${endpoint}`;
-
+  const fullUrl = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
+  
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...(options.headers as Record<string, string> || {}),
+    ...(options.headers as Record<string, string>),
   };
 
-  // Attach JWT token if available
   const token = getAccessToken();
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
   try {
-    const response = await fetch(url, {
+    const response = await fetch(fullUrl, {
       ...options,
       headers,
     });
-
-    console.log(`[API Response] ${response.status} ${endpoint}`);
-    const data: ApiResponse<T> = await response.json();
-    console.log(`[API Data] ${endpoint}:`, data);
 
     // Handle 401 — try refresh token
     if (response.status === 401 && getRefreshToken()) {
       const refreshed = await refreshAccessToken();
       if (refreshed) {
-        // Retry the original request with new token
         headers['Authorization'] = `Bearer ${getAccessToken()}`;
-        const retryResponse = await fetch(url, { ...options, headers });
-        const retryData = await retryResponse.json();
-        console.log(`[API Retry Data] ${endpoint}:`, retryData);
-        return retryData;
+        const retryResponse = await fetch(fullUrl, { ...options, headers });
+        return await retryResponse.json();
       } else {
-        const token = getAccessToken();
         if (token && token !== 'mock_token' && token !== 'social_mock_token') {
           clearTokens();
         }
       }
     }
 
-    return data;
+    return await response.json();
   } catch (error) {
-    return {
-      success: false,
-      message: 'Network error. Please check your connection and try again.',
-    };
+    console.error('API Request Error:', error);
+    return { success: false, message: 'Network error occurred' };
   }
 }
 
@@ -128,7 +100,7 @@ async function refreshAccessToken(): Promise<boolean> {
 
     const data = await response.json();
     if (data.success && data.data?.access_token) {
-      localStorage.setItem('access_token', data.data.access_token);
+      localStorage.setItem('token', data.data.access_token);
       return true;
     }
     return false;
@@ -137,9 +109,7 @@ async function refreshAccessToken(): Promise<boolean> {
   }
 }
 
-
-// ── Auth API ──
-
+// --- AUTH API ---
 export interface LoginPayload {
   email: string;
   password: string;
@@ -201,15 +171,13 @@ export const authApi = {
       method: 'GET',
     }),
 
-  logout: () =>
-    apiRequest('/auth/logout', {
-      method: 'POST',
-    }),
+  logout: async () => {
+    clearTokens();
+    return { success: true };
+  }
 };
 
-
-// ── Users API ──
-
+// --- USERS API ---
 export const usersApi = {
   getProfile: () =>
     apiRequest('/users/me', { method: 'GET' }),
@@ -225,17 +193,16 @@ export const usersApi = {
 
   getPublicProfile: (userId: string) =>
     apiRequest<{ user: any }>(`/users/${userId}/public`, { method: 'GET' }),
+    
+  attendance: {
+    getStats: async () => {
+      await delay(800);
+      return { success: true, data: [] };
+    }
+  }
 };
 
-
-// ── Health API ──
-
-export const healthApi = {
-  check: () =>
-    apiRequest('/health', { method: 'GET' }),
-};
-
-// ── Admin API ──
+// --- ADMIN API ---
 export const adminApi = {
   getStats: () => 
     apiRequest<{ 
@@ -369,6 +336,26 @@ export const networkingApi = {
     const query = new URLSearchParams(params as any).toString();
     return apiRequest(`/users?${query}`, { method: 'GET' });
   },
+  getDirectory: async () => {
+    return apiRequest('/networking/directory', { method: 'GET' });
+  }
+};
+
+// --- COURSE MANAGER API ---
+export const courseManagerAPI = {
+  fetchCourses: async () => {
+    return apiRequest('/admin/courses', { method: 'GET' });
+  },
+  createCourse: (data: any) => apiRequest('/admin/courses', { method: 'POST', body: JSON.stringify(data) }),
+  updateCourse: (id: string | number, data: any) => apiRequest(`/admin/courses/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteCourse: (id: string | number) => apiRequest(`/admin/courses/${id}`, { method: 'DELETE' }),
+  fetchStudents: async () => {
+    return apiRequest('/admin/users?type=Intern', { method: 'GET' });
+  },
+  fetchSubmissions: async () => {
+    return apiRequest('/admin/assessments/pending', { method: 'GET' });
+  },
+  updateSubmissionStatus: (id: string, status: string) => apiRequest(`/admin/assessments/${id}/review`, { method: 'POST', body: JSON.stringify({ status }) })
 };
 
 // ── Social API ──
@@ -393,7 +380,63 @@ export const socialApi = {
     apiRequest(`/social/posts/${postId}`, { method: 'DELETE' }),
 };
 
-// ── Recruiter API ──
+// ── Assessments API ──
+export const assessmentsApi = {
+  getQuizzes: () => apiRequest('/assessments/quizzes'),
+  getAnalytics: () => apiRequest('/assessments/analytics'),
+  getAssessmentStatus: (id: string) => apiRequest(`/assessments/${id}/status`),
+  submitStage: (id: string, stage: number, payload: any) => 
+    apiRequest(`/assessments/${id}/stage/${stage}`, { method: 'POST', body: JSON.stringify(payload) }),
+};
+
+// ── Notifications API ──
+export const notificationsApi = {
+  getNotifications: () => apiRequest<{ notifications: any[]; unread_count: number }>('/notifications'),
+  markAsRead: (id: string) => apiRequest(`/notifications/${id}/read`, { method: 'PATCH' }),
+  markAllAsRead: () => apiRequest('/notifications/read-all', { method: 'PATCH' }),
+  deleteNotification: (id: string) => apiRequest(`/notifications/${id}`, { method: 'DELETE' }),
+};
+
+// ── Applications API ──
+export const applicationsApi = {
+  applyForJob: (data: any) =>
+    apiRequest('/applications', { method: 'POST', body: JSON.stringify(data) }),
+  
+  getMyApplications: () =>
+    apiRequest('/applications/me'),
+};
+
+// --- MOCK / HELPER APIS (To support legacy UI) ---
+export const reminderAPI = {
+  fetchAlerts: async () => ({ success: true, data: [] }),
+  sendReminder: async (id: string) => ({ success: true })
+};
+
+export const forumAPI = {
+  fetchDiscussions: async () => ({ success: true, data: [] }),
+  resolveDiscussion: async (id: string) => ({ success: true }),
+  deleteDiscussion: async (id: string) => ({ success: true }),
+  postReply: async (id: string, text: string) => ({ success: true })
+};
+
+export const achievementAPI = {
+  fetchAchievements: async () => ({ success: true, data: [] }),
+  fetchIssuedHistory: async () => ({ success: true, data: [] })
+};
+
+export const recommendationAPI = {
+  fetchRecommendations: async () => ({ success: true, data: [] }),
+  deleteRecommendation: async (id: string) => ({ success: true })
+};
+
+export const insightsAPI = {
+  fetchSummary: async () => ({ success: true, data: { dailyActiveUsers: [], completionRates: [], streaks: [], inactiveLearners: [] } })
+};
+
+export const gamificationApi = {
+  fetchRecommendedPathways: async () => ({ success: true, data: [] }),
+  fetchMyQueries: async () => ({ success: true, data: [] })
+};
 
 export const recruiterApi = {
   getApplications: () => 
@@ -429,28 +472,7 @@ export const recruiterApi = {
     }),
 };
 
-// ── Assessments API ──
-export const assessmentsApi = {
-  getQuizzes: () => apiRequest('/assessments/quizzes'),
-  getAnalytics: () => apiRequest('/assessments/analytics'),
-  getAssessmentStatus: (id: string) => apiRequest(`/assessments/${id}/status`),
-  submitStage: (id: string, stage: number, payload: any) => 
-    apiRequest(`/assessments/${id}/stage/${stage}`, { method: 'POST', body: JSON.stringify(payload) }),
-};
-
-// ── Notifications API ──
-export const notificationsApi = {
-  getNotifications: () => apiRequest<{ notifications: any[]; unread_count: number }>('/notifications'),
-  markAsRead: (id: string) => apiRequest(`/notifications/${id}/read`, { method: 'PATCH' }),
-  markAllAsRead: () => apiRequest('/notifications/read-all', { method: 'PATCH' }),
-  deleteNotification: (id: string) => apiRequest(`/notifications/${id}`, { method: 'DELETE' }),
-};
-
-// ── Applications API ──
-export const applicationsApi = {
-  applyForJob: (data: any) =>
-    apiRequest('/applications', { method: 'POST', body: JSON.stringify(data) }),
-  
-  getMyApplications: () =>
-    apiRequest('/applications/me'),
+export const logout = () => {
+  clearTokens();
+  window.location.href = '/login';
 };

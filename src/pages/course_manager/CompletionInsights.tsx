@@ -16,13 +16,12 @@ import {
 } from 'lucide-react';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler } from 'chart.js';
 import { Line, Bar } from 'react-chartjs-2';
-import { insightService } from '../../services/insightService';
-import type { InsightSummary } from '../../types/course-manager';
+import { insightsAPI } from '../../services/api';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler);
 
 const CompletionInsights: React.FC = () => {
-  const [data, setData] = useState<InsightSummary | null>(null);
+  const [data, setData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -30,12 +29,11 @@ const CompletionInsights: React.FC = () => {
   }, []);
 
   const loadData = async () => {
-    setIsLoading(true);
     try {
-      const summary = await insightService.getSummary();
-      setData(summary);
+      const resp = await insightsAPI.fetchSummary();
+      setData(resp.data);
     } catch (err) {
-      console.error('Insights load error:', err);
+      console.error(err);
     } finally {
       setIsLoading(false);
     }
@@ -86,250 +84,109 @@ const CompletionInsights: React.FC = () => {
   }
 
   return (
-    <div className="cm-page-container cm-animate-fade-up">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12 font-['Inter',sans-serif]">
       {/* Header */}
-      <div className="cm-page-header">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <span className="inline-block px-3 py-1 bg-red-50 text-[#c8102e] text-[9px] font-black uppercase tracking-[0.2em] mb-4 rounded-lg">Engagement Intelligence</span>
-          <div className="flex items-center gap-5">
-             <div className="w-14 h-14 bg-[#c8102e] rounded-2xl flex items-center justify-center text-white shadow-lg shadow-red-900/20">
-                <BarChart3 size={28} strokeWidth={2.5} />
-             </div>
-             <div>
-                <h1 className="text-3xl font-black text-[#1e293b] tracking-tight">Completion Insights</h1>
-                <p className="text-slate-400 font-medium text-sm mt-0.5">Monitor learning velocity, student streaks, and retention metrics.</p>
-             </div>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="px-3 py-1 bg-red-50 text-[#c8102e] text-[10px] font-black uppercase tracking-widest rounded-full border border-red-100">
+              Engagement Intelligence
+            </span>
           </div>
+          <h1 className="text-4xl font-black text-[#1e293b] tracking-tight flex items-center gap-4">
+            <BarChart3 className="text-[#c8102e]" size={36} /> Completion Insights
+          </h1>
+          <p className="text-slate-500 font-medium mt-1">Monitor learning velocity, student streaks, and retention metrics.</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="h-12 px-6 bg-white border border-slate-200 rounded-xl flex items-center gap-3 shadow-sm hover:shadow-md transition-all">
-            <Calendar size={16} className="text-slate-400" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#1e293b]">Last 30 Days</span>
+          <button className="flex items-center gap-2 px-6 py-4 bg-white border border-slate-200 text-slate-600 rounded-2xl font-black text-sm hover:bg-slate-50 transition-all shadow-sm">
+            <Calendar size={18} /> Last 30 Days
           </button>
         </div>
       </div>
 
       {/* Metric Cards */}
-      <div className="cm-grid-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: 'Avg. Velocity', value: '84%', icon: TrendingUp, color: 'text-emerald-600', trend: 'bg-emerald-50' },
-          { label: 'Daily Active', value: '72', icon: Activity, color: 'text-[#c8102e]', trend: 'bg-red-50' },
-          { label: 'Active Streaks', value: '124', icon: Flame, color: 'text-orange-600', trend: 'bg-orange-50' },
-          { label: 'Risk Students', value: '3', icon: AlertTriangle, color: 'text-amber-600', trend: 'bg-amber-50' },
+          { label: 'Avg. Velocity', value: '84%', icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+          { label: 'Daily Active', value: data?.dailyActiveUsers[6], icon: Activity, color: 'text-red-600', bg: 'bg-red-50' },
+          { label: 'Active Streaks', value: '124', icon: Flame, color: 'text-orange-600', bg: 'bg-orange-50' },
+          { label: 'Risk Students', value: data?.inactiveLearners.length, icon: AlertTriangle, color: 'text-amber-600', bg: 'bg-amber-50' },
         ].map((stat, i) => (
-          <div key={i} className="cm-card p-8 flex flex-col justify-between min-h-[160px] hover:scale-[1.02]">
-            <div className="flex items-start justify-between">
-              <div className={`w-12 h-12 rounded-2xl ${stat.trend} flex items-center justify-center`}>
-                <stat.icon size={22} className={stat.color} strokeWidth={2.5} />
-              </div>
-              <div className="w-8 h-5 bg-slate-50 rounded-lg flex items-center justify-center">
-                 <TrendingUp size={12} className="text-slate-300" />
-              </div>
+          <div key={i} className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm">
+            <div className={`w-12 h-12 ${stat.bg} ${stat.color} rounded-2xl flex items-center justify-center mb-6`}>
+              <stat.icon size={24} />
             </div>
-            <div>
-              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{stat.label}</div>
-              <div className="text-3xl font-black text-[#1e293b] tracking-tight">{stat.value}</div>
-            </div>
+            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{stat.label}</div>
+            <div className="text-3xl font-black text-[#1e293b]">{stat.value}</div>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Engagement Chart */}
-        <div className="xl:col-span-2 cm-card p-10 relative">
-          <div className="flex items-center justify-between mb-10">
+        <div className="lg:col-span-2 bg-white p-10 rounded-[40px] border border-slate-100 shadow-xl shadow-slate-200/40 relative overflow-hidden">
+          <div className="flex items-center justify-between mb-10 relative z-10">
             <div>
-              <h3 className="text-xl font-black text-[#1e293b] mb-1">Daily Active Learners</h3>
-              <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.1em]">USER ACTIVITY TREND FOR CURRENT WEEK</p>
+              <h3 className="text-xl font-black text-[#1e293b]">Daily Active Learners</h3>
+              <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">User activity trend for current week</p>
             </div>
-            <div className="px-3 py-1.5 bg-[#f0fdf4] text-[#16a34a] rounded-full text-[9px] font-black flex items-center gap-1.5">
-              <TrendingUp size={10} /> +14.2% Increase
+            <div className="flex items-center gap-2 px-3 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-black rounded-full border border-emerald-100">
+              <TrendingUp size={12} /> +14.2% Increase
             </div>
           </div>
-          <div className="h-[300px]">
+          <div className="h-[300px] relative z-10">
             <Line data={lineChartData} options={chartOptions} />
           </div>
+          <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#1a2652 1px, transparent 0)', backgroundSize: '24px 24px' }} />
         </div>
 
         {/* Streak Leaderboard */}
-        <div style={{
-          background: '#ffffff',
-          borderRadius: '24px',
-          padding: '28px',
-          boxShadow: '0 4px 24px rgba(0,0,0,0.07)',
-          border: '1px solid #f1f5f9',
-          display: 'flex',
-          flexDirection: 'column',
-          transition: 'box-shadow 0.3s ease',
-        }}>
-          {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
-            <Flame size={22} strokeWidth={2.5} style={{ color: '#f97316', flexShrink: 0 }} />
-            <h3 style={{ fontSize: '20px', fontWeight: 900, color: '#1e293b', margin: 0, letterSpacing: '-0.02em' }}>
-              Login Streaks
-            </h3>
-          </div>
-
-          {/* User sub-cards */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', flex: 1 }}>
-            {[
-              { name: 'Alex Johnson',  days: 12, rank: 1 },
-              { name: 'Maria Garcia',  days: 8,  rank: 2 },
-              { name: 'David Chen',    days: 7,  rank: 3 },
-              { name: 'Sneha Joseph',  days: 5,  rank: 4 },
-            ].map((s, i) => (
-              <div
-                key={i}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  background: '#f8fafc',
-                  borderRadius: '16px',
-                  padding: '16px 18px',
-                  border: '1px solid #f1f5f9',
-                  boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
-                  transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                  cursor: 'default',
-                }}
-                onMouseEnter={e => {
-                  (e.currentTarget as HTMLElement).style.transform = 'translateY(-3px)';
-                  (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 20px rgba(0,0,0,0.10)';
-                  (e.currentTarget as HTMLElement).style.background = '#ffffff';
-                }}
-                onMouseLeave={e => {
-                  (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
-                  (e.currentTarget as HTMLElement).style.boxShadow = '0 1px 4px rgba(0,0,0,0.04)';
-                  (e.currentTarget as HTMLElement).style.background = '#f8fafc';
-                }}
-              >
-                {/* Left: Rank badge + Name */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                  {/* Rank badge */}
-                  <div style={{
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: '10px',
-                    background: '#eef2f7',
-                    border: '1px solid #e2e8f0',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 900,
-                    fontSize: '13px',
-                    color: '#475569',
-                    flexShrink: 0,
-                  }}>
-                    {s.rank}
+        <div className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm flex flex-col">
+          <h3 className="text-lg font-black text-[#1e293b] mb-6 flex items-center gap-2">
+            <Flame className="text-orange-500" size={20} /> Login Streaks
+          </h3>
+          <div className="space-y-4 flex-1">
+            {data?.streaks.map((s: any, i: number) => (
+              <div key={i} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-orange-200 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center font-black text-sm text-[#1e293b]">
+                    {i + 1}
                   </div>
-                  {/* Name + meta */}
                   <div>
-                    <div style={{ fontSize: '14px', fontWeight: 800, color: '#1e293b', lineHeight: 1.2 }}>
-                      {s.name}
-                    </div>
-                    <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: '4px' }}>
-                      Current Milestone
-                    </div>
+                    <div className="text-sm font-black text-[#1e293b]">{s.student}</div>
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Current Milestone</div>
                   </div>
                 </div>
-
-                {/* Right: Streak pill */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  background: '#fff7ed',
-                  border: '1px solid #fed7aa',
-                  borderRadius: '999px',
-                  padding: '6px 14px',
-                  fontWeight: 900,
-                  fontSize: '11px',
-                  color: '#ea580c',
-                  whiteSpace: 'nowrap',
-                  flexShrink: 0,
-                }}>
-                  <Flame size={12} strokeWidth={3} style={{ color: '#f97316' }} />
-                  {s.days} Days
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-50 text-orange-600 rounded-xl font-black text-xs">
+                  <Flame size={14} /> {s.days} Days
                 </div>
               </div>
             ))}
           </div>
-
-          {/* Footer button */}
-          <button
-            style={{
-              marginTop: '20px',
-              width: '100%',
-              padding: '14px',
-              background: '#f1f5f9',
-              color: '#475569',
-              border: 'none',
-              borderRadius: '999px',
-              fontWeight: 800,
-              fontSize: '11px',
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px',
-              transition: 'background 0.2s ease',
-            }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#e2e8f0'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#f1f5f9'; }}
-          >
-            View All Streaks
-            <ChevronRight size={14} strokeWidth={2.5} />
+          <button className="mt-8 w-full py-4 bg-slate-50 text-slate-500 rounded-2xl font-black text-xs hover:bg-slate-100 transition-all uppercase tracking-widest flex items-center justify-center gap-2">
+            View All Streaks <ChevronRight size={14} />
           </button>
         </div>
       </div>
 
-      {/* ── Bottom Row: Course Completion + At-Risk ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-
-        {/* ── Left: Course-wise Completion ── */}
-        <div style={{
-          background: '#ffffff',
-          borderRadius: '24px',
-          padding: '32px',
-          boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
-          border: '1px solid #f1f5f9',
-          transition: 'box-shadow 0.3s ease',
-        }}
-          onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.10)')}
-          onMouseLeave={e => (e.currentTarget.style.boxShadow = '0 4px 24px rgba(0,0,0,0.06)')}
-        >
-          <h3 style={{ fontSize: '20px', fontWeight: 900, color: '#1e293b', marginBottom: '28px', letterSpacing: '-0.02em' }}>
-            Course-wise Completion
-          </h3>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            {[
-              { course: 'Full Stack Dev', percentage: 78 },
-              { course: 'Cloud Arch',     percentage: 42 },
-              { course: 'UX Design',      percentage: 91 },
-              { course: 'Data Science',   percentage: 56 },
-            ].map((c, i) => (
-              <div key={i}>
-                {/* Label row */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '10px' }}>
-                  <span style={{ fontSize: '14px', fontWeight: 700, color: '#334155' }}>{c.course}</span>
-                  <span style={{ fontSize: '13px', fontWeight: 900, color: '#c8102e', whiteSpace: 'nowrap', marginLeft: '12px' }}>
-                    {c.percentage}% Complete
-                  </span>
+        {/* Course Completion Progress */}
+        <div className="bg-white p-10 rounded-[40px] border border-slate-100 shadow-sm">
+          <h3 className="text-xl font-black text-[#1e293b] mb-8">Course-wise Completion</h3>
+          <div className="space-y-8">
+            {data?.completionRates.map((c: any, i: number) => (
+              <div key={i} className="space-y-3">
+                <div className="flex justify-between items-end">
+                  <div className="font-black text-sm text-slate-700">{c.course}</div>
+                  <div className="text-xs font-black text-[#c8102e]">{c.percentage}% Complete</div>
                 </div>
-                {/* Progress track */}
-                <div style={{ height: '6px', background: '#f1f5f9', borderRadius: '999px', overflow: 'hidden' }}>
-                  <motion.div
+                <div className="h-3 bg-slate-50 rounded-full border border-slate-100 overflow-hidden p-0.5">
+                  <motion.div 
                     initial={{ width: 0 }}
                     animate={{ width: `${c.percentage}%` }}
-                    transition={{ duration: 1.1, ease: 'easeOut', delay: i * 0.12 }}
-                    style={{
-                      height: '100%',
-                      background: 'linear-gradient(90deg, #e53e5a 0%, #c8102e 100%)',
-                      borderRadius: '999px',
-                    }}
+                    transition={{ duration: 1, delay: i * 0.1 }}
+                    className="h-full bg-gradient-to-r from-red-600 to-red-400 rounded-full shadow-sm"
                   />
                 </div>
               </div>
@@ -337,136 +194,46 @@ const CompletionInsights: React.FC = () => {
           </div>
         </div>
 
-        {/* ── Right: At-Risk Learners ── */}
-        <div style={{
-          background: 'linear-gradient(145deg, #1e2d5e 0%, #162247 100%)',
-          borderRadius: '24px',
-          boxShadow: '0 8px 32px rgba(30,45,94,0.40)',
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
-          transition: 'box-shadow 0.3s ease',
-        }}
-          onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 16px 48px rgba(30,45,94,0.55)')}
-          onMouseLeave={e => (e.currentTarget.style.boxShadow = '0 8px 32px rgba(30,45,94,0.40)')}
-        >
-          {/* Header */}
-          <div style={{ padding: '28px 28px 16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-              <UserX size={20} strokeWidth={2.5} style={{ color: '#f87171', flexShrink: 0 }} />
-              <h3 style={{ fontSize: '18px', fontWeight: 900, color: '#ffffff', margin: 0 }}>At-Risk Learners</h3>
+        {/* Inactive Learners */}
+        <div className="bg-[#1a2652] p-10 rounded-[40px] shadow-2xl shadow-indigo-900/40 text-white relative overflow-hidden">
+          <div className="relative z-10">
+            <h3 className="text-xl font-black mb-2 flex items-center gap-3">
+              <UserX className="text-red-400" size={24} /> At-Risk Learners
+            </h3>
+            <p className="text-indigo-200 text-sm font-medium mb-8">Students inactive for more than 3 days. Reach out recommended.</p>
+            
+            <div className="space-y-4">
+              {data?.inactiveLearners.map((s: any, i: number) => (
+                <div key={i} className="flex items-center justify-between p-5 bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl group hover:bg-white/10 transition-all">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-indigo-900/50 flex items-center justify-center font-black text-sm text-indigo-300">
+                      {s.name.charAt(0)}
+                    </div>
+                    <div>
+                      <div className="text-base font-black">{s.name}</div>
+                      <div className="text-xs font-bold text-indigo-300 flex items-center gap-1">
+                        <Clock size={12} /> Last active {s.lastActive}
+                      </div>
+                    </div>
+                  </div>
+                  <div className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest ${
+                    s.risk === 'High' ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                  }`}>
+                    {s.risk} Risk
+                  </div>
+                </div>
+              ))}
             </div>
-            <p style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 500, lineHeight: 1.5, margin: 0 }}>
-              Students inactive for more than 3 days. Reach out recommended.
-            </p>
-          </div>
 
-          {/* Student rows */}
-          <div style={{ padding: '4px 20px 16px', display: 'flex', flexDirection: 'column', gap: '10px', flex: 1 }}>
-            {[
-              { name: 'John Doe',    lastActive: '5 days ago', risk: 'HIGH RISK',   avatarBg: '#3b82f6', badgeBg: '#dc2626' },
-              { name: 'Sarah Smith', lastActive: '3 days ago', risk: 'MEDIUM RISK', avatarBg: '#14b8a6', badgeBg: '#d97706' },
-              { name: 'Kiran Kumar', lastActive: '4 days ago', risk: 'HIGH RISK',   avatarBg: '#8b5cf6', badgeBg: '#dc2626' },
-            ].map((s, i) => (
-              <div
-                key={i}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  padding: '14px 16px',
-                  background: 'rgba(255,255,255,0.06)',
-                  borderRadius: '16px',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  transition: 'background 0.2s ease, transform 0.2s ease',
-                  cursor: 'pointer',
-                }}
-                onMouseEnter={e => {
-                  (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.12)';
-                  (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
-                }}
-                onMouseLeave={e => {
-                  (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)';
-                  (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
-                }}
-              >
-                {/* Avatar */}
-                <div style={{
-                  width: '40px', height: '40px', borderRadius: '50%',
-                  background: s.avatarBg,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontWeight: 900, fontSize: '15px', color: '#fff',
-                  flexShrink: 0,
-                }}>
-                  {s.name.charAt(0)}
-                </div>
-
-                {/* Name + meta */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '14px', fontWeight: 800, color: '#ffffff', lineHeight: 1.2 }}>
-                    {s.name}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
-                    <Clock size={10} style={{ color: '#64748b', flexShrink: 0 }} />
-                    <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 500 }}>
-                      Last active {s.lastActive}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Risk badge */}
-                <div style={{
-                  background: s.badgeBg,
-                  color: '#ffffff',
-                  fontSize: '9px',
-                  fontWeight: 900,
-                  letterSpacing: '0.06em',
-                  textTransform: 'uppercase',
-                  padding: '5px 12px',
-                  borderRadius: '999px',
-                  flexShrink: 0,
-                  whiteSpace: 'nowrap',
-                }}>
-                  {s.risk}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* CTA Button */}
-          <div style={{ padding: '8px 20px 24px' }}>
-            <button style={{
-              width: '100%',
-              padding: '14px',
-              background: '#ffffff',
-              color: '#1e2d5e',
-              borderRadius: '999px',
-              border: 'none',
-              fontWeight: 900,
-              fontSize: '14px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-              transition: 'background 0.2s ease, transform 0.2s ease',
-            }}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLElement).style.background = '#f1f5f9';
-                (e.currentTarget as HTMLElement).style.transform = 'scale(1.01)';
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLElement).style.background = '#ffffff';
-                (e.currentTarget as HTMLElement).style.transform = 'scale(1)';
-              }}
-            >
-              Send Mass Reminder
-              <ArrowUpRight size={16} strokeWidth={2.5} />
+            <button className="mt-8 w-full py-5 bg-white text-[#1a2652] rounded-2xl font-black text-sm hover:bg-indigo-50 transition-all flex items-center justify-center gap-2">
+              Send Mass Reminder <ArrowUpRight size={18} />
             </button>
           </div>
-        </div>
 
+          {/* Abstract pattern */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32 blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-red-500/5 rounded-full -ml-32 -mb-32 blur-3xl" />
+        </div>
       </div>
     </div>
   );

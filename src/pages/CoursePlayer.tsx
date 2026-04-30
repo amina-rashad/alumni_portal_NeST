@@ -141,11 +141,10 @@ const CoursePlayer: React.FC = () => {
     <div style={{ 
       display: 'flex', 
       flexDirection: 'column', 
-      height: '100vh', 
+      minHeight: '100vh', 
       backgroundColor: '#0f172a', 
       color: 'white',
-      fontFamily: '"Inter", sans-serif',
-      overflow: 'hidden'
+      fontFamily: '"Inter", sans-serif'
     }}>
       {/* Top Header Bar */}
       <header style={{ 
@@ -208,7 +207,7 @@ const CoursePlayer: React.FC = () => {
       </header>
 
       {/* Main Content Area */}
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flex: 1 }}>
         
         {/* Sidebar: Course Content */}
         <AnimatePresence initial={false}>
@@ -222,8 +221,7 @@ const CoursePlayer: React.FC = () => {
                 backgroundColor: '#0f172a', 
                 borderRight: '1px solid rgba(255,255,255,0.05)',
                 display: 'flex',
-                flexDirection: 'column',
-                overflow: 'hidden'
+                flexDirection: 'column'
               }}
             >
               <div style={{ padding: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -231,7 +229,7 @@ const CoursePlayer: React.FC = () => {
                 <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700 }}>{modules.reduce((acc, m) => acc + m.lessons.length, 0)} Lessons</span>
               </div>
 
-              <div style={{ flex: 1, overflowY: 'auto', padding: '1rem' }} className="custom-scrollbar">
+              <div style={{ flex: 1, padding: '1rem' }}>
                 {modules.map((module, mIdx) => (
                   <div key={mIdx} style={{ marginBottom: '1.5rem' }}>
                     <div style={{ 
@@ -295,7 +293,7 @@ const CoursePlayer: React.FC = () => {
         </AnimatePresence>
 
         {/* Video Player & Tabs Area */}
-        <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+        <main style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
           
           {/* Toggle Sidebar Button (Overlayed) */}
           <button 
@@ -413,7 +411,7 @@ const CoursePlayer: React.FC = () => {
           </div>
 
           {/* Bottom Tabs & Details Section */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#0f172a', overflow: 'hidden' }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#0f172a' }}>
             <div style={{ 
               display: 'flex', 
               padding: '0 2rem', 
@@ -456,7 +454,7 @@ const CoursePlayer: React.FC = () => {
               ))}
             </div>
 
-            <div style={{ flex: 1, overflowY: 'auto', padding: '2.5rem' }} className="custom-scrollbar">
+            <div style={{ flex: 1, padding: '2.5rem' }}>
                <AnimatePresence mode="wait">
                  {activeTab === 'content' && (
                    <motion.div 

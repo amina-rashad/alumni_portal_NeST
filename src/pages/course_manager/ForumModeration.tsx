@@ -17,11 +17,19 @@ import {
   Trash2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { forumService } from '../../services/forumService';
-import type { Discussion } from '../../types/course-manager';
+import { forumAPI } from '../../services/api';
 
 /* ─────────────────────────── Types ─────────────────────────── */
-// Type moved to global types file
+interface Discussion {
+  id: string;
+  courseName: string;
+  studentName: string;
+  title: string;
+  content: string;
+  status: 'Unresolved' | 'Resolved';
+  createdAt: string;
+  repliesCount: number;
+}
 
 /* ─────────────────────────── Components ─────────────────────────── */
 const ForumModeration: React.FC = () => {
@@ -40,8 +48,8 @@ const ForumModeration: React.FC = () => {
   const loadDiscussions = async () => {
     setIsLoading(true);
     try {
-      const data = await forumService.getDiscussions();
-      setDiscussions(data);
+      const response = await forumAPI.fetchDiscussions();
+      setDiscussions(response.data);
     } catch (err) {
       toast.error('Failed to load discussions');
     } finally {
@@ -51,7 +59,7 @@ const ForumModeration: React.FC = () => {
 
   const handleResolve = async (id: string) => {
     try {
-      await forumService.resolveDiscussion(id);
+      await forumAPI.resolveDiscussion(id);
       setDiscussions(prev => prev.map(d => 
         d.id === id ? { ...d, status: 'Resolved' } : d
       ));
@@ -64,7 +72,7 @@ const ForumModeration: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (!window.confirm('Are you sure you want to delete this discussion?')) return;
     try {
-      await forumService.deleteDiscussion(id);
+      await forumAPI.deleteDiscussion(id);
       setDiscussions(prev => prev.filter(d => d.id !== id));
       toast.success('Discussion deleted');
     } catch (err) {
@@ -78,7 +86,7 @@ const ForumModeration: React.FC = () => {
     
     setIsReplying(true);
     try {
-      await forumService.postReply(selectedDiscussion.id, replyText);
+      await forumAPI.postReply(selectedDiscussion.id, replyText);
       setDiscussions(prev => prev.map(d => 
         d.id === selectedDiscussion.id ? { ...d, repliesCount: d.repliesCount + 1 } : d
       ));
@@ -101,12 +109,12 @@ const ForumModeration: React.FC = () => {
   });
 
   return (
-    <div className="cm-animate-fade-up" style={{ maxWidth: "1350px", margin: "0 auto", padding: "0 32px 48px 32px", display: "flex", flexDirection: "column", gap: "32px", fontFamily: "\"Inter\", sans-serif" }}>
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 font-['Inter',sans-serif]">
       {/* Header */}
-      <div className="cm-page-header">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="cm-title">Forum Moderation</h1>
-          <p className="cm-subtitle">Manage course discussions, resolve student doubts and moderate content.</p>
+          <h1 className="text-4xl font-black text-[#1e293b] tracking-tight">Forum Moderation</h1>
+          <p className="text-slate-500 font-medium mt-1">Manage course discussions, resolve student doubts and moderate content.</p>
         </div>
         <div className="flex items-center gap-3 bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
           {(['Unresolved', 'Resolved'] as const).map(tab => (
@@ -134,34 +142,34 @@ const ForumModeration: React.FC = () => {
             placeholder="Search by topic, content or student..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="cm-input pl-12"
+            className="w-full bg-white border border-slate-100 py-4 pl-12 pr-4 rounded-2xl text-sm focus:outline-none focus:ring-4 focus:ring-red-500/5 focus:border-red-500/30 shadow-sm transition-all font-bold text-[#1e293b] placeholder:text-slate-400"
           />
         </div>
         <button 
           onClick={loadDiscussions}
-          className="cm-btn cm-btn-secondary h-[56px] px-8"
+          className="px-6 py-4 bg-white border border-slate-100 text-slate-600 rounded-2xl font-bold text-sm hover:bg-slate-50 transition-all shadow-sm flex items-center gap-2"
         >
           <Clock size={18} /> Refresh
         </button>
       </div>
 
       {/* Content */}
-      <div className="cm-table-container">
+      <div className="bg-white rounded-[40px] border border-slate-100 shadow-xl shadow-slate-200/40 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="cm-table">
+          <table className="w-full text-left border-collapse min-w-[1000px]">
             <thead>
-              <tr>
-                <th>Discussion Topic</th>
-                <th>Posted By</th>
-                <th>Course</th>
-                <th>Stats</th>
-                <th className="text-right">Actions</th>
+              <tr className="bg-slate-50/50 border-b border-slate-50">
+                <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Discussion Topic</th>
+                <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Posted By</th>
+                <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Course</th>
+                <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Stats</th>
+                <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-slate-50">
               <AnimatePresence mode="popLayout">
                 {isLoading ? (
-                  <tr><td colSpan={5} className="text-center py-20 text-slate-400 font-bold">Loading discussions...</td></tr>
+                  <tr><td colSpan={5} className="px-10 py-20 text-center text-slate-400 font-bold">Loading discussions...</td></tr>
                 ) : filteredDiscussions.length > 0 ? (
                   filteredDiscussions.map((d) => (
                     <motion.tr 
@@ -170,63 +178,60 @@ const ForumModeration: React.FC = () => {
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       key={d.id} 
-                      className="group"
+                      className="hover:bg-slate-50/30 transition-colors group"
                     >
-                      <td>
+                      <td className="px-10 py-8">
                         <div className="max-w-[400px]">
-                          <div className="font-black text-[#1e293b] text-sm mb-1 line-clamp-1">{d.title}</div>
-                          <div className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{d.content}</div>
+                          <div className="font-black text-[#1e293b] text-base mb-1 line-clamp-1">{d.title}</div>
+                          <div className="text-sm text-slate-500 line-clamp-2 leading-relaxed">{d.content}</div>
                         </div>
                       </td>
                       
-                      <td>
+                      <td className="px-10 py-8">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-400">
                             <User size={14} />
                           </div>
-                          <div className="text-xs font-bold text-slate-600">{d.studentName}</div>
+                          <div className="text-sm font-bold text-slate-600">{d.studentName}</div>
                         </div>
                       </td>
 
-                      <td>
-                        <span className="cm-badge cm-badge-info">
+                      <td className="px-10 py-8">
+                        <span className="text-xs font-bold text-slate-500 bg-slate-50 px-3 py-1 rounded-lg border border-slate-100">
                           {d.courseName}
                         </span>
                       </td>
 
-                      <td>
+                      <td className="px-10 py-8">
                         <div className="flex items-center gap-4 text-slate-400">
-                          <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest">
-                            <MessageCircle size={12} /> {d.repliesCount}
+                          <div className="flex items-center gap-1.5 text-xs font-bold">
+                            <MessageCircle size={14} /> {d.repliesCount}
                           </div>
-                          <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest">
-                            <Clock size={12} /> {d.createdAt}
+                          <div className="flex items-center gap-1.5 text-xs font-bold">
+                            <Clock size={14} /> {d.createdAt}
                           </div>
                         </div>
                       </td>
 
-                      <td className="text-right">
+                      <td className="px-10 py-8 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button 
                             onClick={() => setSelectedDiscussion(d)}
-                            className="cm-btn cm-btn-secondary cm-btn-icon h-9 w-9"
-                            title="Reply"
+                            className="p-2.5 bg-slate-50 text-slate-600 rounded-xl hover:bg-[#1a2652] hover:text-white transition-all shadow-sm"
                           >
                             <Reply size={18} />
                           </button>
                           {activeTab === 'Unresolved' && (
                             <button 
                               onClick={() => handleResolve(d.id)}
-                              className="cm-btn cm-btn-secondary cm-btn-icon h-9 w-9 hover:text-emerald-600"
-                              title="Resolve"
+                              className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-500 hover:text-white transition-all shadow-sm"
                             >
                               <CheckCircle2 size={18} />
                             </button>
                           )}
                           <button 
                             onClick={() => handleDelete(d.id)}
-                            className="cm-btn cm-btn-secondary cm-btn-icon h-9 w-9 hover:text-red-600"
-                            title="Delete"
+                            className="p-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all shadow-sm"
                           >
                             <Trash2 size={18} />
                           </button>
@@ -236,12 +241,12 @@ const ForumModeration: React.FC = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} className="text-center py-24">
+                    <td colSpan={5} className="px-10 py-24 text-center">
                       <div className="flex flex-col items-center gap-4">
                         <div className="w-16 h-16 bg-slate-50 rounded-3xl flex items-center justify-center text-slate-200">
                           <MessageSquare size={32} />
                         </div>
-                        <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">No {activeTab.toLowerCase()} discussions found.</p>
+                        <p className="text-slate-400 font-bold">No {activeTab.toLowerCase()} discussions found.</p>
                       </div>
                     </td>
                   </tr>
@@ -260,59 +265,61 @@ const ForumModeration: React.FC = () => {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-white w-full max-w-2xl rounded-[40px] border border-slate-100 shadow-2xl overflow-hidden p-10"
+              className="bg-white w-full max-w-2xl rounded-[40px] border border-slate-100 shadow-2xl overflow-hidden"
             >
-              <div className="flex justify-between items-start mb-8">
-                <div>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-[#c8102e] mb-2 block">Moderator Reply</span>
-                  <h2 className="text-2xl font-black text-[#1e293b]">Post Response</h2>
-                </div>
-                <button onClick={() => setSelectedDiscussion(null)} className="cm-btn cm-btn-secondary cm-btn-icon h-10 w-10">
-                  <XCircle size={20} className="text-slate-300" />
-                </button>
-              </div>
-
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 mb-8">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center text-[8px] font-bold text-slate-400 border border-slate-100">
-                    <User size={10} />
+              <div className="p-10">
+                <div className="flex justify-between items-start mb-8">
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-[#c8102e] mb-2 block">Moderator Reply</span>
+                    <h2 className="text-2xl font-black text-[#1e293b]">Post Response</h2>
                   </div>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-[#1e293b]">{selectedDiscussion.studentName} asks:</span>
+                  <button onClick={() => setSelectedDiscussion(null)} className="p-2 hover:bg-slate-50 rounded-xl transition-colors">
+                    <XCircle size={24} className="text-slate-300" />
+                  </button>
                 </div>
-                <h4 className="font-bold text-slate-700 text-sm mb-2">{selectedDiscussion.title}</h4>
-                <p className="text-xs text-slate-500 leading-relaxed italic">"{selectedDiscussion.content}"</p>
+
+                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 mb-8">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center text-[8px] font-bold text-slate-400 border border-slate-100">
+                      <User size={10} />
+                    </div>
+                    <span className="text-xs font-bold text-[#1e293b]">{selectedDiscussion.studentName} asks:</span>
+                  </div>
+                  <h4 className="font-bold text-slate-700 text-sm mb-2">{selectedDiscussion.title}</h4>
+                  <p className="text-xs text-slate-500 leading-relaxed italic">"{selectedDiscussion.content}"</p>
+                </div>
+
+                <form onSubmit={handleReplySubmit} className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Your Response</label>
+                    <textarea 
+                      required
+                      rows={6}
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                      placeholder="Provide a detailed and helpful response to resolve this query..."
+                      className="w-full bg-slate-50 border border-slate-100 p-5 rounded-2xl text-sm focus:outline-none focus:ring-4 focus:ring-red-500/5 focus:border-red-500/30 transition-all font-medium text-[#1e293b] placeholder:text-slate-400"
+                    />
+                  </div>
+
+                  <div className="flex gap-4">
+                    <button 
+                      type="button" 
+                      onClick={() => setSelectedDiscussion(null)}
+                      className="flex-1 py-4 bg-white border border-slate-200 text-slate-600 rounded-2xl font-black text-sm hover:bg-slate-50 transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      type="submit"
+                      disabled={isReplying}
+                      className="flex-[2] py-4 bg-[#c8102e] text-white rounded-2xl font-black text-sm shadow-lg shadow-red-900/20 hover:bg-[#a00d25] transition-all flex items-center justify-center gap-2 group disabled:opacity-70"
+                    >
+                      {isReplying ? 'Posting...' : <>Post Reply <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" /></>}
+                    </button>
+                  </div>
+                </form>
               </div>
-
-              <form onSubmit={handleReplySubmit} className="space-y-6">
-                <div className="cm-input-group">
-                  <label className="cm-label">Your Response</label>
-                  <textarea 
-                    required
-                    rows={6}
-                    value={replyText}
-                    onChange={(e) => setReplyText(e.target.value)}
-                    placeholder="Provide a detailed and helpful response to resolve this query..."
-                    className="cm-input min-h-[150px] py-4"
-                  />
-                </div>
-
-                <div className="flex gap-4">
-                  <button 
-                    type="button" 
-                    onClick={() => setSelectedDiscussion(null)}
-                    className="cm-btn cm-btn-secondary flex-1 py-4"
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    type="submit"
-                    disabled={isReplying}
-                    className="cm-btn cm-btn-primary flex-[2] py-4"
-                  >
-                    {isReplying ? 'Posting...' : <>Post Reply <ChevronRight size={18} /></>}
-                  </button>
-                </div>
-              </form>
             </motion.div>
           </div>
         )}

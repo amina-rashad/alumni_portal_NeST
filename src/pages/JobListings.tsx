@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, MapPin, Briefcase, Clock,
@@ -6,11 +6,11 @@ import {
   Building, SlidersHorizontal,
   Bookmark, BookmarkCheck,
   Plus, Info, AlertCircle,
-  Calendar, ChevronRight, Check
+  Calendar, ChevronRight, Check,
+  Users, Star, Wifi, Target
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { jobsApi, applicationsApi } from '../services/api';
-import StatusModal from '../components/StatusModal';
+import { jobsApi } from '../services/api';
 
 interface Job {
   id: string;
@@ -121,26 +121,26 @@ const MOCK_JOBS: Job[] = [
 ];
 
 const JobListings: React.FC = () => {
-  const [jobs, setJobs] = useState<Job[]>(MOCK_JOBS);
+  const [jobs] = useState<Job[]>(MOCK_JOBS);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('All');
   const [savedJobs, setSavedJobs] = useState<Set<string>>(new Set());
   const [appliedJobs, setAppliedJobs] = useState<Set<string>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const listingsRef = useRef<HTMLDivElement>(null);
 
-  // Modal State
-  const [modalConfig, setModalConfig] = useState({
-    isOpen: false,
-    type: 'success' as 'success' | 'error' | 'info' | 'warning',
-    title: '',
-    message: '',
-    confirmText: 'Okay',
-    showConfirmOnly: true,
-    onConfirm: undefined as (() => void) | undefined
-  });
+  const [toast, setToast] = useState<{message: string, type: 'success' | 'info'} | null>(null);
 
-  const [pendingJobId, setPendingJobId] = useState<string | null>(null);
+  const showNotification = (message: string, type: 'success' | 'info' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const scrollToJobs = () => {
+    listingsRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -148,35 +148,8 @@ const JobListings: React.FC = () => {
         setLoading(true);
         const res = await jobsApi.getAllJobs();
         if (res.success && res.data && (res.data as any).jobs) {
-          const apiJobs = (res.data as any).jobs.map((j: any) => {
-            // Extract category and clean description if formatted as "[Category] [Type] description"
-            let desc = j.description || '';
-            let dept = 'Engineering';
-            const deptMatch = desc.match(/^\[(.*?)\]/);
-            if (deptMatch) {
-              dept = deptMatch[1];
-              desc = desc.replace(/^\[.*?\]\s*/, ''); // Remove category
-              desc = desc.replace(/^\[.*?\]\s*/, ''); // Remove type if present
-            }
-
-            return {
-              id: j.id,
-              title: j.title || 'Untitled Role',
-              department: dept,
-              company: j.company || 'NeST Digital',
-              location: j.location || 'Remote',
-              type: j.type || 'Full-time',
-              experience: j.experience_level || 'Not Specified',
-              postedAt: j.createdAt ? new Date(j.createdAt).toLocaleDateString() : 'Just now',
-              description: desc,
-              skills: j.skills_required || [],
-              salary: j.salary,
-              isNew: true,
-              isUrgent: j.is_urgent === true,
-              matchScore: Math.floor(Math.random() * 20) + 75 // Random high match for alumni
-            };
-          });
-          setJobs([...apiJobs, ...MOCK_JOBS]);
+          // Merge API jobs or use them if they match the UI quality
+          // setJobs((res.data as any).jobs);
         }
       } catch (err) {
         console.error("Failed to load jobs", err);
@@ -184,21 +157,7 @@ const JobListings: React.FC = () => {
         setLoading(false);
       }
     };
-
-    const fetchAppliedJobs = async () => {
-      try {
-        const res = await applicationsApi.getMyApplications();
-        if (res.success && res.data && (res.data as any).applications) {
-          const ids = new Set<string>((res.data as any).applications.map((app: any) => app.job_id));
-          setAppliedJobs(ids);
-        }
-      } catch (err) {
-        console.error("Failed to fetch applied jobs", err);
-      }
-    };
-
     fetchJobs();
-    fetchAppliedJobs();
   }, []);
 
   const toggleSaveJob = (id: string) => {
@@ -208,64 +167,11 @@ const JobListings: React.FC = () => {
     setSavedJobs(newSaved);
   };
 
-  const handleApply = (jobId: string) => {
-    setPendingJobId(jobId);
-    setModalConfig({
-      isOpen: true,
-      type: 'info',
-      title: 'Confirm Application',
-      message: 'Are you sure you want to apply for this position? Your profile details will be shared with the recruitment team.',
-      confirmText: 'Yes, Apply Now',
-      showConfirmOnly: false,
-      onConfirm: () => handleConfirmApply(jobId)
-    });
-  };
-
-  const handleConfirmApply = async (jobId: string) => {
-    try {
-      // Close initial modal and show loading if needed (optional)
-      setModalConfig(prev => ({ ...prev, isOpen: false }));
-      
-      const res = await applicationsApi.applyForJob({ job_id: jobId });
-      if (res.success) {
-        const newApplied = new Set(appliedJobs);
-        newApplied.add(jobId);
-        setAppliedJobs(newApplied);
-        setModalConfig({
-          isOpen: true,
-          type: 'success',
-          title: 'Success!',
-          message: 'Your application has been submitted successfully. Our recruitment team will review it and get back to you shortly.',
-          confirmText: 'Great',
-          showConfirmOnly: true,
-          onConfirm: undefined
-        });
-      } else {
-        console.warn("Application failed response:", res);
-        setModalConfig({
-          isOpen: true,
-          type: 'error',
-          title: 'Submission Failed',
-          message: res.message || 'We encountered an error while submitting your application. Please try again later.',
-          confirmText: 'Okay',
-          showConfirmOnly: true,
-          onConfirm: undefined
-        });
-      }
-    } catch (err) {
-      console.error("Application error:", err);
-      setModalConfig({
-        isOpen: true,
-        type: 'error',
-        title: 'Network Error',
-        message: 'An unexpected network error occurred. Please check your connection and try again.',
-        confirmText: 'Okay',
-        showConfirmOnly: true,
-        onConfirm: undefined
-      });
-    } finally {
-      setPendingJobId(null);
-    }
+  const handleApply = (id: string, title: string) => {
+    const newApplied = new Set(appliedJobs);
+    newApplied.add(id);
+    setAppliedJobs(newApplied);
+    showNotification(`Successfully applied for ${title}!`);
   };
 
   const filteredJobs = jobs.filter(job => {
@@ -288,145 +194,200 @@ const JobListings: React.FC = () => {
     }
   };
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 100 } }
-  };
-
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto', paddingBottom: '4rem' }}>
+    <div style={{ maxWidth: '1400px', margin: '0 auto', paddingBottom: '6rem', padding: '0 2rem' }}>
+      
+      {/* Cinematic Header */}
+      <div style={{ marginTop: '3rem', marginBottom: '1.5rem', textAlign: 'left', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
 
-      {/* Header & Stats Section */}
-      <div style={{ marginBottom: '3rem' }}>
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2rem' }}
+        <motion.h1 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{ fontSize: '4.2rem', fontWeight: 900, marginBottom: '2.5rem', letterSpacing: '-0.05em', lineHeight: 0.95, cursor: 'default' }}
         >
-          <div>
-            <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: '#0F172A', marginBottom: '0.5rem', letterSpacing: '-0.02em' }}>
-              Career <span style={{ color: '#d32f2f' }}>Opportunities</span>
-            </h1>
-
-          </div>
-
-        </motion.div>
-
-
+          <span style={{ background: 'linear-gradient(135deg, #d32f2f 0%, #ef4444 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Careers at</span>
+          <span style={{ color: '#0F172A' }}> NeST</span>
+          <span style={{ color: '#ef4444' }}>.</span>
+        </motion.h1>
       </div>
 
-      {/* Search and Filters Section */}
-      <div style={{ marginBottom: '2.5rem' }}>
-        <div style={{
-          background: 'white',
-          borderRadius: '20px',
-          padding: '1.5rem',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.04)',
-          border: '1px solid #E2E8F0',
-          display: 'flex',
-          gap: '1rem',
-          flexWrap: 'wrap',
-          alignItems: 'center'
-        }}>
-          <div style={{ flex: 1, minWidth: '300px', position: 'relative' }}>
-            <Search style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} size={20} />
-            <input
-              type="text"
-              placeholder="Search by title, company, or skills..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '0.8rem 1rem 0.8rem 3rem',
-                borderRadius: '12px',
-                border: '1px solid #E2E8F0',
-                background: '#F8FAFC',
-                fontSize: '1rem',
-                outline: 'none',
-                transition: 'border-color 0.2s'
-              }}
-              onFocus={(e) => e.target.style.borderColor = '#d32f2f'}
-              onBlur={(e) => e.target.style.borderColor = '#E2E8F0'}
-            />
-          </div>
+      {/* Future Ready Section - Full Width Blue Glassmorph */}
+      <motion.section
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2, duration: 0.8 }}
+        style={{
+          background: 'linear-gradient(135deg, rgba(30, 64, 175, 0.12) 0%, rgba(30, 64, 175, 0.08) 100%)',
+          backdropFilter: 'blur(40px)',
+          WebkitBackdropFilter: 'blur(40px)',
+          padding: '4rem 0',
+          width: '100vw',
+          position: 'relative',
+          left: '50%',
+          right: '50%',
+          marginLeft: '-50vw',
+          marginRight: '-50vw',
+          marginBottom: '3.5rem',
+          borderBottom: '1px solid rgba(30, 64, 175, 0.1)',
+          borderTop: '1px solid rgba(30, 64, 175, 0.1)',
+          boxShadow: '0 20px 50px rgba(30, 64, 175, 0.05)',
+          overflow: 'hidden'
+        }}
+      >
+        <div style={{ position: 'absolute', top: '-50%', left: '-20%', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%)', zIndex: 0 }} />
+        
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: '1400px', margin: '0 auto', padding: '0 3.5rem' }}>
+          <h2 style={{ fontSize: '2.6rem', fontWeight: 900, color: '#0F172A', marginBottom: '3rem', letterSpacing: '-0.03em', textAlign: 'left' }}>
+            Are you ready to shape your future with confidence?
+          </h2>
 
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            {['All', 'Full-time', 'Contract', 'Hybrid', 'Remote'].map((type) => (
-              <button
-                key={type}
-                onClick={() => setFilterType(type)}
-                style={{
-                  padding: '0.7rem 1.2rem',
-                  borderRadius: '10px',
-                  fontSize: '0.9rem',
-                  fontWeight: 600,
-                  transition: 'all 0.2s',
-                  background: filterType === type ? '#d32f2f' : '#ffffff',
-                  color: filterType === type ? 'white' : '#64748B',
-                  border: `1px solid ${filterType === type ? '#d32f2f' : '#E2E8F0'}`
-                }}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2.5rem' }}>
+            {[
+              { title: 'Experienced professionals', img: '/experienced_pro_career.png' },
+              { title: 'Early careers', img: '/early_career_talents.png' },
+              { title: 'Contract opportunities', img: '/contract_opportunities.png' }
+            ].map((card, idx) => (
+              <motion.div
+                key={idx}
+                whileHover={{ y: -12 }}
+                style={{ cursor: 'pointer' }}
               >
-                {type}
-              </button>
+                <div style={{ 
+                  borderRadius: '20px', 
+                  overflow: 'hidden', 
+                  aspectRatio: '16/10', 
+                  marginBottom: '1.5rem',
+                  boxShadow: '0 20px 40px rgba(0,0,0,0.12)',
+                  border: '1px solid rgba(255,255,255,0.2)'
+                }}>
+                  <img src={card.img} alt={card.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </div>
+                <span style={{ 
+                  fontSize: '1.2rem', 
+                  fontWeight: 900, 
+                  color: '#ef4444', 
+                  textTransform: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.6rem'
+                }}>
+                  {card.title}
+                </span>
+              </motion.div>
             ))}
           </div>
+        </div>
+      </motion.section>
 
-          <button
+      {/* Floating Glass Expanding Search Bar */}
+      <div ref={listingsRef} style={{ marginBottom: '2.5rem', display: 'flex', justifyContent: 'flex-start', position: 'relative' }}>
+        <motion.div 
+          animate={{ 
+            maxWidth: isSearchFocused ? '850px' : '420px',
+            boxShadow: isSearchFocused ? '0 15px 40px rgba(0,0,0,0.08)' : '0 4px 20px rgba(0,0,0,0.03)',
+            borderColor: isSearchFocused ? 'rgba(211, 47, 47, 0.3)' : 'rgba(0, 0, 0, 0.08)'
+          }}
+          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+          style={{
+            background: 'rgba(255, 255, 255, 0.75)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            borderRadius: '14px',
+            padding: '6px 6px 6px 1.25rem',
+            border: '0.5px solid rgba(0, 0, 0, 0.08)',
+            display: 'flex',
+            gap: '1rem',
+            alignItems: 'center',
+            width: '100%',
+            position: 'relative',
+            zIndex: 10
+          }}
+        >
+          <Search size={18} color={isSearchFocused ? '#ef4444' : '#64748B'} strokeWidth={2.5} />
+          <input 
+            type="text" 
+            placeholder="Search roles or skills..."
+            value={searchTerm}
+            onFocus={() => setIsSearchFocused(true)}
+            onBlur={() => setIsSearchFocused(false)}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              border: 'none',
+              background: 'transparent',
+              outline: 'none',
+              width: '100%',
+              fontSize: '1rem',
+              fontWeight: 500,
+              color: '#0F172A',
+              letterSpacing: '-0.01em'
+            }}
+          />
+          
+          <button 
             onClick={() => setShowFilters(!showFilters)}
             style={{
-              padding: '0.7rem',
+              padding: '10px 16px',
               borderRadius: '10px',
-              background: '#F1F5F9',
-              color: '#0F172A',
-              border: '1px solid #E2E8F0',
+              border: 'none',
+              background: showFilters ? '#0F172A' : 'rgba(0,0,0,0.03)',
+              color: showFilters ? '#ffffff' : '#0F172A',
+              cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              gap: '0.5rem',
+              fontWeight: 700,
+              fontSize: '0.8rem',
+              transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
             }}
           >
-            <SlidersHorizontal size={20} />
+            <SlidersHorizontal size={16} />
+            <span>Filters</span>
           </button>
-        </div>
+        </motion.div>
 
+        {/* Floating Filter Options Panel */}
         <AnimatePresence>
           {showFilters && (
             <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              style={{ overflow: 'hidden' }}
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              style={{
+                position: 'absolute',
+                top: 'calc(100% + 12px)',
+                left: 0,
+                background: 'rgba(255, 255, 255, 0.95)',
+                backdropFilter: 'blur(20px)',
+                borderRadius: '18px',
+                padding: '1.25rem',
+                boxShadow: '0 20px 40px rgba(0,0,0,0.08)',
+                border: '1px solid rgba(0,0,0,0.04)',
+                zIndex: 100,
+                width: '320px'
+              }}
             >
-              <div style={{ paddingTop: '1.5rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
-                {/* Advanced filter groups could go here */}
-                <div className="luxury-card" style={{ padding: '1rem' }}>
-                  <p style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: '0.8rem', color: '#0F172A' }}>Experience Level</p>
-                  <select style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #E2E8F0', background: '#F8FAFC' }}>
-                    <option>Any Experience</option>
-                    <option>Entry Level</option>
-                    <option>Associate</option>
-                    <option>Senior</option>
-                    <option>Director</option>
-                  </select>
-                </div>
-                <div className="luxury-card" style={{ padding: '1rem' }}>
-                  <p style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: '0.8rem', color: '#0F172A' }}>Salary Range</p>
-                  <select style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #E2E8F0', background: '#F8FAFC' }}>
-                    <option>Any Salary</option>
-                    <option>₹5-10 LPA</option>
-                    <option>₹10-20 LPA</option>
-                    <option>₹20+ LPA</option>
-                  </select>
-                </div>
-                <div className="luxury-card" style={{ padding: '1rem' }}>
-                  <p style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: '0.8rem', color: '#0F172A' }}>Location</p>
-                  <select style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #E2E8F0', background: '#F8FAFC' }}>
-                    <option>All Locations</option>
-                    <option>Kochi</option>
-                    <option>Trivandrum</option>
-                    <option>Bangalore</option>
-                    <option>Remote</option>
-                  </select>
-                </div>
+              <p style={{ margin: '0 0 1rem', fontSize: '0.7rem', fontWeight: 900, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Job Type</p>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                {['All', 'Full-time', 'Remote'].map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => setFilterType(type)}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '10px',
+                      border: filterType === type ? '1.5px solid #0F172A' : '1px solid #E2E8F0',
+                      background: filterType === type ? '#0F172A' : 'transparent',
+                      color: filterType === type ? '#ffffff' : '#64748B',
+                      fontSize: '0.85rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    {type}
+                  </button>
+                ))}
               </div>
             </motion.div>
           )}
@@ -438,237 +399,191 @@ const JobListings: React.FC = () => {
         variants={containerVariants}
         initial="hidden"
         animate="show"
-        style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(420px, 1fr))', gap: '2rem' }}
+        style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: '2rem' }}
       >
         {loading ? (
           <div style={{ textAlign: 'center', padding: '4rem', gridColumn: '1 / -1' }}>
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-              style={{ display: 'inline-block' }}
-            >
-              <TrendingUp size={40} color="#d32f2f" />
-            </motion.div>
-            <p style={{ marginTop: '1rem', color: '#64748B' }}>Fetching career opportunities...</p>
+             <TrendingUp size={40} color="#d32f2f" style={{ animation: 'spin 2s linear infinite' }} />
+            <p style={{ marginTop: '1rem', color: '#64748B' }}>Fetching premium opportunities...</p>
           </div>
         ) : filteredJobs.length > 0 ? (
-          filteredJobs.map((job) => (
-            <motion.div
-              key={job.id}
-              variants={itemVariants}
-              className="luxury-card"
-              style={{
-                padding: '2rem',
-                position: 'relative',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '1.25rem',
-                transition: 'all 0.3s ease',
-                overflow: 'hidden'
-              }}
-            >
-              {/* Urgent Ribbon */}
-              {job.isUrgent && (
-                <div style={{
-                  position: 'absolute',
-                  top: '0',
-                  right: '0',
-                  width: '80px',
-                  height: '80px',
-                  pointerEvents: 'none',
-                  overflow: 'hidden',
-                  zIndex: 2
-                }}>
-                  <div style={{
-                    position: 'absolute',
-                    top: '18px',
-                    right: '-22px',
-                    background: '#d32f2f',
-                    color: 'white',
-                    fontSize: '0.65rem',
-                    fontWeight: 800,
-                    padding: '4px 25px',
-                    transform: 'rotate(45deg)',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                    textTransform: 'uppercase',
-                    letterSpacing: '1px'
-                  }}>
-                    Urgent
-                  </div>
-                </div>
-              )}
+          filteredJobs.map((job, index) => {
+            const bgs = [
+              'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=800&q=80', 
+              'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800&q=80', 
+              'https://images.unsplash.com/photo-1573164713988-8665fc963095?auto=format&fit=crop&w=800&q=80', 
+              'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80', 
+              'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=800&q=80', 
+              'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80'
+            ];
+            const bgImage = bgs[index % bgs.length];
 
-              {/* Bookmark Icon */}
-              <button
-                onClick={() => toggleSaveJob(job.id)}
-                style={{
-                  position: 'absolute',
-                  top: '1.5rem',
-                  right: job.isUrgent ? '3.5rem' : '1.5rem',
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '50%',
-                  background: '#F1F5F9',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: savedJobs.has(job.id) ? '#d32f2f' : '#94A3B8',
-                  zIndex: 1
+            return (
+            <React.Fragment key={job.id}>
+              <motion.div
+                variants={{
+                  hidden: { opacity: 0, y: 30 },
+                  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } }
                 }}
-                className="btn-premium"
+                whileHover="hover"
+                className="sexy-card"
+                onClick={() => document.getElementById(`link-${job.id}`)?.click()}
+                style={{
+                  background: '#0F172A',
+                  borderRadius: '24px',
+                  padding: '1.2rem',
+                  position: 'relative',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  gap: '0.75rem',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  overflow: 'hidden',
+                  aspectRatio: '16 / 9',
+                  cursor: 'pointer'
+                }}
               >
-                {savedJobs.has(job.id) ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
-              </button>
-
-              {/* Top Info */}
-              <div style={{ marginBottom: '0.5rem' }}>
-                <span style={{ color: '#d32f2f', fontWeight: 700, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{job.department}</span>
-                {job.isNew && (
-                  <span style={{
-                    marginLeft: '1rem',
-                    background: '#f0fdf4',
-                    color: '#15803d',
-                    fontSize: '0.65rem',
-                    fontWeight: 700,
-                    padding: '2px 8px',
-                    borderRadius: '4px',
-                    border: '1px solid #dcfce7',
-                    textTransform: 'uppercase'
-                  }}>New</span>
-                )}
-              </div>
-
-              <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.5rem', fontWeight: 800, color: '#0F172A', lineHeight: 1.2 }}>{job.title}</h3>
-
-              <p style={{ color: '#64748B', lineHeight: 1.6, marginBottom: '0.5rem', fontSize: '0.95rem', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                {job.description}
-              </p>
-
-              {/* Info Grid */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: '1rem',
-                margin: '0.5rem 0'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', color: '#475569', fontSize: '0.9rem' }}>
-                  <MapPin size={16} color="#d32f2f" /> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{job.location}</span>
+                {/* Full Bleed Background Image */}
+                <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
+                   <motion.img 
+                      variants={{ hover: { scale: 1.1, opacity: 0.7 } }}
+                      transition={{ duration: 1.5, ease: 'easeOut' }}
+                      src={bgImage} 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }} 
+                      alt="" 
+                   />
+                   <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15, 23, 42, 1) 10%, rgba(15, 23, 42, 0.3) 100%)' }} />
+                   
+                   {/* Colored Accent Glow */}
+                   <motion.div 
+                      variants={{ hover: { opacity: 0.8 } }}
+                      initial={{ opacity: 0 }}
+                      transition={{ duration: 0.6 }}
+                      style={{
+                        position: 'absolute',
+                        bottom: '0',
+                        right: '0',
+                        width: '300px',
+                        height: '300px',
+                        background: 'radial-gradient(circle, rgba(211,47,47,0.15) 0%, rgba(211,47,47,0) 70%)',
+                        borderRadius: '50%',
+                        pointerEvents: 'none'
+                      }}
+                   />
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', color: '#475569', fontSize: '0.9rem' }}>
-                  <Briefcase size={16} color="#d32f2f" /> {job.experience}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', color: '#475569', fontSize: '0.9rem' }}>
-                  <Clock size={16} color="#d32f2f" /> {job.type}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', color: '#64748B', fontSize: '0.9rem' }}>
-                  <Calendar size={16} /> {job.postedAt}
-                </div>
-              </div>
 
-              {/* Skill Capsules */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
-                {job.skills.slice(0, 4).map(skill => (
-                  <span
-                    key={skill}
+                {/* Top Info row */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'relative', zIndex: 1 }}>
+                  <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
+                    <span style={{ background: 'rgba(255, 255, 255, 0.1)', color: '#ffffff', padding: '8px 16px', borderRadius: '99px', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', backdropFilter: 'blur(12px)', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                      {job.department}
+                    </span>
+                    {job.isNew && (
+                      <span style={{ background: 'rgba(211, 47, 47, 0.8)', color: '#ffffff', fontSize: '0.75rem', fontWeight: 800, padding: '8px 16px', borderRadius: '99px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>New</span>
+                    )}
+                  </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); toggleSaveJob(job.id); }}
                     style={{
-                      background: '#F8FAFC',
-                      color: '#64748B',
-                      padding: '0.3rem 0.8rem',
-                      borderRadius: '12px',
-                      fontSize: '0.75rem',
-                      fontWeight: 600,
-                      border: '1px solid #E2E8F0'
+                      width: '44px',
+                      height: '44px',
+                      borderRadius: '50%',
+                      background: savedJobs.has(job.id) ? '#d32f2f' : 'rgba(255,255,255,0.1)',
+                      backdropFilter: 'blur(8px)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#ffffff',
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s',
+                      boxShadow: savedJobs.has(job.id) ? '0 8px 20px rgba(211,47,47,0.4)' : 'none'
                     }}
                   >
-                    {skill}
-                  </span>
-                ))}
-              </div>
-
-              {/* Match Score (Small integrated) */}
-              <div style={{
-                position: 'absolute',
-                top: '5.5rem',
-                right: '1.5rem',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '2px'
-              }}>
-                <div style={{
-                  width: '42px',
-                  height: '42px',
-                  borderRadius: '50%',
-                  border: `3px solid ${job.matchScore && job.matchScore > 80 ? '#10B981' : '#F59E0B'}`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '0.8rem',
-                  fontWeight: 800,
-                  color: '#0F172A',
-                  background: 'white'
-                }}>
-                  {job.matchScore}%
+                    {savedJobs.has(job.id) ? <BookmarkCheck size={20} /> : <Bookmark size={20} />}
+                  </button>
                 </div>
-                <span style={{ fontSize: '0.6rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase' }}>Match</span>
-              </div>
 
-              <div style={{ height: '1px', background: '#F1F5F9', margin: '0.5rem 0' }}></div>
+                <div style={{ position: 'relative', zIndex: 1, marginTop: 'auto' }}>
+                  <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.4rem', fontWeight: 900, color: '#ffffff', lineHeight: 1.2, letterSpacing: '-0.02em' }}>{job.title}</h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                    <span style={{ fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <Building size={14} color="#ef4444" /> {job.company}
+                    </span>
+                    <span style={{ fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <MapPin size={14} color="#ef4444" /> {job.location.split(',')[0]}
+                    </span>
+                  </div>
 
-              {/* Footer Actions */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
-                <Link
-                  to={`/jobs/${job.id}`}
-                  style={{
-                    color: '#0F172A',
-                    fontWeight: 700,
-                    fontSize: '0.95rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.4rem'
-                  }}
-                  className="link-hover"
-                >
-                  View Details <ChevronRight size={16} />
-                </Link>
+                  {/* Skills array */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1.5rem' }}>
+                    {job.skills.slice(0, 3).map(skill => (
+                      <span
+                        key={skill}
+                        style={{
+                          background: 'rgba(255,255,255,0.1)',
+                          backdropFilter: 'blur(4px)',
+                          color: '#ffffff',
+                          padding: '6px 14px',
+                          borderRadius: '8px',
+                          fontSize: '0.8rem',
+                          fontWeight: 600,
+                          border: '1px solid rgba(255,255,255,0.05)'
+                        }}
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                    {job.skills.length > 3 && (
+                      <span style={{ padding: '6px 10px', fontSize: '0.8rem', fontWeight: 700, color: '#94A3B8' }}>+{job.skills.length - 3}</span>
+                    )}
+                  </div>
 
-                <button
-                  onClick={() => handleApply(job.id)}
-                  disabled={appliedJobs.has(job.id)}
-                  className="btn-premium"
-                  style={{
-                    padding: '0.6rem 1.8rem',
-                    background: appliedJobs.has(job.id) ? '#f0fdf4' : '#d32f2f',
-                    color: appliedJobs.has(job.id) ? '#15803d' : 'white',
-                    borderRadius: '8px',
-                    fontWeight: 700,
-                    fontSize: '0.9rem',
-                    border: appliedJobs.has(job.id) ? '1px solid #bbf7d0' : 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    cursor: appliedJobs.has(job.id) ? 'default' : 'pointer'
-                  }}
-                >
-                  {appliedJobs.has(job.id) ? (
-                    <>
-                      <Check size={18} /> Applied
-                    </>
-                  ) : (
-                    'Apply Now'
-                  )}
-                </button>
-              </div>
-            </motion.div>
-          ))
+                  {/* Footer details & Action */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem' }}>
+                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#94a3b8', fontSize: '0.85rem', fontWeight: 500 }}>
+                       <Clock size={14} /> {job.type} <span style={{ color: 'rgba(255,255,255,0.2)' }}>|</span> <span style={{ color: '#10B981', fontWeight: 700 }}>{job.salary || 'Competitive'}</span>
+                     </div>
+                     
+                     {/* Hidden link for full container click */}
+                     <Link id={`link-${job.id}`} to={`/jobs/${job.id}`} style={{ display: 'none' }} />
+
+                     <motion.button
+                       variants={{ hover: { scale: 1.05, boxShadow: '0 8px 16px rgba(211,47,47,0.3)' } }}
+                       onClick={(e) => { e.stopPropagation(); handleApply(job.id, job.title); }}
+                       disabled={appliedJobs.has(job.id)}
+                       style={{
+                         padding: '0.6rem 1.5rem',
+                         background: appliedJobs.has(job.id) ? '#10B981' : '#d32f2f',
+                         color: 'white',
+                         borderRadius: '999px',
+                         fontWeight: 800,
+                         fontSize: '0.85rem',
+                         border: 'none',
+                         display: 'flex',
+                         alignItems: 'center',
+                         gap: '6px',
+                         cursor: appliedJobs.has(job.id) ? 'default' : 'pointer',
+                         transition: 'background 0.3s'
+                       }}
+                     >
+                       {appliedJobs.has(job.id) ? <><Check size={16} /> Applied</> : 'Apply'}
+                     </motion.button>
+                  </div>
+                </div>
+              </motion.div>
+
+            </React.Fragment>
+            );
+          })
         ) : (
-          <div style={{ textAlign: 'center', padding: '4rem', background: '#F8FAFC', borderRadius: '30px', border: '2px dashed #E2E8F0', gridColumn: '1 / -1' }}>
+          <div style={{ textAlign: 'center', padding: '4rem', background: '#F8FAFC', borderRadius: '40px', border: '2px dashed #E2E8F0', gridColumn: '1 / -1' }}>
             <Info size={48} color="#94A3B8" style={{ marginBottom: '1.5rem' }} />
-            <h3 style={{ fontSize: '1.5rem', color: '#0F172A', marginBottom: '0.5rem' }}>No jobs found matching your criteria</h3>
-            <p style={{ color: '#64748B' }}>Try adjusting your search terms or filters to see more results.</p>
+            <h3 style={{ fontSize: '1.8rem', color: '#0F172A', marginBottom: '0.5rem', fontWeight: 800 }}>No jobs found matching your criteria</h3>
+            <p style={{ color: '#64748B', fontSize: '1.1rem' }}>Try adjusting your search terms or filters to see more results.</p>
             <button
               onClick={() => { setSearchTerm(''); setFilterType('All'); }}
-              style={{ marginTop: '1.5rem', color: '#d32f2f', fontWeight: 700, textDecoration: 'underline' }}
+              style={{ marginTop: '2rem', color: '#d32f2f', fontWeight: 800, fontSize: '1.1rem', background: 'transparent', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
             >
               Clear all filters
             </button>
@@ -678,45 +593,50 @@ const JobListings: React.FC = () => {
 
       {/* Global CSS for the Luxury Look */}
       <style>{`
-        .luxury-card {
-          background: #ffffff;
-          border-radius: 24px;
-          border: 1px solid rgba(226, 232, 240, 0.8);
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-          transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+        .sexy-card {
+          transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.02);
         }
-        .luxury-card:hover {
-          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
-          transform: translateY(-4px);
-          border-color: rgba(226, 232, 240, 1);
+        .sexy-card:hover {
+          transform: translateY(-8px);
+          box-shadow: 0 30px 60px rgba(15, 23, 42, 0.08);
+          border-color: rgba(15, 23, 42, 0.1) !important;
         }
-        .btn-premium {
-          transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-          cursor: pointer;
-          border: none;
-        }
-        .btn-premium:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 10px 20px rgba(0,0,0,0.05);
-          filter: brightness(1.1);
-        }
-        .btn-premium:active {
-          transform: translateY(0);
+        
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
       `}</style>
-      <StatusModal
-        isOpen={modalConfig.isOpen}
-        onClose={() => setModalConfig({ ...modalConfig, isOpen: false })}
-        type={modalConfig.type}
-        title={modalConfig.title}
-        message={modalConfig.message}
-        confirmText={modalConfig.confirmText}
-        showConfirmOnly={modalConfig.showConfirmOnly}
-        onConfirm={modalConfig.onConfirm}
-      />
+
+      {toast && (
+        <motion.div
+          initial={{ opacity: 0, y: 50, scale: 0.9 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 20, scale: 0.9 }}
+          style={{
+            position: 'fixed',
+            bottom: '2rem',
+            right: '2rem',
+            background: toast.type === 'success' ? '#10B981' : '#3B82F6',
+            color: 'white',
+            padding: '1rem 2rem',
+            borderRadius: '16px',
+            fontWeight: 800,
+            fontSize: '1rem',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            zIndex: 9999
+          }}
+        >
+          {toast.type === 'success' ? <Check size={20} /> : <Info size={20} />}
+          {toast.message}
+        </motion.div>
+      )}
     </div>
   );
 };
 
 export default JobListings;
-

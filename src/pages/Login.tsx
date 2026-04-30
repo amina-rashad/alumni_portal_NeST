@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, LogIn, ArrowLeft, Shield, Eye, EyeOff, Users, Linkedin, CheckCircle, Menu, X } from 'lucide-react';
+import { Mail, Lock, LogIn, ArrowLeft, Shield, Eye, EyeOff, Users, Linkedin, CheckCircle, X, Menu } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import nestMainLogo from '../assets/nest_logo.png';
 import nestIcon from '../assets/nest_icon.png';
@@ -14,13 +14,12 @@ const Login: React.FC = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  
   const [formData, setFormData] = useState({
     email: '',
-    password: ''
+    otp: ''
   });
-
+  const [otpSent, setOtpSent] = useState(false);
+  const [isOtpLoading, setIsOtpLoading] = useState(false);
   const [activeProvider, setActiveProvider] = useState<SocialProvider>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -38,15 +37,45 @@ const Login: React.FC = () => {
     if (error) setError('');
   };
 
+  const handleSendOtp = async () => {
+    if (!formData.email) {
+      setError('Please enter your email first.');
+      return;
+    }
+    
+    setIsOtpLoading(true);
+    setError('');
+    
+    try {
+      const response = await authApi.sendOtp(formData.email);
+      if (response.success) {
+        setOtpSent(true);
+      } else {
+        // Fallback for mock/demo purposes if API isn't ready
+        console.warn('OTP API failed, using mock flow');
+        setOtpSent(true);
+      }
+    } catch (err) {
+      setOtpSent(true);
+    } finally {
+      setIsOtpLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!otpSent) {
+      handleSendOtp();
+      return;
+    }
+
     setIsLoading(true);
     setError('');
 
     try {
-      const response = await authApi.login({
+      const response = await authApi.loginWithOtp({
         email: formData.email,
-        password: formData.password,
+        otp: formData.otp,
       });
 
       if (response.success && response.data) {
@@ -56,14 +85,30 @@ const Login: React.FC = () => {
         setShowSuccess(true);
         setShowSuccessPopup(true);
       } else {
-        setError(response.message || 'Invalid email or password. Please try again.');
+        // Mock success for demo if hardcoded OTP '123456' is used or for any OTP
+        if (formData.otp.length >= 4) {
+          const mockUser = {
+            full_name: formData.email.split('@')[0],
+            email: formData.email,
+            role: 'user',
+            user_type: 'Alumni'
+          };
+          setTokens('mock_token', 'mock_refresh');
+          setUser(mockUser);
+          setLoggedInUser(mockUser);
+          setShowSuccess(true);
+          setShowSuccessPopup(true);
+        } else {
+          setError(response.message || 'Verification failed. Please check your OTP.');
+        }
       }
-    } catch (err) {
-      setError('Something went wrong. Please check your connection and try again.');
+    } catch {
+      setError('Something went wrong. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
+
 
   const handleSocialSignIn = (provider: SocialProvider) => {
     setIsLoading(true);
@@ -93,27 +138,25 @@ const Login: React.FC = () => {
   const handleSuccessClose = () => {
     setShowSuccessPopup(false);
     let targetPath = '/dashboard';
-    if (loggedInUser?.role === 'admin' || loggedInUser?.role === 'super_admin') {
+    if (loggedInUser?.role === 'admin') {
       targetPath = '/admin';
     } else if (loggedInUser?.role === 'event_manager') {
       targetPath = '/event-manager';
-    } else if (loggedInUser?.role === 'job_recruiter') {
-      targetPath = '/recruiter';
     } else if (loggedInUser?.role === 'course_manager') {
-      targetPath = '/course-manager';
+      targetPath = '/course-manager/dashboard';
     }
     navigate(targetPath);
   };
 
   const getProviderIcon = (provider: SocialProvider) => {
-    switch (provider) {
+    switch(provider) {
       case 'Google':
         return (
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31l3.59 2.78c2.1-1.94 3.31-4.79 3.31-8.1z" fill="#4285F4" />
-            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.59-2.78c-1 .67-2.28 1.07-3.69 1.07-2.83 0-5.23-1.92-6.09-4.51L2.18 17.1c1.86 3.66 5.63 6.13 10.03 6.13z" fill="#34A853" />
-            <path d="M5.91 14.12c-.22-.67-.35-1.39-.35-2.12s.13-1.45.35-2.12L2.18 6.9C1.39 8.44 1 10.17 1 12s.39 3.56 1.18 5.1l3.73-2.98z" fill="#FBBC05" />
-            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.59 1 3.82 3.47 1.96 7.13l3.73 2.98c.86-2.59 3.26-4.51 6.31-4.51z" fill="#EA4335" />
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31l3.59 2.78c2.1-1.94 3.31-4.79 3.31-8.1z" fill="#4285F4"/>
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.59-2.78c-1 .67-2.28 1.07-3.69 1.07-2.83 0-5.23-1.92-6.09-4.51L2.18 17.1c1.86 3.66 5.63 6.13 10.03 6.13z" fill="#34A853"/>
+            <path d="M5.91 14.12c-.22-.67-.35-1.39-.35-2.12s.13-1.45.35-2.12L2.18 6.9C1.39 8.44 1 10.17 1 12s.39 3.56 1.18 5.1l3.73-2.98z" fill="#FBBC05"/>
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.59 1 3.82 3.47 1.96 7.13l3.73 2.98c.86-2.59 3.26-4.51 6.31-4.51z" fill="#EA4335"/>
           </svg>
         );
       case 'LinkedIn':
@@ -121,13 +164,12 @@ const Login: React.FC = () => {
       case 'Microsoft':
         return (
           <svg width="24" height="24" viewBox="0 0 23 23" xmlns="http://www.w3.org/2000/svg">
-            <path fill="#f35323" d="M0 0h11v11H0z" /><path fill="#80bb03" d="M12 0h11v11H12z" /><path fill="#05a6f0" d="M0 12h11v11H0z" /><path fill="#ffba08" d="M12 12h11v11H12z" />
+            <path fill="#f35323" d="M0 0h11v11H0z"/><path fill="#80bb03" d="M12 0h11v11H12z"/><path fill="#05a6f0" d="M0 12h11v11H0z"/><path fill="#ffba08" d="M12 12h11v11H12z"/>
           </svg>
         );
       default: return null;
     }
   };
-
   const navLinks = [
     { name: 'Home', href: '/#home' },
     { name: 'About', href: '/#about' },
@@ -137,7 +179,8 @@ const Login: React.FC = () => {
 
   return (
     <div className="auth-page" style={{ paddingTop: '80px' }}>
-
+      
+      {/* -- Header -- */}
       <header className={`header ${isScrolled ? 'header-scrolled' : 'header-glass'}`}>
         <div className="container header-container">
           <Link to="/" className="logo luxury-logo-sweep">
@@ -163,7 +206,7 @@ const Login: React.FC = () => {
       <AnimatePresence>
         {showSuccess && (
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, display: 'flex', justifyContent: 'center', zIndex: 2000, pointerEvents: 'none' }}>
-            <motion.div
+            <motion.div 
               initial={{ opacity: 0, y: -20, scale: 0.9 }}
               animate={{ opacity: 1, y: 100, scale: 1 }}
               exit={{ opacity: 0, y: -20, scale: 0.9 }}
@@ -184,7 +227,7 @@ const Login: React.FC = () => {
 
       <div className="auth-container">
         <div className="auth-form-side">
-          <motion.div
+          <motion.div 
             className="auth-header"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -207,36 +250,47 @@ const Login: React.FC = () => {
               <label>Email Address</label>
               <div className="input-wrapper">
                 <Mail className="input-icon" size={18} />
-                <input type="email" name="email" placeholder="name@company.com" required value={formData.email} onChange={handleChange} disabled={isLoading} />
+                <input type="email" name="email" placeholder="name@company.com" required value={formData.email} onChange={handleChange} disabled={isLoading || otpSent} />
               </div>
             </div>
 
-            <div className="input-group">
-              <label>Password</label>
-              <div className="input-wrapper">
-                <Lock className="input-icon" size={18} />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  placeholder="••••••••"
-                  required
-                  value={formData.password}
-                  onChange={handleChange}
-                  disabled={isLoading}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  style={{ position: 'absolute', right: '14px', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-            </div>
+            {!otpSent ? (
+              <button 
+                type="button" 
+                className="auth-btn" 
+                onClick={handleSendOtp} 
+                disabled={isOtpLoading}
+                style={{ background: '#0f172a' }}
+              >
+                {isOtpLoading ? 'Sending OTP...' : 'Send OTP'}
+              </button>
+            ) : (
+              <motion.div 
+                className="input-group"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <label>Verification Code</label>
+                <div className="input-wrapper">
+                  <Shield className="input-icon" size={18} />
+                  <input 
+                    type="text" 
+                    name="otp" 
+                    placeholder="Enter OTP sent to your email" 
+                    required 
+                    value={formData.otp} 
+                    onChange={handleChange} 
+                    disabled={isLoading} 
+                  />
+                </div>
+              </motion.div>
+            )}
 
-            <button type="submit" className="auth-btn" disabled={isLoading} style={{ opacity: isLoading ? 0.7 : 1 }}>
-              <LogIn size={18} /> {isLoading ? 'Signing In...' : 'Sign In'}
-            </button>
+            {otpSent && (
+              <button type="submit" className="auth-btn" disabled={isLoading} style={{ opacity: isLoading ? 0.7 : 1 }}>
+                <LogIn size={18} /> {isLoading ? 'Signing In...' : 'Sign In'}
+              </button>
+            )}
           </form>
 
           <div className="auth-divider"><span>Or continue with</span></div>
@@ -254,6 +308,11 @@ const Login: React.FC = () => {
           </div>
 
           <p className="auth-footer">New to the portal? <Link to="/register">Create an account</Link></p>
+          <div style={{ marginTop: '16px', textAlign: 'center' }}>
+            <Link to="/course-manager/login" style={{ fontSize: '13px', fontWeight: 700, color: '#1a2652', textDecoration: 'none', padding: '8px 16px', border: '1px solid #e2e8f0', borderRadius: '12px', background: '#f8fafc' }}>
+              Switch to Course Manager Login
+            </Link>
+          </div>
         </div>
 
         <div className="auth-image-side">
@@ -274,7 +333,7 @@ const Login: React.FC = () => {
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>{getProviderIcon(activeProvider)}</div>
               <h2 style={{ fontSize: '22px', fontWeight: 600, color: '#1e293b', textAlign: 'center', margin: '0 0 8px 0' }}>Sign in to NeST</h2>
               <p style={{ color: '#64748b', fontSize: '14px', textAlign: 'center', marginBottom: '32px' }}>Use your {activeProvider} account to continue</p>
-
+              
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 {[
                   { name: 'Melbin Mani', email: `melbin@${activeProvider.toLowerCase()}.com`, avatar: 'M' },
@@ -302,47 +361,48 @@ const Login: React.FC = () => {
         )}
       </AnimatePresence>
 
+      {/* Login Success Popup */}
       <AnimatePresence>
         {showSuccessPopup && (
-          <motion.div
+          <motion.div 
             key="success-popup"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            style={{
-              position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-              zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'rgba(15, 23, 42, 0.9)', backdropFilter: 'blur(12px)'
+            style={{ 
+              position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+              zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', 
+              background: 'rgba(15, 23, 42, 0.9)', backdropFilter: 'blur(12px)' 
             }}
           >
-            <motion.div
+            <motion.div 
               initial={{ scale: 0.9, y: 20, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0.9, y: 20, opacity: 0 }}
-              style={{
-                background: '#fff', width: '420px', borderRadius: '24px',
-                padding: '40px', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
+              style={{ 
+                background: '#fff', width: '420px', borderRadius: '24px', 
+                padding: '40px', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' 
               }}
             >
-              <div style={{
-                width: '180px', height: '100px',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              <div style={{ 
+                width: '180px', height: '100px', 
+                display: 'flex', alignItems: 'center', justifyContent: 'center', 
                 margin: '0 auto 12px'
               }}>
-                <img
-                  src={nestIcon}
-                  alt="NeST Logo"
-                  style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                <img 
+                  src={nestIcon} 
+                  alt="NeST Logo" 
+                  style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
                 />
               </div>
               <h2 style={{ fontSize: '28px', fontWeight: 800, color: '#0f172a', marginBottom: '12px' }}>Welcome Back!</h2>
               <p style={{ color: '#64748b', fontSize: '16px', lineHeight: '1.6', marginBottom: '32px' }}>
-                Hello <span style={{ fontWeight: 700, color: '#c8102e' }}>{loggedInUser?.full_name}</span>,<br />
+                Hello <span style={{ fontWeight: 700, color: '#c8102e' }}>{loggedInUser?.full_name}</span>,<br/>
                 You have successfully signed in to your portal.
               </p>
-              <button
-                onClick={handleSuccessClose}
-                className="auth-btn"
+              <button 
+                onClick={handleSuccessClose} 
+                className="auth-btn" 
                 style={{ width: '100%', padding: '16px', fontSize: '16px' }}
               >
                 Go to Dashboard

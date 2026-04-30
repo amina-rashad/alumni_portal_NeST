@@ -1,13 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { BookOpen, Search, Clock, Star, ChevronRight } from 'lucide-react';
+import { 
+  BookOpen, 
+  Search, 
+  Clock, 
+  Star, 
+  ChevronRight
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { coursesApi } from '../services/api';
 
 const CourseListing: React.FC = () => {
   const [courses, setCourses] = useState<any[]>([]);
   const [filteredCourses, setFilteredCourses] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const navigate = useNavigate();
@@ -15,18 +21,16 @@ const CourseListing: React.FC = () => {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const res = await coursesApi.getAllCourses() as any;
-        console.log('Courses API Response:', res);
-        
-        if (res.success) {
-          const courseData = res.data?.courses || res.courses || [];
-          setCourses(courseData);
-          setFilteredCourses(courseData);
+        setIsLoading(true);
+        const res = await coursesApi.getAllCourses();
+        if (res.success && res.data && res.data.courses) {
+          setCourses(res.data.courses);
+          setFilteredCourses(res.data.courses);
         }
       } catch (err) {
-        console.error('Failed to fetch courses:', err);
+        console.error('Failed to load courses:', err);
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
     fetchCourses();
@@ -35,7 +39,7 @@ const CourseListing: React.FC = () => {
   useEffect(() => {
     const filtered = courses.filter(c => {
       const matchesSearch = c.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                           c.instructor.toLowerCase().includes(searchTerm.toLowerCase());
+                           (c.instructor && c.instructor.toLowerCase().includes(searchTerm.toLowerCase()));
       const matchesCategory = selectedCategory === 'All' || c.level === selectedCategory;
       return matchesSearch && matchesCategory;
     });
@@ -48,182 +52,174 @@ const CourseListing: React.FC = () => {
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem 1rem', fontFamily: '"Montserrat", sans-serif' }}
+      style={{ maxWidth: '1400px', margin: '0 auto', padding: '2rem 1rem', fontFamily: '"Inter", sans-serif' }}
     >
-      {/* Header Section */}
-      <div style={{ marginBottom: '3rem', textAlign: 'left' }}>
-        <h1 style={{ fontSize: '3rem', fontWeight: 900, color: '#0d2046', marginBottom: '1rem', letterSpacing: '-0.02em' }}>
-          Upgrade Your <span style={{ color: 'var(--primary)' }}>Future</span>
-        </h1>
-      </div>
-
-      {/* Search & Filter Bar */}
-      <div style={{ 
-        background: '#ffffff', 
-        padding: '1rem', 
-        borderRadius: '1.5rem', 
-        boxShadow: '0 4px 20px rgba(0,0,0,0.05)', 
-        border: '1px solid #f1f5f9', 
-        marginBottom: '3rem', 
-        display: 'flex', 
-        flexDirection: 'column',
-        gap: '1rem'
-      }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ position: 'relative', flex: '1 1 300px' }}>
-            <Search style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={20} />
-            <input 
-              type="text"
-              placeholder="Search courses, instructors..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ 
-                width: '100%', 
-                padding: '1rem 1rem 1rem 3.5rem', 
-                backgroundColor: '#f8fafc', 
-                border: 'none', 
-                borderRadius: '1rem', 
-                fontSize: '1rem',
-                outline: 'none',
-                color: '#1e293b'
-              }}
-            />
-          </div>
-          
-          <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
-            {levels.map(level => (
-              <button
-                key={level}
-                onClick={() => setSelectedCategory(level)}
-                style={{ 
-                  padding: '0.6rem 1.25rem', 
-                  borderRadius: '0.75rem', 
-                  fontSize: '0.875rem', 
-                  fontWeight: 600, 
-                  transition: 'all 0.2s',
-                  whiteSpace: 'nowrap',
-                  cursor: 'pointer',
-                  backgroundColor: selectedCategory === level ? '#0d2046' : '#ffffff',
-                  color: selectedCategory === level ? '#ffffff' : '#64748b',
-                  border: selectedCategory === level ? '1px solid #0d2046' : '1px solid #e2e8f0'
-                }}
-              >
-                {level}
-              </button>
-            ))}
-          </div>
+      {/* Featured Header */}
+      <div style={{ display: 'flex', gap: '3rem', alignItems: 'center', marginBottom: '4rem', flexWrap: 'wrap' }}>
+        <div style={{ flex: '1 1 300px', maxWidth: '400px' }}>
+          <h1 style={{ fontSize: '3.5rem', fontWeight: 900, color: '#0d2046', marginBottom: '1.5rem', letterSpacing: '-0.04em', lineHeight: '1.1' }}>
+            Learn <span style={{ color: '#c8102e', fontStyle: 'italic' }}>essential</span> career skills
+          </h1>
+          <p style={{ color: '#64748b', fontSize: '1.1rem', lineHeight: '1.6', fontWeight: 500 }}>
+            NeST Academy helps you build in-demand skills fast and advance your career.
+          </p>
         </div>
-      </div>
 
-      {/* Course Grid */}
-      {loading ? (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px' }}>
-           <div style={{ width: '40px', height: '40px', border: '3px solid #f3f3f3', borderTop: '3px solid var(--primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-        </div>
-      ) : filteredCourses.length > 0 ? (
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', 
-          gap: '2.5rem' 
-        }}>
-          {filteredCourses.map((course) => (
+        <div style={{ flex: '2 1 600px', display: 'flex', gap: '1.5rem', overflowX: 'auto', paddingBottom: '1rem' }}>
+          {[
+            { title: 'Generative AI', img: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=800&q=80' },
+            { title: 'IT Certifications', img: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=800&q=80' },
+            { title: 'Data Science', img: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80' }
+          ].map((addon, idx) => (
             <motion.div 
-              key={course.id}
-              whileHover={{ y: -10 }}
+              key={idx}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.1 }}
               style={{ 
-                background: '#ffffff', 
-                borderRadius: '1.5rem', 
-                overflow: 'hidden', 
-                boxShadow: '0 4px 15px rgba(0,0,0,0.03)', 
-                border: '1px solid #f1f5f9', 
-                display: 'flex', 
-                flexDirection: 'column', 
-                height: '100%',
+                flex: '0 0 320px',
+                height: '420px',
+                borderRadius: '24px',
+                overflow: 'hidden',
+                position: 'relative',
+                boxShadow: '0 20px 40px rgba(0,0,0,0.08)',
                 cursor: 'pointer'
               }}
-              onClick={() => navigate(`/courses/${course.id || course._id}`)}
             >
-              {/* Card Image Wrapper */}
-              <div style={{ position: 'relative', height: '180px', backgroundColor: '#0d2046', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(200,16,46,0.2) 0%, rgba(13,32,70,0.4) 100%)', zIndex: 1 }} />
-                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.1 }}>
-                   <BookOpen size={100} color="white" />
-                </div>
-                <div style={{ position: 'absolute', top: '1rem', left: '1rem', zIndex: 2 }}>
-                   <span style={{ backgroundColor: 'rgba(255,255,255,0.95)', padding: '0.4rem 0.8rem', borderRadius: '0.5rem', fontSize: '0.65rem', fontWeight: 800, color: '#0d2046', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      {course.level}
-                   </span>
-                </div>
-              </div>
-
-              {/* Card Content */}
-              <div style={{ padding: '1.5rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', color: 'var(--primary)' }}>
-                   <Star size={14} fill="currentColor" />
-                   <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>4.9 (240 reviews)</span>
-                </div>
-                
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0d2046', marginBottom: '0.75rem', lineHeight: '1.3' }}>
-                  {course.title}
-                </h3>
-                
-                <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '1.5rem', lineHeight: '1.5', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                  {course.description || "Master the latest technologies with our comprehensive professional certification course."}
-                </p>
-
-                <div style={{ borderTop: '1px solid #f8fafc', marginTop: 'auto', paddingTop: '1rem' }}>
-                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                         <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0d2046', fontWeight: 700, fontSize: '0.75rem' }}>
-                            {course.instructor ? course.instructor.charAt(0) : 'I'}
-                         </div>
-                         <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#334155' }}>{course.instructor || "Expert"}</span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#94a3b8', fontSize: '0.85rem' }}>
-                         <Clock size={14} />
-                         <span>{course.duration || '24h'}</span>
-                      </div>
-                   </div>
-                </div>
-              </div>
-
-              {/* Card Footer Action */}
+              <img src={addon.img} alt={addon.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               <div style={{ 
-                width: '100%', 
-                padding: '1rem', 
-                backgroundColor: '#fafafa', 
-                color: '#0d2046', 
-                fontWeight: 700, 
-                textAlign: 'center', 
-                borderTop: '1px solid #f1f5f9', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                gap: '0.5rem',
-                fontSize: '0.9rem'
+                position: 'absolute', 
+                bottom: '1.5rem', 
+                left: '1.5rem', 
+                right: '1.5rem',
+                background: 'white',
+                padding: '1.25rem',
+                borderRadius: '16px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
               }}>
-                View Course <ChevronRight size={16} />
+                <span style={{ fontWeight: 800, color: '#0d2046' }}>{addon.title}</span>
+                <ChevronRight size={20} />
               </div>
             </motion.div>
           ))}
         </div>
+      </div>
+
+      {/* Search & Filter */}
+      <div style={{ background: 'white', padding: '1.5rem', borderRadius: '2rem', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', display: 'flex', flexWrap: 'wrap', gap: '1rem', marginBottom: '3rem' }}>
+        <div style={{ flex: 1, position: 'relative', minWidth: '300px' }}>
+          <Search size={20} style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+          <input 
+            type="text" 
+            placeholder="Search courses..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ width: '100%', padding: '1rem 1rem 1rem 3.5rem', borderRadius: '1rem', border: '1px solid #e2e8f0', background: '#f8fafc', fontWeight: 600 }}
+          />
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          {levels.map(level => (
+            <button
+              key={level}
+              onClick={() => setSelectedCategory(level)}
+              style={{ 
+                padding: '0.75rem 1.5rem', 
+                borderRadius: '1rem', 
+                border: 'none',
+                background: selectedCategory === level ? '#0d2046' : '#f1f5f9',
+                color: selectedCategory === level ? 'white' : '#64748b',
+                fontWeight: 700,
+                cursor: 'pointer'
+              }}
+            >
+              {level}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Course Grid */}
+      {isLoading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '5rem' }}>
+          <div style={{ width: '40px', height: '40px', border: '3px solid #f1f5f9', borderTop: '3px solid #c8102e', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+        </div>
       ) : (
-        <div style={{ textAlign: 'center', padding: '5rem 0', backgroundColor: '#ffffff', borderRadius: '1.5rem', border: '2px dashed #e2e8f0' }}>
-           <BookOpen className="mx-auto mb-4" style={{ color: '#cbd5e1', marginBottom: '1.5rem' }} size={48} />
-           <h3 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0d2046' }}>No courses found</h3>
-           <p style={{ color: '#64748b' }}>Try adjusting your search or category filters.</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '2.5rem' }}>
+          {filteredCourses.map((course, index) => (
+            <React.Fragment key={course.id}>
+              <motion.div 
+                whileHover={{ y: -10 }}
+                style={{ 
+                  background: 'white', 
+                  borderRadius: '1.5rem', 
+                  overflow: 'hidden', 
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.03)', 
+                  border: '1px solid #f1f5f9', 
+                  display: 'flex', 
+                  flexDirection: 'column',
+                  cursor: 'pointer'
+                }}
+                onClick={() => navigate(`/courses/${course.id}`)}
+              >
+                <div style={{ height: '180px', background: '#0d2046', position: 'relative', overflow: 'hidden' }}>
+                  <div style={{ position: 'absolute', inset: 0, opacity: 0.1 }}>
+                    <BookOpen size={100} color="white" />
+                  </div>
+                  <div style={{ position: 'absolute', top: '1rem', left: '1rem' }}>
+                    <span style={{ background: 'white', padding: '0.4rem 0.8rem', borderRadius: '0.5rem', fontSize: '0.65rem', fontWeight: 800, color: '#0d2046' }}>{course.level}</span>
+                  </div>
+                </div>
+
+                <div style={{ padding: '1.5rem', flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', color: '#eab308' }}>
+                    <Star size={14} fill="currentColor" />
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b' }}>4.9 (240)</span>
+                  </div>
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0d2046', marginBottom: '0.75rem' }}>{course.title}</h3>
+                  <p style={{ color: '#64748b', fontSize: '0.85rem', lineHeight: 1.5 }}>{course.description || "Master these skills with our professional certification."}</p>
+                </div>
+
+                <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155' }}>{course.instructor || "Expert"}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#94a3b8', fontSize: '0.8rem' }}>
+                    <Clock size={14} />
+                    <span>{course.duration || '24h'}</span>
+                  </div>
+                </div>
+              </motion.div>
+
+              {index === 2 && (
+                <div style={{ 
+                  gridColumn: '1 / -1', 
+                  background: 'linear-gradient(135deg, #0d2046 0%, #1e293b 100%)', 
+                  borderRadius: '2rem', 
+                  padding: '3rem', 
+                  color: 'white',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  margin: '1rem 0'
+                }}>
+                  <div>
+                    <h2 style={{ fontSize: '2rem', fontWeight: 900, marginBottom: '0.5rem' }}>NeST Pro Learning</h2>
+                    <p style={{ opacity: 0.8, marginBottom: '1.5rem' }}>Unlock unlimited access to all masterclasses.</p>
+                    <button style={{ background: '#c8102e', color: 'white', border: 'none', padding: '0.8rem 1.5rem', borderRadius: '0.75rem', fontWeight: 800, cursor: 'pointer' }}>Upgrade Now</button>
+                  </div>
+                  <BookOpen size={120} style={{ opacity: 0.1 }} />
+                </div>
+              )}
+            </React.Fragment>
+          ))}
         </div>
       )}
-      
+
       <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
     </motion.div>
   );
 };
 
 export default CourseListing;
-

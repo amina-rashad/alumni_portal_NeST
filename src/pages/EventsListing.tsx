@@ -106,16 +106,128 @@ const EventsListing: React.FC = () => {
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem 1rem', fontFamily: '"Inter", sans-serif' }}
+      style={{ maxWidth: '1100px', margin: '0 auto', padding: '2rem 1rem', fontFamily: '"Inter", sans-serif' }}
     >
-      {/* Header */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '3rem' }}>
-        <div>
-           <h1 style={{ fontSize: '3rem', fontWeight: 900, color: '#0d2046', marginBottom: '0.5rem', letterSpacing: '-0.02em' }}>
-             Professional <span style={{ color: 'var(--primary)' }}>Events</span>
-           </h1>
-
+      {/* Staggered Mosaic Featured Events Section */}
+      <div style={{ marginBottom: '4rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2.5rem' }}>
+          <div>
+            <h1 style={{ fontSize: '3.5rem', fontWeight: 950, color: '#0d2046', letterSpacing: '-0.04em', lineHeight: '1' }}>
+              Elite <span style={{ color: 'var(--primary)' }}>Gatherings</span>
+            </h1>
+            <p style={{ color: '#64748b', fontSize: '1.2rem', marginTop: '1rem' }}>Where innovation meets community.</p>
+          </div>
         </div>
+
+        <div style={{ display: 'flex', gap: '2rem', height: '500px' }}>
+          {/* Main Hero Event Card */}
+          <motion.div 
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+            whileHover="hover"
+            style={{ 
+              flex: '2', 
+              borderRadius: '40px',
+              position: 'relative',
+              overflow: 'hidden',
+              boxShadow: '0 30px 60px rgba(0,0,0,0.12)',
+              cursor: 'pointer',
+              background: '#0d2046'
+            }}
+          >
+            <motion.img 
+              variants={{ hover: { scale: 1.05 } }}
+              transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
+              src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80" 
+              alt="Technical Summits" 
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+            />
+            <motion.div 
+              variants={{ hover: { bottom: '3.5rem' } }}
+              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(13,32,70,0.9), transparent)' }} 
+            />
+            <motion.div 
+              variants={{ hover: { y: -10 } }}
+              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              style={{ position: 'absolute', bottom: '3rem', left: '3rem' }}
+            >
+              <span style={{ background: 'var(--primary)', color: 'white', padding: '0.5rem 1rem', borderRadius: '50px', fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: '1rem', display: 'inline-block' }}>Featured</span>
+              <h2 style={{ color: 'white', fontSize: '2.5rem', fontWeight: 900 }}>Technical Summits 2024</h2>
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '1.2rem' }}>The future of engineering, decoded.</p>
+            </motion.div>
+          </motion.div>
+
+          <div style={{ flex: '1', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            {/* Side Card 1 */}
+            <motion.div 
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 1, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              whileHover="hover"
+              style={{ 
+                flex: '1', 
+                borderRadius: '32px',
+                position: 'relative',
+                overflow: 'hidden',
+                boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+                cursor: 'pointer',
+                background: '#0d2046'
+              }}
+            >
+              <motion.img 
+                variants={{ hover: { scale: 1.1 } }}
+                transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+                src="https://images.unsplash.com/photo-1515169067868-5387ec356754?auto=format&fit=crop&w=800&q=80" 
+                alt="Networking Events" 
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+              />
+              <div style={{ position: 'absolute', inset: 0, background: 'rgba(13,32,70,0.6)' }} />
+              <motion.div 
+                variants={{ hover: { scale: 1.05 } }}
+                transition={{ duration: 0.4 }}
+                style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '2rem' }}
+              >
+                <h3 style={{ color: 'white', fontSize: '1.5rem', fontWeight: 800 }}>Global Networking</h3>
+              </motion.div>
+            </motion.div>
+
+            {/* Side Card 2 */}
+            <motion.div 
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 1, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              whileHover="hover"
+              style={{ 
+                flex: '1', 
+                borderRadius: '32px',
+                position: 'relative',
+                overflow: 'hidden',
+                boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+                cursor: 'pointer',
+                background: '#0d2046'
+              }}
+            >
+              <motion.img 
+                variants={{ hover: { scale: 1.1 } }}
+                transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+                src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=800&q=80" 
+                alt="Cultural Meets" 
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+              />
+              <div style={{ position: 'absolute', inset: 0, background: 'rgba(13,32,70,0.6)' }} />
+              <motion.div 
+                variants={{ hover: { scale: 1.05 } }}
+                transition={{ duration: 0.4 }}
+                style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '2rem' }}
+              >
+                <h3 style={{ color: 'white', fontSize: '1.5rem', fontWeight: 800 }}>Cultural Meets</h3>
+              </motion.div>
+            </motion.div>
+          </div>
+        </div>
+      </div>
         
         <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
           {categories.map(cat => (
@@ -140,7 +252,6 @@ const EventsListing: React.FC = () => {
             </button>
           ))}
         </div>
-      </div>
 
 
       {/* Events Grid/List */}
@@ -150,9 +261,9 @@ const EventsListing: React.FC = () => {
         </div>
       ) : filteredEvents.length > 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          {filteredEvents.map((event) => (
-            <motion.div 
-              key={event.id}
+          {filteredEvents.map((event, index) => (
+            <React.Fragment key={event.id}>
+            <motion.div
               whileHover={{ x: 10 }}
               style={{ 
                 background: '#ffffff', 
@@ -228,6 +339,70 @@ const EventsListing: React.FC = () => {
                  </div>
               </div>
             </motion.div>
+
+            {/* In-Between Add-on Banner for Events */}
+            {index === 1 && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.98 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                style={{ 
+                  background: 'linear-gradient(135deg, #7c1223 0%, #d32f2f 100%)', 
+                  borderRadius: '1.5rem', 
+                  padding: '3rem 4rem', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'space-between',
+                  boxShadow: '0 20px 40px rgba(211,47,47,0.2)',
+                  marginTop: '0.5rem',
+                  marginBottom: '0.5rem',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}
+              >
+                <div style={{ position: 'absolute', right: '-5%', top: '-30%', opacity: 0.1 }}>
+                  <Users size={350} color="white" />
+                </div>
+                <motion.div 
+                  initial="hidden"
+                  whileInView="show"
+                  viewport={{ once: true }}
+                  variants={{
+                    hidden: { opacity: 0 },
+                    show: { opacity: 1, transition: { staggerChildren: 0.15 } }
+                  }}
+                  style={{ position: 'relative', zIndex: 1, maxWidth: '600px' }}
+                >
+                  <motion.span 
+                    variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } } }}
+                    style={{ display: 'inline-block', background: 'rgba(255,255,255,0.2)', color: 'white', padding: '0.4rem 1rem', borderRadius: '50px', fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}
+                  >
+                    Call for Speakers
+                  </motion.span>
+                  <motion.h2 
+                    variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } } }}
+                    style={{ color: 'white', fontSize: '2.5rem', fontWeight: 900, marginTop: '1rem', marginBottom: '1rem', lineHeight: '1.2' }}
+                  >
+                    Host your own masterclass.
+                  </motion.h2>
+                  <motion.p 
+                    variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } } }}
+                    style={{ color: 'rgba(255,255,255,0.9)', fontSize: '1.1rem', marginBottom: '2rem' }}
+                  >
+                    Share your industry expertise with thousands of NeST alumni globally.
+                  </motion.p>
+                  <motion.button 
+                    variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } } }}
+                    whileHover={{ scale: 1.05 }}
+                    style={{ background: 'white', color: '#d32f2f', border: 'none', padding: '1rem 2rem', borderRadius: '1rem', fontSize: '1rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                  >
+                    Apply to Speak <ChevronRight size={18} />
+                  </motion.button>
+                </motion.div>
+              </motion.div>
+            )}
+            </React.Fragment>
           ))}
         </div>
       ) : (

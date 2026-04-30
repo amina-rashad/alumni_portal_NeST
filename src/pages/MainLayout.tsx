@@ -7,7 +7,7 @@ import {
   Settings, LogOut, ChevronDown, Menu, X
 } from 'lucide-react';
 import nestMainLogo from '../assets/nest_logo.png';
-import { getUser, authApi, notificationsApi, type AuthUser } from '../services/api';
+import { getUser, authApi, type AuthUser } from '../services/api';
 import '../App.css';
 
 /* ─────────────────────────── types ─────────────────────────── */
@@ -20,8 +20,7 @@ const menuGroups: NavGroup[] = [
     section: 'Insights', icon: <Home size={17} />,
     items: [
       { name: 'Insights Overview', path: '/dashboard',          icon: <Home size={15} /> },
-      { name: 'Activity Feed', path: '/dashboard/activity', icon: <Activity size={15} /> },
-      { name: 'Notifications', path: '/notifications',      icon: <Bell size={15} /> },
+      { name: 'Career Timeline', path: '/dashboard/activity', icon: <Activity size={15} /> },
     ]
   },
   {
@@ -38,7 +37,8 @@ const menuGroups: NavGroup[] = [
       { name: 'Courses',    path: '/courses',           icon: <BookOpen size={15} /> },
       { name: 'My Courses', path: '/courses/my-courses',icon: <BookOpen size={15} /> },
       { name: 'Quizzes',   path: '/assessments/quiz',      icon: <Edit3 size={15} /> },
-      { name: 'Analytics', path: '/assessments/analytics', icon: <Activity size={15} /> },
+      { name: 'Performance Analysis', path: '/assessments/performance-analysis', icon: <Activity size={15} /> },
+
     ]
   },
   {
@@ -283,60 +283,19 @@ const MainLayout: React.FC = () => {
   const [dropdownRect, setDropdownRect] = useState<DOMRect | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-  const [notifOpen, setNotifOpen] = useState(false);
-  const [notifRect, setNotifRect] = useState<DOMRect | null>(null);
   const profileRef = useRef<HTMLDivElement>(null);
-  const notifRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLDivElement>(null);
-
-  // Notifications state
-  const [notifications, setNotifications] = useState<any[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  const fetchNotifications = async () => {
-    try {
-      const res = await notificationsApi.getNotifications();
-      if (res.success && res.data) {
-        setNotifications((res.data as any).notifications || []);
-        setUnreadCount((res.data as any).unread_count || 0);
-      }
-    } catch (err) {
-      console.error('Failed to fetch notifications:', err);
-    }
-  };
-
-  useEffect(() => {
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     const currentUser = getUser() as unknown as AuthUser;
-    if (currentUser) {
-      setUserData(currentUser);
-      
-      // Auto-redirect specialized roles from the generic dashboard
-      const specializedRoutes: Record<string, string> = {
-        'admin': '/admin',
-        'super_admin': '/admin',
-        'event_manager': '/event-manager',
-        'job_recruiter': '/recruiter',
-        'course_manager': '/course-manager'
-      };
-
-      if (specializedRoutes[currentUser.role] && location.pathname === '/dashboard') {
-        navigate(specializedRoutes[currentUser.role]);
-      }
-    }
-  }, [location.pathname, navigate]);
+    if (currentUser) setUserData(currentUser);
+  }, []);
 
   // Close everything on path change
   useEffect(() => {
     setOpenGroup(null);
     setMobileOpen(false);
     setProfileDropdownOpen(false);
-    setNotifOpen(false);
   }, [location.pathname]);
 
   // Close everything on click outside or scroll
@@ -347,9 +306,6 @@ const MainLayout: React.FC = () => {
       }
       if (profileDropdownOpen && profileRef.current && !profileRef.current.contains(e.target as Node)) {
         setProfileDropdownOpen(false);
-      }
-      if (notifOpen && notifRef.current && !notifRef.current.contains(e.target as Node)) {
-        setNotifOpen(false);
       }
     };
     const handleScroll = () => {
@@ -365,7 +321,7 @@ const MainLayout: React.FC = () => {
       if (navRef.current) navRef.current.removeEventListener('scroll', handleScroll);
       document.getElementById('main-content-scroll')?.removeEventListener('scroll', handleScroll);
     };
-  }, [openGroup, profileDropdownOpen, notifOpen]);
+  }, [openGroup, profileDropdownOpen]);
 
   useEffect(() => {
     setOpenGroup(null);
@@ -457,26 +413,14 @@ const MainLayout: React.FC = () => {
 
         {/* Right: Bell + User avatar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexShrink: 0, marginLeft: '12px' }}>
-          <div ref={notifRef} style={{ position: 'relative' }}>
-            <div 
-              onClick={(e) => {
-                setOpenGroup(null);
-                setProfileDropdownOpen(false);
-                const rect = e.currentTarget.getBoundingClientRect();
-                setNotifRect(rect);
-                setNotifOpen(!notifOpen);
-                if (!notifOpen) fetchNotifications();
-              }}
-              style={{ position: 'relative', cursor: 'pointer', display: 'flex', padding: '8px', borderRadius: '10px', transition: 'background 0.2s', background: notifOpen ? '#fff1f1' : 'transparent', color: '#c8102e' }} 
-              onMouseEnter={e => { if(!notifOpen) e.currentTarget.style.background = '#f8fafc' }} 
-              onMouseLeave={e => { if(!notifOpen) e.currentTarget.style.background = notifOpen ? '#fff1f1' : 'transparent' }}
-            >
-              <Bell size={20} />
-              {unreadCount > 0 && (
-                <span style={{ position: 'absolute', top: '4px', right: '4px', background: '#ef4444', height: '18px', minWidth: '18px', borderRadius: '50%', border: '2px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 800, color: '#fff', padding: '0 3px' }}>{unreadCount > 9 ? '9+' : unreadCount}</span>
-              )}
-            </div>
-          </div>
+          <button
+            onClick={() => navigate('/notifications')}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#c8102e', display: 'flex', alignItems: 'center', padding: '8px', borderRadius: '10px', transition: '0.2s' }}
+            onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+          >
+            <Bell size={20} />
+          </button>
 
           {/* User Profile Dropdown */}
           <div ref={profileRef} style={{ position: 'relative' }}>
@@ -574,98 +518,6 @@ const MainLayout: React.FC = () => {
         </div>
       </header>
 
-      {/* ── Notification Panel Portal (fixed, above everything) ── */}
-      <AnimatePresence>
-        {notifOpen && notifRect && (
-          <motion.div
-            initial={{ opacity: 0, y: -8, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.97 }}
-            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-            ref={notifRef}
-            style={{
-              position: 'fixed',
-              top: `${notifRect.bottom + 10}px`,
-              right: `${window.innerWidth - notifRect.right}px`,
-              width: '370px',
-              background: '#ffffff',
-              borderRadius: '18px',
-              boxShadow: '0 16px 48px rgba(0,0,0,0.16), 0 4px 12px rgba(0,0,0,0.06)',
-              border: '1px solid #f1f5f9',
-              padding: '16px',
-              zIndex: 99999,
-            }}
-          >
-            <div style={{ padding: '0 4px 14px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-               <span style={{ fontWeight: 800, color: '#1e293b', fontSize: '16px' }}>Notifications</span>
-               {unreadCount > 0 && (
-                 <span 
-                   onClick={async () => {
-                     await notificationsApi.markAllAsRead();
-                     fetchNotifications();
-                   }}
-                   style={{ fontSize: '12px', color: '#c8102e', fontWeight: 700, cursor: 'pointer', padding: '4px 10px', borderRadius: '8px', transition: 'background 0.15s' }}
-                   onMouseEnter={e => e.currentTarget.style.background = '#fff1f1'}
-                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                 >Mark all read</span>
-               )}
-            </div>
-            <div style={{ maxHeight: '400px', overflowY: 'auto', marginTop: '8px' }}>
-               {notifications.length === 0 ? (
-                 <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: '#94a3b8' }}>
-                   <Bell size={28} style={{ marginBottom: '10px', opacity: 0.35 }} />
-                   <p style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>No notifications yet</p>
-                   <p style={{ margin: '4px 0 0', fontSize: '12px' }}>You'll see alerts here when there's activity</p>
-                 </div>
-               ) : (
-                 notifications.slice(0, 15).map((n: any) => (
-                   <div 
-                     key={n.id} 
-                     onClick={async () => {
-                       if (!n.is_read) {
-                         await notificationsApi.markAsRead(n.id);
-                         fetchNotifications();
-                       }
-                       if (n.link) {
-                         navigate(n.link);
-                         setNotifOpen(false);
-                       }
-                     }}
-                     style={{ 
-                       padding: '14px', borderRadius: '12px', marginBottom: '4px', cursor: 'pointer', 
-                       background: n.is_read ? 'transparent' : 'rgba(200, 16, 46, 0.03)',
-                       transition: 'background 0.15s',
-                       display: 'flex', gap: '12px', alignItems: 'flex-start'
-                     }} 
-                     onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'} 
-                     onMouseLeave={e => e.currentTarget.style.background = n.is_read ? 'transparent' : 'rgba(200, 16, 46, 0.03)'}
-                   >
-                      {!n.is_read && <div style={{ width: '8px', height: '8px', background: '#c8102e', borderRadius: '50%', marginTop: '5px', flexShrink: 0 }} />}
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                           <span style={{ fontSize: '13px', fontWeight: n.is_read ? 500 : 700, color: n.is_read ? '#64748b' : '#1e293b' }}>{n.title}</span>
-                           <span style={{ fontSize: '10px', color: '#94a3b8', flexShrink: 0, marginLeft: '8px' }}>
-                             {n.created_at ? new Date(n.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
-                           </span>
-                        </div>
-                        <p style={{ margin: '3px 0 0', fontSize: '12px', color: '#64748b', lineHeight: 1.4 }}>{n.message}</p>
-                      </div>
-                   </div>
-                 ))
-               )}
-            </div>
-            <div style={{ textAlign: 'center', marginTop: '8px', paddingTop: '10px', borderTop: '1px solid #f1f5f9' }}>
-               <button 
-                 onClick={() => { navigate('/notifications'); setNotifOpen(false); }}
-                 style={{ background: 'none', border: 'none', fontSize: '13px', color: '#c8102e', fontWeight: 700, cursor: 'pointer', padding: '6px 12px', borderRadius: '8px', transition: 'background 0.15s' }}
-                 onMouseEnter={e => e.currentTarget.style.background = '#fff1f1'}
-                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-               >View all notifications</button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* ── Mobile Drawer ── */}
       <AnimatePresence>
         {mobileOpen && (
@@ -684,7 +536,11 @@ const MainLayout: React.FC = () => {
         className="custom-scrollbar"
         style={{ flex: 1, overflowY: 'auto', position: 'relative', scrollBehavior: 'smooth' }}
       >
-        <div style={{ padding: '28px 32px', maxWidth: '1400px', margin: '0 auto' }}>
+        <div style={{ 
+          padding: location.pathname === '/dashboard' ? '0' : '28px 32px', 
+          maxWidth: location.pathname === '/dashboard' ? 'none' : '1400px', 
+          margin: '0 auto' 
+        }}>
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}

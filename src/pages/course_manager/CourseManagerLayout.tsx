@@ -8,16 +8,15 @@ import {
 import nestMainLogo from '../../assets/nest_logo.png';
 import { getUser, authApi, type AuthUser } from '../../services/api';
 import '../../App.css';
-import './CM_Standard.css';
- 
+
 /* ─────────────────────────── types ─────────────────────────── */
 interface NavItem { name: string; path: string; icon: React.ReactNode }
 interface NavGroup { section: string; icon: React.ReactNode; items: NavItem[]; isDirectLink?: boolean; path?: string }
- 
+
 /* ─────────────────────────── data ─────────────────────────── */
 const cmMenuGroups: NavGroup[] = [
   {
-    section: 'Overview',
+    section: 'Overview', 
     icon: <LayoutDashboard size={17} />,
     isDirectLink: true,
     path: '/course-manager/dashboard',
@@ -39,17 +38,19 @@ const cmMenuGroups: NavGroup[] = [
       { name: 'Assessments',       path: '/course-manager/assessments', icon: <ClipboardCheck size={15} /> },
       { name: 'Certificates',      path: '/course-manager/certificates',icon: <Award size={15} /> },
       { name: 'Reminder Center',   path: '/course-manager/reminders',   icon: <Bell size={15} /> },
+      { name: 'Discussion Forum',   path: '/course-manager/forum',   icon: <MessageSquare size={15} /> },
+      { name: 'Achievement Manager', path: '/course-manager/achievements', icon: <Trophy size={15} /> },
     ]
   },
   {
-    section: 'Attendance',
+    section: 'Attendance', 
     icon: <Clock size={17} />,
     isDirectLink: true,
     path: '/course-manager/attendance',
     items: []
   }
 ];
- 
+
 /* ─────────────────────────── Dropdown ─────────────────────────── */
 interface DropdownProps {
   group: NavGroup;
@@ -57,7 +58,7 @@ interface DropdownProps {
   onClose: () => void;
   style?: React.CSSProperties;
 }
- 
+
 const Dropdown: React.FC<DropdownProps> = ({ group, activePath, onClose, style }) => (
   <motion.div
     initial={{ opacity: 0, scale: 0.96 }}
@@ -86,7 +87,7 @@ const Dropdown: React.FC<DropdownProps> = ({ group, activePath, onClose, style }
     }}>
       {group.section}
     </div>
- 
+
     {group.items.map((item, i) => {
       const isActive = activePath === item.path;
       return (
@@ -122,7 +123,7 @@ const Dropdown: React.FC<DropdownProps> = ({ group, activePath, onClose, style }
     })}
   </motion.div>
 );
- 
+
 /* ─────────────────────────── NavButton ─────────────────────────── */
 interface NavButtonProps {
   group: NavGroup;
@@ -130,13 +131,13 @@ interface NavButtonProps {
   isOpen: boolean;
   onClick: (rect: DOMRect) => void;
 }
- 
+
 const NavButton: React.FC<NavButtonProps> = ({ group, activePath, isOpen, onClick }) => {
-  const hasActive = group.isDirectLink
-    ? activePath === group.path
+  const hasActive = group.isDirectLink 
+    ? activePath === group.path 
     : group.items.some(i => activePath === i.path);
   const ref = useRef<HTMLButtonElement | HTMLAnchorElement>(null);
- 
+
   if (group.isDirectLink && group.path) {
     return (
       <Link
@@ -163,7 +164,7 @@ const NavButton: React.FC<NavButtonProps> = ({ group, activePath, isOpen, onClic
       </Link>
     );
   }
- 
+
   return (
     <button
       ref={ref as React.RefObject<HTMLButtonElement>}
@@ -192,19 +193,19 @@ const NavButton: React.FC<NavButtonProps> = ({ group, activePath, isOpen, onClic
     >
       <span style={{ color: hasActive || isOpen ? '#c8102e' : '#64748b' }}>{group.icon}</span>
       {group.section}
-      <ChevronDown
-        size={13}
-        style={{
-          marginLeft: '2px',
-          transform: isOpen ? 'rotate(180deg)' : 'none',
+      <ChevronDown 
+        size={13} 
+        style={{ 
+          marginLeft: '2px', 
+          transform: isOpen ? 'rotate(180deg)' : 'none', 
           transition: '0.2s',
           opacity: 0.6
-        }}
+        }} 
       />
     </button>
   );
 };
- 
+
 /* ─────────────────────────── CourseManagerLayout ─────────────────────────── */
 const CourseManagerLayout: React.FC = () => {
   const location = useLocation();
@@ -216,12 +217,12 @@ const CourseManagerLayout: React.FC = () => {
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLDivElement>(null);
- 
+
   useEffect(() => {
     const currentUser = getUser() as unknown as AuthUser;
     if (currentUser) setCmUser(currentUser);
   }, []);
- 
+
   // Close everything on click outside or scroll
   useEffect(() => {
     const handle = (e: MouseEvent) => {
@@ -235,32 +236,32 @@ const CourseManagerLayout: React.FC = () => {
     const handleScroll = () => {
       if (openGroup) setOpenGroup(null);
     };
- 
+
     document.addEventListener('mousedown', handle);
     if (navRef.current) navRef.current.addEventListener('scroll', handleScroll);
-   
+    
     return () => {
       document.removeEventListener('mousedown', handle);
       if (navRef.current) navRef.current.removeEventListener('scroll', handleScroll);
     };
   }, [openGroup, profileDropdownOpen]);
- 
+
   useEffect(() => {
     setOpenGroup(null);
     setProfileDropdownOpen(false);
     setMobileOpen(false);
   }, [location.pathname]);
- 
+
   const handleLogout = () => {
     authApi.logout();
-    navigate('/login');
+    navigate('/course-manager/login');
   };
- 
+
   const initials = cmUser ? cmUser.full_name?.charAt(0).toUpperCase() : 'CM';
- 
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#f4f6f8', overflow: 'hidden', fontFamily: "'Inter', sans-serif" }}>
- 
+
       {/* ── TOP NAVBAR ── */}
       <header style={{
         height: '66px',
@@ -275,7 +276,7 @@ const CourseManagerLayout: React.FC = () => {
         boxShadow: '0 1px 8px rgba(0,0,0,0.04)',
         position: 'relative',
       }}>
- 
+
         {/* Logo */}
         <Link to="/course-manager/dashboard" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0 }}>
            <div style={{
@@ -291,49 +292,11 @@ const CourseManagerLayout: React.FC = () => {
           <span style={{ marginLeft: '12px', fontSize: '16px', fontWeight: 800, color: '#c8102e', letterSpacing: '-0.01em' }}>Manager</span>
         </Link>
 
-        {/* Switch to Admin (Only for admins) */}
-        {(cmUser?.role === 'admin' || cmUser?.role === 'super_admin') && (
-          <button
-            onClick={() => navigate('/admin')}
-            style={{
-              padding: '6px 14px',
-              borderRadius: '10px',
-              border: '1px solid #e2e8f0',
-              background: '#ffffff',
-              color: '#64748b',
-              fontSize: '11px',
-              fontWeight: 800,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              marginLeft: '16px',
-              transition: 'all 0.2s',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.borderColor = '#c8102e';
-              e.currentTarget.style.color = '#c8102e';
-              e.currentTarget.style.background = '#fff1f2';
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.borderColor = '#e2e8f0';
-              e.currentTarget.style.color = '#64748b';
-              e.currentTarget.style.background = '#ffffff';
-            }}
-          >
-            <LayoutDashboard size={14} strokeWidth={2.5} />
-            Return to Admin
-          </button>
-        )}
- 
         {/* Divider */}
         <div style={{ width: '1px', height: '28px', background: '#e2e8f0', flexShrink: 0, margin: '0 4px' }} />
- 
+
         {/* Sidewise Scrolling Nav */}
-        <nav
+        <nav 
           ref={navRef}
           style={{
             display: 'flex',
@@ -364,7 +327,7 @@ const CourseManagerLayout: React.FC = () => {
             />
           ))}
         </nav>
- 
+
         {/* Global Dropdown Portal */}
         <AnimatePresence>
           {openGroup && dropdownRect && (
@@ -381,7 +344,7 @@ const CourseManagerLayout: React.FC = () => {
             </div>
           )}
         </AnimatePresence>
- 
+
         {/* Right Area */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexShrink: 0, marginLeft: '12px' }}>
           <button
@@ -391,7 +354,7 @@ const CourseManagerLayout: React.FC = () => {
           >
             <Bell size={20} />
           </button>
- 
+
           {/* User Profile Dropdown */}
           <div ref={profileRef} style={{ position: 'relative' }}>
             <div
@@ -416,7 +379,7 @@ const CourseManagerLayout: React.FC = () => {
               </div>
               <ChevronDown size={14} color="#94a3b8" style={{ transform: profileDropdownOpen ? 'rotate(180deg)' : 'none', transition: '0.2s' }} />
             </div>
- 
+
             <AnimatePresence>
               {profileDropdownOpen && (
                 <motion.div
@@ -451,7 +414,7 @@ const CourseManagerLayout: React.FC = () => {
               )}
             </AnimatePresence>
           </div>
- 
+
           <button
             onClick={() => setMobileOpen(true)}
             className="mobile-menu-btn"
@@ -470,7 +433,7 @@ const CourseManagerLayout: React.FC = () => {
           </button>
         </div>
       </header>
- 
+
       {/* ── Mobile Drawer ── */}
       <AnimatePresence>
         {mobileOpen && (
@@ -508,7 +471,7 @@ const CourseManagerLayout: React.FC = () => {
           </div>
         )}
       </AnimatePresence>
- 
+
       {/* ── Page content ── */}
       <div
         id="main-content-scroll"
@@ -528,7 +491,7 @@ const CourseManagerLayout: React.FC = () => {
           </AnimatePresence>
         </div>
       </div>
- 
+
       <style>{`
         @media (max-width: 1024px) {
           .mobile-menu-btn { display: flex !important; }
@@ -539,5 +502,7 @@ const CourseManagerLayout: React.FC = () => {
     </div>
   );
 };
- 
+
 export default CourseManagerLayout;
+
+

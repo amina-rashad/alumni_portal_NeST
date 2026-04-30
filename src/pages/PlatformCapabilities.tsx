@@ -74,7 +74,7 @@ const featureDetails: Record<string, any> = {
     cards: [
        { icon: CheckCircle, title: 'Code Validations', desc: 'Test engineering candidates securely within the browser.' },
        { icon: Zap, title: 'Behavioral Quizzes', desc: 'Measure cultural fit through interactive scenarios.' },
-       { icon: ShieldCheck, title: 'Live Leaderboards', desc: 'Encourage healthy competition among interns and trainees.' }
+
     ]
   }
 };

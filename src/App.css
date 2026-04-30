@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@800&family=Inter:wght@400;700&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=Sora:wght@800&family=Inter:wght@400;700&display=swap');
 
 .app { 
   width: 100%; 
@@ -14,13 +14,13 @@ section {
   scroll-snap-stop: always;
 }
 
-/* ── Splash ── */
+/* -- Splash -- */
 .splash-screen {
   position: fixed; inset: 0; background: #010614;
   display: flex; justify-content: center; align-items: center; z-index: 10000;
 }
 
-/* ── Header ── */
+/* -- Header -- */
 .header { position: fixed; top: 0; left: 0; width: 100%; padding: 16px 0; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); z-index: 1000; background: transparent; }
 .header-scrolled { padding: 10px 0; background: rgba(5, 13, 30, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1); }
 .header-glass { padding: 10px 0; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(0,0,0,0.05); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05); }
@@ -74,7 +74,7 @@ section {
 .mobile-nav-list a { font-size: 20px; font-weight: 700; color: white; text-transform: uppercase; }
 .mobile-btn { display: inline-block !important; font-size: 16px !important; }
 
-/* ── Hero ── */
+/* -- Hero -- */
 .hero { position: relative; width: 100%; height: 100vh; display: flex; align-items: center; overflow: hidden; }
 .hero-background { position: absolute; inset: 0; z-index: 1; }
 .hero-background img { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.65) saturate(0.8); }
@@ -209,13 +209,13 @@ section {
 .hero-splash-card:nth-child(4) { animation: floatCard 4s ease-in-out 1.5s infinite; }
 .hero-splash-card:hover { animation-play-state: paused; background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.4); }
 
-/* ── Stats ── */
+/* -- Stats -- */
 .stats-section { background: #ffffff; padding: 50px 0; border-top: 1px solid #e8eaed; border-bottom: 1px solid #e8eaed; }
 .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; text-align: center; }
 .stat-item h3 { font-size: 46px; font-weight: 800; color: var(--primary); line-height: 1; margin-bottom: 8px; }
 .stat-item p { font-size: 14px; color: #666; font-weight: 500; }
 
-/* ── About ── */
+/* -- About -- */
 .about-section { padding: 100px 0; background: linear-gradient(135deg, #f8f9fb 0%, #eef1f6 100%); }
 .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
 .section-tag {
@@ -268,7 +268,7 @@ section {
   object-fit: cover;
 }
 
-/* ── Cinematic Features ── */
+/* -- Cinematic Features -- */
 .features-section { padding: 100px 0; background: linear-gradient(135deg, #ffffff 0%, #f4f6f9 100%); }
 .section-header { text-align: center; margin-bottom: 60px; }
 .section-header h2 { 
@@ -436,7 +436,7 @@ section {
   opacity: 1;
 }
 
-/* ── User Types (Premium) ── */
+/* -- User Types (Premium) -- */
 .users-section { padding: 120px 0; background: #ffffff; position: relative; overflow: hidden; }
 .users-section::before {
   content: '';
@@ -542,7 +542,7 @@ section {
   .users-grid { grid-template-columns: 1fr; }
 }
 
-/* ── Animated Gradient Borders (Refined Proper Premium) ── */
+/* -- Animated Gradient Borders (Refined Proper Premium) -- */
 @keyframes borderRotate {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
@@ -613,7 +613,7 @@ section {
 .how-card h3 { font-size: 18px; color: #111827; margin-bottom: 12px; }
 .how-card p { font-size: 14px; color: #666; line-height: 1.7; }
 
-/* ── Roles ── */
+/* -- Roles -- */
 .roles-section { padding: 100px 0; background: linear-gradient(135deg, #f8f9fb 0%, #eef2f7 100%); }
 .roles-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
 .role-card { background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.8); border-radius: 20px; padding: 40px 36px; transition: all 0.35s ease; box-shadow: 0 8px 32px rgba(31, 38, 135, 0.04); animation: borderGlow 3s ease-in-out infinite; }
@@ -631,7 +631,7 @@ section {
 .role-list li svg { color: var(--primary); flex-shrink: 0; }
 
 
-/* ── CTA ── */
+/* -- CTA -- */
 @property --cta-border-angle {
   syntax: '<angle>';
   initial-value: 0deg;
@@ -802,7 +802,7 @@ section {
     inset 0 0 0 1px rgba(255,255,255,0.6);
 }
 
-/* ── Footer ── */
+/* -- Footer -- */
 .footer { background: #0d2046; padding: 70px 0 0; }
 .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 60px; padding-bottom: 60px; border-bottom: 1px solid rgba(255,255,255,0.08); }
 .footer-brand p { font-size: 14px; color: var(--text-muted); margin-top: 16px; line-height: 1.7; max-width: 310px; }
@@ -818,7 +818,7 @@ section {
 .footer-contact ul li svg { flex-shrink: 0; margin-top: 2px; }
 .footer-bottom { padding: 20px 24px; text-align: center; font-size: 13px; color: var(--text-muted); }
 
-/* ── Responsive ── */
+/* -- Responsive -- */
 @media (max-width: 1200px) {
   .features-grid { grid-template-columns: repeat(2, 1fr); }
   .users-grid { grid-template-columns: repeat(3, 1fr); }

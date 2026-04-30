@@ -1,21 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Users, 
   Clock, 
+  Calendar, 
   Search, 
+  Filter, 
   Download,
+  ArrowRight,
   ChevronRight,
-  BookOpen,
-  Loader2, 
-  AlertTriangle, 
-  CheckCircle, 
-  XCircle,
-  MoreVertical
+  User,
+  BookOpen
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { attendanceService } from '../../services/attendanceService';
-import type { StudentAttendanceSummary } from '../../types/course-manager';
-import toast from 'react-hot-toast';
+import { motion } from 'framer-motion';
 import {
   Chart as ChartJS,
   ArcElement,
@@ -42,76 +38,45 @@ ChartJS.register(
   LineElement
 );
 
+interface AttendanceRecord {
+  id: string;
+  name: string;
+  email: string;
+  loginTime: string;
+  duration: string; // in minutes
+  status: 'Present' | 'Late' | 'Absent';
+}
+
 const Attendance: React.FC = () => {
-  const [selectedCourse, setSelectedCourse] = useState('Full Stack Development with React & Node');
-  const [attendanceData, setAttendanceData] = useState<StudentAttendanceSummary[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isExporting, setIsExporting] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCourse, setSelectedCourse] = useState('Full Stack Development');
   
   const courses = [
-    'Advanced Cloud Architecture & DevOps',
-    'Full Stack Development with React & Node',
-    'Data Science & Machine Learning Essentials',
-    'Cybersecurity Fundamentals & Ethical Hacking',
-    'UX Design Masterclass: Theory to Practice'
+    'Full Stack Development',
+    'Advanced React & Node',
+    'Cloud Architecture',
+    'Data Science Fundamentals',
+    'DevOps Engineering'
   ];
 
-  const loadAttendance = async () => {
-    try {
-      setIsLoading(true);
-      const data = await attendanceService.getAttendanceByCourse(selectedCourse);
-      setAttendanceData(data);
-    } catch (err) {
-      toast.error('Failed to load session logs.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadAttendance();
-  }, [selectedCourse]);
-
-  const handleUpdateStatus = async (studentId: string, status: StudentAttendanceSummary['todayStatus']) => {
-    const loadingToast = toast.loading('Updating session status...');
-    try {
-      await attendanceService.updateStudentAttendance(studentId, status);
-      toast.success('Attendance updated successfully', { id: loadingToast });
-      loadAttendance();
-    } catch (err) {
-      toast.error('Failed to update status', { id: loadingToast });
-    }
-  };
-
-  const handleExport = async () => {
-    setIsExporting(true);
-    const loadingToast = toast.loading('Generating graduation-ready attendance report...');
-    try {
-      const fileName = await attendanceService.exportAttendanceReport(selectedCourse);
-      toast.success(`Report ${fileName} ready for download!`, { id: loadingToast });
-    } catch (err) {
-      toast.error('Export failed', { id: loadingToast });
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  const filteredData = attendanceData.filter(a => 
-    a.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    a.studentEmail.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const attendanceData: AttendanceRecord[] = [
+    { id: '1', name: 'Arjun Das', email: 'arjun.das@example.com', loginTime: '09:05 AM', duration: '120', status: 'Present' },
+    { id: '2', name: 'Meera Nair', email: 'meera.nair@example.com', loginTime: '09:12 AM', duration: '115', status: 'Present' },
+    { id: '3', name: 'Rahul Varma', email: 'rahul.v@example.com', loginTime: '09:45 AM', duration: '85', status: 'Late' },
+    { id: '4', name: 'Sneha Kapur', email: 'sneha.k@example.com', loginTime: '09:02 AM', duration: '128', status: 'Present' },
+    { id: '5', name: 'Kiran Joseph', email: 'kiran.j@example.com', loginTime: '10:15 AM', duration: '45', status: 'Late' },
+    { id: '6', name: 'Ananya Iyer', email: 'ananya.i@example.com', loginTime: '-', duration: '0', status: 'Absent' },
+  ];
 
   const pieData = {
     labels: ['Present', 'Late', 'Absent'],
     datasets: [
       {
-        data: [
-          attendanceData.filter(a => a.todayStatus === 'Present').length,
-          attendanceData.filter(a => a.todayStatus === 'Late').length,
-          attendanceData.filter(a => a.todayStatus === 'Absent').length,
+        data: [75, 15, 10],
+        backgroundColor: [
+          '#10b981', // Emerald
+          '#f59e0b', // Amber
+          '#ef4444', // Red
         ],
-        backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
         borderWidth: 0,
       },
     ],
@@ -129,234 +94,186 @@ const Attendance: React.FC = () => {
     ],
   };
 
-  const initials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-
   return (
-    <div className="cm-animate-fade-up" style={{ maxWidth: "1400px", margin: "0 auto", padding: "0 32px 48px 32px", display: "flex", flexDirection: "column", gap: "28px", fontFamily: "\"Inter\", sans-serif" }}>
-      
-      {/* ── Header ── */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '24px' }}>
+    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 font-['Inter',sans-serif] pb-12">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 style={{ fontSize: '28px', fontWeight: 900, color: '#1e293b', margin: 0, letterSpacing: '-0.03em' }}>Attendance Insights</h1>
-          <p style={{ fontSize: '14px', color: '#64748b', marginTop: '6px', fontWeight: 500 }}>
-            Course-wise student engagement and login duration analytics.
-          </p>
+          <h1 className="text-4xl font-black text-[#1e293b] tracking-tight">Attendance Tracking</h1>
+          <p className="text-slate-500 font-medium mt-1">Course-wise student engagement and login duration analytics.</p>
         </div>
-        <button 
-          onClick={handleExport}
-          disabled={isExporting}
-          style={{
-            height: '44px', padding: '0 20px', borderRadius: '12px', border: 'none',
-            background: '#ffffff', color: '#1e293b', fontWeight: 800, fontSize: '13px',
-            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', 
-            fontFamily: 'inherit', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9'
-          }}
-        >
-          {isExporting ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
-          Export Strategic Report
-        </button>
+        <div className="flex gap-4">
+          <button className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-50 transition-all shadow-sm">
+            <Download size={18} />
+            Export Report
+          </button>
+        </div>
       </div>
 
-      {/* ── STRICT CSS GRID LAYOUT (2 Columns x 2 Rows) ── */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: '1fr 2fr', 
-        gridTemplateRows: 'auto auto',
-        gap: '24px',
-        width: '100%'
-      }}>
-        
-        {/* ROW 1, LEFT: Select Program */}
-        <div style={{ 
-          background: '#fff', borderRadius: '20px', padding: '24px', 
-          boxShadow: '0 4px 20px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9',
-          display: 'flex', flexDirection: 'column'
-        }}>
-          <h3 style={{ fontSize: '10px', fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '20px' }}>Select Program</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {courses.map(course => {
-              const isActive = selectedCourse === course;
-              return (
+      {/* Course Selection & Overview Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-1 space-y-6">
+          <div className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm">
+            <h3 className="text-[10px] font-black text-slate-400 mb-6 uppercase tracking-widest">Select Program</h3>
+            <div className="space-y-2">
+              {courses.map(course => (
                 <button
                   key={course}
                   onClick={() => setSelectedCourse(course)}
-                  style={{
-                    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
-                    padding: '14px 16px', borderRadius: '14px', border: 'none', transition: 'all 0.3s',
-                    background: isActive ? '#c8102e' : '#f8fafc',
-                    color: isActive ? '#fff' : '#475569',
-                    cursor: 'pointer', textAlign: 'left'
-                  }}
+                  className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all duration-300 ${
+                    selectedCourse === course 
+                    ? 'bg-[#c8102e] text-white shadow-lg shadow-red-900/20' 
+                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                  }`}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
-                    <BookOpen size={14} style={{ flexShrink: 0, opacity: isActive ? 1 : 0.5 }} />
-                    <span style={{ fontSize: '12px', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{course}</span>
+                  <div className="flex items-center gap-3">
+                    <BookOpen size={16} className={selectedCourse === course ? 'text-white' : 'text-slate-400'} />
+                    <span className="text-sm font-bold truncate max-w-[180px]">{course}</span>
                   </div>
-                  <ChevronRight size={14} style={{ flexShrink: 0, opacity: 0.5 }} />
+                  <ChevronRight size={16} className={selectedCourse === course ? 'text-white/60' : 'text-slate-300'} />
                 </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* ROW 1, RIGHT: Weekly Engagement */}
-        <div style={{ 
-          background: '#fff', borderRadius: '20px', padding: '28px', 
-          boxShadow: '0 4px 20px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-            <div>
-              <h3 style={{ fontSize: '18px', fontWeight: 900, color: '#1e293b', margin: 0 }}>Weekly Engagement</h3>
-              <p style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 500, marginTop: '4px' }}>Average Minutes per Session</p>
+              ))}
             </div>
-            <span style={{ background: '#eff6ff', color: '#1d4ed8', padding: '6px 12px', borderRadius: '999px', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              This Week
-            </span>
           </div>
-          <div style={{ width: '100%', height: '280px', maxHeight: '280px', overflow: 'hidden' }}>
-            <Bar 
-              data={barData} 
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                  y: { grid: { display: false }, ticks: { font: { weight: 'bold', size: 10 } } },
-                  x: { grid: { display: false }, ticks: { font: { weight: 'bold', size: 10 } } }
-                }
-              }} 
-            />
-          </div>
-        </div>
 
-        {/* ROW 2, LEFT: Attendance Split */}
-        <div style={{ 
-          background: '#fff', borderRadius: '20px', padding: '24px', 
-          boxShadow: '0 4px 20px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9',
-          display: 'flex', flexDirection: 'column', height: '100%', minHeight: '400px'
-        }}>
-          <h3 style={{ fontSize: '10px', fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '20px' }}>Attendance Split</h3>
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-            <div style={{ width: '100%', height: '240px' }}>
+          <div className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm flex flex-col items-center">
+            <h3 className="text-[10px] font-black text-slate-400 mb-6 uppercase tracking-widest w-full">Attendance Split</h3>
+            <div className="w-full h-64 flex items-center justify-center">
               <Pie 
                 data={pieData} 
                 options={{
-                  plugins: { legend: { display: false } },
+                  plugins: {
+                    legend: { position: 'bottom', labels: { font: { weight: 'bold', size: 10 } } }
+                  },
                   maintainAspectRatio: false
                 }} 
               />
             </div>
           </div>
-          {/* Custom Legend */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '20px' }}>
-            {[
-              { label: 'Present', color: '#10b981' },
-              { label: 'Late', color: '#f59e0b' },
-              { label: 'Absent', color: '#ef4444' }
-            ].map(item => (
-              <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: item.color }} />
-                <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b' }}>{item.label}</span>
-              </div>
-            ))}
-          </div>
         </div>
 
-        {/* ROW 2, RIGHT: Student Session Logs (BESIDE Attendance Split) */}
-        <div style={{ 
-          background: '#fff', borderRadius: '20px', 
-          boxShadow: '0 4px 24px rgba(0,0,0,0.06)', border: '1px solid #f1f5f9', 
-          overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column'
-        }}>
-          <div style={{ padding: '24px', borderBottom: '1px solid #f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '20px' }}>
-            <div>
-              <h3 style={{ fontSize: '18px', fontWeight: 900, color: '#1e293b', margin: 0 }}>Student Session Logs</h3>
-              <p style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 500, marginTop: '4px' }}>Daily engagement data for current track</p>
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h3 className="text-xl font-black text-[#1e293b]">Weekly Engagement</h3>
+                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">Average Minutes per Session</p>
+              </div>
+              <div className="px-4 py-2 bg-slate-50 rounded-xl text-[#1a2652] font-black text-xs uppercase tracking-widest border border-slate-100">
+                This Week
+              </div>
             </div>
-            <div style={{ position: 'relative', width: '260px' }}>
-              <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-              <input 
-                type="text" 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search students..." 
-                style={{
-                  width: '100%', height: '38px', borderRadius: '999px', border: '1px solid #e2e8f0',
-                  paddingLeft: '36px', paddingRight: '12px', fontSize: '13px', background: '#f8fafc', outline: 'none'
-                }}
+            <div className="w-full h-[320px]">
+              <Bar 
+                data={barData} 
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: { legend: { display: false } },
+                  scales: {
+                    y: { grid: { display: false }, ticks: { font: { weight: 'bold' } } },
+                    x: { grid: { display: false }, ticks: { font: { weight: 'bold' } } }
+                  }
+                }} 
               />
-            </div>
-          </div>
-
-          <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1.5fr 1fr 0.8fr', background: '#f8fafc', padding: '12px 24px', borderBottom: '1px solid #f1f5f9' }}>
-              {['Student', 'Track', 'Login', 'Status', 'Update'].map(col => (
-                <div key={col} style={{ fontSize: '10px', fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{col}</div>
-              ))}
-            </div>
-            
-            <div style={{ flex: 1, overflowY: 'auto' }}>
-              {isLoading ? (
-                <div style={{ padding: '40px', textAlign: 'center' }}>
-                  <Loader2 size={24} style={{ animation: 'spin 1s linear infinite', color: '#c8102e', margin: '0 auto' }} />
-                </div>
-              ) : filteredData.length === 0 ? (
-                <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8', fontSize: '13px' }}>No records found.</div>
-              ) : filteredData.map((record) => (
-                <div key={record.studentId} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1.5fr 1fr 0.8fr', padding: '16px 24px', borderBottom: '1px solid #f8fafc', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#1a2652', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 900 }}>
-                      {initials(record.studentName)}
-                    </div>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: '13px', fontWeight: 800, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{record.studentName}</div>
-                      <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 600 }}>{record.studentEmail}</div>
-                    </div>
-                  </div>
-                  
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ flex: 1, height: '5px', background: '#f1f5f9', borderRadius: '999px', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${record.percentage}%`, background: record.percentage < 75 ? '#ef4444' : '#10b981' }} />
-                    </div>
-                    <span style={{ fontSize: '11px', fontWeight: 800, color: record.percentage < 75 ? '#ef4444' : '#10b981' }}>{record.percentage}%</span>
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <Clock size={11} style={{ color: '#c8102e' }} /> {record.todayLogin}
-                    </div>
-                    <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>{record.todayDuration} MINS</div>
-                  </div>
-
-                  <div>
-                    <span style={{ 
-                      padding: '4px 12px', borderRadius: '999px', fontSize: '9px', fontWeight: 900, textTransform: 'uppercase',
-                      background: record.todayStatus === 'Present' ? '#f0fdf4' : record.todayStatus === 'Late' ? '#fff7ed' : '#fef2f2',
-                      color: record.todayStatus === 'Present' ? '#15803d' : record.todayStatus === 'Late' ? '#c2410c' : '#dc2626',
-                      border: `1px solid ${record.todayStatus === 'Present' ? '#bbf7d0' : record.todayStatus === 'Late' ? '#fed7aa' : '#fecaca'}`
-                    }}>
-                      {record.todayStatus}
-                    </span>
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}>
-                    <button onClick={() => handleUpdateStatus(record.studentId, 'Present')} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px' }}><CheckCircle size={16} /></button>
-                    <button onClick={() => handleUpdateStatus(record.studentId, 'Absent')} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px' }}><XCircle size={16} /></button>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
         </div>
       </div>
 
-      <style>{`
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        /* Custom scrollbar for Student Logs */
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: #f8fafc; }
-        ::-webkit-scrollbar-thumb { background: #e2e8f0; borderRadius: 4px; }
-      `}</style>
+      {/* Detailed Attendance List */}
+      <div className="bg-white rounded-[40px] border border-slate-100 shadow-xl shadow-slate-200/40 overflow-hidden">
+        <div className="p-8 border-b border-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h3 className="text-xl font-black text-[#1e293b]">Student Session Logs</h3>
+            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">Today's Data for {selectedCourse}</p>
+          </div>
+          <div className="flex gap-4">
+            <div className="relative group">
+              <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#c8102e] transition-colors" />
+              <input 
+                type="text" 
+                placeholder="Search student..." 
+                className="bg-slate-50 border border-slate-100 py-2.5 pl-10 pr-4 rounded-xl text-xs focus:outline-none focus:ring-4 focus:ring-red-500/5 focus:border-red-500/30 transition-all font-bold text-[#1e293b] placeholder:text-slate-400"
+              />
+            </div>
+            <button className="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-[#1a2652] transition-all shadow-sm">
+              <Filter size={18} />
+            </button>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50/50">
+                <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Student</th>
+                <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Login Time</th>
+                <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Duration spent</th>
+                <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Details</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {attendanceData.map((record) => (
+                <tr key={record.id} className="hover:bg-slate-50/30 transition-colors group">
+                  <td className="px-10 py-6">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-[#1a2652] font-black text-xs border border-white shadow-sm overflow-hidden">
+                        <img src={`https://i.pravatar.cc/100?u=${record.id}`} alt="" />
+                      </div>
+                      <div>
+                        <div className="font-black text-[#1e293b] text-sm">{record.name}</div>
+                        <div className="text-[10px] text-slate-400 font-bold">{record.email}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-10 py-6">
+                    <div className="flex items-center gap-2 text-[#1e293b] font-bold text-sm">
+                      <Clock size={14} className="text-[#c8102e]" />
+                      {record.loginTime}
+                    </div>
+                  </td>
+                  <td className="px-10 py-6">
+                    <div className="flex items-center gap-2">
+                      <div className="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-[#1a2652]" 
+                          style={{ width: `${Math.min(100, (parseInt(record.duration)/120)*100)}%` }}
+                        />
+                      </div>
+                      <span className="text-xs font-black text-[#1e293b]">{record.duration} <span className="text-slate-400">mins</span></span>
+                    </div>
+                  </td>
+                  <td className="px-10 py-6">
+                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                      record.status === 'Present' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
+                      record.status === 'Late' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
+                      'bg-red-50 text-red-600 border border-red-100'
+                    }`}>
+                      {record.status}
+                    </span>
+                  </td>
+                  <td className="px-10 py-6 text-right">
+                    <button className="p-2 text-slate-300 hover:text-[#1a2652] hover:bg-slate-100 rounded-xl transition-all">
+                      <ArrowRight size={18} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="p-8 bg-slate-50/50 border-t border-slate-50 flex items-center justify-between">
+           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+            Visualizing Today's Sync: <span className="text-[#1a2652]">6 Active Logs</span>
+           </span>
+           <button className="text-[10px] font-black text-[#c8102e] uppercase tracking-widest hover:underline">
+            View Historical Archive
+           </button>
+        </div>
+      </div>
     </div>
   );
 };

@@ -3,27 +3,64 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Bell, 
   Search, 
+  Filter, 
   Send, 
   Clock, 
   Users, 
+  AlertTriangle, 
+  CheckCircle2, 
   MoreVertical,
+  ChevronRight,
   Info,
   UserX,
-  GraduationCap,
-  Loader2,
-  AlertCircle,
-  Mail,
-  CheckCircle2
+  GraduationCap
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { reminderService } from '../../services/reminderService';
-import type { AcademicAlert } from '../../types/course-manager';
+import { reminderAPI } from '../../services/api';
 
-/* ── Grid column definition (STRICT GRID) ── */
-const GRID = '2fr 1.5fr 2.5fr 1fr 1.2fr';
+/* ─────────────────────────── Types ─────────────────────────── */
+interface ReminderAlert {
+  id: string;
+  studentName: string;
+  studentEmail: string;
+  type: 'Low Attendance' | 'Upcoming Assessment' | 'Inactive Student' | 'Pending Completion';
+  details: string;
+  severity: 'High' | 'Medium' | 'Low';
+  status: 'Pending' | 'Reminded';
+  lastRemindedAt?: string;
+}
+
+interface SummaryCardProps {
+  label: string;
+  value: string;
+  icon: any;
+  color: string;
+  description: string;
+}
+
+/* ─────────────────────────── Components ─────────────────────────── */
+const SummaryCard: React.FC<SummaryCardProps> = ({ label, value, icon: Icon, color, description }) => (
+  <motion.div 
+    whileHover={{ translateY: -5 }}
+    className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 group"
+  >
+    <div className="flex items-center gap-4 mb-4">
+      <div className={`p-4 rounded-2xl ${color} bg-opacity-10 text-${color.split('-')[1]}-600 transition-transform duration-300 group-hover:scale-110`}>
+        <Icon size={24} />
+      </div>
+      <div>
+        <h3 className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-0.5">{label}</h3>
+        <div className="text-2xl font-black text-[#1e293b]">{value}</div>
+      </div>
+    </div>
+    <p className="text-xs font-medium text-slate-500 leading-relaxed">
+      {description}
+    </p>
+  </motion.div>
+);
 
 const ReminderCenter: React.FC = () => {
-  const [alerts, setAlerts] = useState<AcademicAlert[]>([]);
+  const [alerts, setAlerts] = useState<ReminderAlert[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('All');
@@ -36,28 +73,37 @@ const ReminderCenter: React.FC = () => {
   const loadAlerts = async () => {
     setIsLoading(true);
     try {
-      const data = await reminderService.getAlerts();
-      setAlerts(data);
+      const response = await reminderAPI.fetchAlerts();
+      setAlerts(response.data);
     } catch (err) {
-      toast.error('Failed to load academic reminders');
+      toast.error('Failed to load reminders');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSendReminder = async (alert: AcademicAlert) => {
+  const handleSendReminder = async (alert: ReminderAlert) => {
     setSendingId(alert.id);
     const loadingToast = toast.loading(`Sending reminder to ${alert.studentName}...`);
     try {
-      await reminderService.sendReminder(alert.id);
+      await reminderAPI.sendReminder(alert.id);
       setAlerts(prev => prev.map(a => 
-        a.id === alert.id ? { ...a, status: 'Sent' } : a
+        a.id === alert.id ? { ...a, status: 'Reminded', lastRemindedAt: 'Just now' } : a
       ));
       toast.success(`Reminder dispatched to ${alert.studentEmail}`, { id: loadingToast });
     } catch (err) {
       toast.error('Failed to send reminder', { id: loadingToast });
     } finally {
       setSendingId(null);
+    }
+  };
+
+  const getSeverityStyles = (severity: string) => {
+    switch (severity) {
+      case 'High': return 'bg-red-50 text-red-600 border-red-100';
+      case 'Medium': return 'bg-orange-50 text-orange-600 border-orange-100';
+      case 'Low': return 'bg-blue-50 text-blue-600 border-blue-100';
+      default: return 'bg-slate-50 text-slate-600 border-slate-100';
     }
   };
 
@@ -68,350 +114,223 @@ const ReminderCenter: React.FC = () => {
     return matchesSearch && matchesFilter;
   });
 
-  const getInitials = (name: string) =>
-    (name || '?').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-
-  const severityStyle = (severity: string): React.CSSProperties => {
-    switch (severity) {
-      case 'High':   return { background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' };
-      case 'Medium': return { background: '#fff7ed', color: '#c2410c', border: '1px solid #fed7aa' };
-      case 'Low':    return { background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0' };
-      default:       return { background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' };
-    }
-  };
-
-  const getAlertIcon = (type: string) => {
-    switch (type) {
-      case 'Low Attendance': return <Users size={14} />;
-      case 'Upcoming Assessment': return <GraduationCap size={14} />;
-      case 'Inactive Student': return <UserX size={14} />;
-      default: return <Info size={14} />;
-    }
-  };
-
-  const getAlertColor = (type: string) => {
-    switch (type) {
-      case 'Low Attendance': return 'text-red-500 bg-red-50';
-      case 'Upcoming Assessment': return 'text-blue-500 bg-blue-50';
-      case 'Inactive Student': return 'text-orange-500 bg-orange-50';
-      default: return 'text-indigo-500 bg-indigo-50';
-    }
-  };
-
-  const summaryCards = [
-    { label: "Attendance Alerts", value: "12", icon: Users, color: "#ef4444", bg: "#fef2f2", desc: "Students currently below the 75% mandatory threshold." },
-    { label: "Upcoming Exams", value: "24", icon: GraduationCap, color: "#3b82f6", bg: "#eff6ff", desc: "Assessments due in the next 48 hours requiring prep." },
-    { label: "Inactive Users", value: "8", icon: UserX, color: "#f97316", bg: "#fff7ed", desc: "Students who haven't logged in for over 7 consecutive days." },
-    { label: "Course Lags", value: "15", icon: Info, color: "#6366f1", bg: "#eef2ff", desc: "Enrolled students lagging behind their assigned schedule." },
-  ];
-
   return (
-    <div className="cm-animate-fade-up" style={{ maxWidth: "1350px", margin: "0 auto", padding: "0 32px 48px 32px", display: "flex", flexDirection: "column", gap: "32px", fontFamily: "\"Inter\", sans-serif" }}>
-      
-      {/* ── Top Section ── */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '24px' }}>
+    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12 font-['Inter',sans-serif]">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 style={{ fontSize: '28px', fontWeight: 900, color: '#1e293b', margin: 0, letterSpacing: '-0.03em' }}>
-            Reminder Center
-          </h1>
-          <p style={{ fontSize: '14px', color: '#64748b', marginTop: '6px', fontWeight: 500 }}>
-            Monitor academic triggers and automate student outreach.
-          </p>
+          <h1 className="text-4xl font-black text-[#1e293b] tracking-tight">Reminder Center</h1>
+          <p className="text-slate-500 font-medium mt-1">Monitor academic triggers and automate student outreach.</p>
         </div>
-
-        {/* Stats card */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: '12px',
-          background: '#ffffff', borderRadius: '16px', padding: '14px 20px',
-          boxShadow: '0 2px 12px rgba(0,0,0,0.06)', border: '1px solid #f1f5f9',
-          flexShrink: 0,
-        }}>
-          <div style={{
-            width: '36px', height: '36px', borderRadius: '10px',
-            background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <Bell size={18} style={{ color: '#c8102e' }} />
-          </div>
-          <div>
-            <div style={{ fontSize: '9px', fontWeight: 800, color: '#94a3b8', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-              Total Alerts
-            </div>
-            <div style={{ fontSize: '16px', fontWeight: 900, color: '#1e293b', marginTop: '2px' }}>
-              {alerts.length}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Alert Summary Cards ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
-        {summaryCards.map((card, i) => (
-          <div 
-            key={i}
-            style={{
-              background: '#ffffff', borderRadius: '20px', padding: '20px',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.04)', border: '1px solid #f1f5f9',
-              display: 'flex', flexDirection: 'column', gap: '14px',
-              transition: 'transform 0.2s, box-shadow 0.2s'
-            }}
-            onMouseEnter={e => { (e.currentTarget.style.transform = 'translateY(-4px)'); (e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.08)'); }}
-            onMouseLeave={e => { (e.currentTarget.style.transform = 'translateY(0)'); (e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.04)'); }}
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={loadAlerts}
+            className="p-3 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition-all shadow-sm"
           >
-            <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: card.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <card.icon size={20} style={{ color: card.color }} />
+            <Clock size={20} />
+          </button>
+          <div className="flex items-center gap-4 bg-white p-3 px-5 rounded-2xl border border-slate-100 shadow-sm">
+            <div className="p-2 bg-red-50 rounded-lg text-[#c8102e]">
+              <Bell size={18} />
             </div>
             <div>
-              <div style={{ fontSize: '9px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{card.label}</div>
-              <div style={{ fontSize: '24px', fontWeight: 900, color: '#1e293b', marginTop: '4px' }}>{card.value}</div>
-              <p style={{ fontSize: '11px', color: '#64748b', fontWeight: 500, lineHeight: '1.5', marginTop: '8px', margin: '0' }}>{card.desc}</p>
+              <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Alerts</div>
+              <div className="text-lg font-black text-[#1e293b] leading-tight">{alerts.length}</div>
             </div>
           </div>
-        ))}
+        </div>
       </div>
 
-      {/* ── Search + Filter Section (Matched to Reference Image) ── */}
-      <div style={{
-        background: '#ffffff', 
-        borderRadius: '28px', 
-        padding: '20px 24px',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.04)', 
-        border: '1px solid #f1f5f9',
-        display: 'flex', 
-        alignItems: 'center', 
-        gap: '24px',
-      }}>
-        {/* Search Section */}
-        <div style={{ 
-          flex: '1 1 45%', 
-          position: 'relative', 
-          display: 'flex', 
-          alignItems: 'center',
-          background: '#f8fafc',
-          borderRadius: '16px',
-          padding: '4px 12px',
-        }}>
-          <Search size={18} style={{ color: '#94a3b8', marginLeft: '8px', flexShrink: 0 }} />
-          <input
-            type="text"
-            placeholder="Search students, alerts or specific courses..."
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <SummaryCard 
+          label="Attendance Alerts" 
+          value="12" 
+          icon={Users} 
+          color="bg-red-500" 
+          description="Students currently below the 75% mandatory threshold."
+        />
+        <SummaryCard 
+          label="Upcoming Exams" 
+          value="24" 
+          icon={GraduationCap} 
+          color="bg-blue-500" 
+          description="Assessments due in the next 48 hours requiring prep."
+        />
+        <SummaryCard 
+          label="Inactive Users" 
+          value="8" 
+          icon={UserX} 
+          color="bg-orange-500" 
+          description="Students who haven't logged in for over 7 consecutive days."
+        />
+        <SummaryCard 
+          label="Course Lags" 
+          value="15" 
+          icon={Info} 
+          color="bg-indigo-500" 
+          description="Enrolled students lagging behind their assigned schedule."
+        />
+      </div>
+
+      {/* Control Bar */}
+      <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-xl shadow-slate-200/30 flex flex-col lg:flex-row gap-6 items-center">
+        <div className="relative flex-1 group w-full">
+          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#c8102e] transition-colors" />
+          <input 
+            type="text" 
+            placeholder="Search students, alerts or specific courses..." 
             value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            style={{
-              width: '100%', 
-              height: '44px', 
-              border: 'none', 
-              paddingLeft: '12px', 
-              paddingRight: '12px',
-              fontSize: '14px', 
-              fontWeight: 500,
-              color: '#1e293b', 
-              fontFamily: 'inherit',
-              background: 'transparent', 
-              outline: 'none',
-            }}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-slate-50 border border-slate-100 py-4 pl-12 pr-4 rounded-2xl text-sm focus:outline-none focus:ring-4 focus:ring-red-500/5 focus:border-red-500/30 transition-all font-bold text-[#1e293b] placeholder:text-slate-400"
           />
         </div>
-
-        {/* Filter Section */}
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          background: '#f8fafc', 
-          padding: '6px', 
-          borderRadius: '18px',
-          gap: '4px'
-        }}>
-          {['All', 'Low Attendance', 'Upcoming Assessment', 'Inactive Student', 'Pending Completion'].map(type => {
-            const isActive = filterType === type;
-            return (
-              <button
-                key={type}
-                onClick={() => setFilterType(type)}
-                style={{
-                  padding: '10px 20px', 
-                  borderRadius: '14px', 
-                  border: 'none', 
-                  cursor: 'pointer', 
-                  fontSize: '12px', 
-                  fontWeight: 800,
-                  fontFamily: 'inherit', 
-                  transition: 'all 0.2s', 
-                  whiteSpace: 'nowrap',
-                  background: isActive ? '#ffffff' : 'transparent',
-                  color: isActive ? '#1e2d5e' : '#94a3b8',
-                  boxShadow: isActive ? '0 4px 12px rgba(0,0,0,0.08)' : 'none',
-                }}
-              >
-                {type}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ── Table Section ── */}
-      <div style={{
-        background: '#ffffff', borderRadius: '20px',
-        boxShadow: '0 4px 24px rgba(0,0,0,0.06)', border: '1px solid #f1f5f9',
-        overflow: 'hidden',
-      }}>
-        {/* Table Header */}
-        <div style={{
-          display: 'grid', gridTemplateColumns: GRID,
-          background: '#f8fafc', borderBottom: '1px solid #f1f5f9',
-          padding: '0 8px',
-        }}>
-          {['Student Info', 'Alert Category', 'Incident Details', 'Severity', 'Action'].map((col, i) => (
-            <div key={col} style={{
-              padding: '14px 16px',
-              fontSize: '10px', fontWeight: 800, color: '#94a3b8',
-              textTransform: 'uppercase', letterSpacing: '0.1em',
-              textAlign: i === 4 ? 'center' : 'left',
-            }}>
-              {col}
-            </div>
+        <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-2xl border border-slate-100 w-full lg:w-auto overflow-x-auto no-scrollbar">
+          {['All', 'Low Attendance', 'Upcoming Assessment', 'Inactive Student', 'Pending Completion'].map(type => (
+            <button
+              key={type}
+              onClick={() => setFilterType(type)}
+              className={`px-5 py-2.5 rounded-xl text-xs font-black transition-all whitespace-nowrap ${
+                filterType === type 
+                  ? 'bg-white text-[#1a2652] shadow-md border border-slate-100' 
+                  : 'text-slate-400 hover:text-slate-600 border border-transparent'
+              }`}
+            >
+              {type}
+            </button>
           ))}
         </div>
-
-        {/* Rows */}
-        <div style={{ position: 'relative', minHeight: '300px' }}>
-          {isLoading ? (
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
-              <Loader2 size={28} style={{ color: '#c8102e', animation: 'spin 1s linear infinite' }} />
-              <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 600 }}>Loading alerts...</span>
-            </div>
-          ) : filteredAlerts.length === 0 ? (
-            <div style={{ padding: '48px', textAlign: 'center', color: '#94a3b8', fontSize: '13px', fontWeight: 600 }}>
-              No academic alerts detected.
-            </div>
-          ) : (
-            <AnimatePresence mode="popLayout">
-              {filteredAlerts.map((alert, idx) => {
-                const isSent = alert.status === 'Sent';
-                const isSending = sendingId === alert.id;
-
-                return (
-                  <motion.div
-                    key={alert.id}
-                    layout
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    style={{
-                      display: 'grid', gridTemplateColumns: GRID,
-                      borderBottom: idx < filteredAlerts.length - 1 ? '1px solid #f8fafc' : 'none',
-                      padding: '0 8px',
-                      transition: 'background 0.2s',
-                    }}
-                    onMouseEnter={e => (e.currentTarget.style.background = '#fafbfc')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                  >
-                    {/* Student Info */}
-                    <div style={{ padding: '16px', display: 'flex', alignItems: 'center', minWidth: 0 }}>
-                      <div style={{
-                        width: '40px', height: '40px', borderRadius: '12px',
-                        background: '#1a2652', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontWeight: 900, fontSize: '12px', color: '#fff',
-                        flexShrink: 0, marginRight: '14px',
-                        boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
-                      }}>
-                        {getInitials(alert.studentName)}
-                      </div>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: '13px', fontWeight: 800, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {alert.studentName}
-                        </div>
-                        <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 600, marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {alert.studentEmail}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Alert Category */}
-                    <div style={{ padding: '16px', display: 'flex', alignItems: 'center' }}>
-                      <div className={`p-1.5 rounded-lg mr-3 ${getAlertColor(alert.type)}`}>
-                        {getAlertIcon(alert.type)}
-                      </div>
-                      <span style={{ fontSize: '12px', color: '#334155', fontWeight: 700 }}>
-                        {alert.type}
-                      </span>
-                    </div>
-
-                    {/* Incident Details */}
-                    <div style={{ padding: '16px', display: 'flex', alignItems: 'center' }}>
-                      <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 500, lineHeight: '1.5', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                        {alert.details}
-                      </span>
-                    </div>
-
-                    {/* Severity */}
-                    <div style={{ padding: '16px', display: 'flex', alignItems: 'center' }}>
-                      <span style={{
-                        ...severityStyle(alert.severity),
-                        padding: '4px 12px', borderRadius: '999px',
-                        fontSize: '9px', fontWeight: 900,
-                        textTransform: 'uppercase', letterSpacing: '0.05em',
-                        whiteSpace: 'nowrap',
-                      }}>
-                        {alert.severity}
-                      </span>
-                    </div>
-
-                    {/* Action */}
-                    <div style={{ padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-                      <button
-                        onClick={() => handleSendReminder(alert)}
-                        disabled={isSending || isSent}
-                        style={{
-                          height: '38px', padding: '0 18px', borderRadius: '10px', border: 'none',
-                          fontSize: '11px', fontWeight: 800, 
-                          background: isSent ? '#f1f5f9' : '#c8102e',
-                          color: isSent ? '#94a3b8' : '#fff',
-                          cursor: (isSending || isSent) ? 'not-allowed' : 'pointer',
-                          display: 'flex', alignItems: 'center', gap: '8px',
-                          transition: 'all 0.2s',
-                          boxShadow: isSent ? 'none' : '0 4px 12px rgba(200, 16, 46, 0.15)',
-                        }}
-                        onMouseEnter={e => { if(!isSent && !isSending) (e.currentTarget.style.background = '#b00e28'); }}
-                        onMouseLeave={e => { if(!isSent && !isSending) (e.currentTarget.style.background = '#c8102e'); }}
-                      >
-                        {isSending ? (
-                          <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
-                        ) : isSent ? (
-                          <>Sent</>
-                        ) : (
-                          <>Send Reminder <Send size={12} /></>
-                        )}
-                      </button>
-                      <button
-                        style={{
-                          width: '38px', height: '38px', borderRadius: '10px', border: '1.5px solid #f1f5f9',
-                          background: 'none', color: '#94a3b8', cursor: 'pointer',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          transition: 'all 0.2s',
-                        }}
-                        onMouseEnter={e => { (e.currentTarget.style.background = '#f8fafc'); (e.currentTarget.style.color = '#334155'); }}
-                        onMouseLeave={e => { (e.currentTarget.style.background = 'none'); (e.currentTarget.style.color = '#94a3b8'); }}
-                      >
-                        <MoreVertical size={18} />
-                      </button>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
-          )}
-        </div>
       </div>
 
-      <style>{`
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        ::-webkit-scrollbar { height: 4px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; borderRadius: 10px; }
-      `}</style>
+      {/* Alerts Table */}
+      <div className="bg-white rounded-[40px] border border-slate-100 shadow-xl shadow-slate-200/40 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[1000px]">
+            <thead>
+              <tr className="bg-slate-50/50 border-b border-slate-50">
+                <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Student Info</th>
+                <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Alert Category</th>
+                <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Incident Details</th>
+                <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Severity</th>
+                <th className="px-10 py-6 text-[10px) font-black text-slate-400 uppercase tracking-widest text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              <AnimatePresence mode="popLayout">
+                {filteredAlerts.length > 0 ? (
+                  filteredAlerts.map((alert) => (
+                    <motion.tr 
+                      layout
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      key={alert.id} 
+                      className="hover:bg-slate-50/30 transition-colors group"
+                    >
+                      <td className="px-10 py-8">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-2xl bg-[#1a2652] flex items-center justify-center text-white font-black text-sm shadow-lg shadow-indigo-900/20">
+                            {alert.studentName.split(' ').map(n => n[0]).join('')}
+                          </div>
+                          <div>
+                            <div className="font-black text-[#1e293b] text-base">{alert.studentName}</div>
+                            <div className="text-[10px] text-slate-400 font-bold tracking-tight mt-0.5">{alert.studentEmail}</div>
+                          </div>
+                        </div>
+                      </td>
+                      
+                      <td className="px-10 py-8">
+                        <div className="flex items-center gap-2">
+                          <div className={`p-1.5 rounded-lg ${
+                            alert.type === 'Low Attendance' ? 'bg-red-50 text-red-500' :
+                            alert.type === 'Upcoming Assessment' ? 'bg-blue-50 text-blue-500' :
+                            alert.type === 'Inactive Student' ? 'bg-orange-50 text-orange-500' :
+                            'bg-indigo-50 text-indigo-500'
+                          }`}>
+                            {alert.type === 'Low Attendance' ? <Users size={14} /> :
+                             alert.type === 'Upcoming Assessment' ? <GraduationCap size={14} /> :
+                             alert.type === 'Inactive Student' ? <UserX size={14} /> :
+                             <Info size={14} />}
+                          </div>
+                          <span className="text-sm font-bold text-[#1e293b]">{alert.type}</span>
+                        </div>
+                      </td>
+
+                      <td className="px-10 py-8">
+                        <div className="max-w-[280px]">
+                          <div className="text-sm font-medium text-slate-600 line-clamp-2 leading-relaxed">
+                            {alert.details}
+                          </div>
+                          {alert.lastRemindedAt && (
+                            <div className="flex items-center gap-1 mt-2 text-[10px] font-bold text-emerald-500 uppercase tracking-tight">
+                              <CheckCircle2 size={12} /> Last Reminded: {alert.lastRemindedAt}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+
+                      <td className="px-10 py-8">
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-colors ${getSeverityStyles(alert.severity)}`}>
+                          <AlertTriangle size={12} strokeWidth={3} />
+                          {alert.severity}
+                        </span>
+                      </td>
+
+                      <td className="px-10 py-8 text-right">
+                        <div className="flex items-center justify-end gap-3">
+                          <button
+                            onClick={() => handleSendReminder(alert)}
+                            disabled={sendingId === alert.id || alert.status === 'Reminded'}
+                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-black text-xs transition-all shadow-lg ${
+                              alert.status === 'Reminded'
+                              ? 'bg-emerald-50 text-emerald-600 border border-emerald-100 shadow-none'
+                              : 'bg-[#c8102e] text-white hover:bg-[#a00d25] shadow-red-900/10'
+                            }`}
+                          >
+                            {sendingId === alert.id ? (
+                              <Loader2 size={14} className="animate-spin" />
+                            ) : alert.status === 'Reminded' ? (
+                              <>Sent <CheckCircle2 size={14} /></>
+                            ) : (
+                              <>Send Reminder <Send size={14} /></>
+                            )}
+                          </button>
+                          <button className="p-2.5 text-slate-300 hover:text-[#1e293b] hover:bg-slate-100 rounded-xl transition-all">
+                            <MoreVertical size={20} />
+                          </button>
+                        </div>
+                      </td>
+                    </motion.tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={5} className="px-10 py-24 text-center">
+                      <div className="flex flex-col items-center gap-4">
+                        <div className="w-16 h-16 bg-slate-50 rounded-3xl flex items-center justify-center text-slate-200">
+                          <Bell size={32} />
+                        </div>
+                        <p className="text-slate-400 font-bold">No academic alerts detected at this time.</p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </AnimatePresence>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 };
+
+const Loader2 = ({ size, className }: { size: number, className: string }) => (
+  <motion.div
+    animate={{ rotate: 360 }}
+    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+    className={className}
+  >
+    <Clock size={size} />
+  </motion.div>
+);
 
 export default ReminderCenter;

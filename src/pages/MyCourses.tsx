@@ -133,70 +133,31 @@ const LEVEL_COLORS: Record<string, { color: string; bg: string }> = {
 const ALL_STATUSES: CourseStatus[] = ['In Progress', 'Completed', 'Not Started'];
 
 const MyCourses: React.FC = () => {
-  const [courses, setCourses] = useState<EnrolledCourse[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchMyCourses = async () => {
-      try {
-        setIsLoading(true);
-        const res = await coursesApi.getMyCourses();
-        if (res.success && res.data?.courses) {
-          const mapped: EnrolledCourse[] = res.data.courses.map((c: any) => ({
-            id: c.id,
-            courseId: c.id,
-            title: c.title,
-            instructor: c.instructor || 'NeST Expert',
-            level: c.level || 'Intermediate',
-            duration: c.duration || '4 Weeks',
-            progress: c.enrollment_info?.progress || 0,
-            status: c.enrollment_info?.status || 'In Progress',
-            enrolledDate: c.enrollment_info?.enrolled_at || new Date().toISOString(),
-            lastAccessed: c.enrollment_info?.enrolled_at || new Date().toISOString(),
-            totalLessons: c.curriculum?.length || 10,
-            completedLessons: Math.floor(((c.enrollment_info?.progress || 0) / 100) * (c.curriculum?.length || 10)),
-            nextLesson: c.curriculum?.[0]?.title || 'Introduction',
-            certificateAvailable: c.enrollment_info?.status === 'Completed'
-          }));
-          setCourses(mapped);
-        }
-      } catch (err) {
-        console.error("Failed to fetch my courses", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchMyCourses();
-  }, []);
-
-  const filteredCourses = courses.filter(course => {
+  const filteredCourses = MOCK_COURSES.filter(course => {
     const matchesStatus = filterStatus === 'All' || course.status === filterStatus;
     const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           course.instructor.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesStatus && matchesSearch;
   });
 
-  const statusCounts = courses.reduce((acc, course) => {
+  const statusCounts = MOCK_COURSES.reduce((acc, course) => {
     acc[course.status] = (acc[course.status] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
-  const totalProgress = courses.length > 0
-    ? Math.round(courses.reduce((sum, c) => sum + c.progress, 0) / courses.length)
+  const totalProgress = MOCK_COURSES.length > 0
+    ? Math.round(MOCK_COURSES.reduce((sum, c) => sum + c.progress, 0) / MOCK_COURSES.length)
     : 0;
 
   const formatDate = (dateStr: string) => {
-    try {
-      return new Date(dateStr).toLocaleDateString('en-IN', {
-        day: 'numeric', month: 'short', year: 'numeric'
-      });
-    } catch {
-      return dateStr;
-    }
+    return new Date(dateStr).toLocaleDateString('en-IN', {
+      day: 'numeric', month: 'short', year: 'numeric'
+    });
   };
 
   const getTimeAgo = (dateStr: string) => {
@@ -213,54 +174,87 @@ const MyCourses: React.FC = () => {
     <div style={{ minHeight: '100vh', padding: '0', background: 'transparent', color: '#1a1a1a', fontFamily: 'Inter, sans-serif' }}>
       <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
 
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          style={{ marginBottom: '2.5rem' }}
+        {/* CINEMATIC BANNER SECTION - Full Width */}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1 }}
+          style={{
+            position: 'relative',
+            width: '100vw',
+            left: '50%',
+            right: '50%',
+            marginLeft: '-50vw',
+            marginRight: '-50vw',
+            padding: '5.5rem 0',
+            marginBottom: '3.5rem',
+            background: 'url("https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=2000&auto=format&fit=crop")',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            overflow: 'hidden',
+            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.25)',
+            color: 'white'
+          }}
         >
-          <h1 style={{ fontSize: '2.8rem', marginBottom: '1.5rem', color: '#1a1a1a' }}>
-            My <span style={{ color: 'var(--primary)' }}>Courses</span>
-          </h1>
+           {/* Sophisticated Dark Gradient Overlay */}
+           <div style={{ 
+             position: 'absolute', 
+             inset: 0, 
+             background: 'linear-gradient(to right, rgba(11, 15, 26, 0.98) 0%, rgba(11, 15, 26, 0.8) 35%, transparent 100%)',
+             zIndex: 1 
+           }} />
+           
+           {/* Film Grain Texture Overlay */}
+           <div style={{ 
+             position: 'absolute', inset: 0, zIndex: 2, opacity: 0.08, pointerEvents: 'none',
+             backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+             backgroundRepeat: 'repeat', backgroundSize: '128px',
+             mixBlendMode: 'overlay'
+           }} />
+
+          <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 2rem', position: 'relative', zIndex: 10 }}>
+            <motion.div
+              initial={{ x: -40, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ duration: 0.9, ease: [0.23, 1, 0.32, 1] }}
+            >
+              <h1 style={{ margin: 0, fontSize: '4.5rem', fontWeight: 950, color: '#FFFFFF', letterSpacing: '-0.05em', lineHeight: 1.05, marginBottom: '1.25rem', textShadow: '0 12px 36px rgba(0,0,0,0.6)' }}>
+                My <span style={{ color: '#E31E24' }}>Academy</span>
+              </h1>
+              
+              <p style={{ margin: 0, color: 'rgba(255,255,255,0.8)', fontSize: '1.2rem', fontWeight: 500, maxWidth: '600px', lineHeight: 1.5, letterSpacing: '-0.01em' }}>
+                Master your craft with bespoke engineering curricula. Track your path from fundamentals to world-class architectural mastery.
+              </p>
+
+              <div style={{ marginTop: '3rem', display: 'flex', gap: '1.25rem' }}>
+                 <button 
+                  onClick={() => navigate('/courses')}
+                  className="btn-premium" 
+                  style={{ 
+                    background: '#E31E24', 
+                    color: '#FFFFFF', 
+                    border: 'none', 
+                    padding: '16px 40px', 
+                    borderRadius: '12px', 
+                    fontWeight: 800, 
+                    fontSize: '1rem', 
+                    cursor: 'pointer',
+                    boxShadow: '0 15px 35px rgba(227, 30, 36, 0.25), 0 0 20px rgba(227, 30, 36, 0.1)',
+                    transition: 'all 0.3s ease'
+                  }}
+                 >
+                   Explore Catalog
+                 </button>
+                 <button className="btn-premium" style={{ background: 'rgba(255,255,255,0.06)', color: '#fff', border: '1px solid rgba(255,255,255,0.15)', padding: '14px 40px', borderRadius: '12px', fontWeight: 700, fontSize: '1rem', backdropFilter: 'blur(12px)', cursor: 'pointer' }}>Achievement Dashboard</button>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Red Ambient Glow Blob */}
+          <div style={{ position: 'absolute', right: '-10%', bottom: '-20%', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(227, 30, 36, 0.1) 0%, transparent 70%)', filter: 'blur(100px)', zIndex: 1 }} />
         </motion.div>
 
-        {/* Stats Cards */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '1rem', marginBottom: '2.5rem' }}
-        >
-          {[
-            { label: 'Total Enrolled', count: courses.length, color: '#1a1a1a', bg: '#f8f9fa', icon: <BookOpen size={20} /> },
-            { label: 'In Progress', count: statusCounts['In Progress'] || 0, color: '#1971c2', bg: '#e7f5ff', icon: <PlayCircle size={20} /> },
-            { label: 'Completed', count: statusCounts['Completed'] || 0, color: '#2b8a3e', bg: '#ebfbee', icon: <CheckCircle2 size={20} /> },
-            { label: 'Avg Progress', count: totalProgress, color: 'var(--primary)', bg: '#fff5f5', icon: <BarChart3 size={20} />, suffix: '%' },
-          ].map((stat) => (
-            <motion.div
-              key={stat.label}
-              whileHover={{ y: -3, boxShadow: '0 8px 20px rgba(0,0,0,0.06)' }}
-              style={{
-                background: stat.bg,
-                borderRadius: '14px',
-                padding: '1.4rem 1.5rem',
-                border: '1px solid #e9ecef',
-                textAlign: 'center',
-                transition: 'all 0.3s',
-                cursor: 'default'
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.6rem', color: stat.color, opacity: 0.7 }}>
-                {stat.icon}
-              </div>
-              <p style={{ fontSize: '2rem', fontWeight: 800, color: stat.color, margin: '0 0 0.2rem 0' }}>
-                {stat.count}{stat.suffix || ''}
-              </p>
-              <p style={{ fontSize: '0.82rem', color: '#6c757d', fontWeight: 500, margin: 0 }}>{stat.label}</p>
-            </motion.div>
-          ))}
-        </motion.div>
+
 
         {/* Filter & Search Bar */}
         <motion.div

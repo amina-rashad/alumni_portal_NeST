@@ -60,8 +60,9 @@ import CourseCompletion from './pages/CourseCompletion';
 import Quiz from './pages/Quiz';
 import QuizInstructions from './pages/QuizInstructions';
 import QuizResult from './pages/QuizResult';
-import PerformanceAnalytics from './pages/PerformanceAnalytics';
+import PerformanceAnalysis from './pages/PerformanceAnalysis';
 import AssessmentCenter from './pages/AssessmentCenter';
+import Badges from './pages/Badges';
 
 
 // Events Pages
@@ -387,7 +388,8 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="/assessments/quiz" element={<PageTransition><Quiz /></PageTransition>} />
           <Route path="/assessments/quiz/instructions" element={<PageTransition><QuizInstructions /></PageTransition>} />
           <Route path="/assessments/quiz/result" element={<PageTransition><QuizResult /></PageTransition>} />
-          <Route path="/assessments/analytics" element={<PageTransition><PerformanceAnalytics /></PageTransition>} />
+          <Route path="/assessments/analytics" element={<PageTransition><PerformanceAnalysis /></PageTransition>} />
+          <Route path="/gamification/badges" element={<PageTransition><Badges /></PageTransition>} />
           <Route path="/events" element={<PageTransition><EventsListing /></PageTransition>} />
           <Route path="/events/:id" element={<PageTransition><EventDetails /></PageTransition>} />
           <Route path="/events/:id/register" element={<PageTransition><EventRegistration /></PageTransition>} />

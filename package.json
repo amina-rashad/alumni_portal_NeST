@@ -12,6 +12,7 @@
   "dependencies": {
     "@studio-freight/lenis": "^1.0.42",
     "@tailwindcss/vite": "^4.2.4",
+    "axios": "^1.15.2",
     "chart.js": "^4.5.1",
     "framer-motion": "^12.35.2",
     "html2canvas": "^1.4.1",
@@ -26,6 +27,7 @@
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@swc/core": "^1.15.32",
+    "@tailwindcss/vite": "^4.2.4",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
