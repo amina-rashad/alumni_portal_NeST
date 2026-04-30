@@ -71,8 +71,8 @@ export const courseManagerAPI = {
   }
 };
 
-// --- AUTH & USER API ---
-export const authApi = {
+// --- AUTH & USER API (MOCKS) ---
+export const mockAuthApi = {
   sendOtp: async (email: string) => {
     await delay(500);
     return { success: true, message: 'OTP sent' };
@@ -105,7 +105,7 @@ export const authApi = {
   }
 };
 
-export const usersApi = {
+export const mockUsersApi = {
   getProfile: async () => {
     await delay(500);
     return { success: true, data: { user: JSON.parse(localStorage.getItem('user') || '{}') } };
@@ -509,6 +509,8 @@ export const usersApi = {
 
   getUserById: (userId: string) =>
     apiRequest(`/users/${userId}`, { method: 'GET' }),
+  listAllUsers: () =>
+    apiRequest<{ users: any[] }>('/admin/users'),
 };
 
 
@@ -517,6 +519,18 @@ export const usersApi = {
 export const healthApi = {
   check: () =>
     apiRequest('/health', { method: 'GET' }),
+};
+
+// ── Jobs API ──
+export const jobsApi = {
+  getAll: () =>
+    apiRequest<{ jobs: any[] }>('/jobs'),
+  getAllJobs: () =>
+    apiRequest<{ jobs: any[] }>('/jobs'),
+  getJobById: (jobId: string) =>
+    apiRequest(`/jobs/${jobId}`),
+  applyForJob: (jobId: string, data: any) =>
+    apiRequest(`/jobs/${jobId}/apply`, { method: 'POST', body: JSON.stringify(data) }),
 };
 
 // ── Admin API ──
@@ -553,6 +567,18 @@ export const adminApi = {
 
   getApplications: () => 
     apiRequest<{ applications: any[] }>('/admin/applications'),
+};
+
+// ── Events API ──
+export const eventsApi = {
+  getAll: () =>
+    apiRequest<{ events: any[] }>('/events'),
+  getAllEvents: () =>
+    apiRequest<{ events: any[] }>('/events'),
+  getEventById: (eventId: string) =>
+    apiRequest(`/events/${eventId}`),
+  registerForEvent: (eventId: string) =>
+    apiRequest(`/events/${eventId}/register`, { method: 'POST' }),
 };
 
 // --- GENERAL MOCK APIS ---
@@ -614,11 +640,12 @@ export const coursesApi = {
     };
   }
 };
-export const jobsApi = { getAll: async () => ({ data: [] }) };
-export const eventsApi = { getAll: async () => ({ data: [] }) };
 export const socialApi = { getFeed: async () => ({ data: [] }) };
-export const networkingApi = { getDirectory: async () => ({ data: [] }) };
-export const adminApi = { getStats: async () => ({ data: {} }) };
+export const networkingApi = { 
+  getDirectory: async () => ({ data: [] }),
+  listAllUsers: async () => ({ success: true, data: { users: [] } })
+};
+export const mockAdminApi = { getStats: async () => ({ data: {} }) };
 
 // --- TOKEN HELPERS ---
 export const setTokens = (access: string, refresh: string) => {
@@ -632,16 +659,22 @@ export const setUser = (user: any) => {
 
 export const getUser = () => {
   const user = localStorage.getItem('user');
-  return user ? JSON.parse(user) : null;
+  try {
+    if (!user || user === 'undefined') return null;
+    return JSON.parse(user);
+  } catch (e) {
+    console.error('Error parsing user from localStorage', e);
+    return null;
+  }
 };
 
-export type AuthUser = {
+/* export type AuthUser = {
   full_name: string;
   email: string;
   role: string;
   user_type?: string;
   profile_picture?: string;
-};
+}; */
 
 // ── Recruiter API ──
 

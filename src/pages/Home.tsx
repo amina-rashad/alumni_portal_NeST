@@ -5,7 +5,7 @@ import {
   BarChart2,
   CheckCircle, Shield,
   Rocket, 
-  Calendar, Star, Target, Award, Zap, Globe
+  Calendar, Star, Target, Award, Zap, Globe, Sparkles, TrendingUp, Briefcase, Building, ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
@@ -14,6 +14,13 @@ import heroBg from '../assets/hero-bg.jpg';
 import splash1 from '../assets/splash1.jpg';
 import splash2 from '../assets/splash2.jpg';
 import splash3 from '../assets/splash3.jpg';
+
+// Premium Job Backgrounds
+import architectBg from '../assets/jobs/software_architect.png';
+import aiBg from '../assets/jobs/ai_engineer.png';
+import cyberBg from '../assets/jobs/cybersecurity.png';
+import designerBg from '../assets/jobs/designer.png';
+import devopsBg from '../assets/jobs/devops_sre.png';
 import nestMainLogo from '../assets/nest_logo.png';
 
 /* -- Animated Counter -- */
@@ -73,6 +80,106 @@ const AboutSplash: React.FC = () => {
         </motion.div>
       </AnimatePresence>
     </div>
+  );
+};
+
+/* -- Recommended Job Card -- */
+const RecommendedJobCard: React.FC<{ job: any }> = ({ job }) => {
+  const navigate = useNavigate();
+  return (
+    <motion.div
+      whileHover="hover"
+      onClick={() => navigate(`/jobs/${job.id}`)}
+      className="job-marquee-card"
+      style={{
+        width: '380px',
+        height: '240px',
+        flexShrink: 0,
+        position: 'relative',
+        borderRadius: '24px',
+        overflow: 'hidden',
+        background: '#0F172A',
+        cursor: 'pointer',
+        border: '1px solid rgba(255, 255, 255, 0.08)',
+        boxShadow: '0 10px 30px rgba(0,0,0,0.2)'
+      }}
+    >
+      {/* Background Image with Overlay */}
+      <motion.div 
+        variants={{ hover: { scale: 1.05 } }}
+        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        style={{ position: 'absolute', inset: 0, zIndex: 0 }}
+      >
+        <img src={job.bg} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.4 }} alt="" />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.4) 100%)' }} />
+      </motion.div>
+
+      {/* Content */}
+      <div style={{ position: 'relative', zIndex: 1, padding: '2rem', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <span style={{ 
+              background: 'rgba(239, 68, 68, 0.15)', 
+              color: '#EF4444', 
+              padding: '4px 12px', 
+              borderRadius: '8px', 
+              fontSize: '0.65rem', 
+              fontWeight: 900, 
+              textTransform: 'uppercase', 
+              letterSpacing: '0.08em',
+              border: '1px solid rgba(239, 68, 68, 0.2)'
+            }}>
+              NeST Internal
+            </span>
+          </div>
+          <div style={{
+            width: '48px',
+            height: '48px',
+            borderRadius: '50%',
+            background: 'rgba(255,255,255,0.05)',
+            backdropFilter: 'blur(8px)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#10B981', lineHeight: 1 }}>{job.match}%</span>
+            <span style={{ fontSize: '0.45rem', fontWeight: 700, color: '#10B981', textTransform: 'uppercase' }}>Match</span>
+          </div>
+        </div>
+
+        <div>
+          <h4 style={{ margin: '0 0 0.5rem', fontSize: '1.25rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', lineHeight: 1.2 }}>{job.title}</h4>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem', fontWeight: 600 }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Building size={14} color="#EF4444" /> {job.company}</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><MapPin size={14} color="#EF4444" /> {job.location}</span>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+           <div style={{ display: 'flex', gap: '0.5rem' }}>
+              {job.tags.slice(0, 2).map((t: string) => (
+                <span key={t} style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.03)', padding: '2px 8px', borderRadius: '4px' }}>{t}</span>
+              ))}
+           </div>
+           <div style={{ color: '#ffffff', fontSize: '0.8rem', fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+              Details <ChevronRight size={14} />
+           </div>
+        </div>
+      </div>
+
+      {/* Shine effect */}
+      <motion.div 
+        variants={{ hover: { left: '150%' } }}
+        transition={{ duration: 0.8, ease: "easeInOut" }}
+        style={{
+          position: 'absolute', top: 0, left: '-150%', width: '100%', height: '100%',
+          background: 'linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.08) 50%, transparent 70%)',
+          zIndex: 2, pointerEvents: 'none'
+        }}
+      />
+    </motion.div>
   );
 };
 
@@ -568,7 +675,7 @@ const Home: React.FC = () => {
       </section>
 
       {/* -- Jobs Section -- */}
-      <section id="jobs" className="users-section" style={{ background: '#f8f9fb' }}>
+      <section id="jobs" className="users-section" style={{ background: '#f8f9fb', padding: '6rem 0' }}>
         <div className="container">
           <motion.div 
             className="section-header"
@@ -578,124 +685,65 @@ const Home: React.FC = () => {
             transition={{ duration: 0.6 }}
             style={{ marginBottom: '4rem' }}
           >
-            <span className="section-tag" style={{ color: 'var(--primary)', fontWeight: 800 }}>Internal Openings</span>
-            <h2 style={{ fontSize: '3.5rem', fontWeight: 900, marginBottom: '1.5rem', letterSpacing: '-0.03em' }}>Grow Your Career at NeST Digital</h2>
-            <p style={{ maxWidth: '650px', margin: '0 auto' }}>Explore current openings across departments — build your future right here at NeST Digital.</p>
+            <span className="section-tag" style={{ color: 'var(--primary)', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+              <Sparkles size={16} /> Personalized For You
+            </span>
+            <h2 style={{ fontSize: '3.5rem', fontWeight: 900, marginBottom: '1.5rem', letterSpacing: '-0.03em' }}>Your Next Opportunity Awaits</h2>
+            <p style={{ maxWidth: '650px', margin: '0 auto' }}>Based on your alumni profile, skills, and course completions, we've identified these high-match roles within NeST Digital.</p>
           </motion.div>
+        </div>
 
+        {/* MARQUEE WRAPPER */}
+        <div style={{ position: 'relative', overflow: 'hidden', padding: '2rem 0' }}>
           <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', 
-            gap: '24px' 
-          }}>
+            position: 'absolute', top: 0, left: 0, bottom: 0, width: '150px', 
+            background: 'linear-gradient(to right, #f8f9fb, transparent)', zIndex: 10, pointerEvents: 'none' 
+          }} />
+          <div style={{ 
+            position: 'absolute', top: 0, right: 0, bottom: 0, width: '150px', 
+            background: 'linear-gradient(to left, #f8f9fb, transparent)', zIndex: 10, pointerEvents: 'none' 
+          }} />
+
+          <motion.div 
+            className="job-marquee-inner"
+            animate={{ x: [0, -2472] }}
+            transition={{ 
+              duration: 35, 
+              repeat: Infinity, 
+              ease: "linear",
+              repeatType: "loop"
+            }}
+            whileHover={{ animationPlayState: 'paused' }}
+            style={{ display: 'flex', gap: '2rem', width: 'fit-content', padding: '0 2rem' }}
+          >
             {[
-              { icon: <Globe size={24} strokeWidth={2.5} />, title: 'Senior Software Engineer', company: 'NeST Digital — Engineering', location: 'Kochi, Kerala', desc: 'Architect and develop enterprise-grade web applications using React, Java, and Spring Boot for NeST Digital\'s product engineering division.', tags: ['Full-time', '3–5 yrs', 'Internal Hiring'] },
-              { icon: <BarChart2 size={24} strokeWidth={2.5} />, title: 'AI / ML Engineer', company: 'NeST Digital — Data & AI', location: 'Trivandrum, Kerala', desc: 'Design and deploy machine learning models and intelligent automation pipelines for NeST Digital\'s smart manufacturing and IoT solutions.', tags: ['Full-time', '2–4 yrs', 'Internal Hiring'] },
-              { icon: <Target size={24} strokeWidth={2.5} />, title: 'HR Business Partner', company: 'NeST Digital — People & Culture', location: 'Kochi, Kerala', desc: 'Drive talent strategy, employee engagement, and organizational development initiatives across NeST Digital\'s engineering teams.', highlight: true, tags: ['Full-time', '4–7 yrs', 'Internal Hiring'] },
-              { icon: <Shield size={24} strokeWidth={2.5} />, title: 'Cloud Infrastructure Lead', company: 'NeST Digital — IT Infrastructure', location: 'CSEZ, Kakkanad', desc: 'Lead the cloud migration strategy and manage hybrid infrastructure across AWS and Azure for NeST Digital\'s enterprise clients.', tags: ['Full-time', '5+ yrs', 'Internal Hiring'] },
-            ].map((job, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: i * 0.15 }}
-                viewport={{ once: true, margin: "-50px" }}
-                style={{ 
-                  background: '#ffffff', 
-                  borderRadius: '24px', 
-                  padding: '32px',
-                  border: job.highlight ? '2px solid rgba(200,16,46,0.1)' : '1px solid #f0f0f0',
-                  boxShadow: job.highlight ? '0 20px 40px rgba(200,16,46,0.08)' : '0 10px 30px rgba(0,0,0,0.02)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                <div style={{ 
-                  width: '56px',
-                  height: '56px',
-                  borderRadius: '16px',
-                  backgroundColor: job.highlight ? 'var(--primary)' : 'rgba(200,16,46,0.08)',
-                  color: job.highlight ? '#ffffff' : 'var(--primary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: '24px'
-                }}>
-                  {job.icon}
-                </div>
-                
-                <h3 style={{ 
-                  fontSize: '1.25rem', 
-                  fontWeight: 800, 
-                  color: job.highlight ? 'var(--primary)' : '#1a1a1a', 
-                  marginBottom: '8px',
-                  lineHeight: 1.3
-                }}>
-                  {job.title}
-                </h3>
-
-                <div style={{ 
-                  fontSize: '0.9rem', 
-                  fontWeight: 700, 
-                  color: 'var(--primary)', 
-                  marginBottom: '8px'
-                }}>
-                  {job.company}
-                </div>
-
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '6px', 
-                  color: '#94a3b8', 
-                  fontSize: '0.85rem', 
-                  fontWeight: 600,
-                  marginBottom: '16px'
-                }}>
-                  <MapPin size={14} /> {job.location}
-                </div>
-                
-                <p style={{ 
-                  fontSize: '0.95rem', 
-                  color: '#666', 
-                  lineHeight: 1.6,
-                  marginBottom: '24px',
-                  flexGrow: 1
-                }}>
-                  {job.desc}
-                </p>
-
-                <div style={{ 
-                  display: 'flex', 
-                  flexWrap: 'wrap', 
-                  gap: '8px',
-                  paddingTop: '20px',
-                  borderTop: '1px solid #f0f0f0'
-                }}>
-                  {job.tags.map((tag, j) => (
-                    <span 
-                      key={j}
-                      style={{ 
-                        fontSize: '0.75rem', 
-                        background: tag === 'Internal Hiring' ? '#ECFDF5' : (tag.includes('yrs') ? '#F3F4F6' : '#FEF2F2'),
-                        color: tag === 'Internal Hiring' ? '#065F46' : (tag.includes('yrs') ? '#374151' : '#991B1B'),
-                        padding: '4px 12px', 
-                        borderRadius: '99px', 
-                        fontWeight: 700,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px'
-                      }}
-                    >
-                      {tag === 'Internal Hiring' && <Star size={10} />}
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </motion.div>
+              { id: 'rec-1', title: 'Senior Software Architect', company: 'NeST Digital', location: 'Kochi, KL', match: 98, bg: architectBg, tags: ['Leadership', 'System Design'] },
+              { id: 'rec-2', title: 'AI Research Engineer', company: 'NeST AI Labs', location: 'Trivandrum, KL', match: 94, bg: aiBg, tags: ['Deep Learning', 'Python'] },
+              { id: 'rec-3', title: 'Cloud Infrastructure Lead', company: 'NeST Digital', location: 'Remote', match: 91, bg: devopsBg, tags: ['AWS', 'Kubernetes'] },
+              { id: 'rec-4', title: 'Cybersecurity Analyst', company: 'NeST Digital', location: 'Bangalore, KA', match: 88, bg: cyberBg, tags: ['Security', 'Audit'] },
+              { id: 'rec-5', title: 'UI/UX Design Manager', company: 'NeST Digital', location: 'Remote', match: 86, bg: designerBg, tags: ['Figma', 'Prototyping'] },
+              { id: 'rec-6', title: 'Full Stack Developer', company: 'NeST Digital', location: 'Kochi, KL', match: 92, bg: architectBg, tags: ['React', 'Node.js'] },
+            ].concat([
+              { id: 'rec-1b', title: 'Senior Software Architect', company: 'NeST Digital', location: 'Kochi, KL', match: 98, bg: architectBg, tags: ['Leadership', 'System Design'] },
+              { id: 'rec-2b', title: 'AI Research Engineer', company: 'NeST AI Labs', location: 'Trivandrum, KL', match: 94, bg: aiBg, tags: ['Deep Learning', 'Python'] },
+              { id: 'rec-3b', title: 'Cloud Infrastructure Lead', company: 'NeST Digital', location: 'Remote', match: 91, bg: devopsBg, tags: ['AWS', 'Kubernetes'] },
+              { id: 'rec-4b', title: 'Cybersecurity Analyst', company: 'NeST Digital', location: 'Bangalore, KA', match: 88, bg: cyberBg, tags: ['Security', 'Audit'] },
+              { id: 'rec-5b', title: 'UI/UX Design Manager', company: 'NeST Digital', location: 'Remote', match: 86, bg: designerBg, tags: ['Figma', 'Prototyping'] },
+              { id: 'rec-6b', title: 'Full Stack Developer', company: 'NeST Digital', location: 'Kochi, KL', match: 92, bg: architectBg, tags: ['React', 'Node.js'] },
+            ]).map((job, idx) => (
+              <RecommendedJobCard key={`${job.id}-${idx}`} job={job} />
             ))}
-          </div>
+          </motion.div>
+        </div>
+
+        <div className="container" style={{ textAlign: 'center', marginTop: '3rem' }}>
+          <button 
+            onClick={() => navigate('/recommended-jobs')}
+            className="btn-red"
+            style={{ padding: '14px 40px', borderRadius: '12px', fontSize: '1rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '10px' }}
+          >
+            View All Personalized Matches <TrendingUp size={20} />
+          </button>
         </div>
       </section>
 

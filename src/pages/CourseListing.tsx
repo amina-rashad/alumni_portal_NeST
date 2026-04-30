@@ -172,7 +172,7 @@ const CourseListing: React.FC = () => {
         </motion.div>
 
       {/* Course Grid */}
-      {loading ? (
+      {isLoading ? (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px' }}>
            <div style={{ width: '40px', height: '40px', border: '3px solid #f3f3f3', borderTop: '3px solid var(--primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
         </div>

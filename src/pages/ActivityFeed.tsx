@@ -205,7 +205,7 @@ const ActivityFeed: React.FC = () => {
         >
           <div className="banner-noise" style={{ zIndex: 3 }} />
           <div style={{ maxWidth: '1150px', margin: '0 auto', padding: '0 2rem', position: 'relative', zIndex: 10 }}>
-            <h1 style={{ margin: 0, fontSize: '3.5rem', fontWeight: 950, color: '#fff', letterSpacing: '-0.04em', lineHeight: 1.1, marginBottom: '1.25rem', textShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>Alumni Stories</h1>
+            <h1 style={{ margin: 0, fontSize: '3.5rem', fontWeight: 950, color: '#fff', letterSpacing: '-0.04em', lineHeight: 1.1, marginBottom: '1.25rem', textShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>Career Timeline</h1>
             
             <p style={{ margin: 0, color: 'rgba(255,255,255,0.8)', fontSize: '1.2rem', fontWeight: 500, maxWidth: '550px', lineHeight: 1.4, letterSpacing: '-0.01em' }}>
               Chronicles of engineering leadership and professional breakthroughs from our global community.
@@ -331,21 +331,39 @@ const ActivityFeed: React.FC = () => {
 
           {/* SIDEBAR */}
           <div style={{ position: 'sticky', top: '2rem' }}>
-             
-             {/* DIRECTORATE ANNOUNCEMENT */}
-             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="insight-card" style={{ padding: '2rem', background: 'linear-gradient(135deg, #0F172A 0%, #1e293b 100%)', color: 'white', border: 'none' }}>
-                <div style={{ background: 'rgba(255,255,255,0.1)', width: '48px', height: '48px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem' }}>
-                   <Award size={24} color="#DC2626" />
-                </div>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0 0 0.75rem' }}>Verified Perspectives</h3>
-                <p style={{ opacity: 0.7, fontSize: '0.9rem', lineHeight: 1.6, margin: '0 0 1.5rem', fontWeight: 500 }}>
-                  Only content verified by NeST Admin or Leadership is visible here to maintain professional standards.
-                </p>
-                <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '0 0 1.5rem' }} />
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                   <img src="https://ui-avatars.com/api/?name=Admin&background=DC2626&color=fff" style={{ width: '32px', height: '32px', borderRadius: '50%' }} />
-                   <span style={{ fontSize: '0.8rem', fontWeight: 600, opacity: 0.9 }}>Directorate Managed</span>
-                </div>
+             {/* PREMIUM VIDEO CARD */}
+             <motion.div 
+               initial={{ opacity: 0, y: 20 }} 
+               animate={{ opacity: 1, y: 0 }} 
+               className="insight-card" 
+               style={{ 
+                 padding: '0', 
+                 background: '#0F172A', 
+                 border: 'none', 
+                 aspectRatio: '1.6 / 1', 
+                 width: '100%',
+                 boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
+               }}
+             >
+               <video 
+                 src="https://nestdigital.com/wp-content/uploads/2026/03/Nest-HP-Video.mp4"
+                 autoPlay 
+                 muted 
+                 loop 
+                 playsInline
+                 style={{ 
+                   width: '100%', 
+                   height: '100%', 
+                   objectFit: 'cover',
+                   borderRadius: '20px'
+                 }}
+               />
+               <div style={{ 
+                 position: 'absolute', 
+                 inset: 0, 
+                 background: 'linear-gradient(to top, rgba(15,23,42,0.4), transparent)', 
+                 pointerEvents: 'none' 
+               }} />
              </motion.div>
 
              {/* TRENDING NOW */}
