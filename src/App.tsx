@@ -322,7 +322,7 @@ const ScrollToTop: React.FC = () => {
   return null;
 };
 
-/* ── Animated Routes ── */
+/* -- Animated Routes -- */
 const AnimatedRoutes: React.FC = () => {
   const location = useLocation();
 
@@ -447,7 +447,7 @@ const AnimatedRoutes: React.FC = () => {
 };
 
 const App: React.FC = () => {
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     // Luxury loading delay
