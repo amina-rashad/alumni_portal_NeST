@@ -17,6 +17,7 @@ import aiBg from '../assets/jobs/ai_engineer.png';
 import cyberBg from '../assets/jobs/cybersecurity.png';
 import designerBg from '../assets/jobs/designer.png';
 import devopsBg from '../assets/jobs/devops_sre.png';
+import dataEngineerBg from '../assets/jobs/data_engineer.png';
 import bannerImg from '../assets/dashboard_banner.png';
 import alumniStoriesBg from '../assets/alumni_stories_bg.png';
 
@@ -26,7 +27,8 @@ const dummyJobs = [
   { id: 'd2', title: 'Senior AI Research Engineer', company: 'NeST AI Labs', location: 'Kochi, KL', salary: '₹30L - ₹45L', logo: 'https://nestdigital.io/wp-content/uploads/2022/04/nest-digital-logo.png', type: 'Hybrid', tags: ['AI/ML', 'Research'], backgroundImage: aiBg },
   { id: 'd3', title: 'Infrastructure Security Lead', company: 'NeST CyberSec', location: 'Bangalore, KA', salary: '₹32L - ₹48L', logo: 'https://nestdigital.io/wp-content/uploads/2022/04/nest-digital-logo.png', type: 'Full-time', tags: ['Security', 'Cloud'], backgroundImage: cyberBg },
   { id: 'd4', title: 'Product Experience Designer', company: 'NeST Digital', location: 'Remote', salary: '₹25L - ₹38L', logo: 'https://nestdigital.io/wp-content/uploads/2022/04/nest-digital-logo.png', type: 'Remote', tags: ['UI/UX', 'Design'], backgroundImage: designerBg },
-  { id: 'd5', title: 'DevOps & Site Reliability Engineer', company: 'NeST Digital', location: 'Trivandrum, KL', salary: '₹28L - ₹42L', logo: 'https://nestdigital.io/wp-content/uploads/2022/04/nest-digital-logo.png', type: 'Full-time', tags: ['DevOps', 'Cloud'], backgroundImage: devopsBg }
+  { id: 'd5', title: 'DevOps & Site Reliability Engineer', company: 'NeST Digital', location: 'Trivandrum, KL', salary: '₹28L - ₹42L', logo: 'https://nestdigital.io/wp-content/uploads/2022/04/nest-digital-logo.png', type: 'Full-time', tags: ['DevOps', 'Cloud'], backgroundImage: devopsBg },
+  { id: 'd6', title: 'Data Platform Engineer', company: 'NeST DataOps', location: 'Chennai, TN', salary: '₹26L - ₹40L', logo: 'https://nestdigital.io/wp-content/uploads/2022/04/nest-digital-logo.png', type: 'Hybrid', tags: ['Big Data', 'Analytics'], backgroundImage: dataEngineerBg }
 ];
 
 const feed = [
@@ -79,7 +81,11 @@ const recommendations = [
 
 const events = [
   { id: 1, title: 'Annual Alumni Tech Summit', date: 'Oct 15', time: '09:00 AM PST', attendees: 450, color: '#0F172A' },
-  { id: 2, title: 'AI & Machine Learning Workshop', date: 'Nov 02', time: '01:00 PM PST', attendees: 128, color: '#3B82F6' }
+  { id: 2, title: 'AI & Machine Learning Workshop', date: 'Nov 02', time: '01:00 PM PST', attendees: 128, color: '#3B82F6' },
+  { id: 3, title: 'Cloud DevOps Bootcamp', date: 'Nov 18', time: '10:00 AM PST', attendees: 210, color: '#10B981' },
+  { id: 4, title: 'Startup Pitch Night', date: 'Dec 05', time: '06:00 PM PST', attendees: 95, color: '#F59E0B' },
+  { id: 5, title: 'Cybersecurity Masterclass', date: 'Dec 12', time: '11:00 AM PST', attendees: 175, color: '#EF4444' },
+  { id: 6, title: 'Design Thinking Workshop', date: 'Jan 08', time: '02:00 PM PST', attendees: 88, color: '#8B5CF6' }
 ];
 
 const quizzes = [
@@ -120,6 +126,10 @@ const Dashboard: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedJob, setSelectedJob] = useState<any | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [insights, setInsights] = useState<any>(null);
+  const [pathways, setPathways] = useState<any[]>([]);
+  const [queries, setQueries] = useState<any[]>([]);
+  const [isLoadingExtras, setIsLoadingExtras] = useState(true);
 
   useEffect(() => {
     // Load the authenticated user from local storage
@@ -475,48 +485,59 @@ const Dashboard: React.FC = () => {
              <h2 style={{ margin: 0, fontSize: '2rem', fontWeight: 900, color: '#0F172A', letterSpacing: '-0.02em' }}>Featured Network Events</h2>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-             {events.slice(0, 2).map((event, i) => (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem' }}>
+             {events.slice(0, 4).map((event, i) => (
                 <motion.div 
                    key={i}
                    variants={itemVariants}
+                   whileHover={{ 
+                     rotateY: 5, 
+                     rotateX: -3, 
+                     scale: 1.03,
+                     boxShadow: '8px 16px 40px rgba(0,0,0,0.12), -2px -2px 20px rgba(255,255,255,0.6)',
+                     transition: { duration: 0.4, ease: [0.23, 1, 0.32, 1] }
+                   }}
                    style={{ 
                      background: '#ffffff', 
-                     borderRadius: '24px', 
-                     padding: '2.5rem', 
+                     borderRadius: '20px', 
+                     padding: '1.8rem', 
+                     minHeight: '380px',
                      display: 'flex', 
                      flexDirection: 'column', 
                      justifyContent: 'space-between', 
-                     boxShadow: '0 10px 40px rgba(0,0,0,0.03)', 
-                     border: '1px solid rgba(0,0,0,0.04)',
+                     boxShadow: '0 6px 24px rgba(0,0,0,0.04), 0 1px 4px rgba(0,0,0,0.06)', 
+                     border: '1px solid rgba(0,0,0,0.05)',
                      borderTop: `4px solid ${event.color}`,
-                     position: 'relative'
+                     position: 'relative',
+                     perspective: '800px',
+                     transformStyle: 'preserve-3d',
+                     cursor: 'pointer'
                    }}
                 >
-                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
-                      <div style={{ textAlign: 'center', background: '#F8FAFC', padding: '12px 18px', borderRadius: '16px' }}>
-                         <div style={{ fontSize: '0.8rem', fontWeight: 900, color: '#ef4444', textTransform: 'uppercase', marginBottom: '2px' }}>{event.date.split(' ')[0]}</div>
-                         <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#0F172A', lineHeight: 1 }}>{event.date.split(' ')[1]}</div>
+                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+                      <div style={{ textAlign: 'center', background: '#F8FAFC', padding: '10px 14px', borderRadius: '14px' }}>
+                         <div style={{ fontSize: '0.7rem', fontWeight: 900, color: '#ef4444', textTransform: 'uppercase', marginBottom: '2px' }}>{event.date.split(' ')[0]}</div>
+                         <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0F172A', lineHeight: 1 }}>{event.date.split(' ')[1]}</div>
                       </div>
-                      <span style={{ border: '1px solid #E2E8F0', color: '#64748B', padding: '6px 16px', borderRadius: '99px', fontSize: '0.8rem', fontWeight: 700 }}>
+                      <span style={{ border: '1px solid #E2E8F0', color: '#64748B', padding: '5px 12px', borderRadius: '99px', fontSize: '0.7rem', fontWeight: 700 }}>
                         Network Only
                       </span>
                    </div>
                    
-                   <div style={{ marginBottom: '2.5rem' }}>
-                      <h3 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 1rem', color: '#0F172A', lineHeight: 1.3 }}>{event.title}</h3>
-                      <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.9rem', color: '#64748B', fontWeight: 600 }}>
-                         <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Clock size={16} color="#94A3B8" /> {event.time}</span>
-                         <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Users size={16} color="#94A3B8" /> {event.attendees}+ Joined</span>
+                   <div style={{ marginBottom: '2rem', flex: 1 }}>
+                      <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: '0 0 0.8rem', color: '#0F172A', lineHeight: 1.3 }}>{event.title}</h3>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.8rem', color: '#64748B', fontWeight: 600 }}>
+                         <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Clock size={14} color="#94A3B8" /> {event.time}</span>
+                         <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Users size={14} color="#94A3B8" /> {event.attendees}+ Joined</span>
                       </div>
                    </div>
                    
                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div style={{ display: 'flex' }}>
-                         {[1,2,3].map(n => <img key={n} src={`https://i.pravatar.cc/150?img=${n+15}`} style={{ width: '32px', height: '32px', borderRadius: '50%', border: '2px solid #ffffff', marginLeft: n!==1 ? '-10px' : 0 }} alt="usr" />)}
-                         <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#F1F5F9', border: '2px solid #ffffff', marginLeft: '-10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800, color: '#3B82F6' }}>+12</div>
+                         {[1,2,3].map(n => <img key={n} src={`https://i.pravatar.cc/150?img=${n+15}`} style={{ width: '28px', height: '28px', borderRadius: '50%', border: '2px solid #ffffff', marginLeft: n!==1 ? '-8px' : 0 }} alt="usr" />)}
+                         <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#F1F5F9', border: '2px solid #ffffff', marginLeft: '-8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', fontWeight: 800, color: '#3B82F6' }}>+12</div>
                       </div>
-                      <button style={{ background: '#ef4444', border: 'none', color: '#fff', padding: '10px 24px', borderRadius: '12px', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(239, 68, 68, 0.3)' }}>
+                      <button style={{ background: '#ef4444', border: 'none', color: '#fff', padding: '8px 18px', borderRadius: '10px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(239, 68, 68, 0.3)' }}>
                         Secure Spot
                       </button>
                    </div>
@@ -654,18 +675,16 @@ const Dashboard: React.FC = () => {
           whileInView="visible" 
           viewport={{ once: true, margin: "-10%" }}
           style={{ 
-            marginBottom: '4rem',
             position: 'relative',
-            padding: '8rem 0',
+            padding: '3rem 0',
             background: 'radial-gradient(at 10% 20%, rgba(239, 68, 68, 0.06) 0px, transparent 50%), radial-gradient(at 90% 80%, rgba(59, 130, 246, 0.06) 0px, transparent 50%), #fff',
             borderRadius: '0',
             width: '100vw',
-            position: 'relative',
             left: '50%',
             right: '50%',
             marginLeft: '-50vw',
             marginRight: '-50vw',
-            marginBottom: '4rem',
+            marginBottom: '1rem',
             overflow: 'hidden',
             borderTop: '1px solid rgba(0,0,0,0.03)',
             borderBottom: '1px solid rgba(0,0,0,0.03)'
@@ -675,88 +694,101 @@ const Dashboard: React.FC = () => {
            <div style={{ position: 'absolute', top: '10%', left: '15%', width: '300px', height: '300px', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '50%', filter: 'blur(80px)', zIndex: 0 }} />
            <div style={{ position: 'absolute', bottom: '10%', right: '15%', width: '400px', height: '400px', background: 'rgba(59, 130, 246, 0.05)', borderRadius: '50%', filter: 'blur(100px)', zIndex: 0 }} />
 
-           <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem', padding: '0 3rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                 <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '10px', borderRadius: '14px', display: 'flex' }}>
-                   <Activity size={22} color="#10b981" />
-                 </div>
-                 <h2 style={{ margin: 0, fontSize: '2.2rem', fontWeight: 900, color: '#0F172A', letterSpacing: '-0.02em' }}>Community Insights</h2>
-              </div>
-              <button onClick={() => navigate('/dashboard/activity')} className="btn-premium" style={{ border: '1px solid rgba(0,0,0,0.05)', background: '#fff', color: '#0F172A', fontWeight: 700, padding: '12px 28px', borderRadius: '999px', fontSize: '0.95rem', boxShadow: '0 10px 20px rgba(0,0,0,0.05)' }}>
-                 Explore Feed
-              </button>
-           </div>
-
-           {/* MARQUEE CONTAINER */}
-           <div 
-             className="hide-scroll"
-             style={{ 
-               overflowX: 'auto', 
-               paddingBottom: '1rem',
-               position: 'relative',
-               zIndex: 1
-             }}
-           >
-             <motion.div 
-               animate={{ x: [0, -1500] }}
-               transition={{ 
-                 duration: 35, 
-                 repeat: Infinity, 
-                 ease: "linear",
-                 repeatType: "loop"
-               }}
-               whileHover={{ animationPlayState: 'paused' }}
-               style={{ display: 'flex', gap: '2.5rem', width: 'fit-content', padding: '0 3rem' }}
-             >
-                {[...feed, ...feed, ...feed].map((post, i) => (
-                  <motion.div 
-                     key={i}
-                     whileHover={{ y: -12, boxShadow: '0 30px 60px rgba(0,0,0,0.1)', transition: { duration: 0.4 } }}
-                     onClick={() => navigate('/dashboard/activity')}
-                     className="luxury-card btn-premium"
-                     style={{ 
-                       background: 'rgba(255, 255, 255, 0.45)', 
-                       backdropFilter: 'blur(40px)',
-                       WebkitBackdropFilter: 'blur(40px)',
-                       padding: '2.75rem', 
-                       borderRadius: '40px', 
-                       border: '1px solid rgba(255, 255, 255, 0.6)', 
-                       boxShadow: '0 15px 45px rgba(15, 23, 42, 0.05)', 
-                       cursor: 'pointer', 
-                       position: 'relative', 
-                       overflow: 'hidden',
-                       width: '480px',
-                       flexShrink: 0
-                     }}
-                  >
-                     <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '2rem' }}>
-                        <img src={post.author.avatar} style={{ width: '60px', height: '60px', borderRadius: '50%', border: '4px solid rgba(255,255,255,0.8)' }} alt="" />
-                        <div>
-                           <h4 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0F172A' }}>{post.author.name}</h4>
-                           <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748B', fontWeight: 600 }}>{post.author.title}</p>
-                        </div>
+           <div style={{ 
+               maxWidth: '1400px', 
+               margin: '0 auto', 
+               background: '#ffffff', 
+               borderRadius: '40px', 
+               padding: '3rem 0',
+              boxShadow: '0 60px 120px -20px rgba(0, 0, 0, 0.08)',
+              border: '1px solid rgba(0, 0, 0, 0.03)',
+              position: 'relative',
+              zIndex: 1
+            }}>
+               <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem', padding: '0 3.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                     <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '12px', borderRadius: '14px', display: 'flex' }}>
+                       <Activity size={24} color="#10b981" />
                      </div>
-                     <p style={{ color: '#334155', fontSize: '1.15rem', lineHeight: 1.8, marginBottom: '2.5rem', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', fontWeight: 500 }}>
-                        {post.content}
-                     </p>
-                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ display: 'flex', gap: '1.75rem', color: '#94A3B8', fontSize: '0.95rem', fontWeight: 700 }}>
-                           <span style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}><ThumbsUp size={18} /> {post.likes}</span>
-                           <span style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}><MessageSquare size={18} /> {post.comments}</span>
-                        </div>
-                        <span style={{ color: '#3B82F6', fontWeight: 800, fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          View Insight <ChevronRight size={18} />
-                        </span>
-                     </div>
-                     {post.isOfficial && (
-                       <div style={{ position: 'absolute', top: '1.75rem', right: '1.75rem', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '8px 16px', borderRadius: '99px', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-                          OFFICIAL
-                       </div>
-                     )}
-                  </motion.div>
-                ))}
-             </motion.div>
-           </div>
+                     <h2 style={{ margin: 0, fontSize: '2rem', fontWeight: 900, color: '#0F172A', letterSpacing: '-0.02em' }}>Community Insights</h2>
+                  </div>
+                  <button onClick={() => navigate('/dashboard/activity')} className="btn-premium" style={{ border: '1px solid rgba(0,0,0,0.05)', background: '#fff', color: '#0F172A', fontWeight: 800, padding: '14px 32px', borderRadius: '999px', fontSize: '1rem', boxShadow: '0 10px 30px rgba(0,0,0,0.08)' }}>
+                     Explore Feed
+                  </button>
+               </div>
+    
+               {/* MARQUEE CONTAINER */}
+               <div 
+                 className="hide-scroll"
+                 style={{ 
+                   overflowX: 'auto', 
+                   paddingBottom: '2rem',
+                   position: 'relative',
+                   zIndex: 1
+                 }}
+               >
+                 <motion.div 
+                   animate={{ x: [0, -1500] }}
+                   transition={{ 
+                     duration: 40, 
+                     repeat: Infinity, 
+                     ease: "linear",
+                     repeatType: "loop"
+                   }}
+                   whileHover={{ animationPlayState: 'paused' }}
+                   style={{ display: 'flex', gap: '2.5rem', width: 'fit-content', padding: '0 3.5rem' }}
+                 >
+                    {[...feed, ...feed, ...feed].map((post, i) => (
+                      <motion.div 
+                         key={i}
+                         whileHover={{ y: -15, boxShadow: '0 40px 80px rgba(0,0,0,0.12)', transition: { duration: 0.5, ease: [0.23, 1, 0.32, 1] } }}
+                         onClick={() => navigate('/dashboard/activity')}
+                         className="luxury-card btn-premium"
+                         style={{ 
+                           background: 'rgba(255, 255, 255, 0.65)', 
+                           backdropFilter: 'blur(30px)',
+                           WebkitBackdropFilter: 'blur(30px)',
+                           padding: '2.25rem', 
+                           borderRadius: '32px', 
+                           border: '1px solid rgba(255, 255, 255, 0.8)', 
+                           boxShadow: '0 20px 50px rgba(15, 23, 42, 0.04)', 
+                           cursor: 'pointer', 
+                           position: 'relative', 
+                           overflow: 'hidden',
+                           width: '480px',
+                           aspectRatio: '16 / 9',
+                           flexShrink: 0
+                         }}
+                      >
+                         <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '1.5rem' }}>
+                            <img src={post.author.avatar} style={{ width: '56px', height: '56px', borderRadius: '50%', border: '3px solid rgba(255,255,255,0.9)', boxShadow: '0 8px 20px rgba(0,0,0,0.1)' }} alt="" />
+                            <div>
+                               <h4 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.01em' }}>{post.author.name}</h4>
+                               <p style={{ margin: 0, fontSize: '0.95rem', color: '#64748B', fontWeight: 600 }}>{post.author.title}</p>
+                            </div>
+                         </div>
+                         <p style={{ color: '#334155', fontSize: '1.1rem', lineHeight: 1.6, marginBottom: '1.5rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', fontWeight: 500, letterSpacing: '-0.01em' }}>
+                            {post.content}
+                         </p>
+                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', gap: '2rem', color: '#94A3B8', fontSize: '1.05rem', fontWeight: 700 }}>
+                               <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}><ThumbsUp size={20} /> {post.likes}</span>
+                               <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}><MessageSquare size={20} /> {post.comments}</span>
+                            </div>
+                            <span style={{ color: '#3B82F6', fontWeight: 800, fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                              View Insight <ChevronRight size={20} />
+                            </span>
+                         </div>
+                         {post.isOfficial && (
+                           <div style={{ position: 'absolute', top: '2rem', right: '2rem', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '10px 20px', borderRadius: '99px', fontSize: '0.8rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.15em' }}>
+                              OFFICIAL
+                           </div>
+                         )}
+                      </motion.div>
+                    ))}
+                 </motion.div>
+               </div>
+            </div>
         </motion.section>
 
         {/* 3. ADVANCED LEARNING */}
