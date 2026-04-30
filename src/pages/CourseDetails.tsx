@@ -134,7 +134,6 @@ const CourseDetails: React.FC = () => {
             </motion.div>
           </div>
         </div>
-      </div>
 
       {/* Main Content */}
       <div style={{ maxWidth: '1200px', margin: '-4rem auto 0 auto', padding: '0 2rem', display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 380px', gap: '3rem' }}>
@@ -195,7 +194,6 @@ const CourseDetails: React.FC = () => {
                 <p style={{ fontSize: '0.75rem', fontWeight: 800, color: '#c8102e', textTransform: 'uppercase', margin: 0 }}>Expert Instructor</p>
                 <h4 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#0d2046', margin: 0 }}>{course.instructor || "Sarah Jenkins"}</h4>
               </div>
-            </div>
 
             <div style={{ marginBottom: '2.5rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem', alignItems: 'baseline' }}>
@@ -235,7 +233,6 @@ const CourseDetails: React.FC = () => {
                 <div style={{ color: '#c8102e' }}><User size={20} /></div> One-on-one Mentorship
               </div>
             </div>
-          </div>
         </div>
       </div>
     </div>
