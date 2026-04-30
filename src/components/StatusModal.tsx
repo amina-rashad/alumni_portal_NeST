@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import nestIcon from '../assets/nest_icon.png';
 
@@ -25,17 +26,17 @@ const StatusModal: React.FC<StatusModalProps> = ({
 }) => {
   const nestNavy = '#1a2652';
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
           {/* Backdrop (Matching Login UI) */}
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            style={{ position: 'absolute', inset: 0, background: 'rgba(15, 23, 42, 0.9)', backdropFilter: 'blur(12px)' }}
+            style={{ position: 'absolute', inset: 0, background: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(12px)' }}
           />
 
           {/* Modal Card (Matching Login UI) */}
@@ -102,7 +103,7 @@ const StatusModal: React.FC<StatusModalProps> = ({
                   fontWeight: 700, 
                   fontSize: '16px',
                   cursor: 'pointer',
-                  boxShadow: '0 4px 12px rgba(26, 38, 82, 0.2)'
+                  boxShadow: '0 10px 15px -3px rgba(26, 38, 82, 0.3)'
                 }}
               >
                 {confirmText}
@@ -111,7 +112,8 @@ const StatusModal: React.FC<StatusModalProps> = ({
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };
 

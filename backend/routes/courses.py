@@ -1,10 +1,11 @@
 """
 Courses Management Routes
-Provides read-only access to available courses.
+Provides CRUD access to academic programs and courses.
 """
 
+from datetime import datetime, timezone
 from bson import ObjectId
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required
 
 from app import get_db
@@ -74,4 +75,81 @@ def get_course_by_id(course_id):
         "data": {
             "course": course
         }
+    }), 200
+@courses_bp.route("/", methods=["POST"])
+# @jwt_required()
+def create_course():
+    """Create a new course."""
+    db = get_db()
+    data = request.get_json()
+
+    if not data or not data.get("title"):
+        return jsonify({"success": False, "message": "Course title is required."}), 400
+
+    new_course = {
+        "title": data.get("title"),
+        "description": data.get("description", ""),
+        "level": data.get("level", "Beginner"),
+        "duration": data.get("duration", "4 Weeks"),
+        "instructor": data.get("instructor", "Lead NeST Expert"),
+        "assessmentFlow": data.get("assessmentFlow", []),
+        "curriculum": data.get("curriculum", []),
+        "status": data.get("status", "Active"),
+        "createdAt": datetime.now(timezone.utc)
+    }
+
+    result = db["courses"].insert_one(new_course)
+    new_course["id"] = str(result.inserted_id)
+    del new_course["_id"]
+    new_course["createdAt"] = new_course["createdAt"].isoformat()
+
+    return jsonify({
+        "success": True,
+        "message": "Course created successfully.",
+        "data": new_course
+    }), 201
+
+@courses_bp.route("/<course_id>", methods=["PATCH"])
+# @jwt_required()
+def update_course(course_id):
+    """Update an existing course."""
+    db = get_db()
+    data = request.get_json()
+
+    try:
+        oid = ObjectId(course_id)
+    except Exception:
+        return jsonify({"success": False, "message": "Invalid course ID."}), 400
+
+    update_data = {}
+    fields = ["title", "description", "level", "duration", "instructor", "status", "assessmentFlow", "curriculum"]
+    for field in fields:
+        if field in data:
+            update_data[field] = data[field]
+
+    if not update_data:
+        return jsonify({"success": False, "message": "No data provided for update."}), 400
+
+    db["courses"].update_one({"_id": oid}, {"$set": update_data})
+
+    return jsonify({
+        "success": True,
+        "message": "Course updated successfully."
+    }), 200
+
+@courses_bp.route("/<course_id>", methods=["DELETE"])
+# @jwt_required()
+def delete_course(course_id):
+    """Delete a course."""
+    db = get_db()
+    try:
+        oid = ObjectId(course_id)
+    except Exception:
+        return jsonify({"success": False, "message": "Invalid course ID."}), 400
+
+    db["courses"].delete_one({"_id": oid})
+
+    return jsonify({
+        "success": True,
+        "message": "Course deleted successfully."
     }), 200

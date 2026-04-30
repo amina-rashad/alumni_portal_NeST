@@ -11,8 +11,8 @@ db = client["alumni_portal"]
 users = db["users"]
 
 # Super Admin credentials
-SUPER_ADMIN_EMAIL = "superadmin@nest.com"
-SUPER_ADMIN_PASSWORD = "SuperAdmin123!"
+SUPER_ADMIN_EMAIL = "shintosebastian@nestgroup.net"
+SUPER_ADMIN_PASSWORD = "Shinto@30"
 
 # Check if super admin already exists
 existing_user = users.find_one({"email": SUPER_ADMIN_EMAIL})
@@ -30,7 +30,7 @@ else:
 
     # Create the super admin document
     super_admin_doc = {
-        "full_name": "NeST Super Admin",
+        "full_name": "Shinto Sebastian",
         "email": SUPER_ADMIN_EMAIL,
         "password": hashed_pw,
         "phone": "999-999-9999",

@@ -6,6 +6,8 @@ import {
   ShieldCheck, AlertCircle, Video
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { eventManagerApi } from '../../services/api';
+import StatusModal from '../../components/StatusModal';
 
 const GlassSelect: React.FC<{
   label: string;
@@ -103,6 +105,19 @@ const EventManagerAddEvent: React.FC = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const brandPrimary = '#233167';
 
+  const [loading, setLoading] = useState(false);
+  const [statusModal, setStatusModal] = useState<{
+    show: boolean;
+    type: 'success' | 'error' | 'info';
+    title: string;
+    message: string;
+  }>({
+    show: false,
+    type: 'info',
+    title: '',
+    message: ''
+  });
+
   const [formData, setFormData] = useState({
     title: '',
     category: 'Networking & Mixer',
@@ -125,19 +140,85 @@ const EventManagerAddEvent: React.FC = () => {
   const setAudience = (val: string) => setFormData(prev => ({ ...prev, audience: val }));
   const setMode = (val: string) => setFormData(prev => ({ ...prev, mode: val }));
 
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
+  };
+
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(e.type === "dragenter" || e.type === "dragover");
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
-      setSelectedImage(URL.createObjectURL(file));
+      const base64 = await fileToBase64(file);
+      setSelectedImage(base64);
+    }
+  };
+
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const base64 = await fileToBase64(file);
+      setSelectedImage(base64);
+    }
+  };
+
+  const handleSubmit = async (isDraft: boolean = false) => {
+    if (!formData.title || !formData.date) {
+      setStatusModal({
+        show: true,
+        type: 'error',
+        title: 'Missing Fields',
+        message: 'Please provide at least a title and a date for the event.'
+      });
+      return;
+    }
+
+    setStatusModal({
+      show: true,
+      type: 'info',
+      title: 'Launching Event',
+      message: 'Broadcasting your event to the community...'
+    });
+
+    try {
+      const payload = {
+        ...formData,
+        cover_image: selectedImage,
+        is_active: !isDraft,
+        max_attendees: parseInt(formData.limit) || 0
+      };
+
+      const res = await eventManagerApi.createEvent(payload);
+      if (res.success) {
+        setStatusModal({
+          show: true,
+          type: 'success',
+          title: 'Event Published!',
+          message: isDraft ? 'Event saved as draft successfully.' : 'Your event is now live and notifications have been sent.'
+        });
+        setTimeout(() => navigate('/event-manager/events'), 2000);
+      } else {
+        throw new Error(res.message || 'Failed to create event');
+      }
+    } catch (err: any) {
+      setStatusModal({
+        show: true,
+        type: 'error',
+        title: 'Launch Failed',
+        message: err.message || 'Something went wrong. Please try again.'
+      });
     }
   };
 
@@ -175,10 +256,14 @@ const EventManagerAddEvent: React.FC = () => {
         </div>
 
         <div style={{ display: 'flex', gap: '16px' }}>
-          <button style={{ padding: '12px 24px', borderRadius: '14px', background: '#f1f5f9', color: '#475569', fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+          <button 
+            onClick={() => handleSubmit(true)}
+            style={{ padding: '12px 24px', borderRadius: '14px', background: '#f1f5f9', color: '#475569', fontWeight: 700, border: 'none', cursor: 'pointer' }}
+          >
             Save Draft
           </button>
           <button 
+            onClick={() => handleSubmit(false)}
             style={{ 
               display: 'flex', 
               alignItems: 'center', 
@@ -207,20 +292,20 @@ const EventManagerAddEvent: React.FC = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <label style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Event Name</label>
-                <input type="text" name="title" value={formData.title} onChange={handleInputChange} placeholder="e.g. Annual Alumni Gala 2026" style={glossyInputStyle} />
+                <input type="text" name="title" value={formData.title} onChange={handleInputChange} placeholder="e.g. Annual Alumni Gala 2026" style={glossyInputStyle as any} />
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
                 <GlassSelect label="Category" name="category" value={formData.category} options={['Networking & Mixer', 'Workshop', 'Seminar', 'Conference']} onChange={setCategory} />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <label style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Max Capacity</label>
-                  <input type="number" name="limit" value={formData.limit} onChange={handleInputChange} placeholder="e.g. 500" style={glossyInputStyle} />
+                   <label style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Max Capacity</label>
+                   <input type="number" name="limit" value={formData.limit} onChange={handleInputChange} placeholder="e.g. 500" style={glossyInputStyle as any} />
                 </div>
               </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   <label style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Description</label>
-                  <textarea rows={6} name="description" value={formData.description} onChange={handleInputChange} placeholder="What is this event about?" style={{ ...glossyInputStyle, resize: 'none', height: 'auto', fontFamily: 'inherit' }} />
+                  <textarea rows={6} name="description" value={formData.description} onChange={handleInputChange} placeholder="What is this event about?" style={{ ...glossyInputStyle, resize: 'none', height: 'auto', fontFamily: 'inherit' } as any} />
                 </div>
             </div>
           </section>
@@ -245,7 +330,7 @@ const EventManagerAddEvent: React.FC = () => {
                     <div style={{ fontWeight: 700, color: '#1e293b' }}>Upload an image or drag and drop</div>
                     <div style={{ fontSize: '13px', color: '#64748b' }}>PNG, JPG up to 10MB</div>
                   </div>
-                  <input type="file" style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }} onChange={(e) => e.target.files && setSelectedImage(URL.createObjectURL(e.target.files[0]))} />
+                  <input type="file" style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }} onChange={handleImageSelect} />
                 </div>
               )}
             </div>
@@ -260,11 +345,11 @@ const EventManagerAddEvent: React.FC = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <label style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8' }}>Event Date</label>
-                <input type="date" name="date" value={formData.date} onChange={handleInputChange} style={glossyInputStyle} />
+                <input type="date" name="date" value={formData.date} onChange={handleInputChange} style={glossyInputStyle as any} />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <label style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8' }}>Start Time</label>
-                <input type="time" name="startTime" value={formData.startTime} onChange={handleInputChange} style={glossyInputStyle} />
+                <input type="time" name="startTime" value={formData.startTime} onChange={handleInputChange} style={glossyInputStyle as any} />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <label style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8' }}>{formData.mode === 'Online' ? 'Meeting Link' : 'Location'}</label>
@@ -274,7 +359,7 @@ const EventManagerAddEvent: React.FC = () => {
                   ) : (
                     <MapPin size={16} color={brandPrimary} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
                   )}
-                  <input name="venue" value={formData.venue} onChange={handleInputChange} placeholder={formData.mode === 'Online' ? 'Zoom, Meet, or Teams Link' : 'Venue name or Physical Address'} style={{ ...glossyInputStyle, paddingLeft: '40px' }} />
+                  <input name="venue" value={formData.venue} onChange={handleInputChange} placeholder={formData.mode === 'Online' ? 'Zoom, Meet, or Teams Link' : 'Venue name or Physical Address'} style={{ ...glossyInputStyle, paddingLeft: '40px' } as any} />
                 </div>
               </div>
             </div>
@@ -284,7 +369,7 @@ const EventManagerAddEvent: React.FC = () => {
             <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#1e293b', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <ShieldCheck size={16} color="#10b981" /> Settings
             </h3>
-            <GlassSelect label="Event Mode" name="mode" value={formData.mode} options={['online', 'offline']} onChange={setMode} />
+            <GlassSelect label="Event Mode" name="mode" value={formData.mode} options={['Online', 'Offline']} onChange={setMode} />
           </section>
 
           <div style={{ background: 'rgba(35, 49, 103, 0.05)', padding: '24px', borderRadius: '24px', border: '1px solid rgba(35, 49, 103, 0.1)', display: 'flex', gap: '12px' }}>
@@ -296,6 +381,14 @@ const EventManagerAddEvent: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <StatusModal
+        isOpen={statusModal.show}
+        onClose={() => setStatusModal(prev => ({ ...prev, show: false }))}
+        type={statusModal.type}
+        title={statusModal.title}
+        message={statusModal.message}
+      />
     </div>
   );
 };

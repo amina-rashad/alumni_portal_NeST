@@ -59,6 +59,25 @@ def get_notifications():
     }), 200
 
 
+@notifications_bp.route("/test", methods=["POST"])
+@jwt_required()
+def test_notification():
+    """Send a test notification to the current user."""
+    user_id = get_jwt_identity()
+    db = get_db()
+    
+    create_notification(
+        db,
+        user_id=user_id,
+        type_str="system",
+        title="Test Notification",
+        message="If you see this, the notification system is working correctly!",
+        link="/dashboard"
+    )
+    
+    return jsonify({"success": True, "message": "Test notification sent."}), 200
+
+
 # ── Mark as Read ──
 
 @notifications_bp.route("/<notification_id>/read", methods=["PATCH"])

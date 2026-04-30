@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, type Variants, AnimatePresence } from 'framer-motion';
 import { 
   Briefcase, Calendar, Users, Star, 
@@ -6,9 +7,9 @@ import {
   Clock, MessageSquare, ThumbsUp, Share2,
   Award, ChevronRight, ChevronLeft,
   MoreHorizontal, FileText, ArrowRight,
-  BrainCircuit, BookOpen, Heart, ShieldCheck, Sparkles
+  BrainCircuit, BookOpen, Heart, ShieldCheck, Sparkles, X
 } from 'lucide-react';
-import { getUser, coursesApi, jobsApi, type AuthUser } from '../services/api';
+import { getUser, coursesApi, jobsApi, socialApi, eventsApi, networkingApi, type AuthUser } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 
 // Premium Job Backgrounds
@@ -49,21 +50,11 @@ const feed = [
   }
 ];
 
-const recommendations = [
-  { name: 'Priya Sharma', title: 'Product Manager @ Google', avatar: 'https://i.pravatar.cc/150?img=9', mutual: 12 },
-  { name: 'Michael Chen', title: 'Senior DevOps Engineer', avatar: 'https://i.pravatar.cc/150?img=12', mutual: 8 },
-  { name: 'Emily Davis', title: 'UX Research Lead @ Meta', avatar: 'https://i.pravatar.cc/150?img=1', mutual: 24 }
-];
-
 const events = [
   { id: 1, title: 'Annual Alumni Tech Summit', date: 'Oct 15', time: '09:00 AM PST', attendees: 450, color: '#0F172A' },
   { id: 2, title: 'AI & Machine Learning Workshop', date: 'Nov 02', time: '01:00 PM PST', attendees: 128, color: '#3B82F6' }
 ];
 
-const quizzes = [
-  { id: 1, title: 'React Performance Masterclass', questions: 15, difficulty: 'Advanced', time: '20 mins', color: '#10B981' },
-  { id: 2, title: 'Cloud Architecture Essentials', questions: 10, difficulty: 'Intermediate', time: '15 mins', color: '#8B5CF6' }
-];
 
 // --- ANIMATION VARIANTS ---
 const smoothSpring = { type: 'spring' as const, stiffness: 100, damping: 20, mass: 1 };
@@ -91,63 +82,89 @@ const Dashboard: React.FC = () => {
   const [user, setUserData] = useState<AuthUser | null>(null);
   const [courses, setCourses] = useState<any[]>([]);
   const [jobs, setJobs] = useState<any[]>([]);
-  const [likedPosts, setLikedPosts] = useState<Set<number>>(new Set());
-  const [isHovered, setIsHovered] = useState(false);
+  const [liveEvents, setLiveEvents] = useState<any[]>([]);
+  const [livePosts, setLivePosts] = useState<any[]>([]);
+  const [livePeople, setLivePeople] = useState<any[]>([]);
+  const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedJob, setSelectedJob] = useState<any | null>(null);
 
   useEffect(() => {
-    // Load the authenticated user from local storage
-    const currentUser = getUser() as unknown as AuthUser;
-    if (currentUser) {
-      setUserData(currentUser);
-    }
-    
-    // Fetch live courses
-    const fetchCourses = async () => {
-      try {
-        const res = await coursesApi.getAllCourses();
-        const data = res.data as any;
-        if (res.success && data && data.courses) {
-          setCourses(data.courses);
-        }
-      } catch (err) {
-        console.error("Failed to load courses", err);
-      }
-    };
-    fetchCourses();
-    
-    // Fetch live jobs and filter by user profile + NeST focus
-    const fetchJobs = async () => {
-      try {
-        const res = await jobsApi.getAllJobs();
-        const data = res.data as any;
-        let filteredJobs = [];
-        
-        if (res.success && data && data.jobs && data.jobs.length > 0) {
-          filteredJobs = data.jobs.filter((j: any) => 
-            j.company.toLowerCase().includes('nest') || 
-            (user && j.title.toLowerCase().includes(user.full_name.split(' ')[0].toLowerCase())) // Mock profile matching
-          );
-        }
-        
-        if (filteredJobs.length === 0) {
-           // Fallback to elite NeST dummy jobs that match typical alumni profiles
-           setJobs(dummyJobs);
-        } else {
-           setJobs(filteredJobs);
-        }
-      } catch (err) {
-        console.error("Failed to load jobs", err);
-        setJobs(dummyJobs);
-      }
-    };
-    fetchJobs();
-  }, [user]);
+    const fetchDashboardData = async () => {
+      setIsLoading(true);
+      const currentUser = getUser() as unknown as AuthUser;
+      if (currentUser) setUserData(currentUser);
 
-  const handleLike = (id: number) => {
+      try {
+        const [courseRes, jobRes, eventRes, postRes, peopleRes] = await Promise.all([
+          coursesApi.getMyCourses(),
+          jobsApi.getAllJobs(),
+          eventsApi.getAllEvents(),
+          socialApi.getFeed(1, 5),
+          networkingApi.listAllUsers({ q: '' })
+        ]);
+
+        if (courseRes.success && (courseRes.data as any).courses) {
+          setCourses((courseRes.data as any).courses.slice(0, 3));
+        }
+        
+        if (jobRes.success && (jobRes.data as any).jobs) {
+          const filtered = (jobRes.data as any).jobs.filter((j: any) => 
+            j.company.toLowerCase().includes('nest') || 
+            (currentUser && j.title.toLowerCase().includes(currentUser.full_name.split(' ')[0].toLowerCase()))
+          );
+          setJobs(filtered.length > 0 ? filtered.slice(0, 5) : dummyJobs);
+        } else {
+          setJobs(dummyJobs);
+        }
+
+        if (eventRes.success && (eventRes.data as any)?.events) {
+          const sorted = [...(eventRes.data as any).events].sort((a: any, b: any) => 
+            new Date(a.date).getTime() - new Date(b.date).getTime()
+          );
+          setLiveEvents(sorted.slice(0, 2));
+        }
+
+        if (postRes.success && postRes.data?.posts) {
+          setLivePosts(postRes.data.posts);
+        }
+
+        if (peopleRes.success && (peopleRes.data as any)?.users) {
+          const others = (peopleRes.data as any).users.filter((u: any) => u.id !== currentUser?.id);
+          setLivePeople(others.slice(0, 3));
+        }
+      } catch (err) {
+        console.error("Dashboard Fetch Error:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return { month: 'OCT', day: '15' };
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) {
+        if (dateStr.includes(' ')) {
+          const parts = dateStr.split(' ');
+          return { month: parts[0].toUpperCase(), day: parts[1] };
+        }
+        return { month: 'UPCOMING', day: '??' };
+      }
+      const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+      return { month: months[date.getMonth()], day: date.getDate().toString() };
+    } catch (e) {
+      return { month: 'EVENT', day: '!!' };
+    }
+  };
+
+  const handleLike = (id: string) => {
     setLikedPosts(prev => {
       const newSet = new Set(prev);
       if (newSet.has(id)) newSet.delete(id);
@@ -161,7 +178,7 @@ const Dashboard: React.FC = () => {
   // Removed Marquee Motion logic for static morphological layout
   useEffect(() => {
     return () => {};
-  }, [jobs, isHovered]);
+  }, [jobs, isLoading]);
 
   return (
     <div className="font-sans" style={{ 
@@ -634,77 +651,80 @@ const Dashboard: React.FC = () => {
             </div>
 
             {/* FULL SECTION MORPHING OVERLAY (🔥 ELITE UI) */}
-            <AnimatePresence>
-              {selectedJob && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  style={{
-                    position: 'fixed',
-                    inset: 0,
-                    zIndex: 10000,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '2rem',
-                    background: 'rgba(5, 10, 25, 0.4)',
-                    backdropFilter: 'blur(30px)'
-                  }}
-                  onClick={() => setSelectedJob(null)}
-                >
-                  <motion.div 
-                    layoutId={`card-${selectedJob.id}`}
+            {createPortal(
+              <AnimatePresence>
+                {selectedJob && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
                     style={{
-                      width: '100%',
-                      maxWidth: '1300px',
-                      height: '85vh',
-                      background: '#0f172a',
-                      borderRadius: '48px',
-                      overflow: 'hidden',
-                      position: 'relative',
-                      boxShadow: '0 50px 100px -20px rgba(0,0,0,0.8)',
-                      border: '1px solid rgba(255,255,255,0.08)'
+                      position: 'fixed',
+                      inset: 0,
+                      zIndex: 100000,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '2rem',
+                      background: 'rgba(5, 10, 25, 0.6)',
+                      backdropFilter: 'blur(30px)',
+                      WebkitBackdropFilter: 'blur(30px)',
                     }}
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={() => setSelectedJob(null)}
                   >
-                    <img 
-                      src={selectedJob.backgroundImage || architectBg} 
-                      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }} 
-                      alt="Job detail"
-                    />
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, #0f172a 30%, transparent 100%)' }} />
-                    
-                    <div style={{ position: 'relative', zIndex: 10, padding: '5rem', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
-                      <motion.button 
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        whileHover={{ scale: 1.1, background: '#d32f2f' }}
-                        style={{ position: 'absolute', top: '3rem', right: '3rem', background: 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', width: '56px', height: '56px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(10px)' }}
-                        onClick={() => setSelectedJob(null)}
-                      >
-                        <X size={24} />
-                      </motion.button>
+                    <motion.div 
+                      style={{
+                        width: '100%',
+                        maxWidth: '1300px',
+                        height: '85vh',
+                        background: '#0f172a',
+                        borderRadius: '48px',
+                        overflow: 'hidden',
+                        position: 'relative',
+                        boxShadow: '0 50px 100px -20px rgba(0,0,0,0.8)',
+                        border: '1px solid rgba(255,255,255,0.08)'
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <img 
+                        src={selectedJob.backgroundImage || architectBg} 
+                        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }} 
+                        alt="Job detail"
+                      />
+                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, #0f172a 30%, transparent 100%)' }} />
+                      
+                      <div style={{ position: 'relative', zIndex: 10, padding: '5rem', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        <motion.button 
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          whileHover={{ scale: 1.1, background: '#d32f2f' }}
+                          style={{ position: 'absolute', top: '3rem', right: '3rem', background: 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', width: '56px', height: '56px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(10px)' }}
+                          onClick={() => setSelectedJob(null)}
+                        >
+                          <X size={24} />
+                        </motion.button>
 
-                      <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, type: "spring", damping: 20 }}>
-                        <span style={{ background: 'linear-gradient(90deg, #d32f2f, #9a0007)', color: '#fff', padding: '10px 28px', borderRadius: '99px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.15em', fontSize: '0.8rem', boxShadow: '0 10px 20px rgba(211,47,47,0.3)' }}>Elite Career Track</span>
-                        <h2 style={{ fontSize: '5rem', fontWeight: 950, color: '#fff', margin: '1.5rem 0 1rem', letterSpacing: '-0.05em', lineHeight: 0.95 }}>{selectedJob.title}</h2>
-                        <div style={{ display: 'flex', gap: '4rem', fontSize: '1.3rem', color: '#E2E8F0', fontWeight: 700, marginBottom: '2.5rem' }}>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}><Users size={24} color="#d32f2f" /> {selectedJob.company}</span>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}><MapPin size={24} color="#d32f2f" /> {selectedJob.location}</span>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}><Briefcase size={24} color="#d32f2f" /> Leadership Track</span>
-                        </div>
-                        <p style={{ fontSize: '1.5rem', color: '#CBD5E1', lineHeight: 1.5, maxWidth: '900px', opacity: 0.85, fontWeight: 500 }}>Join NeST Digital's top-tier engineering taskforce. We are looking for visionaries to lead our next generation of distributed systems and industrial automation frameworks.</p>
-                        <div style={{ marginTop: '4rem', display: 'flex', gap: '2rem' }}>
-                          <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => navigate(`/jobs/${selectedJob.id}`)} style={{ background: '#d32f2f', color: '#fff', border: 'none', padding: '1.5rem 4rem', borderRadius: '24px', fontWeight: 800, fontSize: '1.2rem', cursor: 'pointer' }}>Apply for Opportunity</motion.button>
-                          <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setSelectedJob(null)} style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.15)', padding: '1.5rem 2.5rem', borderRadius: '24px', fontWeight: 700, fontSize: '1.2rem', cursor: 'pointer', backdropFilter: 'blur(10px)' }}>Close Detail</motion.button>
-                        </div>
-                      </motion.div>
-                    </div>
+                        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, type: "spring", damping: 20 }}>
+                          <span style={{ background: 'linear-gradient(90deg, #d32f2f, #9a0007)', color: '#fff', padding: '10px 28px', borderRadius: '99px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.15em', fontSize: '0.8rem', boxShadow: '0 10px 20px rgba(211,47,47,0.3)' }}>Elite Career Track</span>
+                          <h2 style={{ fontSize: '4.5rem', fontWeight: 950, color: '#fff', margin: '1.5rem 0 1rem', letterSpacing: '-0.05em', lineHeight: 0.95 }}>{selectedJob.title}</h2>
+                          <div style={{ display: 'flex', gap: '4rem', fontSize: '1.3rem', color: '#E2E8F0', fontWeight: 700, marginBottom: '2.5rem' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}><Users size={24} color="#d32f2f" /> {selectedJob.company}</span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}><MapPin size={24} color="#d32f2f" /> {selectedJob.location}</span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}><Briefcase size={24} color="#d32f2f" /> Leadership Track</span>
+                          </div>
+                          <p style={{ fontSize: '1.5rem', color: '#CBD5E1', lineHeight: 1.5, maxWidth: '900px', opacity: 0.85, fontWeight: 500 }}>Join NeST Digital's top-tier engineering taskforce. We are looking for visionaries to lead our next generation of distributed systems and industrial automation frameworks.</p>
+                          <div style={{ marginTop: '4rem', display: 'flex', gap: '2rem' }}>
+                            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => navigate(`/jobs/${selectedJob.id}`)} style={{ background: '#d32f2f', color: '#fff', border: 'none', padding: '1.5rem 4rem', borderRadius: '24px', fontWeight: 800, fontSize: '1.2rem', cursor: 'pointer' }}>Apply for Opportunity</motion.button>
+                            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setSelectedJob(null)} style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.15)', padding: '1.5rem 2.5rem', borderRadius: '24px', fontWeight: 700, fontSize: '1.2rem', cursor: 'pointer', backdropFilter: 'blur(10px)' }}>Close Detail</motion.button>
+                          </div>
+                        </motion.div>
+                      </div>
+                    </motion.div>
                   </motion.div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                )}
+              </AnimatePresence>,
+              document.body
+            )}
           </div>
         </motion.section>
 
@@ -718,20 +738,24 @@ const Dashboard: React.FC = () => {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem' }}>
-             {events.map((event, i) => (
+             {(liveEvents.length > 0 ? liveEvents : events).map((event, i) => (
                 <motion.div 
-                  key={i} 
+                  key={event.id || i} 
                   variants={itemVariants} 
                   className="luxury-card" 
                   style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column' }}
                   onClick={() => navigate(`/events/${event.id}`)}
                 >
-                   <div style={{ h: '8px', background: `linear-gradient(90deg, ${event.color}, transparent)`, width: '100%', height: '6px' }} />
+                   <div style={{ height: '8px', background: `linear-gradient(90deg, ${event.color || '#0F172A'}, transparent)`, width: '100%' }} />
                    <div style={{ padding: '2rem', flex: 1 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
                          <div style={{ background: '#f8fafc', padding: '12px 20px', borderRadius: '16px', textAlign: 'center', border: '1px solid #f1f5f9' }}>
-                            <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 800, color: '#d32f2f', textTransform: 'uppercase' }}>{event.date.split(' ')[0]}</p>
-                            <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 900, color: '#1e293b' }}>{event.date.split(' ')[1]}</p>
+                            <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 800, color: '#d32f2f', textTransform: 'uppercase' }}>
+                              {formatDate(event.date).month}
+                            </p>
+                            <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 900, color: '#1e293b' }}>
+                              {formatDate(event.date).day}
+                            </p>
                          </div>
                          <button className="btn-premium" style={{ background: 'transparent', color: '#64748B', border: '1px solid #e2e8f0', padding: '8px 16px', borderRadius: '999px', fontSize: '0.8rem', fontWeight: 700 }}>
                            Network Only
@@ -739,8 +763,8 @@ const Dashboard: React.FC = () => {
                       </div>
                       <h4 style={{ margin: '0 0 1rem', fontSize: '1.4rem', fontWeight: 800, color: '#1e293b', lineHeight: 1.3 }}>{event.title}</h4>
                       <div style={{ display: 'flex', gap: '1.5rem', color: '#64748B', fontSize: '0.95rem', fontWeight: 500 }}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Clock size={16} /> {event.time}</span>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Users size={16} /> {event.attendees}+ Joined</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Clock size={16} /> {event.time || '09:00 AM'}</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Users size={16} /> {event.attendees_count ?? 0} Joined</span>
                       </div>
                    </div>
                    <div style={{ padding: '1.5rem 2rem', background: 'rgba(255,255,255,0.5)', borderTop: '1px solid rgba(0,0,0,0.03)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -749,6 +773,51 @@ const Dashboard: React.FC = () => {
                         <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#f1f5f9', border: '2px solid white', marginLeft: '-8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 700, color: '#64748B' }}>+12</div>
                       </div>
                       <button className="btn-premium" style={{ background: '#d32f2f', color: 'white', border: 'none', padding: '10px 24px', borderRadius: '12px', fontWeight: 700, fontSize: '0.9rem' }}>Secure Spot</button>
+                   </div>
+                </motion.div>
+             ))}
+          </div>
+        </motion.section>
+
+        {/* 2.5 SUGGESTED CONNECTIONS (LIVE DATA) */}
+        <motion.section variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-10%" }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ background: '#10B981', padding: '10px', borderRadius: '14px', display: 'flex' }}>
+                  <Users size={22} color="white" />
+                </div>
+                <h2 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 800, color: '#1e293b', letterSpacing: '-0.02em' }}>People You May Know</h2>
+             </div>
+             <button onClick={() => navigate('/networking')} className="link-hover" style={{ background: 'transparent', border: 'none', color: '#64748B', fontWeight: 700 }}>Find More</button>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+             {livePeople.length === 0 ? (
+                <p style={{ color: '#64748B', fontSize: '1rem' }}>Searching for connections...</p>
+             ) : livePeople.map((person, i) => (
+                <motion.div 
+                  key={person.id || i} 
+                  variants={itemVariants} 
+                  className="luxury-card" 
+                  style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1.25rem' }}
+                >
+                   {person.profile_picture ? (
+                     <img src={person.profile_picture} alt={person.full_name} style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover' }} />
+                   ) : (
+                     <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '1.25rem', color: '#64748b' }}>
+                        {person.full_name?.charAt(0)}
+                     </div>
+                   )}
+                   <div style={{ flex: 1 }}>
+                      <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#1e293b' }}>{person.full_name}</h4>
+                      <p style={{ margin: '2px 0 8px', fontSize: '0.85rem', color: '#64748B', fontWeight: 500 }}>{person.user_type || 'Alumni'}</p>
+                      <button 
+                        onClick={() => navigate(`/profile/${person.id}`)}
+                        className="btn-premium" 
+                        style={{ border: 'none', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', fontWeight: 800, padding: '6px 16px', borderRadius: '999px', fontSize: '0.75rem' }}
+                      >
+                        View Profile
+                      </button>
                    </div>
                 </motion.div>
              ))}
@@ -771,7 +840,7 @@ const Dashboard: React.FC = () => {
               {courses.length === 0 ? (
                 <p style={{ color: '#64748B', fontSize: '1rem' }}>Curating elite masterclasses...</p>
               ) : courses.map((course, i) => (
-                  <motion.div key={course.id || i} variants={itemVariants} className="luxury-card" style={{ cursor: 'pointer' }} onClick={() => navigate(`/learning/course/${course.id}`)}>
+                  <motion.div key={course.id || i} variants={itemVariants} className="luxury-card" style={{ cursor: 'pointer' }} onClick={() => navigate(`/courses/${course.id}/play`)}>
                     <div style={{ height: '180px', background: 'linear-gradient(135deg, #0F172A, #334155)', position: 'relative', overflow: 'hidden' }}>
                       <div className="noise-container" style={{ opacity: 0.1 }} />
                       <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -808,32 +877,38 @@ const Dashboard: React.FC = () => {
               </div>
               <h2 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 800, color: '#1e293b', letterSpacing: '-0.02em', fontFamily: 'Montserrat, sans-serif' }}>Alumni Stories</h2>
             </div>
-            <button onClick={() => navigate('/feed')} className="link-hover" style={{ background: 'transparent', border: 'none', color: '#64748B', fontWeight: 700 }}>View Stories</button>
+            <button onClick={() => navigate('/dashboard/activity')} className="link-hover" style={{ background: 'transparent', border: 'none', color: '#64748B', fontWeight: 700 }}>View Stories</button>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-            {feed.map((post) => (
+             {(livePosts.length > 0 ? livePosts : feed).map((post) => (
               <motion.div key={post.id} variants={itemVariants} className="luxury-card" style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '24px', overflow: 'hidden' }}>
                 <div style={{ padding: '2rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                     <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                      <img 
-                        src={post.author.avatar.replace('background=0F172A', 'background=d32f2f')} 
-                        alt={post.author.name} 
-                        style={{ width: '50px', height: '50px', borderRadius: '50%', border: '2px solid #fff', boxShadow: '0 4px 10px rgba(0,0,0,0.05)' }} 
-                      />
+                      {post.author_picture || post.author?.avatar ? (
+                        <img 
+                          src={post.author_picture || post.author?.avatar?.replace('background=0F172A', 'background=d32f2f')} 
+                          alt={post.author_name || post.author?.name} 
+                          style={{ width: '50px', height: '50px', borderRadius: '50%', border: '2px solid #fff', boxShadow: '0 4px 10px rgba(0,0,0,0.05)', objectFit: 'cover' }} 
+                        />
+                      ) : (
+                        <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: '#d32f2f', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.2rem' }}>
+                          {(post.author_name || post.author?.name || 'A').charAt(0)}
+                        </div>
+                      )}
                       <div>
-                        <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#1e293b' }}>{post.author.name}</h4>
-                        <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748B', fontWeight: 600 }}>{post.author.title} • {post.time}</p>
+                        <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#1e293b' }}>{post.author_name || post.author?.name}</h4>
+                        <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748B', fontWeight: 600 }}>{post.author_type || post.author?.title} • {post.time || 'Just now'}</p>
                       </div>
                     </div>
                   </div>
                   
                   <p style={{ margin: '0 0 1.5rem', color: '#334155', lineHeight: 1.6, fontSize: '1.05rem', fontWeight: 450 }}>{post.content}</p>
                   
-                  {post.image && (
-                    <div style={{ borderRadius: '16px', overflow: 'hidden', marginBottom: '1.5rem', maxHeight: '400px' }}>
-                      <img src={post.image} alt="Insight" style={{ width: '100%', objectFit: 'cover' }} />
+                  {(post.image_url || post.image) && (
+                    <div style={{ borderRadius: '16px', overflow: 'hidden', marginBottom: '1.5rem', maxHeight: '500px', border: '1px solid #f1f5f9' }}>
+                      <img src={post.image_url || post.image} alt="Broadcast" style={{ width: '100%', objectFit: 'contain', maxHeight: '500px', background: '#f8fafc' }} />
                     </div>
                   )}
 
@@ -844,7 +919,7 @@ const Dashboard: React.FC = () => {
                         <ShieldCheck size={14} color="#10B981" /> Verified Archive
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64748B', fontSize: '0.8rem', fontWeight: 600 }}>
-                        <Sparkles size={14} color="#F59E0B" /> Alumni Story
+                        <Sparkles size={14} color="#F59E0B" /> {(post.author_type || '').toLowerCase().includes('recruiter') ? 'Official Broadcast' : 'Alumni Story'}
                       </div>
                     </div>
 
@@ -868,7 +943,7 @@ const Dashboard: React.FC = () => {
                       <motion.div animate={{ scale: likedPosts.has(post.id) ? [1, 1.4, 1] : 1 }}>
                         <Heart size={18} color={likedPosts.has(post.id) ? '#d32f2f' : '#64748B'} fill={likedPosts.has(post.id) ? '#d32f2f' : 'transparent'} />
                       </motion.div>
-                      <span style={{ fontWeight: 800, color: likedPosts.has(post.id) ? '#d32f2f' : '#1e293b', fontSize: '0.9rem' }}>{post.likes + (likedPosts.has(post.id) ? 1 : 0)}</span>
+                      <span style={{ fontWeight: 800, color: likedPosts.has(post.id) ? '#d32f2f' : '#1e293b', fontSize: '0.9rem' }}>{(post.likes_count ?? post.likes ?? 0) + (likedPosts.has(post.id) ? 1 : 0)}</span>
                     </motion.button>
                   </div>
                 </div>

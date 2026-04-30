@@ -22,8 +22,15 @@ const ViewProfile: React.FC = () => {
         const res = await usersApi.getProfile();
         const data = res.data as any;
         if (res.success && data && data.user) {
+          const apiUser = data.user;
+          setUserData(apiUser);
+          
+          // Optionally sync local storage if it's stale
           const localUser = getUser() as any;
-          setUserData(localUser ? { ...data.user, ...localUser } : data.user);
+          if (localUser && (localUser.id === apiUser.id)) {
+            // Keep local tokens but update profile info
+            // setUser({ ...localUser, ...apiUser }); 
+          }
         } else {
           const localUser = getUser();
           if (localUser) {
@@ -244,16 +251,47 @@ const ViewProfile: React.FC = () => {
               <Briefcase size={22} color="#c8102e" /> Experience
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <div style={{ display: 'flex', gap: '20px' }}>
-                  <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #f1f5f9' }}>
-                    <Building size={28} color="#94a3b8" />
+              {user.experience && user.experience.length > 0 ? (
+                user.experience.map((exp: any) => (
+                  <div key={exp.id} style={{ display: 'flex', gap: '20px' }}>
+                    <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #f1f5f9' }}>
+                      <Building size={28} color="#94a3b8" />
+                    </div>
+                    <div>
+                      <h4 style={{ margin: 0, fontSize: '17px', fontWeight: 750, color: '#1e292b' }}>{exp.role}</h4>
+                      <p style={{ margin: '4px 0', fontSize: '15px', color: '#64748b', fontWeight: 500 }}>{exp.company} • {exp.type || 'Full-time'}</p>
+                      <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8' }}>{exp.duration}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 style={{ margin: 0, fontSize: '17px', fontWeight: 750, color: '#1e292b' }}>Software Engineer</h4>
-                    <p style={{ margin: '4px 0', fontSize: '15px', color: '#64748b', fontWeight: 500 }}>NeST Digital • Full-time</p>
-                    <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8' }}>Jan 2023 - Present • 1 yr 3 mos</p>
+                ))
+              ) : (
+                <p style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: '15px' }}>No experience listed yet.</p>
+              )}
+            </div>
+          </section>
+
+          {/* Education Section */}
+          <section style={{ background: 'white', padding: '32px', borderRadius: '24px', border: '1px solid #f1f5f9', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+            <h3 style={{ margin: '0 0 24px', fontSize: '19px', fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <GraduationCap size={22} color="#c8102e" /> Education
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              {user.education && user.education.length > 0 ? (
+                user.education.map((edu: any) => (
+                  <div key={edu.id} style={{ display: 'flex', gap: '20px' }}>
+                    <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #f1f5f9' }}>
+                      <GraduationCap size={28} color="#94a3b8" />
+                    </div>
+                    <div>
+                      <h4 style={{ margin: 0, fontSize: '17px', fontWeight: 750, color: '#1e292b' }}>{edu.degree}</h4>
+                      <p style={{ margin: '4px 0', fontSize: '15px', color: '#64748b', fontWeight: 500 }}>{edu.school}</p>
+                      <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8' }}>Class of {edu.year}</p>
+                    </div>
                   </div>
-                </div>
+                ))
+              ) : (
+                <p style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: '15px' }}>No education details added yet.</p>
+              )}
             </div>
           </section>
 
@@ -305,7 +343,7 @@ const ViewProfile: React.FC = () => {
               
               {user.resume_url ? (
                 <div style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid #e2e8f0', background: '#f8fafc' }}>
-                  {user.resume_url.startsWith('data:application/pdf') ? (
+                  {(user.resume_url.startsWith('data:application/pdf') || user.resume_url.includes('pdf')) ? (
                     <object data={user.resume_url} type="application/pdf" width="100%" height="600px">
                       <div style={{ padding: '40px', textAlign: 'center' }}>
                         <p>Your browser does not support inline PDFs.</p>
@@ -371,10 +409,13 @@ const ViewProfile: React.FC = () => {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '30px', paddingTop: '24px', borderTop: '1px solid #f1f5f9' }}>
-               <a href="#" style={{ color: '#94a3b8', transition: '0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#1a2652'}><Linkedin size={20} /></a>
-               <a href="#" style={{ color: '#94a3b8', transition: '0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#000'}><Github size={20} /></a>
-               <a href="#" style={{ color: '#94a3b8', transition: '0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#1DA1F2'}><Twitter size={20} /></a>
-               <a href="#" style={{ color: '#94a3b8', transition: '0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#c8102e'}><Globe size={20} /></a>
+               {user.linkedin_url && <a href={user.linkedin_url} target="_blank" rel="noopener noreferrer" style={{ color: '#94a3b8', transition: '0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#1a2652'}><Linkedin size={20} /></a>}
+               {user.github_url && <a href={user.github_url} target="_blank" rel="noopener noreferrer" style={{ color: '#94a3b8', transition: '0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#000'}><Github size={20} /></a>}
+               {user.twitter_url && <a href={user.twitter_url} target="_blank" rel="noopener noreferrer" style={{ color: '#94a3b8', transition: '0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#1DA1F2'}><Twitter size={20} /></a>}
+               {user.portfolio_url && <a href={user.portfolio_url} target="_blank" rel="noopener noreferrer" style={{ color: '#94a3b8', transition: '0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#c8102e'}><Globe size={20} /></a>}
+               {!user.linkedin_url && !user.github_url && !user.twitter_url && !user.portfolio_url && (
+                 <p style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: '12px' }}>No social links added.</p>
+               )}
             </div>
           </section>
 

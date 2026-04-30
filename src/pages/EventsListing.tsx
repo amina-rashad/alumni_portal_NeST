@@ -3,14 +3,24 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, MapPin, Clock, Users, ChevronRight, CheckCircle2, AlertCircle } from 'lucide-react';
 import { eventsApi } from '../services/api';
 import nestIcon from '../assets/nest_icon.png';
+import StatusModal from '../components/StatusModal';
 
 const EventsListing: React.FC = () => {
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [registering, setRegistering] = useState<string | null>(null);
-  const [selectedEventForModal, setSelectedEventForModal] = useState<any>(null);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [message, setMessage] = useState({ type: '', text: '' });
+  
+  // Modal State
+  const [modalConfig, setModalConfig] = useState({
+    isOpen: false,
+    type: 'success' as 'success' | 'error' | 'info' | 'warning',
+    title: '',
+    message: '',
+    confirmText: 'Okay',
+    showConfirmOnly: true,
+    onConfirm: undefined as (() => void) | undefined
+  });
+
   const [selectedCategory, setSelectedCategory] = useState('All');
 
   const categories = ['All', 'Webinar', 'Meetup', 'Workshop', 'Conference'];
@@ -33,22 +43,57 @@ const EventsListing: React.FC = () => {
     fetchEvents();
   }, []);
 
-  const handleRegister = async (eventId: string) => {
+  const handleRegister = (event: any) => {
+    setModalConfig({
+      isOpen: true,
+      type: 'info',
+      title: 'Confirm Registration',
+      message: `Are you sure you want to register for ${event.title}?`,
+      confirmText: 'Confirm Registration',
+      showConfirmOnly: false,
+      onConfirm: () => handleConfirmRegistration(event.id)
+    });
+  };
+
+  const handleConfirmRegistration = async (eventId: string) => {
     setRegistering(eventId);
-    setMessage({ type: '', text: '' });
+    setModalConfig(prev => ({ ...prev, isOpen: false }));
     try {
       const res = await eventsApi.registerForEvent(eventId);
       if (res.success) {
-        setShowSuccessModal(true);
+        setModalConfig({
+          isOpen: true,
+          type: 'success',
+          title: 'Registration Successful!',
+          message: 'You have successfully registered for the event. We look forward to seeing you!',
+          confirmText: 'Great',
+          showConfirmOnly: true,
+          onConfirm: undefined
+        });
         fetchEvents();
       } else {
-        setMessage({ type: 'error', text: res.message || 'Registration failed.' });
+        setModalConfig({
+          isOpen: true,
+          type: 'error',
+          title: 'Registration Failed',
+          message: res.message || 'There was an issue processing your registration. Please try again.',
+          confirmText: 'Okay',
+          showConfirmOnly: true,
+          onConfirm: undefined
+        });
       }
     } catch (err) {
-      setMessage({ type: 'error', text: 'Network error occurred.' });
+      setModalConfig({
+        isOpen: true,
+        type: 'error',
+        title: 'Network Error',
+        message: 'A connection error occurred. Please check your internet and try again.',
+        confirmText: 'Okay',
+        showConfirmOnly: true,
+        onConfirm: undefined
+      });
     } finally {
       setRegistering(null);
-      setTimeout(() => setMessage({ type: '', text: '' }), 5000);
     }
   };
 
@@ -97,28 +142,6 @@ const EventsListing: React.FC = () => {
         </div>
       </div>
 
-      {message.text && (
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          style={{ 
-            marginBottom: '2rem', 
-            padding: '1rem 1.5rem', 
-            borderRadius: '1rem', 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '0.75rem', 
-            fontWeight: 700, 
-            fontSize: '0.875rem',
-            backgroundColor: message.type === 'success' ? '#f0fdf4' : '#fef2f2',
-            color: message.type === 'success' ? '#15803d' : '#b91c1c',
-            border: message.type === 'success' ? '1px solid #dcfce7' : '1px solid #fee2e2'
-          }}
-        >
-          {message.type === 'success' ? <CheckCircle2 size={18}/> : <AlertCircle size={18}/>}
-          {message.text}
-        </motion.div>
-      )}
 
       {/* Events Grid/List */}
       {loading ? (
@@ -183,7 +206,7 @@ const EventsListing: React.FC = () => {
                       </div>
                     ) : (
                       <button 
-                        onClick={() => setSelectedEventForModal(event)}
+                        onClick={() => handleRegister(event)}
                         disabled={registering === event.id}
                         style={{ 
                           padding: '1rem 1.5rem', 
@@ -215,98 +238,16 @@ const EventsListing: React.FC = () => {
         </div>
       )}
 
-      {/* Confirmation & Success Modals */}
-      <AnimatePresence>
-        {(selectedEventForModal || showSuccessModal) && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => {
-              if (!registering) {
-                setSelectedEventForModal(null);
-                setShowSuccessModal(false);
-              }
-            }}
-            style={{ 
-              position: 'fixed', inset: 0, 
-              background: 'rgba(15, 23, 42, 0.7)', 
-              backdropFilter: 'blur(8px)', 
-              zIndex: 1000,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '1.5rem'
-            }}
-          >
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 0 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              style={{ 
-                background: 'white', borderRadius: '2.5rem', width: '100%', maxWidth: '420px', 
-                boxShadow: '0 30px 60px -12px rgba(0,0,0,0.3)', 
-                textAlign: 'center', overflow: 'hidden', padding: '3.5rem 2rem'
-              }}
-            >
-              <div style={{ marginBottom: '2rem' }}>
-                <img src={nestIcon} alt="NeST" style={{ height: '80px', width: 'auto', margin: '0 auto' }} />
-              </div>
-
-              {showSuccessModal ? (
-                <>
-                  <h2 style={{ fontSize: '2.25rem', fontWeight: 900, color: '#0d2046', marginBottom: '1.5rem', fontFamily: 'serif' }}>Registration Success!</h2>
-                  <p style={{ color: '#64748b', fontSize: '1.1rem', marginBottom: '3rem', lineHeight: '1.6' }}>
-                    You have successfully registered for the event. We look forward to seeing you!
-                  </p>
-                  <button 
-                    onClick={() => setShowSuccessModal(false)}
-                    style={{ 
-                      width: '100%', padding: '1.25rem', borderRadius: '1.25rem', 
-                      background: '#C8102E', color: '#ffffff', fontWeight: 800, 
-                      border: 'none', cursor: 'pointer', fontSize: '1.1rem',
-                      boxShadow: '0 10px 20px rgba(200, 16, 46, 0.2)', transition: 'all 0.2s'
-                    }}
-                  >
-                    Continue
-                  </button>
-                </>
-              ) : (
-                <>
-                  <h2 style={{ fontSize: '2.25rem', fontWeight: 900, color: '#0d2046', marginBottom: '1.5rem', fontFamily: 'serif' }}>Confirm Registration</h2>
-                  <p style={{ color: '#64748b', fontSize: '1.1rem', marginBottom: '3rem', lineHeight: '1.6' }}>
-                    Are you sure you want to register for <br/><strong style={{ color: '#0d2046' }}>{selectedEventForModal.title}</strong>?
-                  </p>
-                  <div style={{ display: 'flex', gap: '1rem' }}>
-                    <button 
-                      onClick={() => setSelectedEventForModal(null)}
-                      style={{ flex: 1, padding: '1.25rem', borderRadius: '1.25rem', background: '#f1f5f9', color: '#475569', fontWeight: 800, border: 'none', cursor: 'pointer' }}
-                    >
-                      Cancel
-                    </button>
-                    <button 
-                      onClick={() => {
-                        handleRegister(selectedEventForModal.id);
-                        setSelectedEventForModal(null);
-                      }}
-                      disabled={registering !== null}
-                      style={{ 
-                        flex: 1, padding: '1.25rem', borderRadius: '1.25rem', 
-                        background: '#C8102E', color: '#ffffff', fontWeight: 800, 
-                        border: 'none', cursor: 'pointer', fontSize: '1.1rem',
-                        boxShadow: '0 10px 20px rgba(200, 16, 46, 0.2)'
-                      }}
-                    >
-                      {registering ? 'Processing...' : 'Confirm'}
-                    </button>
-                  </div>
-                </>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <StatusModal
+        isOpen={modalConfig.isOpen}
+        onClose={() => setModalConfig({ ...modalConfig, isOpen: false })}
+        type={modalConfig.type}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        confirmText={modalConfig.confirmText}
+        showConfirmOnly={modalConfig.showConfirmOnly}
+        onConfirm={modalConfig.onConfirm}
+      />
 
       <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
     </motion.div>

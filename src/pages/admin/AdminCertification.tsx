@@ -34,7 +34,7 @@ const AdminCertification: React.FC = () => {
     try {
       const res = await adminApi.getPendingAssessments();
       if (res.success && res.data) {
-        setPendingAssessments(res.data.pending_assessments);
+        setPendingAssessments((res.data as any).pending_assessments);
       }
     } catch (err) {
       console.error('Failed to fetch assessments:', err);

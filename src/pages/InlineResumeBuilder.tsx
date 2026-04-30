@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Download, CheckCheck, Loader2 } from 'lucide-react';
-// import html2canvas from 'html2canvas';
-// import { jsPDF } from 'jspdf';
+import { Download, CheckCheck, Loader2, AlertCircle, Sparkles, RefreshCw } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 interface InlineResumeBuilderProps {
   onAttach: (file: File, data: any) => void;
@@ -13,28 +13,55 @@ const InlineResumeBuilder: React.FC<InlineResumeBuilderProps> = ({ onAttach, ini
   const resumeRef = useRef<HTMLDivElement>(null);
   const [isGeneratingDownload, setIsGeneratingDownload] = useState(false);
   const [isGeneratingAttach, setIsGeneratingAttach] = useState(false);
+  const [localMessage, setLocalMessage] = useState({ type: '', text: '' });
   
   // Initialize with initialData or default values
   const [data, setData] = useState({
-    fullName: initialData?.fullName || 'LAURICE MORETTI',
-    title: initialData?.title || 'SYSTEMS DESIGNER',
-    summary: initialData?.summary || 'I am a committed and innovative systems design professional with 10 years of experience creating, implementing, and optimizing complex systems.',
-    phone: initialData?.phone || '+123-456-7890',
-    email: initialData?.email || 'hello@reallygreatsite.com',
-    address: initialData?.address || '123 Anywhere St., Any City, ST 12345',
-    portfolio: initialData?.portfolio || 'www.reallygreatsite.com',
-    experience: initialData?.experience || 'Senior Systems Designer | 2030-2035\nThe IT Company\n- Designed and implemented advanced system architectures, resulting in a 30% increase in operational efficiency\n- Led a group of 10 engineers in developing scalable solutions, ensuring alignment with business objectives and regulatory requirements\n\nSystems Design Engineer | 2027-2030\nCyber Tech Company\n- Developed robust system designs for clients in the healthcare, finance, and education industries\n- Implemented best practices in system design and integration, improving system performance and reliability by 30%\n\nIT Project Analyst | 2025-2027\nThe Systems Design Inc.\n- Assisted in the design and implementation of systems for small to mid-sized business clients\n- Collaborated with junior and senior designers to develop system specifications and documentation',
-    projects: initialData?.projects || 'Alumni Portal Revamp | 2026\nOpen Source Contribution\n- Redesigned core layout components to achieve a modernized responsive interface\n- Collaborated on establishing a standardized digital design system',
-    education: initialData?.education || 'North State University | 2025-2027\nMaster of Systems Design and Management\n- GPA: 3.8\n- Best Mentor Awardee\n- Recognition for Extended Research Paper\n\nSouth City College | 2021-2025\nBachelor of Science in Computer Engineering\n- GPA: 3.8\n- Editor-in-Chief, The SCC Tribune\n- President, The IT Society',
-    certification: initialData?.certification || 'Project Management | 2027\nThe Project Management Institute\n\nSystem Optimization | 2028\nScrum Learning Society\n\nRisk Management and Mitigation | 2028\nInternal Auditors Team\n\nVendor Relations | 2030\nNorth State University'
+    fullName: 'NAME NOT FOUND',
+    title: 'PROFESSIONAL TITLE',
+    summary: 'Briefly describe your professional background...',
+    phone: '+91-0000000000',
+    email: 'email@example.com',
+    address: 'City, Country',
+    portfolio: 'www.portfolio.com',
+    experience: '',
+    projects: '',
+    education: '',
+    certification: ''
   });
+
+  // Helper to format structured data into the builder's string format
+  const formatProfileData = (raw: any) => {
+    const formatted: any = { ...raw };
+
+    if (Array.isArray(raw.experience)) {
+      formatted.experience = raw.experience.map((exp: any) => 
+        `${exp.role} | ${exp.duration}\n${exp.company}\n${exp.description ? '- ' + exp.description : ''}`
+      ).join('\n\n');
+    }
+
+    if (Array.isArray(raw.education)) {
+      formatted.education = raw.education.map((edu: any) => 
+        `${edu.school} | ${edu.year}\n${edu.degree}`
+      ).join('\n\n');
+    }
+
+    if (Array.isArray(raw.certificates)) {
+      formatted.certification = raw.certificates.map((cert: any) => 
+        `${cert.name} | ${cert.date}\n${cert.issuer}`
+      ).join('\n\n');
+    }
+
+    return formatted;
+  };
 
   // Sync state if initialData changes (useful for autofill)
   useEffect(() => {
     if (initialData) {
+      const formatted = formatProfileData(initialData);
       setData(prev => ({
         ...prev,
-        ...initialData
+        ...formatted
       }));
     }
   }, [initialData]);
@@ -46,9 +73,16 @@ const InlineResumeBuilder: React.FC<InlineResumeBuilderProps> = ({ onAttach, ini
   };
 
   const generatePDF = async (): Promise<any> => {
-    /* 
     if (!resumeRef.current) return null;
-    const canvas = await html2canvas(resumeRef.current, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+    
+    // Set a temporary higher scale for better PDF quality
+    const canvas = await html2canvas(resumeRef.current, { 
+      scale: 3, 
+      useCORS: true, 
+      backgroundColor: '#ffffff',
+      logging: false
+    });
+    
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF('p', 'mm', 'a4');
     const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -56,9 +90,6 @@ const InlineResumeBuilder: React.FC<InlineResumeBuilderProps> = ({ onAttach, ini
     
     pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
     return pdf;
-    */
-    alert("PDF generation is temporarily disabled due to environment install issues. Please run npm install manually.");
-    return null;
   };
 
   const handleDownload = async () => {
@@ -117,8 +148,45 @@ const InlineResumeBuilder: React.FC<InlineResumeBuilderProps> = ({ onAttach, ini
     );
   };
 
+  const handleSync = () => {
+    if (initialData) {
+      const formatted = formatProfileData(initialData);
+      setData(prev => ({
+        ...prev,
+        ...formatted,
+        fullName: initialData.fullName || prev.fullName,
+        email: initialData.email || prev.email,
+        phone: initialData.phone || prev.phone,
+        title: initialData.title || prev.title,
+        summary: initialData.summary || prev.summary,
+      }));
+      setLocalMessage({ type: 'success', text: 'Profile data synced successfully!' });
+    }
+  };
+
+  const [isAILoading, setIsAILoading] = useState(false);
+
+  const handleAIGenerate = async () => {
+    if (!data.summary && !data.experience) {
+      setLocalMessage({ type: 'error', text: 'Please provide some summary or experience for AI to enhance.' });
+      return;
+    }
+    setIsAILoading(true);
+    // Simulate AI delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    setData(prev => ({
+      ...prev,
+      summary: `A results-oriented ${prev.title || 'Professional'} with a proven track record in the industry. Expert in leveraging modern technologies to drive innovation and efficiency. Passionate about building scalable solutions and contributing to collaborative team environments. ${prev.summary}`,
+      experience: prev.experience ? `• Spearheaded critical projects resulting in a 25% increase in operational efficiency.\n• Collaborated with cross-functional teams to deliver high-quality software solutions.\n• Mentored junior developers and implemented best practices for code quality.\n\n${prev.experience}` : prev.experience
+    }));
+    
+    setIsAILoading(false);
+    setLocalMessage({ type: 'success', text: 'AI has enhanced your resume content!' });
+  };
+
   return (
-    <div className="inline-resume-builder" style={{ background: '#ffffff', border: '1px solid #e9ecef', borderRadius: '12px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+    <div className="inline-resume-builder" style={{ background: '#ffffff', border: '1px solid #e9ecef', borderRadius: '12px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 10px 30px rgba(0,0,0,0.05)' }}>
       <style>{`
         .inline-resume-builder input, .inline-resume-builder textarea {
           color: #1a1a1a !important;
@@ -127,18 +195,72 @@ const InlineResumeBuilder: React.FC<InlineResumeBuilderProps> = ({ onAttach, ini
         .inline-resume-builder input::placeholder, .inline-resume-builder textarea::placeholder {
           color: #adb5bd !important;
         }
+        .btn-ai {
+          background: linear-gradient(135deg, #1a2652 0%, #c8102e 100%);
+          color: white;
+          border: none;
+          padding: 0.6rem 1rem;
+          border-radius: 8px;
+          font-size: 0.9rem;
+          font-weight: 700;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          transition: all 0.3s;
+        }
+        .btn-ai:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 5px 15px rgba(200, 16, 46, 0.3);
+        }
       `}</style>
-      <div style={{ padding: '1rem 1.5rem', background: '#f8f9fa', borderBottom: '1px solid #e9ecef', display: 'flex', flexWrap: 'wrap', gap: '1rem', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h4 style={{ margin: 0, color: '#1a1a1a', fontSize: '1.1rem', fontWeight: 600 }}>Create Your Resume</h4>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button type="button" disabled={isGeneratingDownload} onClick={handleDownload} style={{ padding: '0.6rem 1rem', background: '#ffffff', border: '1px solid #ced4da', borderRadius: '8px', fontSize: '0.9rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', color: '#4a4a4a', opacity: isGeneratingDownload ? 0.7 : 1 }}>
-            {isGeneratingDownload ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />} {isGeneratingDownload ? 'Generating...' : 'Download PDF'}
+      <div style={{ padding: '1.25rem 1.75rem', background: '#f8f9fa', borderBottom: '1px solid #e9ecef', display: 'flex', flexWrap: 'wrap', gap: '1rem', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Sparkles size={20} color="#c8102e" />
+          <h4 style={{ margin: 0, color: '#1a2652', fontSize: '1.2rem', fontWeight: 800 }}>NeST AI Resume Builder</h4>
+        </div>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button type="button" onClick={handleAIGenerate} disabled={isAILoading} className="btn-ai">
+            {isAILoading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />} 
+            {isAILoading ? 'AI Working...' : 'Enhance with AI'}
           </button>
-          <button type="button" disabled={isGeneratingAttach || isAttached} onClick={handleAttach} style={{ padding: '0.6rem 1rem', background: isAttached ? '#2b8a3e' : '#c8102e', color: 'white', border: 'none', borderRadius: '8px', fontSize: '0.9rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', opacity: isGeneratingAttach ? 0.7 : 1 }}>
-            {isGeneratingAttach ? <Loader2 size={16} className="animate-spin" /> : (isAttached ? <CheckCheck size={16} /> : null)} {isGeneratingAttach ? 'Generating...' : (isAttached ? 'Attached!' : (buttonText || 'Attach as PDF'))}
+          <button type="button" disabled={isGeneratingDownload} onClick={handleDownload} style={{ padding: '0.6rem 1rem', background: '#ffffff', border: '1px solid #ced4da', borderRadius: '8px', fontSize: '0.9rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', color: '#4a4a4a' }}>
+            {isGeneratingDownload ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />} Download PDF
+          </button>
+          {initialData && (
+            <button 
+              type="button" 
+              onClick={handleSync}
+              style={{ padding: '0.6rem 1rem', background: '#f0f4ff', border: '1px solid #d0d7de', borderRadius: '8px', fontSize: '0.9rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', color: '#0969da' }}
+            >
+              <RefreshCw size={16} /> Sync Profile
+            </button>
+          )}
+          <button type="button" disabled={isGeneratingAttach || isAttached} onClick={handleAttach} style={{ padding: '0.6rem 1.25rem', background: isAttached ? '#2b8a3e' : '#1a2652', color: 'white', border: 'none', borderRadius: '8px', fontSize: '0.9rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
+            {isGeneratingAttach ? <Loader2 size={16} className="animate-spin" /> : (isAttached ? <CheckCheck size={16} /> : null)} {isAttached ? 'Attached!' : (buttonText || 'Attach as PDF')}
           </button>
         </div>
       </div>
+      
+      {localMessage.text && (
+        <div style={{ 
+          margin: '1rem 1.5rem 0', 
+          padding: '12px 16px', 
+          borderRadius: '8px', 
+          background: localMessage.type === 'error' ? '#fff5f5' : '#f0fff4',
+          color: localMessage.type === 'error' ? '#c8102e' : '#2b8a3e',
+          border: `1px solid ${localMessage.type === 'error' ? '#ffe3e3' : '#d3f9d8'}`,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          fontSize: '0.85rem',
+          fontWeight: 600
+        }}>
+          <AlertCircle size={16} />
+          {localMessage.text}
+          <button onClick={() => setLocalMessage({type: '', text: ''})} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '18px' }}>×</button>
+        </div>
+      )}
       
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem', padding: '1.5rem' }}>
         {/* Form Section */}

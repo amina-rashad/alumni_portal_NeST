@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import { getUser } from './services/api';
 
 // Splash & Styles
 import './App.css';
@@ -62,10 +63,6 @@ import QuizResult from './pages/QuizResult';
 import PerformanceAnalytics from './pages/PerformanceAnalytics';
 import AssessmentCenter from './pages/AssessmentCenter';
 
-// Gamification Pages
-import PointsOverview from './pages/PointsOverview';
-import Badges from './pages/Badges';
-import Leaderboard from './pages/Leaderboard';
 
 // Events Pages
 import EventsListing from './pages/EventsListing';
@@ -74,7 +71,6 @@ import EventRegistration from './pages/EventRegistration';
 import MyEvents from './pages/MyEvents';
 
 // Social Pages
-import Feed from './pages/Feed';
 import CreatePost from './pages/CreatePost';
 import PostDetails from './pages/PostDetails';
 
@@ -97,16 +93,15 @@ import AdminInterns from './pages/admin/AdminInterns';
 import AdminAddIntern from './pages/admin/AdminAddIntern';
 import AdminIVStudents from './pages/admin/AdminIVStudents';
 import AdminAddVisit from './pages/admin/AdminAddVisit';
-import AdminJobs from './pages/admin/AdminJobs';
-import AdminPostJob from './pages/admin/AdminPostJob';
 import Applications from './pages/admin/Applications';
 import Reports from './pages/admin/Reports';
 import Settings from './pages/admin/Settings';
 import AdminCourses from './pages/admin/AdminCourses';
-import AdminEvents from './pages/admin/AdminEvents';
-import AdminAddEvent from './pages/admin/AdminAddEvent';
 import AdminAddCourse from './pages/admin/AdminAddCourse';
 import AdminCertification from './pages/admin/AdminCertification';
+import SuperAdminDashboard from './pages/admin/SuperAdminDashboard';
+import AdminRoleManager from './pages/admin/AdminRoleManager';
+import AdminAddManager from './pages/admin/AdminAddManager';
 
 // Event Manager Pages
 import EventManagerLayout from './pages/event_manager/EventManagerLayout';
@@ -114,10 +109,36 @@ import EventManagerDashboard from './pages/event_manager/EventManagerDashboard';
 import EventManagerEvents from './pages/event_manager/EventManagerEvents';
 import EventManagerAttendees from './pages/event_manager/EventManagerAttendees';
 import EventManagerPosts from './pages/event_manager/EventManagerPosts';
+
 import EventManagerRegistrations from './pages/event_manager/EventManagerRegistrations';
 import EventManagerReports from './pages/event_manager/EventManagerReports';
 import EventManagerSettings from './pages/event_manager/EventManagerSettings';
-import EventManagerPlaceholder from './pages/event_manager/EventManagerPlaceholder';
+
+// Recruiter Pages
+import RecruiterLayout from './pages/recruiter/RecruiterLayout';
+import RecruiterDashboard from './pages/recruiter/RecruiterDashboard';
+import RecruiterJobs from './pages/recruiter/RecruiterJobs';
+import RecruiterPostJob from './pages/recruiter/RecruiterPostJob';
+import RecruiterApplications from './pages/recruiter/RecruiterApplications';
+import RecruiterReports from './pages/recruiter/RecruiterReports';
+import RecruiterSettings from './pages/recruiter/RecruiterSettings';
+import RecruiterPost from './pages/recruiter/RecruiterPost';
+
+import RecruiterHelp from './pages/recruiter/RecruiterHelp';
+import RecruiterMail from './pages/recruiter/RecruiterMail 2';
+
+// Course Manager Pages
+import CourseManagerLayout from './pages/course_manager/CourseManagerLayout';
+import CourseManagerDashboard from './pages/course_manager/Dashboard';
+import CourseManagerCourses from './pages/course_manager/Courses';
+import CourseManagerCreateCourse from './pages/course_manager/CreateCourse';
+import CourseManagerStudents from './pages/course_manager/Students';
+import CourseManagerAssessments from './pages/course_manager/Assessments';
+import CourseManagerCertificates from './pages/course_manager/Certificates';
+import CourseManagerAttendance from './pages/course_manager/Attendance';
+import CourseManagerReminderCenter from './pages/course_manager/ReminderCenter';
+import CourseManagerRecommendations from './pages/course_manager/RecommendationSetup';
+import CourseManagerInsights from './pages/course_manager/CompletionInsights';
 
 /* -- Luxury Splash Screen with Mask Reveal -- */
 import heroBg from './assets/hero-bg.jpg';
@@ -129,7 +150,7 @@ const SplashScreen: React.FC = () => (
       opacity: 0,
       scale: 1.05,
       filter: 'blur(10px)',
-      transition: { duration: 2.0, ease: [0.16, 1, 0.3, 1] }
+      transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] }
     }}
     style={{ overflow: 'hidden' }}
   >
@@ -308,6 +329,15 @@ const ScrollToTop: React.FC = () => {
   return null;
 };
 
+/* -- Conditional Admin Redirect based on Hierarchy -- */
+const ConditionalAdminRedirect = () => {
+  const user = getUser() as any;
+  if (user?.role === 'super_admin') {
+    return <Navigate to="/admin/super-dashboard" replace />;
+  }
+  return <Navigate to="/admin/dashboard" replace />;
+};
+
 /* -- Animated Routes wrapper with crossfade -- */
 const AnimatedRoutes: React.FC = () => {
   const location = useLocation();
@@ -328,7 +358,7 @@ const AnimatedRoutes: React.FC = () => {
         <Route path="/user-type-overview/:id" element={<PageTransition><UserTypeOverview /></PageTransition>} />
 
         <Route path="/courses/:id/play" element={<PageTransition><CoursePlayer /></PageTransition>} />
-        
+
         {/* User Protected Routes with MainLayout */}
         <Route element={<MainLayout />}>
           <Route path="/dashboard" element={<PageTransition><Dashboard /></PageTransition>} />
@@ -358,14 +388,12 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="/assessments/quiz/instructions" element={<PageTransition><QuizInstructions /></PageTransition>} />
           <Route path="/assessments/quiz/result" element={<PageTransition><QuizResult /></PageTransition>} />
           <Route path="/assessments/analytics" element={<PageTransition><PerformanceAnalytics /></PageTransition>} />
-          <Route path="/gamification" element={<PageTransition><PointsOverview /></PageTransition>} />
-          <Route path="/gamification/badges" element={<PageTransition><Badges /></PageTransition>} />
-          <Route path="/gamification/leaderboard" element={<PageTransition><Leaderboard /></PageTransition>} />
           <Route path="/events" element={<PageTransition><EventsListing /></PageTransition>} />
           <Route path="/events/:id" element={<PageTransition><EventDetails /></PageTransition>} />
           <Route path="/events/:id/register" element={<PageTransition><EventRegistration /></PageTransition>} />
           <Route path="/events/my-events" element={<PageTransition><MyEvents /></PageTransition>} />
-          <Route path="/social/feed" element={<PageTransition><Feed /></PageTransition>} />
+          <Route path="/social/feed" element={<Navigate to="/dashboard/activity" replace />} />
+          <Route path="/feed" element={<Navigate to="/dashboard/activity" replace />} />
           <Route path="/social/post/create" element={<PageTransition><CreatePost /></PageTransition>} />
           <Route path="/social/post/:id" element={<PageTransition><PostDetails /></PageTransition>} />
           <Route path="/notifications" element={<PageTransition><Notifications /></PageTransition>} />
@@ -378,8 +406,11 @@ const AnimatedRoutes: React.FC = () => {
 
         {/* Admin Routes with Transitions */}
         <Route path="/admin" element={<PageTransition><AdminLayout /></PageTransition>}>
-          <Route index element={<Navigate to="/admin/dashboard" replace />} />
+          <Route index element={<ConditionalAdminRedirect />} />
           <Route path="dashboard" element={<PageTransition><AdminDashboard /></PageTransition>} />
+          <Route path="super-dashboard" element={<PageTransition><SuperAdminDashboard /></PageTransition>} />
+          <Route path="roles" element={<PageTransition><AdminRoleManager /></PageTransition>} />
+          <Route path="add-manager" element={<PageTransition><AdminAddManager /></PageTransition>} />
           <Route path="users" element={<PageTransition><AdminUsers /></PageTransition>} />
           <Route path="users/add" element={<PageTransition><AdminAddUser /></PageTransition>} />
           <Route path="users/edit/:id" element={<PageTransition><AdminEditUser /></PageTransition>} />
@@ -388,15 +419,8 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="iv-students" element={<PageTransition><AdminIVStudents /></PageTransition>} />
           <Route path="iv-students/add" element={<PageTransition><AdminAddVisit /></PageTransition>} />
           <Route path="certification" element={<PageTransition><AdminCertification /></PageTransition>} />
-          <Route path="jobs" element={<PageTransition><AdminJobs /></PageTransition>} />
-          <Route path="jobs/post" element={<PageTransition><AdminPostJob /></PageTransition>} />
           <Route path="applications" element={<PageTransition><Applications /></PageTransition>} />
           <Route path="reports" element={<PageTransition><Reports /></PageTransition>} />
-          <Route path="events" element={<PageTransition><AdminEvents /></PageTransition>} />
-          <Route path="events/add" element={<PageTransition><AdminAddEvent /></PageTransition>} />
-          <Route path="add-courses" element={<PageTransition><AdminCourses /></PageTransition>} />
-          <Route path="courses/add" element={<PageTransition><AdminAddCourse /></PageTransition>} />
-          <Route path="courses/edit/:id" element={<PageTransition><AdminAddCourse /></PageTransition>} />
           <Route path="settings" element={<PageTransition><Settings /></PageTransition>} />
         </Route>
 
@@ -407,9 +431,41 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="events" element={<PageTransition><EventManagerEvents /></PageTransition>} />
           <Route path="attendees" element={<PageTransition><EventManagerAttendees /></PageTransition>} />
           <Route path="posts" element={<PageTransition><EventManagerPosts /></PageTransition>} />
+
           <Route path="registrations" element={<PageTransition><EventManagerRegistrations /></PageTransition>} />
           <Route path="reports" element={<PageTransition><EventManagerReports /></PageTransition>} />
           <Route path="settings" element={<PageTransition><EventManagerSettings /></PageTransition>} />
+        </Route>
+
+        {/* Recruiter Protected Routes */}
+        <Route path="/recruiter" element={<RecruiterLayout />}>
+          <Route index element={<Navigate to="/recruiter/dashboard" replace />} />
+          <Route path="dashboard" element={<PageTransition><RecruiterDashboard /></PageTransition>} />
+          <Route path="jobs" element={<PageTransition><RecruiterJobs /></PageTransition>} />
+          <Route path="jobs/post" element={<PageTransition><RecruiterPostJob /></PageTransition>} />
+          <Route path="post" element={<PageTransition><RecruiterPost /></PageTransition>} />
+
+          <Route path="applications" element={<PageTransition><RecruiterApplications /></PageTransition>} />
+          <Route path="reports" element={<PageTransition><RecruiterReports /></PageTransition>} />
+          <Route path="settings" element={<PageTransition><RecruiterSettings /></PageTransition>} />
+          <Route path="help" element={<PageTransition><RecruiterHelp /></PageTransition>} />
+          <Route path="mail" element={<PageTransition><RecruiterMail /></PageTransition>} />
+        </Route>
+
+        {/* Course Manager Protected Routes */}
+        <Route path="/course-manager" element={<CourseManagerLayout />}>
+          <Route index element={<Navigate to="/course-manager/dashboard" replace />} />
+          <Route path="dashboard" element={<CourseManagerDashboard />} />
+          <Route path="courses" element={<CourseManagerCourses />} />
+          <Route path="courses/create" element={<CourseManagerCreateCourse />} />
+          <Route path="courses/edit/:id" element={<CourseManagerCreateCourse />} />
+          <Route path="students" element={<CourseManagerStudents />} />
+          <Route path="assessments" element={<CourseManagerAssessments />} />
+          <Route path="certificates" element={<CourseManagerCertificates />} />
+          <Route path="attendance" element={<CourseManagerAttendance />} />
+          <Route path="reminders" element={<CourseManagerReminderCenter />} />
+          <Route path="recommendations" element={<CourseManagerRecommendations />} />
+          <Route path="insights" element={<CourseManagerInsights />} />
         </Route>
 
         {/* Fallback Catch-all Route */}
@@ -423,26 +479,23 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Luxury loading delay
-    const loadTimer = setTimeout(() => setIsLoading(false), 2500);
-    return () => clearTimeout(loadTimer);
+    // Elegant timing for a luxury reveal
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 2200);
+    return () => clearTimeout(timer);
   }, []);
 
   return (
     <Router>
-      <ScrollToTop />
       <AnimatePresence mode="wait">
         {isLoading ? (
           <SplashScreen key="splash" />
         ) : (
-          <motion.div
-            key="content"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 1.5, ease: 'easeOut' }}
-          >
+          <React.Fragment>
+            <ScrollToTop />
             <AnimatedRoutes />
-          </motion.div>
+          </React.Fragment>
         )}
       </AnimatePresence>
     </Router>

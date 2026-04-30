@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Briefcase, MapPin, Clock, CheckCircle2, XCircle, AlertCircle, Eye, FileText, ChevronDown, ChevronUp, Filter, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { applicationsApi } from '../services/api';
 
 // Status type
 type ApplicationStatus = 'Under Review' | 'Shortlisted' | 'Interview Scheduled' | 'Offered' | 'Rejected' | 'Withdrawn';
@@ -20,69 +21,6 @@ interface Application {
   notes?: string;
 }
 
-const MOCK_APPLICATIONS: Application[] = [
-  {
-    id: 'app-1',
-    jobId: '1',
-    title: 'Senior Full Stack Developer',
-    department: 'Engineering',
-    location: 'Kochi, Kerala (Hybrid)',
-    type: 'Full-time',
-    appliedDate: '2026-03-23',
-    status: 'Interview Scheduled',
-    lastUpdated: '2026-03-25',
-    interviewDate: '2026-03-28',
-    notes: 'Technical round with the Engineering Lead. Please prepare system design topics.'
-  },
-  {
-    id: 'app-2',
-    jobId: '3',
-    title: 'Cloud Infrastructure Architect',
-    department: 'IT Infrastructure',
-    location: 'Remote',
-    type: 'Contract',
-    appliedDate: '2026-03-20',
-    status: 'Shortlisted',
-    lastUpdated: '2026-03-24',
-    notes: 'Profile under detailed review by the hiring manager.'
-  },
-  {
-    id: 'app-3',
-    jobId: '5',
-    title: 'Frontend React Developer',
-    department: 'Engineering',
-    location: 'Kochi, Kerala (Hybrid)',
-    type: 'Full-time',
-    appliedDate: '2026-03-18',
-    status: 'Under Review',
-    lastUpdated: '2026-03-18'
-  },
-  {
-    id: 'app-4',
-    jobId: '4',
-    title: 'Product Manager',
-    department: 'Product',
-    location: 'Dubai, UAE (On-site)',
-    type: 'Full-time',
-    appliedDate: '2026-03-10',
-    status: 'Offered',
-    lastUpdated: '2026-03-22',
-    notes: 'Congratulations! An offer letter has been sent to your registered email address.'
-  },
-  {
-    id: 'app-5',
-    jobId: '2',
-    title: 'Lead UX/UI Designer',
-    department: 'Design',
-    location: 'Trivandrum, Kerala (On-site)',
-    type: 'Full-time',
-    appliedDate: '2026-03-05',
-    status: 'Rejected',
-    lastUpdated: '2026-03-15',
-    notes: 'We appreciate your interest. Unfortunately, we moved forward with another candidate.'
-  }
-];
-
 const STATUS_CONFIG: Record<ApplicationStatus, { color: string; bg: string; border: string; icon: React.ReactNode }> = {
   'Under Review': { color: '#e67700', bg: '#fff9db', border: '#ffd43b', icon: <Clock size={16} /> },
   'Shortlisted': { color: '#1971c2', bg: '#e7f5ff', border: '#74c0fc', icon: <Eye size={16} /> },
@@ -94,24 +32,68 @@ const STATUS_CONFIG: Record<ApplicationStatus, { color: string; bg: string; bord
 
 const ALL_STATUSES: ApplicationStatus[] = ['Under Review', 'Shortlisted', 'Interview Scheduled', 'Offered', 'Rejected', 'Withdrawn'];
 
+const STATUS_MAP: Record<string, ApplicationStatus> = {
+  'pending': 'Under Review',
+  'reviewed': 'Under Review',
+  'shortlisted': 'Shortlisted',
+  'interview': 'Interview Scheduled',
+  'hired': 'Offered',
+  'rejected': 'Rejected',
+  'withdrawn': 'Withdrawn'
+};
+
 const MyApplications: React.FC = () => {
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState('');
 
-  const filteredApps = MOCK_APPLICATIONS.filter(app => {
+  useEffect(() => {
+    const fetchApps = async () => {
+      try {
+        setLoading(true);
+        const res = await applicationsApi.getMyApplications();
+        if (res.success && res.data && (res.data as any).applications) {
+          const apiApps = (res.data as any).applications.map((app: any) => ({
+            id: app.id,
+            jobId: app.job_id,
+            title: app.job_title || 'Untitled Position',
+            department: app.job_company || 'NeST Digital',
+            location: app.job_location || 'Remote',
+            type: 'Full-time', // Backend doesn't explicitly store this in application yet
+            appliedDate: app.applied_at,
+            status: STATUS_MAP[app.status] || 'Under Review',
+            lastUpdated: app.applied_at,
+            notes: app.cover_letter ? `Cover Letter: ${app.cover_letter}` : undefined
+          }));
+          setApplications(apiApps);
+        }
+      } catch (err) {
+        console.error("Failed to fetch applications", err);
+        setError('Failed to load your applications.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchApps();
+  }, []);
+
+  const filteredApps = applications.filter(app => {
     const matchesStatus = filterStatus === 'All' || app.status === filterStatus;
     const matchesSearch = app.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           app.department.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesStatus && matchesSearch;
   });
 
-  const statusCounts = MOCK_APPLICATIONS.reduce((acc, app) => {
+  const statusCounts = applications.reduce((acc, app) => {
     acc[app.status] = (acc[app.status] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
   const formatDate = (dateStr: string) => {
+    if (!dateStr) return 'N/A';
     return new Date(dateStr).toLocaleDateString('en-IN', {
       day: 'numeric', month: 'short', year: 'numeric'
     });
@@ -157,7 +139,7 @@ const MyApplications: React.FC = () => {
           style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '1rem', marginBottom: '2.5rem' }}
         >
           {[
-            { label: 'Total', count: MOCK_APPLICATIONS.length, color: '#1a1a1a', bg: '#f8f9fa' },
+            { label: 'Total', count: applications.length, color: '#1a1a1a', bg: '#f8f9fa' },
             { label: 'In Progress', count: (statusCounts['Under Review'] || 0) + (statusCounts['Shortlisted'] || 0) + (statusCounts['Interview Scheduled'] || 0), color: '#1971c2', bg: '#e7f5ff' },
             { label: 'Offered', count: statusCounts['Offered'] || 0, color: '#2b8a3e', bg: '#ebfbee' },
             { label: 'Rejected', count: statusCounts['Rejected'] || 0, color: '#c92a2a', bg: '#fff5f5' },
@@ -178,71 +160,87 @@ const MyApplications: React.FC = () => {
           ))}
         </motion.div>
 
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          style={{
-            background: 'white',
-            borderRadius: '20px',
-            padding: '1.5rem',
-            marginBottom: '2.5rem',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.04)',
-            border: '1px solid #E2E8F0',
-            display: 'flex',
-            gap: '1.5rem',
-            flexWrap: 'wrap',
-            alignItems: 'center'
-          }}
-        >
-          <div style={{ flex: 1, minWidth: '300px', position: 'relative' }}>
-            <Search style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} size={20} />
-            <input
-              type="text"
-              placeholder="Search applications..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '4rem' }}>
+            <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} style={{ display: 'inline-block' }}>
+              <Briefcase size={40} color="#d32f2f" />
+            </motion.div>
+            <p style={{ marginTop: '1rem', color: '#64748B' }}>Loading your applications...</p>
+          </div>
+        ) : error ? (
+          <div style={{ textAlign: 'center', padding: '4rem', background: '#fff5f5', borderRadius: '20px', border: '1px solid #ffa8a8' }}>
+            <AlertCircle size={40} color="#c92a2a" style={{ marginBottom: '1rem' }} />
+            <h3 style={{ color: '#c92a2a', marginBottom: '0.5rem' }}>{error}</h3>
+            <button onClick={() => window.location.reload()} style={{ color: '#c92a2a', fontWeight: 700, textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>Try Again</button>
+          </div>
+        ) : (
+          <>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
               style={{
-                width: '100%',
-                padding: '0.8rem 1rem 0.8rem 3rem',
-                borderRadius: '12px',
+                background: 'white',
+                borderRadius: '20px',
+                padding: '1.5rem',
+                marginBottom: '2.5rem',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.04)',
                 border: '1px solid #E2E8F0',
-                background: '#F8FAFC',
-                fontSize: '1rem',
-                outline: 'none',
-                transition: 'border-color 0.2s',
-                color: '#1a1a1a',
-                boxSizing: 'border-box'
+                display: 'flex',
+                gap: '1.5rem',
+                flexWrap: 'wrap',
+                alignItems: 'center'
               }}
-              onFocus={(e) => e.target.style.borderColor = '#d32f2f'}
-              onBlur={(e) => e.target.style.borderColor = '#E2E8F0'}
-            />
-          </div>
+            >
+              <div style={{ flex: 1, minWidth: '300px', position: 'relative' }}>
+                <Search style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} size={20} />
+                <input
+                  type="text"
+                  placeholder="Search applications..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.8rem 1rem 0.8rem 3rem',
+                    borderRadius: '12px',
+                    border: '1px solid #E2E8F0',
+                    background: '#F8FAFC',
+                    fontSize: '1rem',
+                    outline: 'none',
+                    transition: 'border-color 0.2s',
+                    color: '#1a1a1a',
+                    boxSizing: 'border-box'
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = '#d32f2f'}
+                  onBlur={(e) => e.target.style.borderColor = '#E2E8F0'}
+                />
+              </div>
 
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-            <Filter size={18} color="#94A3B8" />
-            {['All', ...ALL_STATUSES.filter(s => statusCounts[s])].map(status => (
-              <button
-                key={status}
-                onClick={() => setFilterStatus(status)}
-                style={{
-                  padding: '0.6rem 1.2rem',
-                  borderRadius: '12px',
-                  fontSize: '0.9rem',
-                  fontWeight: 600,
-                  border: `1px solid ${filterStatus === status ? '#d32f2f' : '#E2E8F0'}`,
-                  background: filterStatus === status ? '#d32f2f' : 'white',
-                  color: filterStatus === status ? 'white' : '#475569',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  boxShadow: filterStatus === status ? '0 4px 12px rgba(211,47,47,0.2)' : 'none'
-                }}
-              >
-                {status}
-              </button>
-            ))}
-          </div>
-        </motion.div>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                <Filter size={18} color="#94A3B8" />
+                {['All', ...ALL_STATUSES.filter(s => statusCounts[s])].map(status => (
+                  <button
+                    key={status}
+                    onClick={() => setFilterStatus(status)}
+                    style={{
+                      padding: '0.6rem 1.2rem',
+                      borderRadius: '12px',
+                      fontSize: '0.9rem',
+                      fontWeight: 600,
+                      border: `1px solid ${filterStatus === status ? '#d32f2f' : '#E2E8F0'}`,
+                      background: filterStatus === status ? '#d32f2f' : 'white',
+                      color: filterStatus === status ? 'white' : '#475569',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      boxShadow: filterStatus === status ? '0 4px 12px rgba(211,47,47,0.2)' : 'none'
+                    }}
+                  >
+                    {status}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </>
+        )}
 
         {/* Applications List */}
         <AnimatePresence mode="popLayout">

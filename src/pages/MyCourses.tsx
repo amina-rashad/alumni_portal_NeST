@@ -133,31 +133,70 @@ const LEVEL_COLORS: Record<string, { color: string; bg: string }> = {
 const ALL_STATUSES: CourseStatus[] = ['In Progress', 'Completed', 'Not Started'];
 
 const MyCourses: React.FC = () => {
+  const [courses, setCourses] = useState<EnrolledCourse[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
 
-  const filteredCourses = MOCK_COURSES.filter(course => {
+  useEffect(() => {
+    const fetchMyCourses = async () => {
+      try {
+        setIsLoading(true);
+        const res = await coursesApi.getMyCourses();
+        if (res.success && res.data?.courses) {
+          const mapped: EnrolledCourse[] = res.data.courses.map((c: any) => ({
+            id: c.id,
+            courseId: c.id,
+            title: c.title,
+            instructor: c.instructor || 'NeST Expert',
+            level: c.level || 'Intermediate',
+            duration: c.duration || '4 Weeks',
+            progress: c.enrollment_info?.progress || 0,
+            status: c.enrollment_info?.status || 'In Progress',
+            enrolledDate: c.enrollment_info?.enrolled_at || new Date().toISOString(),
+            lastAccessed: c.enrollment_info?.enrolled_at || new Date().toISOString(),
+            totalLessons: c.curriculum?.length || 10,
+            completedLessons: Math.floor(((c.enrollment_info?.progress || 0) / 100) * (c.curriculum?.length || 10)),
+            nextLesson: c.curriculum?.[0]?.title || 'Introduction',
+            certificateAvailable: c.enrollment_info?.status === 'Completed'
+          }));
+          setCourses(mapped);
+        }
+      } catch (err) {
+        console.error("Failed to fetch my courses", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchMyCourses();
+  }, []);
+
+  const filteredCourses = courses.filter(course => {
     const matchesStatus = filterStatus === 'All' || course.status === filterStatus;
     const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           course.instructor.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesStatus && matchesSearch;
   });
 
-  const statusCounts = MOCK_COURSES.reduce((acc, course) => {
+  const statusCounts = courses.reduce((acc, course) => {
     acc[course.status] = (acc[course.status] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
-  const totalProgress = MOCK_COURSES.length > 0
-    ? Math.round(MOCK_COURSES.reduce((sum, c) => sum + c.progress, 0) / MOCK_COURSES.length)
+  const totalProgress = courses.length > 0
+    ? Math.round(courses.reduce((sum, c) => sum + c.progress, 0) / courses.length)
     : 0;
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-IN', {
-      day: 'numeric', month: 'short', year: 'numeric'
-    });
+    try {
+      return new Date(dateStr).toLocaleDateString('en-IN', {
+        day: 'numeric', month: 'short', year: 'numeric'
+      });
+    } catch {
+      return dateStr;
+    }
   };
 
   const getTimeAgo = (dateStr: string) => {
@@ -194,7 +233,7 @@ const MyCourses: React.FC = () => {
           style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '1rem', marginBottom: '2.5rem' }}
         >
           {[
-            { label: 'Total Enrolled', count: MOCK_COURSES.length, color: '#1a1a1a', bg: '#f8f9fa', icon: <BookOpen size={20} /> },
+            { label: 'Total Enrolled', count: courses.length, color: '#1a1a1a', bg: '#f8f9fa', icon: <BookOpen size={20} /> },
             { label: 'In Progress', count: statusCounts['In Progress'] || 0, color: '#1971c2', bg: '#e7f5ff', icon: <PlayCircle size={20} /> },
             { label: 'Completed', count: statusCounts['Completed'] || 0, color: '#2b8a3e', bg: '#ebfbee', icon: <CheckCircle2 size={20} /> },
             { label: 'Avg Progress', count: totalProgress, color: 'var(--primary)', bg: '#fff5f5', icon: <BarChart3 size={20} />, suffix: '%' },

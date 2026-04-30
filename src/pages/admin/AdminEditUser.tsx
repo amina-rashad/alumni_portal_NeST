@@ -33,15 +33,16 @@ const AdminEditUser: React.FC = () => {
       setIsLoading(true);
       const res = await adminApi.getUserById(id);
       if (res.success && res.data) {
+        const user = (res.data as any).user || {};
         setFormData({
-          full_name: res.data.user.full_name || '',
-          email: res.data.user.email || '',
-          phone: res.data.user.phone || '',
-          user_type: res.data.user.user_type || 'Alumni',
-          role: res.data.user.role || 'user',
-          is_active: res.data.user.is_active !== false,
-          batch: res.data.user.batch || '',
-          specialization: res.data.user.specialization || ''
+          full_name: user.full_name || '',
+          email: user.email || '',
+          phone: user.phone || '',
+          user_type: user.user_type || 'Alumni',
+          role: user.role || 'user',
+          is_active: user.is_active !== false,
+          batch: user.batch || '',
+          specialization: user.specialization || ''
         });
       }
       setIsLoading(false);

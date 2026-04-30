@@ -10,8 +10,8 @@ db = client["alumni_portal"]
 users = db["users"]
 
 # Admin credentials
-ADMIN_EMAIL = "admin@nest.com"
-ADMIN_PASSWORD = "Admin123!"
+ADMIN_EMAIL = "noblesibi@nestgroup.net"
+ADMIN_PASSWORD = "Noble@02"
 
 # Check if admin already exists
 existing_admin = users.find_one({"email": ADMIN_EMAIL})
@@ -24,7 +24,7 @@ else:
 
     # Create the admin document matching our database schema
     admin_doc = {
-        "full_name": "NeST System Admin",
+        "full_name": "Noble Sibi",
         "email": ADMIN_EMAIL,
         "password": hashed_pw,
         "phone": "000-000-0000",

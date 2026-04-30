@@ -142,7 +142,7 @@ const AdminAddVisit: React.FC = () => {
 
         <div style={{ background: '#fff', borderRadius: '24px', border: '1px solid #e2e8f0', padding: '32px 24px', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}>
 
-<<<<<<< HEAD
+
   <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
 
     {/* Section: Student Identity */}
@@ -234,77 +234,6 @@ const AdminAddVisit: React.FC = () => {
       </button>
     </div>
 
-
-=======
-        {/* Top Info Banner */}
-    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px' }}>
-      <div style={{ background: '#f1f5f9', color: '#475569', padding: '16px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <CalendarDays size={28} />
-      </div>
-      <div>
-        <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#1e293b', margin: 0, fontFamily: '"Playfair Display", serif' }}>Add IV Visit</h2>
-        <p style={{ color: '#64748b', fontSize: '14px', marginTop: '4px', margin: '4px 0 0 0' }}>Fill out the required details to schedule a new Industrial Visit array.</p>
-      </div>
-    </div>
-
-    <form onSubmit={handleSubmit} style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <label style={{ fontSize: '14px', fontWeight: 600, color: '#475569' }}>College Name</label>
-          <input required type="text" value={formData.college} onChange={e => setFormData({ ...formData, college: e.target.value })} style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #e2e8f0', outline: 'none', color: '#111827' }} />
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <label style={{ fontSize: '14px', fontWeight: 600, color: '#475569' }}>Branch / Department</label>
-          <input required type="text" value={formData.branch} onChange={e => setFormData({ ...formData, branch: e.target.value })} style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #e2e8f0', outline: 'none', color: '#111827' }} />
-        </div>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <label style={{ fontSize: '14px', fontWeight: 600, color: '#475569' }}>Date of Visit</label>
-          <input required type="date" value={formData.date} onChange={e => setFormData({ ...formData, date: e.target.value })} style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #e2e8f0', outline: 'none', color: '#111827' }} />
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <label style={{ fontSize: '14px', fontWeight: 600, color: '#475569' }}>Number of Students</label>
-          <input required type="number" value={formData.students_count} onChange={e => setFormData({ ...formData, students_count: e.target.value })} style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #e2e8f0', outline: 'none', color: '#111827' }} />
-        </div>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <label style={{ fontSize: '14px', fontWeight: 600, color: '#475569' }}>Coordinator Name</label>
-          <input required type="text" value={formData.coordinator_name} onChange={e => setFormData({ ...formData, coordinator_name: e.target.value })} style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #e2e8f0', outline: 'none', color: '#111827' }} />
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <label style={{ fontSize: '14px', fontWeight: 600, color: '#475569' }}>Coordinator Email</label>
-          <input required type="email" value={formData.coordinator_email} onChange={e => setFormData({ ...formData, coordinator_email: e.target.value })} style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #e2e8f0', outline: 'none', color: '#111827' }} />
-        </div>
-      </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        <label style={{ fontSize: '14px', fontWeight: 600, color: '#475569' }}>Additional Notes</label>
-        <textarea rows={4} value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #e2e8f0', outline: 'none', resize: 'vertical', color: '#111827' }} />
-      </div>
-
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          style={{
-            background: nestNavy,
-            color: '#fff',
-            padding: '12px 24px',
-            borderRadius: '8px',
-            border: 'none',
-            fontWeight: 600,
-            cursor: isSubmitting ? 'not-allowed' : 'pointer',
-            opacity: isSubmitting ? 0.7 : 1
-          }}
-        >
-          {isSubmitting ? 'Scheduling...' : 'Schedule Visit'}
-        </button>
-      </div>
->>>>>>> b5a55a284d9dbff01cfc419439be311dfe2096da
     </form>
   </div>
     </div >

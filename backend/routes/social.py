@@ -117,6 +117,24 @@ def create_post():
     }), 201
 
 
+# ── Get My Posts ──
+
+@social_bp.route("/my-posts", methods=["GET"])
+@jwt_required()
+def get_my_posts():
+    """Get posts created by the current user."""
+    user_id = get_jwt_identity()
+    db = get_db()
+    
+    posts_cursor = db["posts"].find({"author_id": ObjectId(user_id)}).sort("created_at", -1)
+    posts_list = [_serialize_post(p, db, user_id) for p in posts_cursor]
+    
+    return jsonify({
+        "success": True,
+        "data": {"posts": posts_list}
+    }), 200
+
+
 # ── Get Single Post ──
 
 @social_bp.route("/posts/<post_id>", methods=["GET"])

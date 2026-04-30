@@ -16,14 +16,14 @@ from .notifications import create_notification
 admin_bp = Blueprint("admin", __name__)
 
 def admin_required(fn):
-    """Decorator to check if user has admin role."""
+    """Decorator to check if user has admin or super_admin role."""
     from functools import wraps
     @wraps(fn)
     def wrapper(*args, **kwargs):
         user_id = get_jwt_identity()
         db = get_db()
         user = db["users"].find_one({"_id": ObjectId(user_id)})
-        if not user or user.get("role") != "admin":
+        if not user or user.get("role") not in ("admin", "super_admin"):
             return jsonify({"success": False, "message": "Admin privileges required."}), 403
         return fn(*args, **kwargs)
     return wrapper
@@ -45,6 +45,9 @@ def get_stats():
     total_courses = db["courses"].count_documents({}) if "courses" in db.list_collection_names() else 0
     iv_students = db["users"].count_documents({"user_type": "Industrial Student"})
     trainees = db["users"].count_documents({"user_type": "Trainee"})
+    alumni = db["users"].count_documents({"user_type": "Alumni"})
+    staff = db["users"].count_documents({"user_type": "Staff"})
+    total_managers = db["users"].count_documents({"role": {"$in": ["event_manager", "course_manager", "job_recruiter"]}})
 
     return jsonify({
         "success": True,
@@ -58,8 +61,47 @@ def get_stats():
                 "total_courses": total_courses,
                 "iv_students": iv_students,
                 "trainees": trainees,
+                "alumni": alumni,
+                "staff": staff,
+                "total_managers": total_managers,
+                "distribution": {
+                    "Alumni": alumni,
+                    "IV Students": iv_students,
+                    "Interns": interns,
+                    "Staff": staff,
+                    "Trainees": trainees
+                }
             }
         }
+    }), 200
+
+# ── Manager Listing ──
+
+@admin_bp.route("/managers", methods=["GET"])
+@jwt_required()
+@admin_required
+def get_all_managers():
+    """List all users with manager roles (event_manager, course_manager, job_recruiter)."""
+    db = get_db()
+    manager_roles = ["event_manager", "course_manager", "job_recruiter"]
+    managers_cursor = db["users"].find({"role": {"$in": manager_roles}}).sort("created_at", -1)
+
+    managers_list = []
+    for m in managers_cursor:
+        managers_list.append({
+            "id": str(m["_id"]),
+            "full_name": m.get("full_name", "Unknown"),
+            "email": m.get("email", ""),
+            "role": m.get("role", ""),
+            "user_type": m.get("user_type", ""),
+            "profile_picture": m.get("profile_picture"),
+            "is_active": m.get("is_active", True),
+            "created_at": m.get("created_at").isoformat() if hasattr(m.get("created_at", ""), "isoformat") else None,
+        })
+
+    return jsonify({
+        "success": True,
+        "data": {"managers": managers_list}
     }), 200
 
 # ── User Management ──

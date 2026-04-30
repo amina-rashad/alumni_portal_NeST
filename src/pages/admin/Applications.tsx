@@ -26,7 +26,6 @@ const Applications: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [applications, setApplications] = useState<Application[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchApps = async () => {
@@ -37,11 +36,13 @@ const Applications: React.FC = () => {
           id: app.id,
           candidate: {
             name: app.applicant_name || 'Alumni Member',
-            email: app.applicant_email || 'member@nest.com'
+            email: app.applicant_email || 'member@nest.com',
+            avatar: ''
           },
           role: app.job_title || 'Software Role',
           date: app.applied_at ? new Date(app.applied_at).toLocaleDateString() : 'Today',
           aiScore: Math.floor(Math.random() * 40) + 60, // Mock AI Score for demo
+          matchQuality: 'Medium' as 'Medium',
           status: app.status || 'Pending'
         }));
         setApplications(mapped);

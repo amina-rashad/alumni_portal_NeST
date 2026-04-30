@@ -28,7 +28,11 @@ export const clearTokens = (): void => {
 };
 
 export const setUser = (user: unknown): void => {
-  localStorage.setItem('user', JSON.stringify(user));
+  try {
+    localStorage.setItem('user', JSON.stringify(user));
+  } catch (err) {
+    console.error("Failed to save user to localStorage:", err);
+  }
 };
 
 export const getUser = (): Record<string, unknown> | null => {
@@ -59,6 +63,7 @@ async function apiRequest<T = unknown>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
+  console.log(`[API Request] ${options.method || 'GET'} ${endpoint}`, options.body ? '(with body)' : '');
   const url = `${API_BASE_URL}${endpoint}`;
 
   const headers: Record<string, string> = {
@@ -78,7 +83,9 @@ async function apiRequest<T = unknown>(
       headers,
     });
 
+    console.log(`[API Response] ${response.status} ${endpoint}`);
     const data: ApiResponse<T> = await response.json();
+    console.log(`[API Data] ${endpoint}:`, data);
 
     // Handle 401 — try refresh token
     if (response.status === 401 && getRefreshToken()) {
@@ -87,7 +94,9 @@ async function apiRequest<T = unknown>(
         // Retry the original request with new token
         headers['Authorization'] = `Bearer ${getAccessToken()}`;
         const retryResponse = await fetch(url, { ...options, headers });
-        return await retryResponse.json();
+        const retryData = await retryResponse.json();
+        console.log(`[API Retry Data] ${endpoint}:`, retryData);
+        return retryData;
       } else {
         const token = getAccessToken();
         if (token && token !== 'mock_token' && token !== 'social_mock_token') {
@@ -213,6 +222,9 @@ export const usersApi = {
 
   getUserById: (userId: string) =>
     apiRequest(`/users/${userId}`, { method: 'GET' }),
+
+  getPublicProfile: (userId: string) =>
+    apiRequest<{ user: any }>(`/users/${userId}/public`, { method: 'GET' }),
 };
 
 
@@ -226,7 +238,16 @@ export const healthApi = {
 // ── Admin API ──
 export const adminApi = {
   getStats: () => 
-    apiRequest<{ stats: { total_users: number, interns: number, active_jobs: number, applications: number } }>('/admin/stats'),
+    apiRequest<{ 
+      stats: { 
+        total_users: number, 
+        interns: number, 
+        active_jobs: number, 
+        applications: number,
+        total_managers: number,
+        distribution: { [key: string]: number }
+      } 
+    }>('/admin/stats'),
 
   getAllUsers: () => 
     apiRequest<{ users: any[] }>('/admin/users'),
@@ -257,6 +278,27 @@ export const adminApi = {
 
   getApplications: () => 
     apiRequest<{ applications: any[] }>('/admin/applications'),
+
+  addEvent: (data: any) =>
+    apiRequest('/admin/events', { method: 'POST', body: JSON.stringify(data) }),
+
+  getEvents: () =>
+    apiRequest<{ events: any[] }>('/admin/events'),
+
+  getPendingAssessments: () =>
+    apiRequest('/admin/assessments/pending'),
+
+  reviewAssessment: (id: string, data: any) =>
+    apiRequest(`/admin/assessments/${id}/review`, { method: 'POST', body: JSON.stringify(data) }),
+
+  deleteUser: (userId: string) =>
+    apiRequest(`/admin/users/${userId}`, { method: 'DELETE' }),
+
+  getUserById: (userId: string) =>
+    apiRequest(`/admin/users/${userId}`, { method: 'GET' }),
+
+  getManagers: () =>
+    apiRequest<{ managers: any[] }>('/admin/managers'),
 };
 
 // ── Courses API ──
@@ -267,6 +309,18 @@ export const coursesApi = {
 
   getCourseById: (courseId: string) =>
     apiRequest(`/courses/${courseId}`, { method: 'GET' }),
+
+  getMyCourses: () =>
+    apiRequest('/assessments/my-courses', { method: 'GET' }),
+
+  addCourse: (data: any) =>
+    apiRequest('/admin/courses', { method: 'POST', body: JSON.stringify(data) }),
+
+  updateCourse: (courseId: string, data: any) =>
+    apiRequest(`/admin/courses/${courseId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+
+  deleteCourse: (courseId: string) =>
+    apiRequest(`/admin/courses/${courseId}`, { method: 'DELETE' }),
 };
 
 // ── Jobs API ──
@@ -290,6 +344,22 @@ export const eventsApi = {
 
   registerForEvent: (eventId: string) =>
     apiRequest(`/events/${eventId}/register`, { method: 'POST' }),
+
+  getMyEvents: () =>
+    apiRequest<{ events: any[] }>('/events/my-events', { method: 'GET' }),
+};
+
+// ── Event Manager API ──
+
+export const eventManagerApi = {
+  getStats: () =>
+    apiRequest<{ stats: any, distribution: any[] }>('/events/manager/stats', { method: 'GET' }),
+  
+  getUpcomingEvents: () =>
+    apiRequest<{ events: any[] }>('/events/manager/upcoming', { method: 'GET' }),
+
+  createEvent: (data: any) =>
+    apiRequest('/events/create', { method: 'POST', body: JSON.stringify(data) }),
 };
 
 // ── Networking API ──
@@ -305,16 +375,22 @@ export const networkingApi = {
 
 export const socialApi = {
   getFeed: (page: number = 1, perPage: number = 20) =>
-    apiRequest(`/social/feed?page=${page}&per_page=${perPage}&t=${Date.now()}`, { method: 'GET', cache: 'no-store' }),
+    apiRequest<{ posts: any[]; total: number }>(`/social/feed?page=${page}&per_page=${perPage}&t=${Date.now()}`, { method: 'GET', cache: 'no-store' }),
+
+  getMyPosts: () =>
+    apiRequest<{ posts: any[] }>('/social/my-posts', { method: 'GET' }),
 
   createPost: (data: { content: string; image_url?: string }) =>
     apiRequest('/social/posts', { method: 'POST', body: JSON.stringify(data) }),
 
   likePost: (postId: string) =>
-    apiRequest(`/social/posts/${postId}/like`, { method: 'POST' }),
+    apiRequest<{ liked: boolean }>(`/social/posts/${postId}/like`, { method: 'POST' }),
 
   addComment: (postId: string, text: string) =>
     apiRequest(`/social/posts/${postId}/comments`, { method: 'POST', body: JSON.stringify({ text }) }),
+
+  deletePost: (postId: string) =>
+    apiRequest(`/social/posts/${postId}`, { method: 'DELETE' }),
 };
 
 // ── Recruiter API ──
@@ -334,4 +410,47 @@ export const recruiterApi = {
 
   getStats: () => 
     apiRequest<{ stats: any }>('/recruiter/stats', { method: 'GET' }),
+
+  getTalentFilters: () =>
+    apiRequest<{ specializations: string[], courses: string[], skills: string[] }>('/recruiter/talent-filters'),
+
+  searchTalents: (params: { skill?: string, course?: string, specialization?: string }) => {
+    const query = new URLSearchParams();
+    if (params.skill) query.append('skill', params.skill);
+    if (params.course) query.append('course', params.course);
+    if (params.specialization) query.append('specialization', params.specialization);
+    return apiRequest<{ talents: any[] }>(`/recruiter/talents?${query.toString()}`);
+  },
+
+  sendBroadcastMail: (data: { recipients: string[], subject: string, body: string }) =>
+    apiRequest('/recruiter/broadcast-mail', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+};
+
+// ── Assessments API ──
+export const assessmentsApi = {
+  getQuizzes: () => apiRequest('/assessments/quizzes'),
+  getAnalytics: () => apiRequest('/assessments/analytics'),
+  getAssessmentStatus: (id: string) => apiRequest(`/assessments/${id}/status`),
+  submitStage: (id: string, stage: number, payload: any) => 
+    apiRequest(`/assessments/${id}/stage/${stage}`, { method: 'POST', body: JSON.stringify(payload) }),
+};
+
+// ── Notifications API ──
+export const notificationsApi = {
+  getNotifications: () => apiRequest<{ notifications: any[]; unread_count: number }>('/notifications'),
+  markAsRead: (id: string) => apiRequest(`/notifications/${id}/read`, { method: 'PATCH' }),
+  markAllAsRead: () => apiRequest('/notifications/read-all', { method: 'PATCH' }),
+  deleteNotification: (id: string) => apiRequest(`/notifications/${id}`, { method: 'DELETE' }),
+};
+
+// ── Applications API ──
+export const applicationsApi = {
+  applyForJob: (data: any) =>
+    apiRequest('/applications', { method: 'POST', body: JSON.stringify(data) }),
+  
+  getMyApplications: () =>
+    apiRequest('/applications/me'),
 };

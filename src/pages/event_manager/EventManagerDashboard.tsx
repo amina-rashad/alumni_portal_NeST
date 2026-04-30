@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Calendar, Users, MousePointer2, TrendingUp, 
   BarChart3, Clock, MapPin, ChevronRight, FileText
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { eventManagerApi } from '../../services/api';
 
 const StatCard: React.FC<{
   title: string;
@@ -12,7 +13,8 @@ const StatCard: React.FC<{
   change: string;
   icon: React.ReactNode;
   color: string;
-}> = ({ title, value, change, icon, color }) => (
+  loading?: boolean;
+}> = ({ title, value, change, icon, color, loading }) => (
   <motion.div
     whileHover={{ y: -5 }}
     style={{
@@ -36,7 +38,11 @@ const StatCard: React.FC<{
     </div>
     <div>
       <div style={{ fontSize: '14px', color: '#64748b', fontWeight: 500, marginBottom: '4px' }}>{title}</div>
-      <div style={{ fontSize: '28px', fontWeight: 800, color: '#1e293b' }}>{value}</div>
+      {loading ? (
+        <div style={{ height: '34px', width: '80px', background: '#f1f5f9', borderRadius: '8px' }} className="skeleton-pulse" />
+      ) : (
+        <div style={{ fontSize: '28px', fontWeight: 800, color: '#1e293b' }}>{value}</div>
+      )}
     </div>
   </motion.div>
 );
@@ -44,28 +50,51 @@ const StatCard: React.FC<{
 const EventManagerDashboard: React.FC = () => {
   const navigate = useNavigate();
   const brandPrimary = '#233167';
+  const [stats, setStats] = useState<any>(null);
+  const [distribution, setDistribution] = useState<any[]>([]);
+  const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const upcomingEvents = [
-    { id: 1, title: 'Global Tech Summit 2026', date: 'Oct 24, 2026', time: '10:00 AM', location: 'Virtual', registrations: 450, status: 'Active' },
-    { id: 2, title: 'Alumni Networking Night', date: 'Nov 12, 2026', time: '06:30 PM', location: 'Grand Plaza', registrations: 120, status: 'Draft' },
-    { id: 3, title: 'Leadership Workshop', date: 'Dec 05, 2026', time: '02:00 PM', location: 'NeST HQ', registrations: 85, status: 'Active' },
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [statsRes, eventsRes] = await Promise.all([
+          eventManagerApi.getStats(),
+          eventManagerApi.getUpcomingEvents()
+        ]);
+
+        if (statsRes.success && statsRes.data) {
+          setStats(statsRes.data.stats);
+          setDistribution(statsRes.data.distribution);
+        }
+
+        if (eventsRes.success && eventsRes.data) {
+          setUpcomingEvents(eventsRes.data.events);
+        }
+      } catch (err) {
+        console.error("Dashboard fetch error:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#1e293b', margin: '0 0 8px 0' }}>Welcome back, Event Manager</h1>
-          <p style={{ margin: 0, color: '#64748b', fontWeight: 500 }}>Here's what's happening with your events today.</p>
+          <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#1e293b', margin: '0 0 8px 0' }}>Event Governance Portal</h1>
+          <p style={{ margin: 0, color: '#64748b', fontWeight: 500 }}>Global event oversight and participant engagement analytics.</p>
         </div>
-        {/* Create New Event button removed per user request */}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px' }}>
-        <StatCard title="Total Events" value="12" change="+2" icon={<Calendar size={24} />} color="#233167" />
-        <StatCard title="Active Participants" value="1,280" change="+15%" icon={<Users size={24} />} color="#10b981" />
-        <StatCard title="Page Views" value="45.2K" change="+24%" icon={<MousePointer2 size={24} />} color="#f59e0b" />
-        <StatCard title="Engagement Rate" value="68%" change="+5%" icon={<TrendingUp size={24} />} color="#ec4899" />
+        <StatCard title="Total Events" value={stats?.total_events || "0"} change="+2" icon={<Calendar size={24} />} color="#233167" loading={isLoading} />
+        <StatCard title="Active Participants" value={stats?.active_participants?.toLocaleString() || "0"} change="+15%" icon={<Users size={24} />} color="#10b981" loading={isLoading} />
+        <StatCard title="Page Views" value={stats?.page_views || "45.2K"} change="+24%" icon={<MousePointer2 size={24} />} color="#f59e0b" loading={isLoading} />
+        <StatCard title="Engagement Rate" value={stats?.engagement_rate || "68%"} change="+5%" icon={<TrendingUp size={24} />} color="#ec4899" loading={isLoading} />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr', gap: '32px' }}>
@@ -82,7 +111,9 @@ const EventManagerDashboard: React.FC = () => {
               </button>
             </div>
             <div style={{ padding: '16px' }}>
-              {upcomingEvents.map((event) => (
+              {isLoading ? (
+                [1, 2, 3].map(i => <div key={i} style={{ height: '70px', margin: '10px', background: '#f8fafc', borderRadius: '16px' }} className="skeleton-pulse" />)
+              ) : upcomingEvents.length > 0 ? upcomingEvents.map((event) => (
                 <div key={event.id} style={{
                   display: 'grid',
                   gridTemplateColumns: '1fr auto',
@@ -116,7 +147,9 @@ const EventManagerDashboard: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>No upcoming events found.</div>
+              )}
             </div>
           </section>
 
@@ -170,11 +203,9 @@ const EventManagerDashboard: React.FC = () => {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {[
-              { label: 'Alumni', value: '650', color: '#233167' },
-              { label: 'Interns', value: '420', color: '#10b981' },
-              { label: 'Others', value: '210', color: '#f59e0b' }
-            ].map((item) => (
+            {isLoading ? (
+              [1, 2, 3].map(i => <div key={i} style={{ height: '20px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px' }} className="skeleton-pulse" />)
+            ) : distribution.map((item) => (
               <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <div style={{ width: '12px', height: '12px', borderRadius: '4px', background: item.color }}></div>

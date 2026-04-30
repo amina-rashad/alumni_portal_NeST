@@ -3,6 +3,7 @@ import { motion, type Variants } from 'framer-motion';
 import { Briefcase, MapPin, DollarSign, AlignLeft, List, Target, CheckCircle, ArrowLeft, Send, Sparkles, AlertCircle } from 'lucide-react';
 import { recruiterApi } from '../../services/api';
 import { useNavigate, Link } from 'react-router-dom';
+import StatusModal from '../../components/StatusModal';
 
 const smoothSpring = { type: 'spring' as const, stiffness: 100, damping: 20, mass: 1 };
 
@@ -19,6 +20,13 @@ const RecruiterPostJob: React.FC = () => {
         description: '',
         requirements: '',
         skills_required: ''
+    });
+
+    const [modalConfig, setModalConfig] = useState({
+        isOpen: false,
+        type: 'error' as 'success' | 'error' | 'info' | 'warning',
+        title: '',
+        message: ''
     });
 
     const nestNavy = '#1a2652';
@@ -45,11 +53,21 @@ const RecruiterPostJob: React.FC = () => {
             if (response.success) {
                 navigate('/recruiter/jobs');
             } else {
-                alert('Error: ' + response.message);
+                setModalConfig({
+                    isOpen: true,
+                    type: 'error',
+                    title: 'Publishing Failed',
+                    message: response.message || 'We could not publish the job at this time.'
+                });
             }
         } catch (error) {
             console.error('Error posting job:', error);
-            alert('A network error occurred.');
+            setModalConfig({
+                isOpen: true,
+                type: 'error',
+                title: 'Network Error',
+                message: 'A connection error occurred while publishing.'
+            });
         } finally {
             setSubmitting(false);
         }
@@ -282,6 +300,15 @@ const RecruiterPostJob: React.FC = () => {
                     </div>
                 </div>
             </form>
+
+            <StatusModal 
+                isOpen={modalConfig.isOpen}
+                onClose={() => setModalConfig({ ...modalConfig, isOpen: false })}
+                type={modalConfig.type}
+                title={modalConfig.title}
+                message={modalConfig.message}
+                confirmText="Okay"
+            />
         </div>
     );
 };

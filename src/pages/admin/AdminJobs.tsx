@@ -6,6 +6,7 @@ import {
   Search, Calendar, AlertTriangle
 } from 'lucide-react';
 import { jobsApi, adminApi } from '../../services/api';
+import StatusModal from '../../components/StatusModal';
 
 const AdminJobs: React.FC = () => {
   const [jobs, setJobs] = useState<any[]>([]);
@@ -13,6 +14,12 @@ const AdminJobs: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [jobToDelete, setJobToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [modalConfig, setModalConfig] = useState({
+    isOpen: false,
+    type: 'error' as 'success' | 'error' | 'info' | 'warning',
+    title: '',
+    message: ''
+  });
   const nestNavy = '#1a2652';
 
   useEffect(() => {
@@ -39,7 +46,12 @@ const AdminJobs: React.FC = () => {
       setJobs(jobs.filter(j => j.id !== jobToDelete));
       setJobToDelete(null);
     } else {
-      alert(res.message || 'Failed to delete job');
+      setModalConfig({
+        isOpen: true,
+        type: 'error',
+        title: 'Deletion Failed',
+        message: res.message || 'We could not delete the job posting at this time.'
+      });
     }
     setIsDeleting(false);
   };
@@ -197,6 +209,14 @@ const AdminJobs: React.FC = () => {
           </div>
         </div>
       )}
+      <StatusModal 
+        isOpen={modalConfig.isOpen}
+        onClose={() => setModalConfig({ ...modalConfig, isOpen: false })}
+        type={modalConfig.type}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        confirmText="Okay"
+      />
     </div>
   );
 };

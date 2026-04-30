@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, Save, User as UserIcon, Book, Building, 
   Phone, AlignLeft, ShieldCheck, CheckCircle2, 
-  FileText, UploadCloud, Edit3, X, Upload, Camera, Briefcase, Award
+  FileText, UploadCloud, Edit3, X, Upload, Camera, Briefcase, Award, GraduationCap
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { usersApi, setUser, getUser, type AuthUser } from '../services/api';
@@ -25,10 +25,20 @@ const EditProfile: React.FC = () => {
     batch: '',
     specialization: '',
     skills: '',
-    status: 'none' // 'open_to_work', 'hiring', 'none'
+    status: 'none', // 'open_to_work', 'hiring', 'none'
+    linkedin_url: '',
+    github_url: '',
+    twitter_url: '',
+    portfolio_url: ''
   });
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [certificates, setCertificates] = useState<{id: string, name: string, url: string, issuer: string, date: string, type: 'uploaded' | 'portal'}[]>([]);
+  const [experience, setExperience] = useState<{id: string, role: string, company: string, type: string, duration: string, description?: string}[]>([]);
+  const [education, setEducation] = useState<{id: string, degree: string, school: string, year: string}[]>([]);
+
+  // Overlay state for adding items
+  const [activeOverlay, setActiveOverlay] = useState<'none' | 'experience' | 'education' | 'certificate'>('none');
+  const [overlayData, setOverlayData] = useState<any>({});
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -37,29 +47,38 @@ const EditProfile: React.FC = () => {
         const data = res.data as any;
         if (res.success && data && data.user) {
           const u = data.user;
-          setFormData({
+          setFormData(prev => ({
+            ...prev,
             full_name: u.full_name || '',
             bio: u.bio || '',
             phone: u.phone || '',
             batch: u.batch || '',
             specialization: u.specialization || '',
-            skills: (u.skills || []).join(', '),
-            status: u.status || 'none'
-          });
+            skills: Array.isArray(u.skills) ? u.skills.join(', ') : '',
+            status: u.status || 'none',
+            linkedin_url: u.linkedin_url || '',
+            github_url: u.github_url || '',
+            twitter_url: u.twitter_url || '',
+            portfolio_url: u.portfolio_url || ''
+          }));
           setProfilePicture(u.profile_picture || null);
+          setExperience(u.experience || []);
+          setEducation(u.education || []);
+          setCertificates(u.certificates || []);
         } else {
           // Mock data fallback if guest
           const u = getUser() as any;
           if (u) {
-            setFormData({
+            setFormData(prev => ({
+              ...prev,
               full_name: u.full_name || 'Melbin',
               bio: u.bio || '',
               phone: u.phone || '+91 98765 43210',
               batch: u.batch || '2023',
               specialization: u.specialization || 'Software Engineer',
-              skills: (u.skills || ['React', 'TypeScript']).join(', '),
+              skills: Array.isArray(u.skills) ? u.skills.join(', ') : 'React, TypeScript',
               status: u.status || 'open_to_work'
-            });
+            }));
             setProfilePicture(u.profile_picture || null);
             setCertificates(u.certificates || [
               { id: '1', name: 'Cloud Architecture Professional', issuer: 'NeST Learning Portal', date: 'Oct 2023', url: '#', type: 'portal' },
@@ -77,7 +96,8 @@ const EditProfile: React.FC = () => {
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
     setMessage({ type: '', text: '' });
   };
 
@@ -98,7 +118,9 @@ const EditProfile: React.FC = () => {
         ...formData, 
         skills: skillsArray,
         profile_picture: profilePicture,
-        certificates: certificates
+        certificates: certificates,
+        experience: experience,
+        education: education
       };
 
       if (resumeFile) {
@@ -118,26 +140,35 @@ const EditProfile: React.FC = () => {
         // If they uploaded a new file, it overwrites the old resume_data flag
       }
 
-      const currentUser = getUser() as unknown as AuthUser;
+      const currentUser = getUser() as any;
       if (currentUser) {
         setUser({ ...currentUser, ...updatePayload });
       }
 
       const res = await usersApi.updateProfile(updatePayload);
-      const data = res.data as any;
       
-      if (res.success && data && data.user) {
+      if (res.success && res.data) {
+        const data = res.data as any;
+        const updatedUser = data.user;
+        
         setMessage({ type: 'success', text: 'Profile updated successfully!' });
-        if (currentUser) setUser({ ...currentUser, ...data.user, ...updatePayload });
+        
+        // Update local storage
+        const currentUser = getUser() as any;
+        if (currentUser) {
+          setUser({ ...currentUser, ...updatedUser });
+        }
         
         setTimeout(() => navigate('/profile'), 1500);
       } else {
-        // Handle mock success for demo
-        setMessage({ type: 'success', text: 'Profile updated successfully (Demo Mode)!' });
-        setTimeout(() => navigate('/profile'), 1500);
+        setMessage({ 
+          type: 'error', 
+          text: res.message || 'Failed to update profile. Please try again.' 
+        });
       }
     } catch (err) {
-      setMessage({ type: 'error', text: 'Network error while saving.' });
+      console.error("Submit Error:", err);
+      setMessage({ type: 'error', text: 'An unexpected error occurred while saving.' });
     } finally {
       setSaving(false);
     }
@@ -321,6 +352,79 @@ const EditProfile: React.FC = () => {
             </div>
           </section>
 
+          {/* Experience Section */}
+          <section>
+            <h3 style={{ margin: '0 0 20px', fontSize: '17px', fontWeight: 800, color: '#1e293b', borderLeft: '4px solid #c8102e', paddingLeft: '12px' }}>Experience</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '20px' }}>
+              {experience.map((exp) => (
+                <div key={exp.id} style={{ padding: '16px', background: '#f8fafc', borderRadius: '14px', border: '1px solid #e2e8f0', position: 'relative' }}>
+                  <button onClick={() => setExperience(experience.filter(e => e.id !== exp.id))} style={{ position: 'absolute', top: '12px', right: '12px', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}><X size={16} /></button>
+                  <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 700 }}>{exp.role}</h4>
+                  <p style={{ margin: '4px 0', fontSize: '13px', color: '#64748b' }}>{exp.company} • {exp.type}</p>
+                  <p style={{ margin: 0, fontSize: '12px', color: '#94a3b8' }}>{exp.duration}</p>
+                </div>
+              ))}
+            </div>
+            <button 
+              type="button"
+              onClick={() => {
+                setOverlayData({ role: '', company: '', duration: '', type: 'Full-time' });
+                setActiveOverlay('experience');
+              }}
+              style={{ padding: '10px 20px', background: 'white', border: '1px solid #c8102e', color: '#c8102e', borderRadius: '10px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+            >
+              <Briefcase size={16} /> Add Experience
+            </button>
+          </section>
+
+          {/* Education Section */}
+          <section>
+            <h3 style={{ margin: '0 0 20px', fontSize: '17px', fontWeight: 800, color: '#1e293b', borderLeft: '4px solid #c8102e', paddingLeft: '12px' }}>Education</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '20px' }}>
+              {education.map((edu) => (
+                <div key={edu.id} style={{ padding: '16px', background: '#f8fafc', borderRadius: '14px', border: '1px solid #e2e8f0', position: 'relative' }}>
+                  <button onClick={() => setEducation(education.filter(e => e.id !== edu.id))} style={{ position: 'absolute', top: '12px', right: '12px', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}><X size={16} /></button>
+                  <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 700 }}>{edu.degree}</h4>
+                  <p style={{ margin: '4px 0', fontSize: '13px', color: '#64748b' }}>{edu.school}</p>
+                  <p style={{ margin: 0, fontSize: '12px', color: '#94a3b8' }}>Class of {edu.year}</p>
+                </div>
+              ))}
+            </div>
+            <button 
+              type="button"
+              onClick={() => {
+                setOverlayData({ degree: '', school: '', year: '' });
+                setActiveOverlay('education');
+              }}
+              style={{ padding: '10px 20px', background: 'white', border: '1px solid #c8102e', color: '#c8102e', borderRadius: '10px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+            >
+              <GraduationCap size={16} /> Add Education
+            </button>
+          </section>
+
+          {/* Social Links Section */}
+          <section>
+            <h3 style={{ margin: '0 0 20px', fontSize: '17px', fontWeight: 800, color: '#1e293b', borderLeft: '4px solid #c8102e', paddingLeft: '12px' }}>Social Profiles</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              <div>
+                <label style={labelStyle}>LinkedIn URL</label>
+                <input name="linkedin_url" value={formData.linkedin_url} onChange={handleChange} style={inputStyle} placeholder="https://linkedin.com/in/..." />
+              </div>
+              <div>
+                <label style={labelStyle}>GitHub URL</label>
+                <input name="github_url" value={formData.github_url} onChange={handleChange} style={inputStyle} placeholder="https://github.com/..." />
+              </div>
+              <div>
+                <label style={labelStyle}>Twitter URL</label>
+                <input name="twitter_url" value={formData.twitter_url} onChange={handleChange} style={inputStyle} placeholder="https://twitter.com/..." />
+              </div>
+              <div>
+                <label style={labelStyle}>Portfolio URL</label>
+                <input name="portfolio_url" value={formData.portfolio_url} onChange={handleChange} style={inputStyle} placeholder="https://yourportfolio.com" />
+              </div>
+            </div>
+          </section>
+
           {/* Contact & Verification Section */}
           <section>
             <h3 style={{ margin: '0 0 20px', fontSize: '17px', fontWeight: 800, color: '#1e293b', borderLeft: '4px solid #c8102e', paddingLeft: '12px' }}>Contact & Verification</h3>
@@ -455,7 +559,14 @@ const EditProfile: React.FC = () => {
                     initialData={{
                       fullName: formData.full_name,
                       phone: formData.phone,
-                      title: formData.specialization
+                      email: getUser()?.email || '',
+                      address: formData.batch ? `Batch of ${formData.batch}` : '',
+                      title: formData.specialization,
+                      summary: formData.bio,
+                      experience: experience,
+                      education: education,
+                      certificates: certificates,
+                      portfolio: formData.portfolio_url
                     }}
                     onAttach={(file, data) => {
                       setResumeFile(file);
@@ -511,24 +622,16 @@ const EditProfile: React.FC = () => {
                   onChange={async (e) => {
                     if (e.target.files && e.target.files[0]) {
                       const file = e.target.files[0];
-                      const name = prompt("Enter Certificate Name:", file.name.split('.')[0]);
-                      const issuer = prompt("Enter Issuing Organization:");
-                      
-                      if (name && issuer) {
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                          const newCert = {
-                            id: Math.random().toString(36).substr(2, 9),
-                            name,
-                            issuer,
-                            date: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-                            url: reader.result as string,
-                            type: 'uploaded' as const
-                          };
-                          setCertificates([...certificates, newCert]);
-                        };
-                        reader.readAsDataURL(file);
-                      }
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        setOverlayData({
+                          name: file.name.split('.')[0],
+                          issuer: '',
+                          url: reader.result as string
+                        });
+                        setActiveOverlay('certificate');
+                      };
+                      reader.readAsDataURL(file);
                     }
                   }}
                 />
@@ -543,6 +646,108 @@ const EditProfile: React.FC = () => {
           </section>
         </div>
       </div>
+
+      {/* --- ADD ITEM OVERLAYS --- */}
+      <AnimatePresence>
+        {activeOverlay !== 'none' && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+            onClick={() => setActiveOverlay('none')}
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              style={{ background: 'white', width: '100%', maxWidth: '500px', borderRadius: '24px', padding: '32px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}
+              onClick={e => e.stopPropagation()}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>
+                  {activeOverlay === 'experience' && 'Add Experience'}
+                  {activeOverlay === 'education' && 'Add Education'}
+                  {activeOverlay === 'certificate' && 'Add Certificate'}
+                </h3>
+                <button onClick={() => setActiveOverlay('none')} style={{ background: '#f1f5f9', border: 'none', borderRadius: '10px', padding: '8px', cursor: 'pointer', color: '#64748b' }}>
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {activeOverlay === 'experience' && (
+                  <>
+                    <div>
+                      <label style={labelStyle}>Role Name</label>
+                      <input value={overlayData.role} onChange={e => setOverlayData({...overlayData, role: e.target.value})} style={inputStyle} placeholder="e.g. Senior Developer" />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Company</label>
+                      <input value={overlayData.company} onChange={e => setOverlayData({...overlayData, company: e.target.value})} style={inputStyle} placeholder="e.g. NeST Digital" />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Duration</label>
+                      <input value={overlayData.duration} onChange={e => setOverlayData({...overlayData, duration: e.target.value})} style={inputStyle} placeholder="e.g. Jan 2023 - Present" />
+                    </div>
+                  </>
+                )}
+
+                {activeOverlay === 'education' && (
+                  <>
+                    <div>
+                      <label style={labelStyle}>Degree / Course</label>
+                      <input value={overlayData.degree} onChange={e => setOverlayData({...overlayData, degree: e.target.value})} style={inputStyle} placeholder="e.g. B.Tech Computer Science" />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>School / University</label>
+                      <input value={overlayData.school} onChange={e => setOverlayData({...overlayData, school: e.target.value})} style={inputStyle} placeholder="e.g. KTU University" />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Graduation Year</label>
+                      <input value={overlayData.year} onChange={e => setOverlayData({...overlayData, year: e.target.value})} style={inputStyle} placeholder="e.g. 2023" />
+                    </div>
+                  </>
+                )}
+
+                {activeOverlay === 'certificate' && (
+                  <>
+                    <div>
+                      <label style={labelStyle}>Certificate Name</label>
+                      <input value={overlayData.name} onChange={e => setOverlayData({...overlayData, name: e.target.value})} style={inputStyle} placeholder="e.g. AWS Solutions Architect" />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Issuing Organization</label>
+                      <input value={overlayData.issuer} onChange={e => setOverlayData({...overlayData, issuer: e.target.value})} style={inputStyle} placeholder="e.g. Amazon Web Services" />
+                    </div>
+                  </>
+                )}
+
+                <button 
+                  onClick={() => {
+                    if (activeOverlay === 'experience') {
+                      setExperience([...experience, { ...overlayData, id: Math.random().toString(36).substr(2, 9) }]);
+                    } else if (activeOverlay === 'education') {
+                      setEducation([...education, { ...overlayData, id: Math.random().toString(36).substr(2, 9) }]);
+                    } else if (activeOverlay === 'certificate') {
+                      setCertificates([...certificates, { 
+                        ...overlayData, 
+                        id: Math.random().toString(36).substr(2, 9), 
+                        date: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+                        type: 'uploaded'
+                      }]);
+                    }
+                    setActiveOverlay('none');
+                  }}
+                  style={{ marginTop: '12px', width: '100%', padding: '14px', background: '#1a2652', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}
+                >
+                  Add to Profile
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };

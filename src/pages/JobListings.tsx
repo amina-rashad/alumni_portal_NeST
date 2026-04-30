@@ -9,7 +9,8 @@ import {
   Calendar, ChevronRight, Check
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { jobsApi } from '../services/api';
+import { jobsApi, applicationsApi } from '../services/api';
+import StatusModal from '../components/StatusModal';
 
 interface Job {
   id: string;
@@ -128,6 +129,19 @@ const JobListings: React.FC = () => {
   const [appliedJobs, setAppliedJobs] = useState<Set<string>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
 
+  // Modal State
+  const [modalConfig, setModalConfig] = useState({
+    isOpen: false,
+    type: 'success' as 'success' | 'error' | 'info' | 'warning',
+    title: '',
+    message: '',
+    confirmText: 'Okay',
+    showConfirmOnly: true,
+    onConfirm: undefined as (() => void) | undefined
+  });
+
+  const [pendingJobId, setPendingJobId] = useState<string | null>(null);
+
   useEffect(() => {
     const fetchJobs = async () => {
       try {
@@ -170,7 +184,21 @@ const JobListings: React.FC = () => {
         setLoading(false);
       }
     };
+
+    const fetchAppliedJobs = async () => {
+      try {
+        const res = await applicationsApi.getMyApplications();
+        if (res.success && res.data && (res.data as any).applications) {
+          const ids = new Set<string>((res.data as any).applications.map((app: any) => app.job_id));
+          setAppliedJobs(ids);
+        }
+      } catch (err) {
+        console.error("Failed to fetch applied jobs", err);
+      }
+    };
+
     fetchJobs();
+    fetchAppliedJobs();
   }, []);
 
   const toggleSaveJob = (id: string) => {
@@ -180,10 +208,64 @@ const JobListings: React.FC = () => {
     setSavedJobs(newSaved);
   };
 
-  const handleApply = (id: string) => {
-    const newApplied = new Set(appliedJobs);
-    newApplied.add(id);
-    setAppliedJobs(newApplied);
+  const handleApply = (jobId: string) => {
+    setPendingJobId(jobId);
+    setModalConfig({
+      isOpen: true,
+      type: 'info',
+      title: 'Confirm Application',
+      message: 'Are you sure you want to apply for this position? Your profile details will be shared with the recruitment team.',
+      confirmText: 'Yes, Apply Now',
+      showConfirmOnly: false,
+      onConfirm: () => handleConfirmApply(jobId)
+    });
+  };
+
+  const handleConfirmApply = async (jobId: string) => {
+    try {
+      // Close initial modal and show loading if needed (optional)
+      setModalConfig(prev => ({ ...prev, isOpen: false }));
+      
+      const res = await applicationsApi.applyForJob({ job_id: jobId });
+      if (res.success) {
+        const newApplied = new Set(appliedJobs);
+        newApplied.add(jobId);
+        setAppliedJobs(newApplied);
+        setModalConfig({
+          isOpen: true,
+          type: 'success',
+          title: 'Success!',
+          message: 'Your application has been submitted successfully. Our recruitment team will review it and get back to you shortly.',
+          confirmText: 'Great',
+          showConfirmOnly: true,
+          onConfirm: undefined
+        });
+      } else {
+        console.warn("Application failed response:", res);
+        setModalConfig({
+          isOpen: true,
+          type: 'error',
+          title: 'Submission Failed',
+          message: res.message || 'We encountered an error while submitting your application. Please try again later.',
+          confirmText: 'Okay',
+          showConfirmOnly: true,
+          onConfirm: undefined
+        });
+      }
+    } catch (err) {
+      console.error("Application error:", err);
+      setModalConfig({
+        isOpen: true,
+        type: 'error',
+        title: 'Network Error',
+        message: 'An unexpected network error occurred. Please check your connection and try again.',
+        confirmText: 'Okay',
+        showConfirmOnly: true,
+        onConfirm: undefined
+      });
+    } finally {
+      setPendingJobId(null);
+    }
   };
 
   const filteredJobs = jobs.filter(job => {
@@ -622,6 +704,16 @@ const JobListings: React.FC = () => {
           transform: translateY(0);
         }
       `}</style>
+      <StatusModal
+        isOpen={modalConfig.isOpen}
+        onClose={() => setModalConfig({ ...modalConfig, isOpen: false })}
+        type={modalConfig.type}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        confirmText={modalConfig.confirmText}
+        showConfirmOnly={modalConfig.showConfirmOnly}
+        onConfirm={modalConfig.onConfirm}
+      />
     </div>
   );
 };

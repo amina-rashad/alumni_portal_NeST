@@ -18,8 +18,11 @@ const SuperAdminDashboard: React.FC = () => {
     db: 'Encrypted & Connected',
     lastBackup: '45 mins ago',
     activeSessions: 142,
-    securityThreats: 0
+    securityThreats: 0,
+    totalManagers: 0
   });
+
+  const [managers, setManagers] = useState<any[]>([]);
 
   const [recentLogs, setRecentLogs] = useState([
     { id: 1, action: 'Role Hierarchy Update', user: 'superadmin@nest.com', target: 'Global System', time: '5 mins ago', type: 'security' },
@@ -31,6 +34,20 @@ const SuperAdminDashboard: React.FC = () => {
   useEffect(() => {
     // Simulate data loading
     const timer = setTimeout(() => setIsLoading(false), 1200);
+
+    const fetchManagers = async () => {
+      try {
+        const res = await adminApi.getManagers();
+        if (res.success && res.data) {
+          setManagers((res.data as any).managers || []);
+          setSystemStatus(prev => ({ ...prev, totalManagers: (res.data as any).managers?.length || 0 }));
+        }
+      } catch (err) {
+        console.error("Failed to fetch managers", err);
+      }
+    };
+    fetchManagers();
+
     return () => clearTimeout(timer);
   }, []);
 
@@ -65,6 +82,7 @@ const SuperAdminDashboard: React.FC = () => {
           <>
             <StatusCard title="API Latency" value={systemStatus.api} icon={<Server size={22} />} color={nestNavy} trend="+0.2ms" />
             <StatusCard title="Database" value={systemStatus.db} icon={<Database size={22} />} color="#8b5cf6" trend="Optimal" />
+            <StatusCard title="System Staff" value={systemStatus.totalManagers.toString()} icon={<Users size={22} />} color="#6366f1" trend="Active Managers" />
             <StatusCard title="Security Pulse" value={systemStatus.securityThreats.toString()} icon={<ShieldCheck size={22} />} color="#ef4444" isAlert={systemStatus.securityThreats > 0} trend="Protected" />
             <StatusCard title="Active Traffic" value={systemStatus.activeSessions.toString()} icon={<Activity size={22} />} color="#10b981" trend="+12% today" />
           </>
@@ -124,6 +142,53 @@ const SuperAdminDashboard: React.FC = () => {
              </div>
            )}
         </section>
+
+        {/* Manager Management Section */}
+        {managers.length > 0 && (
+          <section style={cardStyle}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+              <div>
+                <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a', margin: 0 }}>Administrative Hierarchy</h3>
+                <p style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>Active platform managers and their assigned roles.</p>
+              </div>
+              <button 
+                onClick={() => navigate('/admin/roles')}
+                style={{ background: '#f1f5f9', border: 'none', padding: '10px 18px', borderRadius: '12px', fontSize: '13px', fontWeight: 700, color: '#475569', cursor: 'pointer' }}
+              >
+                Manage Roles
+              </button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {managers.slice(0, 5).map((mgr, index) => (
+                <motion.div 
+                  key={mgr.id} 
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  style={logItemStyle}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div style={{ 
+                      width: '40px', height: '40px', borderRadius: '10px', 
+                      background: nestNavy, color: '#fff',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '14px', fontWeight: 800
+                    }}>
+                      {mgr.full_name?.charAt(0)}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '15px', fontWeight: 700, color: '#1e293b' }}>{mgr.full_name}</div>
+                      <div style={{ fontSize: '12px', color: '#64748b', textTransform: 'capitalize' }}>{mgr.role?.replace('_', ' ')}</div>
+                    </div>
+                  </div>
+                  <div style={{ padding: '6px 12px', borderRadius: '8px', background: '#f0fdf4', color: '#16a34a', fontSize: '11px', fontWeight: 800 }}>
+                    ACTIVE
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Quick Operations Panel */}
         <section style={{ ...cardStyle, background: '#fff', display: 'flex', flexDirection: 'column', gap: '32px' }}>

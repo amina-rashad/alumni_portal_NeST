@@ -4,82 +4,161 @@ import { ArrowLeft, MapPin, Briefcase, Clock, Building, CheckCircle2, Star, Shar
 import { Link, useParams, useNavigate } from 'react-router-dom';
 
 // Comprehensive mock data covering the jobs from JobListings
-const DETAILED_JOBS: Record<string, any> = {
-  '1': {
-    id: '1',
-    title: 'Senior Full Stack Developer',
-    department: 'Engineering',
-    location: 'Kochi, Kerala (Hybrid)',
-    type: 'Full-time',
-    experience: '5-8 Years',
-    postedAt: '2 days ago',
-    salary: 'Not Disclosed',
-    aboutContext: 'We are looking for an experienced Senior Full Stack Developer to lead our core engineering team and architect high-performance web applications that serve millions of users globally. You will work within an agile squad alongside Product, Design, and QA to bring enterprise-grade solutions to life.',
-    responsibilities: [
-      'Lead the architecture and development of resilient, scalable, and high-performance full-stack web applications.',
-      'Collaborate closely with product managers, designers, and other engineers to deliver high-quality software.',
-      'Mentor junior and mid-level engineers through code reviews, pair programming, and architectural discussions.',
-      'Drive engineering best practices including CI/CD pipeline automation, unit testing, and code quality standards.',
-      'Optimize application performance and database queries to ensure a seamless experience for end-users.',
-      'Liaise with client stakeholders to understand technical requirements and propose robust architectural solutions.'
-    ],
-    requirements: [
-      'Bachelor’s/Master’s Degree in Computer Science, Engineering, or a related field.',
-      '5-8 years of hands-on experience in full-stack web development.',
-      'Expert-level proficiency in React.js, modern JavaScript/TypeScript, and state management libraries (Redux, Context, etc.).',
-      'Strong backend experience with Node.js, Express, or similar frameworks.',
-      'Deep understanding of relational databases (PostgreSQL, MySQL) and ORMs.',
-      'Experience with cloud platforms like AWS, Docker, and Kubernetes is highly preferred.',
-      'Excellent problem-solving skills and the ability to articulate technical challenges effectively.'
-    ],
-    skills: ['React', 'Node.js', 'PostgreSQL', 'AWS', 'TypeScript', 'Docker', 'System Architecture'],
-    urgent: true
-  },
-  '2': {
-    id: '2',
-    title: 'Lead UX/UI Designer',
-    department: 'Design',
-    location: 'Trivandrum, Kerala (On-site)',
-    type: 'Full-time',
-    experience: '4-6 Years',
-    postedAt: '1 week ago',
-    aboutContext: 'Join our design team to craft intuitive and beautiful user experiences for our enterprise products. You will be at the forefront of designing human-centric interfaces, bridging the gap between user needs and business goals.',
-    responsibilities: [
-      'Lead design initiatives from conceptualization through to high-fidelity prototyping and user testing.',
-      'Establish and maintain the company-wide design system and component libraries.',
-      'Conduct comprehensive user research and translate insights into actionable UI improvements.',
-      'Collaborate with front-end engineers to ensure pixel-perfect implementation of designs.'
-    ],
-    requirements: [
-      'A strong portfolio showcasing end-to-end product design processes and enterprise-level applications.',
-      '4-6 years of experience in UX/UI design, preferably in a B2B or agency environment.',
-      'Expertise in Figma, Adobe Creative Suite, and prototyping tools.',
-      'Deep understanding of accessibility standards, atomic design principles, and responsive layouts.'
-    ],
-    skills: ['Figma', 'Prototyping', 'Design Systems', 'User Testing', 'Wireframing', 'Agile Design'],
-    urgent: false
-  }
-};
+import { jobsApi, applicationsApi } from '../services/api';
+import StatusModal from '../components/StatusModal';
 
 const JobDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [job, setJob] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [isApplied, setIsApplied] = useState(false);
-  
-  // Use mock data for ID 1 if ID doesn't exist to prevent crashing on demo
-  const job = id && DETAILED_JOBS[id] ? DETAILED_JOBS[id] : DETAILED_JOBS['1'];
+
+  // Modal State
+  const [modalConfig, setModalConfig] = useState({
+    isOpen: false,
+    type: 'success' as 'success' | 'error' | 'info' | 'warning',
+    title: '',
+    message: '',
+    confirmText: 'Okay',
+    showConfirmOnly: true,
+    onConfirm: undefined as (() => void) | undefined
+  });
 
   useEffect(() => {
+    const fetchJobDetails = async () => {
+      if (!id) return;
+      try {
+        setLoading(true);
+        const res = await jobsApi.getJobById(id);
+        if (res.success && res.data) {
+          const apiJob = (res.data as any).job;
+          
+          // Map backend fields to frontend UI needs
+          setJob({
+            id: apiJob.id,
+            title: apiJob.title || 'Untitled Position',
+            department: apiJob.department || 'General',
+            company: apiJob.company || 'NeST Digital',
+            location: apiJob.location || 'Remote',
+            type: apiJob.type || 'Full-time',
+            experience: apiJob.experience_level || 'Entry Level',
+            postedAt: apiJob.createdAt ? new Date(apiJob.createdAt).toLocaleDateString() : 'Recently',
+            salary: apiJob.salary || 'Not Disclosed',
+            aboutContext: apiJob.description || 'No description provided.',
+            responsibilities: apiJob.responsibilities || [
+              'No specific responsibilities listed. Please refer to the job description for more details.',
+              'Collaborate with cross-functional teams to deliver high-quality solutions.',
+              'Participate in code reviews and contribute to architectural discussions.'
+            ],
+            requirements: apiJob.requirements || [],
+            skills: apiJob.skills_required || [],
+            urgent: apiJob.is_urgent
+          });
+        } else {
+          setError('Job listing not found or has been removed.');
+        }
+      } catch (err) {
+        setError('Failed to load job details. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchJobDetails();
     window.scrollTo(0, 0);
-  }, []);
+  }, [id]);
+
+  const handleApply = () => {
+    if (!job) return;
+    setModalConfig({
+      isOpen: true,
+      type: 'info',
+      title: 'Submit Application?',
+      message: `Are you sure you want to apply for the ${job.title} role at ${job.company}? Your contact information and profile will be shared with the recruiter.`,
+      confirmText: 'Yes, Submit Application',
+      showConfirmOnly: false,
+      onConfirm: () => handleConfirmApply()
+    });
+  };
+
+  const handleConfirmApply = async () => {
+    try {
+      setModalConfig(prev => ({ ...prev, isOpen: false }));
+      const res = await applicationsApi.applyForJob({ job_id: job.id });
+      if (res.success) {
+        setIsApplied(true);
+        setModalConfig({
+          isOpen: true,
+          type: 'success',
+          title: 'Application Successful!',
+          message: `You have successfully applied for the ${job.title} position at ${job.company}. You can track your application in the "My Applications" dashboard.`,
+          confirmText: 'View Dashboard',
+          showConfirmOnly: true,
+          onConfirm: () => navigate('/applications')
+        });
+      } else {
+        setModalConfig({
+          isOpen: true,
+          type: 'error',
+          title: 'Submission Failed',
+          message: res.message || 'There was an issue submitting your application. Please try again later.',
+          confirmText: 'Okay',
+          showConfirmOnly: true,
+          onConfirm: undefined
+        });
+      }
+    } catch (err) {
+      console.error("Application error:", err);
+      setModalConfig({
+        isOpen: true,
+        type: 'error',
+        title: 'System Error',
+        message: 'A technical error occurred while processing your request. Please check your internet connection and try again.',
+        confirmText: 'Okay',
+        showConfirmOnly: true,
+        onConfirm: undefined
+      });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8f9fa' }}>
+        <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>
+          <Briefcase size={48} color="#c8102e" />
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (error || !job) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8f9fa', padding: '2rem' }}>
+        <div style={{ textAlign: 'center' }}>
+          <Building size={64} color="#adb5bd" style={{ marginBottom: '1.5rem' }} />
+          <h2 style={{ fontSize: '2rem', color: '#1a1a1a', marginBottom: '1rem' }}>{error || 'Listing Unavailable'}</h2>
+          <Link to="/jobs" style={{ color: '#c8102e', fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+            <ArrowLeft size={18} /> Back to Job Listings
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ minHeight: '100vh', padding: '4rem 2rem', background: '#f8f9fa', color: '#1a1a1a', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ minHeight: '100vh', padding: '1rem 0', background: '#f8f9fa', color: '#1a1a1a', fontFamily: 'Inter, sans-serif' }}>
       <div className="container" style={{ maxWidth: '1000px', margin: '0 auto' }}>
         
         {/* Navigation & Actions */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
-<div></div>
+          <button 
+            onClick={() => navigate('/jobs')}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', border: 'none', background: 'transparent', color: '#4a4a4a', fontWeight: 600, cursor: 'pointer', padding: '0.5rem 0' }}
+          >
+            <ArrowLeft size={20} /> Back to Jobs
+          </button>
           <div style={{ display: 'flex', gap: '1rem' }}>
             <button 
               style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', border: '1px solid #ced4da', background: '#ffffff', padding: '0.5rem 1rem', borderRadius: '8px', color: '#4a4a4a', fontWeight: 500, cursor: 'pointer', transition: 'background 0.2s' }}
@@ -118,7 +197,7 @@ const JobDetails: React.FC = () => {
               position: 'absolute',
               top: '1.5rem',
               right: '-2.5rem',
-              background: 'var(--primary)',
+              background: '#c8102e',
               color: 'white',
               padding: '0.4rem 3rem',
               transform: 'rotate(45deg)',
@@ -136,10 +215,10 @@ const JobDetails: React.FC = () => {
               <img src="https://media.licdn.com/dms/image/C560BAQGNt2PXXs_WkQ/company-logo_200_200/0/1630656715690/nest_software_logo?e=2147483647&v=beta&t=GkMvL3fQ2zIq805g8A6iU21Nkx1bYwR7y5sL_V0zHwM" alt="NeST" style={{ width: '45px', height: '45px', objectFit: 'contain' }} />
             </div>
             <div>
-              <span style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '0.85rem', letterSpacing: '1px', textTransform: 'uppercase' }}>{job.department}</span>
-              <h1 style={{ fontSize: '2.5rem', color: '#1a1a1a', margin: '0.5rem 0 1rem 0', fontFamily: 'Playfair Display, serif', fontWeight: 700 }}>{job.title}</h1>
+              <span style={{ color: '#c8102e', fontWeight: 700, fontSize: '0.85rem', letterSpacing: '1px', textTransform: 'uppercase' }}>{job.department}</span>
+              <h1 style={{ fontSize: '2.5rem', color: '#1a1a1a', margin: '0.5rem 0 1rem 0', fontFamily: 'Inter, sans-serif', fontWeight: 800 }}>{job.title}</h1>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', color: '#6c757d', fontSize: '1rem', fontWeight: 500 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Building size={18} /> NeST Digital</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Building size={18} /> {job.company}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><MapPin size={18} /> {job.location}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Briefcase size={18} /> {job.experience}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Clock size={18} /> {job.type}</div>
@@ -155,10 +234,10 @@ const JobDetails: React.FC = () => {
               </div>
             </div>
             <button 
-              onClick={() => setIsApplied(true)}
+              onClick={handleApply}
               disabled={isApplied}
               style={{
-                background: isApplied ? '#e3fbee' : 'var(--primary)',
+                background: isApplied ? '#e3fbee' : '#c8102e',
                 color: isApplied ? '#2b8a3e' : 'white',
                 padding: '1rem 3rem',
                 borderRadius: '8px',
@@ -174,14 +253,14 @@ const JobDetails: React.FC = () => {
               }}
               onMouseEnter={(e) => { 
                 if (!isApplied) {
-                  e.currentTarget.style.background = 'var(--primary-hover)'; 
+                  e.currentTarget.style.background = '#a00d25'; 
                   e.currentTarget.style.transform = 'translateY(-2px)'; 
                   e.currentTarget.style.boxShadow = '0 6px 16px rgba(200, 16, 46, 0.3)';
                 }
               }}
               onMouseLeave={(e) => { 
                 if (!isApplied) {
-                  e.currentTarget.style.background = 'var(--primary)'; 
+                  e.currentTarget.style.background = '#c8102e'; 
                   e.currentTarget.style.transform = 'translateY(0)'; 
                   e.currentTarget.style.boxShadow = '0 4px 12px rgba(200, 16, 46, 0.2)';
                 }
@@ -213,7 +292,7 @@ const JobDetails: React.FC = () => {
             {/* About Role */}
             <div style={{ background: '#ffffff', borderRadius: '16px', padding: '2.5rem', border: '1px solid #e9ecef', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
               <h3 style={{ fontSize: '1.5rem', color: '#1a1a1a', marginBottom: '1.2rem', fontWeight: 600 }}>About the Role</h3>
-              <p style={{ color: '#4a4a4a', lineHeight: 1.8, fontSize: '1.05rem' }}>
+              <p style={{ color: '#4a4a4a', lineHeight: 1.8, fontSize: '1.05rem', whiteSpace: 'pre-wrap' }}>
                 {job.aboutContext}
               </p>
             </div>
@@ -224,7 +303,7 @@ const JobDetails: React.FC = () => {
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 {job.responsibilities.map((req: string, i: number) => (
                   <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', color: '#4a4a4a', lineHeight: 1.6, fontSize: '1.05rem' }}>
-                    <CheckCircle2 color="var(--primary)" size={22} style={{ flexShrink: 0, marginTop: '2px' }} />
+                    <CheckCircle2 color="#c8102e" size={22} style={{ flexShrink: 0, marginTop: '2px' }} />
                     <span>{req}</span>
                   </li>
                 ))}
@@ -232,17 +311,19 @@ const JobDetails: React.FC = () => {
             </div>
 
             {/* Requirements */}
-            <div style={{ background: '#ffffff', borderRadius: '16px', padding: '2.5rem', border: '1px solid #e9ecef', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
-              <h3 style={{ fontSize: '1.5rem', color: '#1a1a1a', marginBottom: '1.2rem', fontWeight: 600 }}>Requirements</h3>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {job.requirements.map((req: string, i: number) => (
-                  <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', color: '#4a4a4a', lineHeight: 1.6, fontSize: '1.05rem' }}>
-                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--primary)', marginTop: '8px', flexShrink: 0 }}></div>
-                    <span>{req}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {job.requirements && job.requirements.length > 0 && (
+              <div style={{ background: '#ffffff', borderRadius: '16px', padding: '2.5rem', border: '1px solid #e9ecef', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
+                <h3 style={{ fontSize: '1.5rem', color: '#1a1a1a', marginBottom: '1.2rem', fontWeight: 600 }}>Requirements</h3>
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {job.requirements.map((req: string, i: number) => (
+                    <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', color: '#4a4a4a', lineHeight: 1.6, fontSize: '1.05rem' }}>
+                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#c8102e', marginTop: '8px', flexShrink: 0 }}></div>
+                      <span>{req}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             
           </motion.div>
 
@@ -254,16 +335,18 @@ const JobDetails: React.FC = () => {
             style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}
           >
             {/* Skills */}
-            <div style={{ background: '#ffffff', borderRadius: '16px', padding: '2rem', border: '1px solid #e9ecef', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
-              <h3 style={{ fontSize: '1.3rem', color: '#1a1a1a', marginBottom: '1.2rem', fontWeight: 600 }}>Required Skills</h3>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.8rem' }}>
-                {job.skills.map((skill: string, index: number) => (
-                  <span key={index} style={{ fontSize: '0.9rem', background: '#f8f9fa', color: '#4a4a4a', border: '1px solid #e9ecef', padding: '0.4rem 1rem', borderRadius: '20px', fontWeight: 500 }}>
-                    {skill}
-                  </span>
-                ))}
+            {job.skills && job.skills.length > 0 && (
+              <div style={{ background: '#ffffff', borderRadius: '16px', padding: '2rem', border: '1px solid #e9ecef', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
+                <h3 style={{ fontSize: '1.3rem', color: '#1a1a1a', marginBottom: '1.2rem', fontWeight: 600 }}>Required Skills</h3>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.8rem' }}>
+                  {job.skills.map((skill: string, index: number) => (
+                    <span key={index} style={{ fontSize: '0.9rem', background: '#f8f9fa', color: '#4a4a4a', border: '1px solid #e9ecef', padding: '0.4rem 1rem', borderRadius: '20px', fontWeight: 500 }}>
+                      {skill}
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Job Summary */}
             <div style={{ background: '#ffffff', borderRadius: '16px', padding: '2rem', border: '1px solid #e9ecef', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
@@ -292,7 +375,7 @@ const JobDetails: React.FC = () => {
                 <p style={{ color: '#6c757d', fontSize: '0.9rem', textAlign: 'center' }}>
                   Not the right fit?
                 </p>
-                <Link to="/jobs" style={{ display: 'block', textAlign: 'center', color: 'var(--primary)', fontWeight: 600, marginTop: '0.5rem', textDecoration: 'none' }}>
+                <Link to="/jobs" style={{ display: 'block', textAlign: 'center', color: '#c8102e', fontWeight: 600, marginTop: '0.5rem', textDecoration: 'none' }}>
                   View more jobs
                 </Link>
               </div>
@@ -301,8 +384,18 @@ const JobDetails: React.FC = () => {
           </motion.div>
         </div>
 
-      </div>
+      <StatusModal
+        isOpen={modalConfig.isOpen}
+        onClose={() => setModalConfig({ ...modalConfig, isOpen: false })}
+        type={modalConfig.type}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        confirmText={modalConfig.confirmText}
+        showConfirmOnly={modalConfig.showConfirmOnly}
+        onConfirm={modalConfig.onConfirm}
+      />
     </div>
+  </div>
   );
 };
 

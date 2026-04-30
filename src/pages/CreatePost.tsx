@@ -33,7 +33,7 @@ const CreatePost: React.FC = () => {
     // Mock API delay
     setTimeout(() => {
       setIsSubmitting(false);
-      navigate('/social/feed');
+      navigate('/dashboard/activity');
     }, 1500);
   };
 

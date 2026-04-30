@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, UploadCloud, CheckCircle2, AlertCircle, MapPin, Building, Briefcase, FileText, PenBox } from 'lucide-react';
+import { ArrowLeft, CloudUpload as UploadCloud, CircleCheckBig as CheckCircle2, CircleAlert as AlertCircle, MapPin, Building, Briefcase, FileText, Pencil as PenBox } from 'lucide-react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { jobsApi, applicationsApi } from '../services/api';
+import { jobsApi, applicationsApi, usersApi } from '../services/api';
 import InlineResumeBuilder from './InlineResumeBuilder';
+import StatusModal from '../components/StatusModal';
 
 // Simple mock data for context
 const JOB_CONTEXT: Record<string, any> = {
@@ -22,9 +23,37 @@ const ApplyJob: React.FC = () => {
   const [job, setJob] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
   const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
+
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    linkedin: '',
+    coverLetter: ''
+  });
+
+  // Modal State
+  const [modalConfig, setModalConfig] = useState({
+    isOpen: false,
+    type: 'success' as 'success' | 'error' | 'info' | 'warning',
+    title: '',
+    message: '',
+    confirmText: 'Okay',
+    showConfirmOnly: true,
+    onConfirm: undefined as (() => void) | undefined
+  });
+  
   const [resumeOption, setResumeOption] = useState<'profile' | 'upload' | 'build'>('upload');
+
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setResumeFile(e.target.files[0]);
+    }
+  };
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -46,69 +75,110 @@ const ApplyJob: React.FC = () => {
       }
       setLoading(false);
     };
+
+    const fetchUserProfile = async () => {
+      try {
+        const res = await usersApi.getProfile();
+        if (res.success && res.data) {
+          const profile = (res.data as any).profile || res.data;
+          setUserProfile({
+            fullName: profile.full_name || `${profile.first_name || ''} ${profile.last_name || ''}`.trim(),
+            title: profile.headline || profile.job_title || 'Alumnus',
+            email: profile.email,
+            phone: profile.phone_number || '',
+            address: profile.location || '',
+            summary: profile.bio || '',
+            experience: profile.experience || [],
+            education: profile.education || [],
+            certificates: profile.certificates || [],
+            portfolio: profile.portfolio_url || ''
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch profile for resume:", err);
+      }
+    };
+
     fetchJob();
+    fetchUserProfile();
   }, [id]);
 
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!id) return;
 
-    setIsSubmitting(true);
-
-    const res = await applicationsApi.applyForJob({
-      job_id: id,
-      cover_letter: formData.coverLetter,
-      resume_url: resumeFile ? `mock_url/${resumeFile.name}` : '' // Mock URL for now as we don't have file upload service yet
+    setModalConfig({
+      isOpen: true,
+      type: 'info',
+      title: 'Submit Application?',
+      message: `Are you sure you want to submit your application for the ${job?.title || 'this'} position?`,
+      confirmText: 'Yes, Submit Now',
+      showConfirmOnly: false,
+      onConfirm: () => handleConfirmSubmit()
     });
-
-    if (res.success) {
-      setIsSuccess(true);
-    } else {
-      alert(res.message || "Failed to submit application");
-    }
-    setIsSubmitting(false);
   };
 
-  if (isSuccess) {
+  const handleConfirmSubmit = async () => {
+    if (!id) return;
+    setIsSubmitting(true);
+    setModalConfig(prev => ({ ...prev, isOpen: false }));
+
+    try {
+      const res = await applicationsApi.applyForJob({
+        job_id: id,
+        cover_letter: formData.coverLetter,
+        resume_url: resumeFile ? `mock_url/${resumeFile.name}` : '' 
+      });
+
+      if (res.success) {
+        setModalConfig({
+          isOpen: true,
+          type: 'success',
+          title: 'Application Successful!',
+          message: 'Your application has been received. You can track its status in your dashboard.',
+          confirmText: 'View My Applications',
+          showConfirmOnly: true,
+          onConfirm: () => navigate('/applications')
+        });
+      } else {
+        setModalConfig({
+          isOpen: true,
+          type: 'error',
+          title: 'Submission Failed',
+          message: res.message || 'We could not submit your application at this time.',
+          confirmText: 'Try Again',
+          showConfirmOnly: true,
+          onConfirm: undefined
+        });
+      }
+    } catch (err) {
+      setModalConfig({
+        isOpen: true,
+        type: 'error',
+        title: 'Network Error',
+        message: 'A connection error occurred. Please try again.',
+        confirmText: 'Okay',
+        showConfirmOnly: true,
+        onConfirm: undefined
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (loading) {
     return (
-      <div style={{ minHeight: '100vh', padding: '4rem 2rem', background: '#f8f9fa', color: '#1a1a1a', fontFamily: 'Inter, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          style={{ background: '#ffffff', padding: '4rem', borderRadius: '24px', textAlign: 'center', maxWidth: '600px', width: '100%', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', border: '1px solid #e9ecef' }}
-        >
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-            style={{ display: 'inline-flex', background: '#e3fbee', padding: '1.5rem', borderRadius: '50%', marginBottom: '2rem' }}
-          >
-            <CheckCircle2 size={64} color="#2b8a3e" />
-          </motion.div>
-          <h2 style={{ fontSize: '2.5rem', color: '#1a1a1a', marginBottom: '1rem', fontFamily: 'Playfair Display, serif' }}>Application Sent!</h2>
-          <p style={{ color: '#4a4a4a', fontSize: '1.1rem', lineHeight: 1.6, marginBottom: '2.5rem' }}>
-            Thank you for applying for the <strong>{job.title}</strong> role at NeST Digital. Our talent team will review your alumni profile and application closely and reach out soon.
-          </p>
-          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button
-              onClick={() => navigate('/jobs/applications')}
-              style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '1rem 2.5rem', borderRadius: '8px', fontSize: '1.05rem', fontWeight: 600, cursor: 'pointer', transition: 'background 0.3s' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--primary-hover)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--primary)'; }}
-            >
-              View My Applications
-            </button>
-            <button
-              onClick={() => navigate('/jobs')}
-              style={{ background: '#ffffff', color: '#4a4a4a', border: '1px solid #ced4da', padding: '1rem 2.5rem', borderRadius: '8px', fontSize: '1.05rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.3s' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#f8f9fa'; e.currentTarget.style.borderColor = '#adb5bd'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = '#ffffff'; e.currentTarget.style.borderColor = '#ced4da'; }}
-            >
-              Browse More Jobs
-            </button>
-          </div>
-        </motion.div>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8f9fa' }}>
+        <div className="spinner" style={{ width: '40px', height: '40px', border: '4px solid #f1f3f5', borderTopColor: '#c8102e', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+      </div>
+    );
+  }
+
+  if (!job) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8f9fa' }}>
+        <p style={{ color: '#6c757d' }}>Job not found.</p>
       </div>
     );
   }
@@ -329,7 +399,10 @@ const ApplyJob: React.FC = () => {
               )}
 
               {resumeOption === 'build' && (
-                <InlineResumeBuilder onAttach={(file) => setResumeFile(file)} />
+                <InlineResumeBuilder 
+                  initialData={userProfile}
+                  onAttach={(file, data) => setResumeFile(file)} 
+                />
               )}
             </div>
           </div>
@@ -369,15 +442,26 @@ const ApplyJob: React.FC = () => {
             </p>
           </div>
 
-        </motion.form >
-      </div >
+        </motion.form>
+      </div>
+
+      <StatusModal
+        isOpen={modalConfig.isOpen}
+        onClose={() => setModalConfig({ ...modalConfig, isOpen: false })}
+        type={modalConfig.type}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        confirmText={modalConfig.confirmText}
+        showConfirmOnly={modalConfig.showConfirmOnly}
+        onConfirm={modalConfig.onConfirm}
+      />
 
       <style>{`
         @keyframes spin {
           to { transform: rotate(360deg); }
         }
       `}</style>
-    </div >
+    </div>
   );
 };
 

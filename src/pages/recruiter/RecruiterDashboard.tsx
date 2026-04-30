@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, type Variants } from 'framer-motion';
-import { 
-  Briefcase, FileText, UserCheck, Clock, TrendingUp, Users, UserPlus, 
+import {
+  Briefcase, FileText, UserCheck, Clock, TrendingUp, Users, UserPlus,
   ChevronRight, BarChart3, Filter, MoreHorizontal, CheckCircle2, AlertCircle
 } from 'lucide-react';
 import { recruiterApi, getUser, type AuthUser } from '../../services/api';
@@ -12,10 +12,10 @@ const smoothSpring = { type: 'spring' as const, stiffness: 100, damping: 20, mas
 
 const sectionVariants: Variants = {
   hidden: { opacity: 0, y: 40 },
-  visible: { 
-    opacity: 1, 
-    y: 0, 
-    transition: { ...smoothSpring, staggerChildren: 0.1, delayChildren: 0.05 } 
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { ...smoothSpring, staggerChildren: 0.1, delayChildren: 0.05 }
   }
 };
 
@@ -66,9 +66,9 @@ const RecruiterDashboard: React.FC = () => {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
         <motion.div
-           animate={{ rotate: 360 }}
-           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-           style={{ width: '40px', height: '40px', border: '3px solid #e2e8f0', borderTop: '3px solid #1a2652', borderRadius: '50%' }}
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          style={{ width: '40px', height: '40px', border: '3px solid #e2e8f0', borderTop: '3px solid #1a2652', borderRadius: '50%' }}
         />
       </div>
     );
@@ -76,7 +76,7 @@ const RecruiterDashboard: React.FC = () => {
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', fontFamily: "'Inter', sans-serif" }}>
-      
+
       {/* LUXURY CSS OVERRIDES (Internal to match Dashboard.tsx structure) */}
       <style>{`
         .luxury-card {
@@ -135,41 +135,30 @@ const RecruiterDashboard: React.FC = () => {
         }
       `}</style>
 
-      {/* ── PREMIUM BANNER ── */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="premium-banner"
-      >
-        <div className="noise-overlay" />
-        <div className="mesh-blob" style={{ width: '400px', height: '400px', top: '-100px', left: '-100px', background: 'radial-gradient(circle, #1a2652 0%, transparent 70%)' }}></div>
-        <div className="mesh-blob" style={{ width: '300px', height: '300px', bottom: '-80px', right: '-50px', background: 'radial-gradient(circle, #c8102e 0%, transparent 70%)' }}></div>
-        
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-            <span style={{ padding: '6px 12px', background: 'rgba(26,38,82,0.06)', borderRadius: '99px', fontSize: '11px', fontWeight: 800, color: '#1a2652', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Talent Acquisition
-            </span>
-            <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>Active Hiring Season</span>
-          </div>
-          <h1 style={{ margin: 0, fontSize: '3rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.03em' }}>
-            Welcome back, <span style={{ color: '#c8102e' }}>{user?.full_name.split(' ')[0]}</span>.
-          </h1>
-          <p style={{ margin: '12px 0 0', color: '#64748b', fontSize: '1.1rem', fontWeight: 500, maxWidth: '600px', lineHeight: 1.6 }}>
-            Ready to build the future? You have <span style={{ color: '#1a2652', fontWeight: 700 }}>{stats.pending} pending reviews</span> across your active listings.
-          </p>
+      {/* ── PROFESSIONAL HEADER ── */}
+      <div style={{ marginBottom: '2.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+          <span style={{ padding: '6px 12px', background: 'rgba(26,38,82,0.06)', borderRadius: '99px', fontSize: '11px', fontWeight: 800, color: '#1a2652', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Recruiter Control Center
+          </span>
         </div>
-      </motion.div>
+        <h1 style={{ margin: 0, fontSize: '2.5rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.03em' }}>
+          Talent Acquisition <span style={{ color: '#c8102e' }}>Analytics</span>
+        </h1>
+        <p style={{ margin: '8px 0 0', color: '#64748b', fontSize: '1rem', fontWeight: 500 }}>
+          High-level oversight of active recruitment cycles and candidate pipeline performance.
+        </p>
+      </div>
 
       {/* ── METRICS GRID ── */}
-      <motion.div 
+      <motion.div
         variants={sectionVariants}
         initial="hidden"
         animate="visible"
         style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '3rem' }}
       >
         {statCards.map((card, idx) => (
-          <motion.div 
+          <motion.div
             key={idx}
             variants={itemVariants}
             className="luxury-card"
@@ -187,7 +176,7 @@ const RecruiterDashboard: React.FC = () => {
       </motion.div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '32px' }}>
-        
+
         {/* ── HIRING PIPELINE ── */}
         <motion.section variants={sectionVariants} initial="hidden" animate="visible">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
@@ -195,9 +184,9 @@ const RecruiterDashboard: React.FC = () => {
               <BarChart3 size={24} color="#1a2652" />
               <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#0f172a' }}>Recent Hiring Pipeline</h2>
             </div>
-            <button 
+            <button
               onClick={() => navigate('/recruiter/applications')}
-              className="link-hover" 
+              className="link-hover"
               style={{ background: 'transparent', border: 'none', color: '#1a2652', fontWeight: 600, fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
             >
               See Pipeline <ChevronRight size={16} />
@@ -211,7 +200,7 @@ const RecruiterDashboard: React.FC = () => {
               { role: 'Product Manager', candidates: 15, stage: 'Resume Screening', status: 'critical' },
               { role: 'Data Scientist', candidates: 5, stage: 'Offer Phase', status: 'success' },
             ].map((item, idx) => (
-              <motion.div 
+              <motion.div
                 key={idx}
                 variants={itemVariants}
                 className="luxury-card btn-premium"
@@ -227,18 +216,18 @@ const RecruiterDashboard: React.FC = () => {
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                      {item.status === 'success' && <CheckCircle2 size={14} color="#10b981" />}
-                      {item.status === 'critical' && <AlertCircle size={14} color="#ef4444" />}
-                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a' }}>{item.stage}</span>
-                   </div>
-                   <div style={{ width: '120px', height: '6px', background: '#f1f5f9', borderRadius: '3px', overflow: 'hidden' }}>
-                      <motion.div 
-                        initial={{ width: 0 }}
-                        animate={{ width: item.status === 'high' ? '70%' : item.status === 'medium' ? '40%' : item.status === 'critical' ? '20%' : '95%' }}
-                        style={{ height: '100%', background: item.status === 'success' ? '#10b981' : item.status === 'critical' ? '#ef4444' : '#1a2652' }}
-                      />
-                   </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                    {item.status === 'success' && <CheckCircle2 size={14} color="#10b981" />}
+                    {item.status === 'critical' && <AlertCircle size={14} color="#ef4444" />}
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a' }}>{item.stage}</span>
+                  </div>
+                  <div style={{ width: '120px', height: '6px', background: '#f1f5f9', borderRadius: '3px', overflow: 'hidden' }}>
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: item.status === 'high' ? '70%' : item.status === 'medium' ? '40%' : item.status === 'critical' ? '20%' : '95%' }}
+                      style={{ height: '100%', background: item.status === 'success' ? '#10b981' : item.status === 'critical' ? '#ef4444' : '#1a2652' }}
+                    />
+                  </div>
                 </div>
               </motion.div>
             ))}
@@ -251,14 +240,14 @@ const RecruiterDashboard: React.FC = () => {
             <div className="noise-overlay" style={{ opacity: 0.1 }} />
             <h3 style={{ margin: '0 0 20px 0', fontSize: '1.2rem', fontWeight: 700 }}>Recruiter Tools</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <button 
+              <button
                 onClick={() => navigate('/recruiter/jobs/post')}
                 className="btn-premium"
                 style={{ width: '100%', padding: '14px', borderRadius: '14px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', fontSize: '14px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '10px' }}
               >
                 <UserPlus size={18} /> Create New Job
               </button>
-              <button 
+              <button
                 onClick={() => navigate('/recruiter/applications')}
                 className="btn-premium"
                 style={{ width: '100%', padding: '14px', borderRadius: '14px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', fontSize: '14px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '10px' }}
@@ -266,15 +255,15 @@ const RecruiterDashboard: React.FC = () => {
                 <Filter size={18} /> Bulk Filter Applicants
               </button>
             </div>
-            
+
             <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-               <p style={{ margin: '0 0 12px 0', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', letterSpacing: '1px' }}>Quick Tip</p>
-               <div style={{ display: 'flex', gap: '12px' }}>
-                  <TrendingUp size={20} color="#10b981" style={{ flexShrink: 0 }} />
-                  <p style={{ margin: 0, fontSize: '13px', lineHeight: 1.5, color: 'rgba(255,255,255,0.8)' }}>
-                    Personalizing rejection feedback improves alumni promoter score by 22%.
-                  </p>
-               </div>
+              <p style={{ margin: '0 0 12px 0', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', letterSpacing: '1px' }}>Quick Tip</p>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <TrendingUp size={20} color="#10b981" style={{ flexShrink: 0 }} />
+                <p style={{ margin: 0, fontSize: '13px', lineHeight: 1.5, color: 'rgba(255,255,255,0.8)' }}>
+                  Personalizing rejection feedback improves alumni promoter score by 22%.
+                </p>
+              </div>
             </div>
           </div>
 
@@ -305,7 +294,7 @@ const RecruiterDashboard: React.FC = () => {
         </motion.div>
 
       </div>
-      
+
       <div style={{ paddingBottom: '4rem' }} />
     </div>
   );

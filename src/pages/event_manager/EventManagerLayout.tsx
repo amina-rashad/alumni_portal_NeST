@@ -6,7 +6,7 @@ import {
   LogOut, Bell, Menu, X, ChevronDown, UserCheck, ArrowLeft, ImagePlus
 } from 'lucide-react';
 import nestMainLogo from '../../assets/nest_logo.png';
-import { getUser, authApi, type AuthUser } from '../../services/api';
+import { getUser, authApi, notificationsApi, type AuthUser } from '../../services/api';
 
 /* ─────────────────────────── types ─────────────────────────── */
 interface NavItem { name: string; path: string; icon: React.ReactNode }
@@ -157,11 +157,27 @@ const EventManagerLayout: React.FC = () => {
   const notifRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLDivElement>(null);
 
-  const notifications = [
-    { id: 1, title: 'New Registration', desc: 'Adithya S registered for Global Alumni Meet.', time: '2m ago', unread: true },
-    { id: 2, title: 'Event Reminder', desc: 'Tech Talk starts in 1 hour.', time: '1h ago', unread: true },
-    { id: 3, title: 'Report Generated', desc: 'Q1 Engagement report is ready.', time: '5h ago', unread: false },
-  ];
+  // Notifications state
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await notificationsApi.getNotifications();
+      if (res.success && res.data) {
+        setNotifications((res.data as any).notifications || []);
+        setUnreadCount((res.data as any).unread_count || 0);
+      }
+    } catch (err) {
+      console.error('Failed to fetch notifications:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const currentUser = getUser() as unknown as AuthUser;
@@ -343,6 +359,7 @@ const EventManagerLayout: React.FC = () => {
             Posts
           </Link>
 
+
           <Link
             to="/event-manager/settings"
             style={{
@@ -384,7 +401,7 @@ const EventManagerLayout: React.FC = () => {
 
         {/* Right Area */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexShrink: 0, marginLeft: '12px' }}>
-          {managerUser?.role === 'admin' && (
+          {(managerUser?.role === 'admin' || managerUser?.role === 'super_admin') && (
              <button 
                onClick={() => navigate('/admin/dashboard')}
                style={{
@@ -414,13 +431,16 @@ const EventManagerLayout: React.FC = () => {
                  setOpenGroup(null);
                  setProfileDropdownOpen(false);
                  setNotifOpen(!notifOpen);
+                 if (!notifOpen) fetchNotifications();
                }}
                style={{ position: 'relative', cursor: 'pointer', display: 'flex', padding: '8px', borderRadius: '10px', transition: 'background 0.2s', background: notifOpen ? '#f1f5f9' : 'transparent' }} 
                onMouseEnter={e => { if(!notifOpen) e.currentTarget.style.background = '#f8fafc' }} 
                onMouseLeave={e => { if(!notifOpen) e.currentTarget.style.background = 'transparent' }}
              >
                <Bell size={20} color={brandPrimary} />
-               <span style={{ position: 'absolute', top: '8px', right: '8px', background: '#ef4444', height: '8px', width: '8px', borderRadius: '50%', border: '2px solid #fff' }}></span>
+               {unreadCount > 0 && (
+                 <span style={{ position: 'absolute', top: '4px', right: '4px', background: '#ef4444', height: '18px', minWidth: '18px', borderRadius: '50%', border: '2px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 800, color: '#fff', padding: '0 3px' }}>{unreadCount > 9 ? '9+' : unreadCount}</span>
+               )}
              </div>
 
              <AnimatePresence>
@@ -430,28 +450,62 @@ const EventManagerLayout: React.FC = () => {
                    animate={{ opacity: 1, y: 0, scale: 1 }}
                    exit={{ opacity: 0, y: -8, scale: 0.97 }}
                    style={{
-                     position: 'absolute', top: 'calc(100% + 12px)', right: 0, width: '320px',
-                     background: '#ffffff', borderRadius: '16px', boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
+                     position: 'absolute', top: 'calc(100% + 12px)', right: 0, width: '340px',
+                     background: '#ffffff', borderRadius: '16px', boxShadow: '0 10px 40px rgba(0,0,0,0.12)',
                      border: '1px solid #f1f5f9', padding: '12px', zIndex: 9999,
                    }}
                  >
                    <div style={{ padding: '4px 8px 12px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontWeight: 800, color: '#1e293b' }}>Notifications</span>
-                      <span style={{ fontSize: '11px', color: brandPrimary, fontWeight: 700, cursor: 'pointer' }}>Mark all read</span>
+                      <span style={{ fontWeight: 800, color: '#1e293b', fontSize: '15px' }}>Notifications</span>
+                      {unreadCount > 0 && (
+                        <span 
+                          onClick={async () => {
+                            await notificationsApi.markAllAsRead();
+                            fetchNotifications();
+                          }}
+                          style={{ fontSize: '12px', color: brandPrimary, fontWeight: 700, cursor: 'pointer' }}
+                        >Mark all read</span>
+                      )}
                    </div>
-                   <div style={{ maxHeight: '300px', overflowY: 'auto', marginTop: '8px' }}>
-                      {notifications.map(n => (
-                        <div key={n.id} style={{ padding: '12px', borderRadius: '10px', marginBottom: '4px', cursor: 'pointer', background: n.unread ? 'rgba(79, 70, 229, 0.03)' : 'transparent' }} onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={e => e.currentTarget.style.background = n.unread ? 'rgba(79, 70, 229, 0.03)' : 'transparent'}>
-                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                              <span style={{ fontSize: '13px', fontWeight: 700, color: '#334155' }}>{n.title}</span>
-                              <span style={{ fontSize: '10px', color: '#94a3b8' }}>{n.time}</span>
-                           </div>
-                           <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#64748b', lineHeight: 1.4 }}>{n.desc}</p>
+                   <div style={{ maxHeight: '320px', overflowY: 'auto', marginTop: '8px' }}>
+                      {notifications.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '2rem 1rem', color: '#94a3b8' }}>
+                          <Bell size={24} style={{ marginBottom: '8px', opacity: 0.4 }} />
+                          <p style={{ margin: 0, fontSize: '13px', fontWeight: 600 }}>No notifications yet</p>
                         </div>
-                      ))}
-                   </div>
-                   <div style={{ textAlign: 'center', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #f1f5f9' }}>
-                      <button style={{ background: 'none', border: 'none', fontSize: '12px', color: brandPrimary, fontWeight: 700, cursor: 'pointer' }}>View all notifications</button>
+                      ) : (
+                        notifications.slice(0, 10).map((n: any) => (
+                          <div 
+                            key={n.id} 
+                            onClick={async () => {
+                              if (!n.is_read) {
+                                await notificationsApi.markAsRead(n.id);
+                                fetchNotifications();
+                              }
+                              if (n.link) {
+                                navigate(n.link);
+                                setNotifOpen(false);
+                              }
+                            }}
+                            style={{ 
+                              padding: '12px', borderRadius: '10px', marginBottom: '4px', cursor: 'pointer', 
+                              background: n.is_read ? 'transparent' : 'rgba(35, 49, 103, 0.03)',
+                              transition: 'background 0.15s'
+                            }} 
+                            onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'} 
+                            onMouseLeave={e => e.currentTarget.style.background = n.is_read ? 'transparent' : 'rgba(35, 49, 103, 0.03)'}
+                          >
+                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <span style={{ fontSize: '13px', fontWeight: n.is_read ? 600 : 700, color: '#334155' }}>{n.title}</span>
+                                <span style={{ fontSize: '10px', color: '#94a3b8', flexShrink: 0, marginLeft: '8px' }}>
+                                  {n.created_at ? new Date(n.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
+                                </span>
+                             </div>
+                             <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#64748b', lineHeight: 1.4 }}>{n.message}</p>
+                             {!n.is_read && <div style={{ width: '6px', height: '6px', background: '#3b82f6', borderRadius: '50%', marginTop: '6px' }} />}
+                          </div>
+                        ))
+                      )}
                    </div>
                  </motion.div>
                )}

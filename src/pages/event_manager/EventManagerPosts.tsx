@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  ImagePlus, Send, X, Calendar, MapPin, 
-  MoreHorizontal, Heart, MessageSquare, Share2
+  ImagePlus, Send, X, Loader2,
+  CheckCircle2, Trash2, Clock, MessageSquare
 } from 'lucide-react';
+import { socialApi } from '../../services/api';
+import StatusModal from '../../components/StatusModal';
 
 const mockEvents = [
   { id: '1', name: 'Global Alumni Meet 2024' },
@@ -11,32 +13,14 @@ const mockEvents = [
   { id: '3', name: 'Web Development Workshop' },
 ];
 
-const mockPosts = [
-  {
-    id: 1,
-    title: 'Global Alumni Meet',
-    subtitle: 'Posted 2 hours ago',
-    image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    id: 2,
-    title: 'Tech Talk: Future of AI',
-    subtitle: 'Insights from prominent speakers',
-    image: 'https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    id: 3,
-    title: 'Web Dev Workshop',
-    subtitle: 'Hands-on coding session',
-    image: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    id: 4,
-    title: 'Startup Mixer',
-    subtitle: 'Networking with founders',
-    image: 'https://images.unsplash.com/photo-1515169067868-5387ec356754?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-  }
-];
+interface Post {
+  id: string;
+  content: string;
+  image_url?: string;
+  likes_count: number;
+  comments_count: number;
+  created_at: string;
+}
 
 const EventManagerPosts: React.FC = () => {
   const brandPrimary = '#233167';
@@ -46,12 +30,52 @@ const EventManagerPosts: React.FC = () => {
   const [postContent, setPostContent] = useState('');
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [isPosting, setIsPosting] = useState(false);
+  const [message, setMessage] = useState({ type: '', text: '' });
+
+  // My posts state
+  const [myPosts, setMyPosts] = useState<Post[]>([]);
+  const [loadingPosts, setLoadingPosts] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Modal state
+  const [modalConfig, setModalConfig] = useState({
+    isOpen: false,
+    type: 'info' as 'success' | 'error' | 'warning' | 'info',
+    title: '',
+    message: '',
+    confirmText: 'Okay',
+    showConfirmOnly: true,
+    onConfirm: () => {},
+  });
+
+  const closeModal = () => setModalConfig(prev => ({ ...prev, isOpen: false }));
+
+  const fetchMyPosts = async () => {
+    try {
+      const res = await socialApi.getMyPosts();
+      if (res.success && res.data) {
+        setMyPosts((res.data as any).posts || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch posts:', err);
+    } finally {
+      setLoadingPosts(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMyPosts();
+  }, []);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      // Create local object URLs for preview
-      const newImages = Array.from(e.target.files).map(file => URL.createObjectURL(file));
-      setSelectedImages(prev => [...prev, ...newImages]);
+      Array.from(e.target.files).forEach(file => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setSelectedImages(prev => [...prev, reader.result as string]);
+        };
+        reader.readAsDataURL(file);
+      });
     }
   };
 
@@ -59,17 +83,98 @@ const EventManagerPosts: React.FC = () => {
     setSelectedImages(prev => prev.filter((_, idx) => idx !== indexToRemove));
   };
 
-  const handlePost = () => {
+  const handlePost = async () => {
     if (!selectedEvent || !postContent) return;
     setIsPosting(true);
-    setTimeout(() => {
-      alert('Event post created successfully!');
+    setMessage({ type: '', text: '' });
+    try {
+      const payload = {
+        content: `[Event Update: ${mockEvents.find(e => e.id === selectedEvent)?.name}] ${postContent}`,
+        image_url: selectedImages.length > 0 ? selectedImages[0] : undefined
+      };
+      
+      const res = await socialApi.createPost(payload);
+      if (res.success) {
+        setMessage({ type: 'success', text: 'Event broadcast sent successfully!' });
+        setSelectedEvent('');
+        setSelectedClass('');
+        setPostContent('');
+        setSelectedImages([]);
+        fetchMyPosts();
+      } else {
+        setMessage({ type: 'error', text: res.message || 'Failed to post update.' });
+      }
+    } catch (err) {
+      console.error('Event Post Error:', err);
+      setMessage({ type: 'error', text: 'Network error. Please try again.' });
+    } finally {
       setIsPosting(false);
-      setSelectedEvent('');
-      setSelectedClass('');
-      setPostContent('');
-      setSelectedImages([]);
-    }, 800);
+    }
+  };
+
+  const promptDelete = (postId: string) => {
+    setModalConfig({
+      isOpen: true,
+      type: 'warning',
+      title: 'Delete Post?',
+      message: 'This post will be permanently removed from the feed. This action cannot be undone.',
+      confirmText: 'Yes, Delete',
+      showConfirmOnly: false,
+      onConfirm: () => executeDelete(postId),
+    });
+  };
+
+  const executeDelete = async (postId: string) => {
+    closeModal();
+    setDeletingId(postId);
+    try {
+      const res = await socialApi.deletePost(postId);
+      if (res.success) {
+        setMyPosts(prev => prev.filter(p => p.id !== postId));
+        setModalConfig({
+          isOpen: true,
+          type: 'success',
+          title: 'Deleted',
+          message: 'Your post has been removed successfully.',
+          confirmText: 'Okay',
+          showConfirmOnly: true,
+          onConfirm: closeModal,
+        });
+      } else {
+        setModalConfig({
+          isOpen: true,
+          type: 'error',
+          title: 'Delete Failed',
+          message: res.message || 'Could not delete the post. Please try again.',
+          confirmText: 'Okay',
+          showConfirmOnly: true,
+          onConfirm: closeModal,
+        });
+      }
+    } catch (err) {
+      setModalConfig({
+        isOpen: true,
+        type: 'error',
+        title: 'Network Error',
+        message: 'Something went wrong. Please check your connection and try again.',
+        confirmText: 'Okay',
+        showConfirmOnly: true,
+        onConfirm: closeModal,
+      });
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const timeAgo = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    return `${days}d ago`;
   };
 
   return (
@@ -82,7 +187,6 @@ const EventManagerPosts: React.FC = () => {
       </div>
 
       <div>
-        
         {/* Main Feed Area */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', width: '100%' }}>
           
@@ -94,6 +198,25 @@ const EventManagerPosts: React.FC = () => {
               </div>
               <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#1e293b' }}>Create New Post</h3>
             </div>
+
+            {message.text && (
+              <div style={{ 
+                padding: '14px 16px', 
+                borderRadius: '14px', 
+                marginBottom: '16px',
+                background: message.type === 'success' ? '#f0fdf4' : '#fef2f2',
+                color: message.type === 'success' ? '#16a34a' : '#ef4444',
+                border: `1px solid ${message.type === 'success' ? '#bbf7d0' : '#fecaca'}`,
+                fontSize: '14px',
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px'
+              }}>
+                <CheckCircle2 size={16} />
+                {message.text}
+              </div>
+            )}
             
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
               <select 
@@ -184,43 +307,129 @@ const EventManagerPosts: React.FC = () => {
             </div>
           </div>
 
-
-
         </div>
       </div>
 
-      {/* Recent Posts Gallery */}
+      {/* My Posts Section */}
       <div style={{ marginTop: '16px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-           <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#1e293b', margin: 0 }}>Recent Posts Gallery</h3>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '24px' }}>
-          {mockPosts.map((post) => (
-            <div key={post.id} style={{
-              background: '#fff',
-              borderRadius: '20px',
-              overflow: 'hidden',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.04)',
-              border: '1px solid #e2e8f0',
-              display: 'flex',
-              flexDirection: 'column',
-              cursor: 'pointer',
-              transition: 'transform 0.2s',
-            }}
-            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'}
-            onMouseLeave={e => e.currentTarget.style.transform = 'none'}
-            >
-              <div style={{ position: 'relative', width: '100%', paddingBottom: '75%' }}>
-                 <img src={post.image} alt={post.title} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-              </div>
-              <div style={{ padding: '24px 20px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                 <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#1e293b' }}>{post.title}</h4>
-                 <p style={{ margin: 0, fontSize: '14px', color: '#64748b' }}>{post.subtitle}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+        <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#1e293b', margin: '0 0 20px' }}>My Posts</h3>
+
+        {loadingPosts ? (
+          <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
+            <Loader2 size={28} className="spin" style={{ margin: '0 auto 12px' }} />
+            <p style={{ fontWeight: 600 }}>Loading your posts...</p>
+          </div>
+        ) : myPosts.length === 0 ? (
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '3rem', 
+            background: '#f8fafc', 
+            borderRadius: '24px', 
+            border: '1px solid #f1f5f9' 
+          }}>
+            <MessageSquare size={32} style={{ color: '#cbd5e1', marginBottom: '12px' }} />
+            <p style={{ color: '#94a3b8', fontWeight: 600, margin: 0 }}>You haven't posted anything yet.</p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <AnimatePresence>
+              {myPosts.map(post => (
+                <motion.div
+                  key={post.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, x: -50 }}
+                  layout
+                  style={{ 
+                    background: 'white', 
+                    borderRadius: '20px', 
+                    padding: '24px', 
+                    border: '1px solid #e2e8f0',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ 
+                        color: '#1e293b', 
+                        fontSize: '15px', 
+                        lineHeight: 1.6, 
+                        margin: '0 0 12px',
+                        wordBreak: 'break-word'
+                      }}>
+                        {post.content}
+                      </p>
+
+                      {post.image_url && (
+                        <img 
+                          src={post.image_url} 
+                          alt="Post" 
+                          style={{ 
+                            width: '100%', 
+                            maxHeight: '250px', 
+                            objectFit: 'cover', 
+                            borderRadius: '12px', 
+                            marginBottom: '12px' 
+                          }} 
+                        />
+                      )}
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '13px', color: '#94a3b8', fontWeight: 600 }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Clock size={14} /> {timeAgo(post.created_at)}
+                        </span>
+                        <span>❤️ {post.likes_count}</span>
+                        <span>💬 {post.comments_count}</span>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => promptDelete(post.id)}
+                      disabled={deletingId === post.id}
+                      title="Delete post"
+                      style={{ 
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '40px',
+                        height: '40px',
+                        background: deletingId === post.id ? '#fecaca' : '#fef2f2',
+                        color: '#ef4444',
+                        border: 'none',
+                        borderRadius: '12px',
+                        cursor: deletingId === post.id ? 'not-allowed' : 'pointer',
+                        transition: '0.2s',
+                        flexShrink: 0
+                      }}
+                      onMouseEnter={e => { if (deletingId !== post.id) e.currentTarget.style.background = '#fecaca'; }}
+                      onMouseLeave={e => { if (deletingId !== post.id) e.currentTarget.style.background = '#fef2f2'; }}
+                    >
+                      {deletingId === post.id ? <Loader2 size={18} className="spin" /> : <Trash2 size={18} />}
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
       </div>
+
+      {/* Themed StatusModal */}
+      <StatusModal
+        isOpen={modalConfig.isOpen}
+        onClose={closeModal}
+        type={modalConfig.type}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        confirmText={modalConfig.confirmText}
+        showConfirmOnly={modalConfig.showConfirmOnly}
+        onConfirm={modalConfig.onConfirm}
+      />
+
+      <style>{`
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      `}</style>
     </div>
   );
 };

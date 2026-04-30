@@ -50,53 +50,79 @@ def _serialize_application(app_doc: dict, db=None) -> dict:
     return result
 
 
+import traceback
+
 # ── Apply for a Job ──
 
-@applications_bp.route("/", methods=["POST"])
+@applications_bp.route("", methods=["POST"])
 @jwt_required()
 def apply_for_job():
     """Submit a job application."""
-    user_id = get_jwt_identity()
-    data = request.get_json(silent=True)
-
-    if not data or not data.get("job_id"):
-        return jsonify({"success": False, "message": "Job ID is required."}), 400
-
-    db = get_db()
-
-    # Verify job exists
     try:
-        job = db["jobs"].find_one({"_id": ObjectId(data["job_id"])})
-    except:
-        return jsonify({"success": False, "message": "Invalid job ID."}), 400
+        user_id = get_jwt_identity()
+        data = request.get_json(silent=True)
 
-    if not job:
-        return jsonify({"success": False, "message": "Job not found."}), 404
+        if not data or not data.get("job_id"):
+            return jsonify({"success": False, "message": "Job ID is required."}), 400
 
-    # Check if user already applied
-    existing = db["applications"].find_one({
-        "user_id": ObjectId(user_id),
-        "job_id": ObjectId(data["job_id"])
-    })
-    if existing:
-        return jsonify({"success": False, "message": "You have already applied for this job."}), 409
+        db = get_db()
 
-    application_doc = {
-        "user_id": ObjectId(user_id),
-        "job_id": ObjectId(data["job_id"]),
-        "cover_letter": data.get("cover_letter", ""),
-        "resume_url": data.get("resume_url", ""),
-        "status": "pending",  # pending | reviewed | shortlisted | rejected | hired
-        "applied_at": datetime.now(timezone.utc),
-    }
+        # Verify job exists
+        try:
+            job = db["jobs"].find_one({"_id": ObjectId(data["job_id"])})
+        except:
+            return jsonify({"success": False, "message": "Invalid job ID format."}), 400
 
-    result = db["applications"].insert_one(application_doc)
+        if not job:
+            return jsonify({"success": False, "message": "Job not found."}), 404
 
-    return jsonify({
-        "success": True,
-        "message": "Application submitted successfully!",
-        "data": {"id": str(result.inserted_id)}
-    }), 201
+        # Check if user already applied
+        existing = db["applications"].find_one({
+            "user_id": ObjectId(user_id),
+            "job_id": ObjectId(data["job_id"])
+        })
+        if existing:
+            return jsonify({"success": False, "message": "You have already applied for this job."}), 409
+
+        application_doc = {
+            "user_id": ObjectId(user_id),
+            "job_id": ObjectId(data["job_id"]),
+            "cover_letter": data.get("cover_letter", ""),
+            "resume_url": data.get("resume_url", ""),
+            "status": "pending",  # pending | reviewed | shortlisted | rejected | hired
+            "applied_at": datetime.now(timezone.utc),
+        }
+
+        result = db["applications"].insert_one(application_doc)
+
+        # Notify the recruiter who posted the job
+        try:
+            from .notifications import create_notification
+            applicant = db["users"].find_one({"_id": ObjectId(user_id)})
+            applicant_name = applicant.get("full_name", "Someone") if applicant else "Someone"
+            job_title = job.get("title", "a job")
+            recruiter_id = job.get("posted_by") or job.get("recruiter_id")
+            if recruiter_id:
+                create_notification(
+                    db,
+                    user_id=recruiter_id,
+                    type_str="job",
+                    title="New Application Received",
+                    message=f"{applicant_name} applied for '{job_title}'.",
+                    link=f"/recruiter/applications"
+                )
+        except Exception as notify_err:
+            print(f"Notification error (non-critical): {notify_err}")
+
+        return jsonify({
+            "success": True,
+            "message": "Application submitted successfully!",
+            "data": {"id": str(result.inserted_id)}
+        }), 201
+    except Exception as e:
+        print(f"ERROR in apply_for_job: {str(e)}")
+        traceback.print_exc()
+        return jsonify({"success": False, "message": f"Server error: {str(e)}"}), 500
 
 
 # ── Get My Applications ──
