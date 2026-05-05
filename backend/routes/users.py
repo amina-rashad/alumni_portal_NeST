@@ -11,6 +11,7 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from app import get_db
+from .notifications import create_notification
 
 users_bp = Blueprint("users", __name__)
 
@@ -104,6 +105,19 @@ def update_profile():
 
     if result.matched_count == 0:
         return jsonify({"success": False, "message": "User not found."}), 404
+        
+    # Trigger notification for profile update
+    try:
+        create_notification(
+            db,
+            user_id=user_id,
+            type_str="system",
+            title="Profile Updated",
+            message="Your professional profile has been successfully updated.",
+            link="/profile"
+        )
+    except:
+        pass
 
     # Return updated user
     user = db["users"].find_one({"_id": ObjectId(user_id)})

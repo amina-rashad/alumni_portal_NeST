@@ -18,12 +18,18 @@ SUPER_ADMIN_PASSWORD = "Shinto@30"
 existing_user = users.find_one({"email": SUPER_ADMIN_EMAIL})
 
 if existing_user:
-    # If exists, we'll just update its role to super_admin
+    # If exists, we'll update its role to super_admin and reset the password
+    hashed_pw = bcrypt.hashpw(SUPER_ADMIN_PASSWORD.encode("utf-8"), bcrypt.gensalt())
     users.update_one(
         {"email": SUPER_ADMIN_EMAIL},
-        {"$set": {"role": "super_admin"}}
+        {"$set": {
+            "role": "super_admin",
+            "password": hashed_pw,
+            "is_active": True,
+            "is_email_verified": True
+        }}
     )
-    print(f"User {SUPER_ADMIN_EMAIL} already exists. Updated role to 'super_admin'.")
+    print(f"User {SUPER_ADMIN_EMAIL} already exists. Updated role to 'super_admin' and reset password.")
 else:
     # Hash the password securely
     hashed_pw = bcrypt.hashpw(SUPER_ADMIN_PASSWORD.encode("utf-8"), bcrypt.gensalt())

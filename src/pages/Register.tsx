@@ -96,6 +96,8 @@ const CaptchaDisplay: React.FC<{ text: string; onRefresh: () => void }> = ({ tex
   );
 };
 
+import { authApi, setTokens, setUser } from '../services/api';
+
 const Register: React.FC = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
@@ -105,16 +107,17 @@ const Register: React.FC = () => {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [captcha, setCaptcha] = useState(generateCaptcha());
   const [captchaInput, setCaptchaInput] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const [formData, setFormData] = useState({
     firstName: '',
-    secondName: '',
-    primaryEmail: '',
+    lastName: '',
+    email: '',
+    password: '',
     phone: '',
-    graduationLevel: '',
+    userType: '',
     course: '',
     batch: '',
-    collegeName: '',
   });
 
   useEffect(() => {
@@ -137,8 +140,8 @@ const Register: React.FC = () => {
     e.preventDefault();
     setError('');
 
-    if (!formData.graduationLevel || formData.graduationLevel === 'Select') {
-      setError('Please select your graduation level.');
+    if (!formData.userType) {
+      setError('Please select your user type.');
       return;
     }
     if (captchaInput !== captcha.code) {
@@ -153,8 +156,23 @@ const Register: React.FC = () => {
 
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      setShowSuccessPopup(true);
+      const response = await authApi.register({
+        full_name: `${formData.firstName} ${formData.lastName}`.trim(),
+        email: formData.email,
+        password: formData.password,
+        phone: formData.phone,
+        user_type: formData.userType,
+        batch: formData.batch,
+        specialization: formData.course,
+      });
+
+      if (response.success && response.data) {
+        setTokens(response.data.access_token, response.data.refresh_token);
+        setUser(response.data.user);
+        setShowSuccessPopup(true);
+      } else {
+        setError(response.message || 'Registration failed. Please check your details.');
+      }
     } catch {
       setError('Registration failed. Please try again.');
     } finally {
@@ -224,16 +242,39 @@ const Register: React.FC = () => {
                 <label style={{ fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '8px', display: 'block' }}>Last Name</label>
                 <div className="input-wrapper" style={{ position: 'relative' }}>
                   <User className="input-icon" size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-                  <input type="text" name="secondName" placeholder="Last name" required value={formData.secondName} onChange={handleChange} style={{ width: '100%', padding: '12px 12px 12px 44px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc' }} />
+                  <input type="text" name="lastName" placeholder="Last name" required value={formData.lastName} onChange={handleChange} style={{ width: '100%', padding: '12px 12px 12px 44px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc' }} />
                 </div>
               </div>
             </div>
 
             <div className="input-group">
-              <label style={{ fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '8px', display: 'block' }}>Primary Email</label>
+              <label style={{ fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '8px', display: 'block' }}>Email Address</label>
               <div className="input-wrapper" style={{ position: 'relative' }}>
                 <Mail className="input-icon" size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-                <input type="email" name="primaryEmail" placeholder="your@email.com" required value={formData.primaryEmail} onChange={handleChange} style={{ width: '100%', padding: '12px 12px 12px 44px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc' }} />
+                <input type="email" name="email" placeholder="your@email.com" required value={formData.email} onChange={handleChange} style={{ width: '100%', padding: '12px 12px 12px 44px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc' }} />
+              </div>
+            </div>
+
+            <div className="input-group">
+              <label style={{ fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '8px', display: 'block' }}>Password</label>
+              <div className="input-wrapper" style={{ position: 'relative' }}>
+                <Lock className="input-icon" size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                <input 
+                  type={showPassword ? "text" : "password"} 
+                  name="password" 
+                  placeholder="••••••••" 
+                  required 
+                  value={formData.password} 
+                  onChange={handleChange} 
+                  style={{ width: '100%', padding: '12px 44px 12px 44px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc' }} 
+                />
+                <button 
+                  type="button" 
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
             </div>
 
@@ -245,38 +286,33 @@ const Register: React.FC = () => {
               </div>
             </div>
 
-            <div className="input-group">
-              <label style={{ fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '8px', display: 'block' }}>College Name</label>
-              <div className="input-wrapper" style={{ position: 'relative' }}>
-                <Building2 className="input-icon" size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-                <input type="text" name="collegeName" placeholder="Enter college name" required value={formData.collegeName} onChange={handleChange} style={{ width: '100%', padding: '12px 12px 12px 44px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc' }} />
-              </div>
-            </div>
-
             <div className="row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
               <div className="input-group">
-                <label style={{ fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '8px', display: 'block' }}>Graduation Level</label>
+                <label style={{ fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '8px', display: 'block' }}>User Type</label>
                 <div className="input-wrapper" style={{ position: 'relative' }}>
                   <GraduationCap className="input-icon" size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-                  <select name="graduationLevel" value={formData.graduationLevel} onChange={handleChange} required style={{ width: '100%', padding: '12px 12px 12px 44px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc', appearance: 'none' }}>
-                    <option value="">Select Level</option>
-                    <option value="UG">UG</option>
-                    <option value="PG">PG</option>
+                  <select name="userType" value={formData.userType} onChange={handleChange} required style={{ width: '100%', padding: '12px 12px 12px 44px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc', appearance: 'none' }}>
+                    <option value="">Select Type</option>
+                    <option value="Alumni">Alumni</option>
+                    <option value="Intern">Intern</option>
+                    <option value="Trainee">Trainee</option>
+                    <option value="Industrial Student">Industrial Student</option>
+                    <option value="Event Participant">Event Participant</option>
                   </select>
                   <ChevronDown size={16} style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }} />
                 </div>
               </div>
               <div className="input-group">
-                <label style={{ fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '8px', display: 'block' }}>Course</label>
+                <label style={{ fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '8px', display: 'block' }}>Course / Specialization</label>
                 <div className="input-wrapper" style={{ position: 'relative' }}>
                   <BookOpen className="input-icon" size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-                  <input type="text" name="course" placeholder="e.g. B.Tech" required value={formData.course} onChange={handleChange} style={{ width: '100%', padding: '12px 12px 12px 44px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc' }} />
+                  <input type="text" name="course" placeholder="e.g. B.Tech CS" required value={formData.course} onChange={handleChange} style={{ width: '100%', padding: '12px 12px 12px 44px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc' }} />
                 </div>
               </div>
             </div>
 
             <div className="input-group">
-              <label style={{ fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '8px', display: 'block' }}>Batch (in years)</label>
+              <label style={{ fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '8px', display: 'block' }}>Batch / Year</label>
               <div className="input-wrapper" style={{ position: 'relative' }}>
                 <Calendar className="input-icon" size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
                 <input type="text" name="batch" placeholder="e.g. 2024" required value={formData.batch} onChange={handleChange} style={{ width: '100%', padding: '12px 12px 12px 44px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc' }} />

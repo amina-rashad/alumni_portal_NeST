@@ -75,6 +75,96 @@ def get_stats():
         }
     }), 200
 
+@admin_bp.route("/activity", methods=["GET"])
+@jwt_required()
+@admin_required
+def get_activity():
+    """Get recent global activity for the admin dashboard."""
+    db = get_db()
+    
+    # Recent Users
+    recent_users = db["users"].find({}, {"full_name": 1, "created_at": 1}).sort("created_at", -1).limit(5)
+    # Recent Jobs
+    recent_jobs = db["jobs"].find({}, {"title": 1, "createdAt": 1}).sort("createdAt", -1).limit(5)
+    # Recent Apps
+    recent_apps = db["applications"].find({}, {"job_id": 1, "user_id": 1, "applied_at": 1}).sort("applied_at", -1).limit(5)
+    
+    activities = []
+    
+    for u in recent_users:
+        activities.append({
+            "user": u.get("full_name", "User"),
+            "action": "joined the platform",
+            "time": u.get("created_at").isoformat() if hasattr(u.get("created_at"), "isoformat") else "Recently",
+            "avatar": u.get("full_name", "U")[0].upper()
+        })
+        
+    for j in recent_jobs:
+        activities.append({
+            "user": "System",
+            "action": f"posted new job: {j.get('title')}",
+            "time": j.get("createdAt").isoformat() if hasattr(j.get("createdAt"), "isoformat") else "Recently",
+            "avatar": "SJ"
+        })
+        
+    for a in recent_apps:
+        user = db["users"].find_one({"_id": a["user_id"]}, {"full_name": 1})
+        job = db["jobs"].find_one({"_id": a["job_id"]}, {"title": 1})
+        activities.append({
+            "user": user.get("full_name", "Applicant") if user else "Applicant",
+            "action": f"applied for {job.get('title')}" if job else "applied for a job",
+            "time": a.get("applied_at").isoformat() if hasattr(a.get("applied_at"), "isoformat") else "Recently",
+            "avatar": "AP"
+        })
+        
+    # Sort all by time (we'd need real datetime objects for perfect sort, but this is a good start)
+    # Since we added them in blocks, we can just return the combined list or sort if we have dates.
+    
+    return jsonify({
+        "success": True,
+        "data": {"activities": activities[:10]}
+    }), 200
+
+@admin_bp.route("/audit-logs", methods=["GET"])
+@jwt_required()
+@admin_required
+def get_audit_logs():
+    """Get the 5 most recent administrative audit logs."""
+    db = get_db()
+    
+    # We can aggregate various events as "audit logs"
+    logs = []
+    
+    # 1. Recent Role Changes (look at updated users)
+    recent_managers = db["users"].find({"role": {"$ne": "user"}}, {"full_name": 1, "role": 1, "updated_at": 1}).sort("updated_at", -1).limit(3)
+    for m in recent_managers:
+        logs.append({
+            "id": f"role_{m['_id']}",
+            "action": "Role Hierarchy Update",
+            "user": "System Admin",
+            "target": f"{m.get('full_name')} ({m.get('role')})",
+            "time": m.get("updated_at").isoformat() if hasattr(m.get("updated_at"), "isoformat") else "Recently",
+            "type": "security"
+        })
+        
+    # 2. Recent Jobs
+    recent_jobs = db["jobs"].find({}, {"title": 1, "createdAt": 1}).sort("createdAt", -1).limit(2)
+    for j in recent_jobs:
+        logs.append({
+            "id": f"job_{j['_id']}",
+            "action": "New Job Publication",
+            "user": "Recruiter Portal",
+            "target": j.get("title"),
+            "time": j.get("createdAt").isoformat() if hasattr(j.get("createdAt"), "isoformat") else "Recently",
+            "type": "data"
+        })
+        
+    # Sort and return
+    return jsonify({
+        "success": True,
+        "data": {"logs": logs[:5]}
+    }), 200
+
 # ── Manager Listing ──
 
 @admin_bp.route("/managers", methods=["GET"])
@@ -725,7 +815,7 @@ def update_application_status(app_id):
     data = request.get_json()
     db = get_db()
     
-    valid_statuses = ["pending", "reviewed", "shortlisted", "rejected", "hired"]
+    valid_statuses = ["Applied", "Aptitude", "Shortlisted", "Interview Scheduled", "Offered", "Rejected"]
     new_status = data.get("status")
     
     if new_status not in valid_statuses:
@@ -734,9 +824,26 @@ def update_application_status(app_id):
             "message": f"Status must be one of: {', '.join(valid_statuses)}"
         }), 400
     
+    # Get application to notify user
+    app_doc = db["applications"].find_one({"_id": ObjectId(app_id)})
+    if not app_doc:
+        return jsonify({"success": False, "message": "Application not found."}), 404
+        
+    job = db["jobs"].find_one({"_id": app_doc["job_id"]})
+
     db["applications"].update_one(
         {"_id": ObjectId(app_id)},
         {"$set": {"status": new_status, "updated_at": datetime.now(timezone.utc)}}
+    )
+
+    # Notify student
+    create_notification(
+        db,
+        user_id=app_doc["user_id"],
+        type_str="info",
+        title="Application Update",
+        message=f"Admin updated your application status for '{job.get('title')}' to '{new_status}'.",
+        link="/jobs/applications"
     )
     
     return jsonify({"success": True, "message": f"Application status updated to '{new_status}'."}), 200

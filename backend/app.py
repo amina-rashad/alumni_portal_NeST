@@ -32,6 +32,7 @@ def create_app(config_name=None):
 
     app = Flask(__name__)
     app.config.from_object(config_by_name[config_name])
+    app.url_map.strict_slashes = False
 
     # ── CORS ── allow all devices on the network to connect
     CORS(app, resources={
@@ -69,6 +70,9 @@ def create_app(config_name=None):
     from routes.recruiter import recruiter_bp
     from routes.course_manager import course_manager_bp
 
+    from routes.insights import insights_bp
+    from routes.recommendations import recommendations_bp
+
     app.register_blueprint(health_bp, url_prefix="/api")
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(users_bp, url_prefix="/api/users")
@@ -82,6 +86,8 @@ def create_app(config_name=None):
     app.register_blueprint(assessments_bp, url_prefix="/api/assessments")
     app.register_blueprint(recruiter_bp, url_prefix="/api/recruiter")
     app.register_blueprint(course_manager_bp, url_prefix="/api/course-manager")
+    app.register_blueprint(insights_bp, url_prefix="/api/insights")
+    app.register_blueprint(recommendations_bp, url_prefix="/api/recommendations")
 
     return app
 

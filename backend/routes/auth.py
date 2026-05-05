@@ -213,6 +213,7 @@ def login():
                 "user_type": user["user_type"],
                 "role": user.get("role", "user"),
                 "profile_picture": user.get("profile_picture"),
+                "skills": user.get("skills", []),
             },
             "access_token": access_token,
             "refresh_token": refresh_token,
@@ -263,6 +264,7 @@ def verify_token():
                 "user_type": user["user_type"],
                 "role": user.get("role", "user"),
                 "profile_picture": user.get("profile_picture"),
+                "skills": user.get("skills", []),
             }
         }
     }), 200

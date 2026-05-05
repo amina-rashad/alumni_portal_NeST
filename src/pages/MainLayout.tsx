@@ -7,7 +7,7 @@ import {
   Settings, LogOut, ChevronDown, Menu, X
 } from 'lucide-react';
 import nestMainLogo from '../assets/nest_logo.png';
-import { getUser, authApi, type AuthUser } from '../services/api';
+import { getUser, authApi, notificationsApi, type AuthUser } from '../services/api';
 import '../App.css';
 
 /* ─────────────────────────── types ─────────────────────────── */
@@ -20,7 +20,7 @@ const menuGroups: NavGroup[] = [
     section: 'Insights', icon: <Home size={17} />,
     items: [
       { name: 'Insights Overview', path: '/dashboard',          icon: <Home size={15} /> },
-      { name: 'Career Timeline', path: '/dashboard/activity', icon: <Activity size={15} /> },
+      { name: 'Career Timelines', path: '/dashboard/activity', icon: <Activity size={15} /> },
     ]
   },
   {
@@ -37,7 +37,7 @@ const menuGroups: NavGroup[] = [
       { name: 'Courses',    path: '/courses',           icon: <BookOpen size={15} /> },
       { name: 'My Courses', path: '/courses/my-courses',icon: <BookOpen size={15} /> },
       { name: 'Quizzes',   path: '/assessments/quiz',      icon: <Edit3 size={15} /> },
-      { name: 'Performance Analysis', path: '/assessments/performance-analysis', icon: <Activity size={15} /> },
+      { name: 'Performance Analysis', path: '/assessments/analytics', icon: <Activity size={15} /> },
 
     ]
   },
@@ -283,8 +283,28 @@ const MainLayout: React.FC = () => {
   const [dropdownRect, setDropdownRect] = useState<DOMRect | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const profileRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (user) {
+        fetchUnreadCount();
+        const interval = setInterval(fetchUnreadCount, 60000); // Poll every minute
+        return () => clearInterval(interval);
+    }
+  }, [user]);
+
+  const fetchUnreadCount = async () => {
+    try {
+        const response = await notificationsApi.getNotifications();
+        if (response.success && response.data) {
+            setUnreadCount(response.data.unread_count);
+        }
+    } catch (err) {
+        console.error(err);
+    }
+  };
 
   useEffect(() => {
     const currentUser = getUser() as unknown as AuthUser;
@@ -415,11 +435,42 @@ const MainLayout: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexShrink: 0, marginLeft: '12px' }}>
           <button
             onClick={() => navigate('/notifications')}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#c8102e', display: 'flex', alignItems: 'center', padding: '8px', borderRadius: '10px', transition: '0.2s' }}
+            style={{ 
+              background: 'none', 
+              border: 'none', 
+              cursor: 'pointer', 
+              color: '#c8102e', 
+              display: 'flex', 
+              alignItems: 'center', 
+              padding: '8px', 
+              borderRadius: '10px', 
+              transition: '0.2s',
+              position: 'relative'
+            }}
             onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
             onMouseLeave={e => (e.currentTarget.style.background = 'none')}
           >
             <Bell size={20} />
+            {unreadCount > 0 && (
+              <span style={{
+                position: 'absolute',
+                top: '4px',
+                right: '4px',
+                background: '#ef4444',
+                color: 'white',
+                fontSize: '10px',
+                fontWeight: 800,
+                width: '16px',
+                height: '16px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: '2px solid white'
+              }}>
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
           </button>
 
           {/* User Profile Dropdown */}

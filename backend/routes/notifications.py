@@ -115,21 +115,31 @@ def mark_all_as_read():
     }), 200
 
 
-# ── Delete Notification ──
+# ── Delete Notifications ──
 
 @notifications_bp.route("/<notification_id>", methods=["DELETE"])
 @jwt_required()
 def delete_notification(notification_id):
-    """Delete a notification."""
+    """Delete a single notification."""
     user_id = get_jwt_identity()
     db = get_db()
-
     db["notifications"].delete_one({
         "_id": ObjectId(notification_id),
         "user_id": ObjectId(user_id)
     })
-
     return jsonify({"success": True, "message": "Notification deleted."}), 200
+
+@notifications_bp.route("/all", methods=["DELETE"])
+@jwt_required()
+def delete_all_notifications():
+    """Delete all notifications for the current user."""
+    user_id = get_jwt_identity()
+    db = get_db()
+    result = db["notifications"].delete_many({"user_id": ObjectId(user_id)})
+    return jsonify({
+        "success": True, 
+        "message": f"Successfully deleted {result.deleted_count} notifications."
+    }), 200
 
 
 # ── Utility: Create Notification (for internal use by other modules) ──

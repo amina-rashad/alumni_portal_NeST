@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 insights_bp = Blueprint('insights', __name__)
 
-@insights_bp.route('/api/insights/summary', methods=['GET'])
+@insights_bp.route('/summary', methods=['GET'])
 def get_insights_summary():
     # 1. Calculate Daily Active Users (DAU) for the last 7 days
     # In a real scenario, you'd query a 'logins' collection

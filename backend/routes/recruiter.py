@@ -43,8 +43,8 @@ def get_stats():
     user = db["users"].find_one({"_id": ObjectId(user_id)})
     is_admin = user and user.get("role") in ("admin", "super_admin")
     
-    # Filter logic
-    job_filter = {} if is_admin else {"posted_by": user_id}
+    # Filter logic: All recruiters and admins share the same view
+    job_filter = {}
     
     my_jobs = list(db["jobs"].find(job_filter))
     my_job_ids = [j["_id"] for j in my_jobs]
@@ -52,18 +52,18 @@ def get_stats():
     total_jobs = len(my_jobs)
     total_applications = db["applications"].count_documents({"job_id": {"$in": my_job_ids}})
     
-    # Status breakdown
+    # Status breakdown (flexible matching for quotes or extra chars)
     shortlisted = db["applications"].count_documents({
         "job_id": {"$in": my_job_ids},
-        "status": "shortlisted"
+        "status": {"$regex": "shortlisted", "$options": "i"}
     })
     hired = db["applications"].count_documents({
         "job_id": {"$in": my_job_ids},
-        "status": "hired"
+        "status": {"$regex": "(hired|offered)", "$options": "i"}
     })
     pending = db["applications"].count_documents({
         "job_id": {"$in": my_job_ids},
-        "status": "pending"
+        "status": {"$regex": "pending", "$options": "i"}
     })
 
     return jsonify({
@@ -92,7 +92,7 @@ def get_my_jobs():
     user = db["users"].find_one({"_id": ObjectId(user_id)})
     is_admin = user and user.get("role") in ("admin", "super_admin")
     
-    job_filter = {} if is_admin else {"posted_by": user_id}
+    job_filter = {}
     jobs_cursor = db["jobs"].find(job_filter).sort("createdAt", -1)
     
     jobs_list = []
@@ -188,7 +188,7 @@ def get_job_applications():
     user = db["users"].find_one({"_id": ObjectId(user_id)})
     is_admin = user and user.get("role") in ("admin", "super_admin")
     
-    job_filter = {} if is_admin else {"posted_by": user_id}
+    job_filter = {}
     
     # Find jobs 
     my_jobs = db["jobs"].find(job_filter)
@@ -221,6 +221,9 @@ def get_job_applications():
                 app_data["applicant_name"] = user.get("full_name", "")
                 app_data["applicant_email"] = user.get("email", "")
                 app_data["applicant_id"] = str(user["_id"])
+                # Include full resume info for download
+                app_data["resume_url"] = a.get("resume_url") or user.get("resume_url", "")
+                app_data["resume_data"] = user.get("resume_data")
         except:
             pass
         
@@ -229,6 +232,37 @@ def get_job_applications():
     return jsonify({
         "success": True,
         "data": {"applications": apps_list}
+    }), 200
+
+@recruiter_bp.route("/applications/recent", methods=["GET"])
+@jwt_required()
+@recruiter_required
+def get_recent_applications():
+    """Get the 5 most recent applications for the dashboard pipeline."""
+    db = get_db()
+    user_id = get_jwt_identity()
+    user = db["users"].find_one({"_id": ObjectId(user_id)})
+    is_admin = user and user.get("role") in ("admin", "super_admin")
+    
+    job_filter = {}
+    my_job_ids = [j["_id"] for j in db["jobs"].find(job_filter, {"_id": 1})]
+    
+    apps_cursor = db["applications"].find({"job_id": {"$in": my_job_ids}}).sort("applied_at", -1).limit(5)
+    
+    recent_apps = []
+    for a in apps_cursor:
+        job = db["jobs"].find_one({"_id": a["job_id"]}, {"title": 1})
+        recent_apps.append({
+            "id": str(a["_id"]),
+            "role": job.get("title", "Unknown Position") if job else "Unknown Position",
+            "candidates": 1, # Simplified for dashboard
+            "stage": a.get("status", "Applied"),
+            "status": "success" if a.get("status") in ["Offered", "Hired"] else "critical" if a.get("status") == "Rejected" else "high"
+        })
+    
+    return jsonify({
+        "success": True,
+        "data": {"pipeline": recent_apps}
     }), 200
 
 @recruiter_bp.route("/applications/<app_id>/status", methods=["PATCH"])
@@ -240,11 +274,12 @@ def update_application_status(app_id):
     db = get_db()
     user_id = get_jwt_identity()
     
-    valid_statuses = ["pending", "reviewed", "shortlisted", "rejected", "hired"]
+    valid_statuses = ["Applied", "Aptitude", "Shortlisted", "Interview Scheduled", "Offered", "Rejected"]
     new_status = data.get("status")
+    notes = data.get("notes", "")
     
     if new_status not in valid_statuses:
-        return jsonify({"success": False, "message": "Invalid status."}), 400
+        return jsonify({"success": False, "message": f"Invalid status. Must be one of {valid_statuses}"}), 400
     
     # Verify the application belongs to a job posted by this recruiter
     app_doc = db["applications"].find_one({"_id": ObjectId(app_id)})
@@ -252,12 +287,33 @@ def update_application_status(app_id):
         return jsonify({"success": False, "message": "Application not found."}), 404
         
     job = db["jobs"].find_one({"_id": app_doc["job_id"]})
-    if not job or (job.get("posted_by") != user_id and db["users"].find_one({"_id": ObjectId(user_id)}).get("role") != "admin"):
+    user_doc = db["users"].find_one({"_id": ObjectId(user_id)})
+    
+    if not job or (job.get("posted_by") != user_id and user_doc.get("role") not in ["admin", "super_admin"]):
         return jsonify({"success": False, "message": "Access denied."}), 403
     
+    update_fields = {
+        "status": new_status, 
+        "updatedAt": datetime.now(timezone.utc)
+    }
+    if notes:
+        update_fields["notes"] = notes
+    if data.get("interviewDate"):
+        update_fields["interviewDate"] = data.get("interviewDate")
+
     db["applications"].update_one(
         {"_id": ObjectId(app_id)},
-        {"$set": {"status": new_status, "updatedAt": datetime.now(timezone.utc)}}
+        {"$set": update_fields}
+    )
+
+    # Notify the applicant
+    create_notification(
+        db,
+        user_id=app_doc["user_id"],
+        type_str="info",
+        title="Application Update",
+        message=f"The status of your application for '{job.get('title')}' has been updated to '{new_status}'.",
+        link="/jobs/applications"
     )
     
     return jsonify({"success": True, "message": "Application status updated."}), 200

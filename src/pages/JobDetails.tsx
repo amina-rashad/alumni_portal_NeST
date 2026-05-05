@@ -13,6 +13,7 @@ const JobDetails: React.FC = () => {
   const [job, setJob] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [application, setApplication] = useState<any>(null);
   const [isApplied, setIsApplied] = useState(false);
 
   // Modal State
@@ -34,8 +35,6 @@ const JobDetails: React.FC = () => {
         const res = await jobsApi.getJobById(id);
         if (res.success && res.data) {
           const apiJob = (res.data as any).job;
-          
-          // Map backend fields to frontend UI needs
           setJob({
             id: apiJob.id,
             title: apiJob.title || 'Untitled Position',
@@ -48,25 +47,40 @@ const JobDetails: React.FC = () => {
             salary: apiJob.salary || 'Not Disclosed',
             aboutContext: apiJob.description || 'No description provided.',
             responsibilities: apiJob.responsibilities || [
-              'No specific responsibilities listed. Please refer to the job description for more details.',
-              'Collaborate with cross-functional teams to deliver high-quality solutions.',
-              'Participate in code reviews and contribute to architectural discussions.'
+              'No specific responsibilities listed.',
+              'Collaborate with cross-functional teams.',
+              'Participate in code reviews.'
             ],
             requirements: apiJob.requirements || [],
             skills: apiJob.skills_required || [],
             urgent: apiJob.is_urgent
           });
-        } else {
-          setError('Job listing not found or has been removed.');
         }
       } catch (err) {
-        setError('Failed to load job details. Please try again later.');
+        setError('Failed to load job details.');
       } finally {
         setLoading(false);
       }
     };
 
     fetchJobDetails();
+    
+    const checkApplicationStatus = async () => {
+      try {
+        const res = await applicationsApi.getMyApplications();
+        if (res.success && res.data && (res.data as any).applications) {
+          const apps = (res.data as any).applications;
+          const userApp = apps.find((app: any) => app.job_id === id);
+          if (userApp) {
+            setIsApplied(true);
+            setApplication(userApp);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to check application status", err);
+      }
+    };
+    checkApplicationStatus();
     window.scrollTo(0, 0);
   }, [id]);
 
@@ -76,7 +90,7 @@ const JobDetails: React.FC = () => {
       isOpen: true,
       type: 'info',
       title: 'Submit Application?',
-      message: `Are you sure you want to apply for the ${job.title} role at ${job.company}? Your contact information and profile will be shared with the recruiter.`,
+      message: `Are you sure you want to apply for the ${job.title} role?`,
       confirmText: 'Yes, Submit Application',
       showConfirmOnly: false,
       onConfirm: () => handleConfirmApply()
@@ -93,33 +107,14 @@ const JobDetails: React.FC = () => {
           isOpen: true,
           type: 'success',
           title: 'Application Successful!',
-          message: `You have successfully applied for the ${job.title} position at ${job.company}. You can track your application in the "My Applications" dashboard.`,
+          message: 'You can track your application in the "My Applications" dashboard.',
           confirmText: 'View Dashboard',
           showConfirmOnly: true,
-          onConfirm: () => navigate('/applications')
-        });
-      } else {
-        setModalConfig({
-          isOpen: true,
-          type: 'error',
-          title: 'Submission Failed',
-          message: res.message || 'There was an issue submitting your application. Please try again later.',
-          confirmText: 'Okay',
-          showConfirmOnly: true,
-          onConfirm: undefined
+          onConfirm: () => navigate('/jobs/applications')
         });
       }
     } catch (err) {
-      console.error("Application error:", err);
-      setModalConfig({
-        isOpen: true,
-        type: 'error',
-        title: 'System Error',
-        message: 'A technical error occurred while processing your request. Please check your internet connection and try again.',
-        confirmText: 'Okay',
-        showConfirmOnly: true,
-        onConfirm: undefined
-      });
+        console.error(err);
     }
   };
 
@@ -136,13 +131,8 @@ const JobDetails: React.FC = () => {
   if (error || !job) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8f9fa', padding: '2rem' }}>
-        <div style={{ textAlign: 'center' }}>
-          <Building size={64} color="#adb5bd" style={{ marginBottom: '1.5rem' }} />
-          <h2 style={{ fontSize: '2rem', color: '#1a1a1a', marginBottom: '1rem' }}>{error || 'Listing Unavailable'}</h2>
-          <Link to="/jobs" style={{ color: '#c8102e', fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
-            <ArrowLeft size={18} /> Back to Job Listings
-          </Link>
-        </div>
+        <h2 style={{ fontSize: '2rem', color: '#1a1a1a', marginBottom: '1rem' }}>{error || 'Listing Unavailable'}</h2>
+        <Link to="/jobs" style={{ color: '#c8102e', fontWeight: 700, textDecoration: 'none' }}>Back to Jobs</Link>
       </div>
     );
   }
@@ -151,61 +141,19 @@ const JobDetails: React.FC = () => {
     <div style={{ minHeight: '100vh', padding: '1rem 0', background: '#f8f9fa', color: '#1a1a1a', fontFamily: 'Inter, sans-serif' }}>
       <div className="container" style={{ maxWidth: '1000px', margin: '0 auto' }}>
         
-        {/* Navigation & Actions */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
-          <button 
-            onClick={() => navigate('/jobs')}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', border: 'none', background: 'transparent', color: '#4a4a4a', fontWeight: 600, cursor: 'pointer', padding: '0.5rem 0' }}
-          >
+          <button onClick={() => navigate('/jobs')} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', border: 'none', background: 'transparent', color: '#4a4a4a', fontWeight: 600, cursor: 'pointer' }}>
             <ArrowLeft size={20} /> Back to Jobs
           </button>
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <button 
-              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', border: '1px solid #ced4da', background: '#ffffff', padding: '0.5rem 1rem', borderRadius: '8px', color: '#4a4a4a', fontWeight: 500, cursor: 'pointer', transition: 'background 0.2s' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#f1f3f5'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = '#ffffff'; }}
-            >
-              <Share2 size={16} /> Share
-            </button>
-            <button 
-              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', border: '1px solid #ced4da', background: '#ffffff', padding: '0.5rem 1rem', borderRadius: '8px', color: '#4a4a4a', fontWeight: 500, cursor: 'pointer', transition: 'background 0.2s' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#f1f3f5'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = '#ffffff'; }}
-            >
-              <Star size={16} /> Save
-            </button>
-          </div>
         </div>
 
-        {/* Hero Card */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          style={{ 
-            background: '#ffffff', 
-            borderRadius: '16px', 
-            padding: '3rem', 
-            boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
-            border: '1px solid #e9ecef',
-            marginBottom: '2rem',
-            position: 'relative',
-            overflow: 'hidden'
-          }}
+          style={{ background: '#ffffff', borderRadius: '16px', padding: '3rem', boxShadow: '0 4px 12px rgba(0,0,0,0.03)', border: '1px solid #e9ecef', marginBottom: '2rem', position: 'relative', overflow: 'hidden' }}
         >
           {job.urgent && (
-            <div style={{
-              position: 'absolute',
-              top: '1.5rem',
-              right: '-2.5rem',
-              background: '#c8102e',
-              color: 'white',
-              padding: '0.4rem 3rem',
-              transform: 'rotate(45deg)',
-              fontSize: '0.8rem',
-              fontWeight: 700,
-              letterSpacing: '1px',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-            }}>
+            <div style={{ position: 'absolute', top: '1.5rem', right: '-2.5rem', background: '#c8102e', color: 'white', padding: '0.4rem 3rem', transform: 'rotate(45deg)', fontSize: '0.8rem', fontWeight: 700 }}>
               URGENT MATCH
             </div>
           )}
@@ -216,12 +164,11 @@ const JobDetails: React.FC = () => {
             </div>
             <div>
               <span style={{ color: '#c8102e', fontWeight: 700, fontSize: '0.85rem', letterSpacing: '1px', textTransform: 'uppercase' }}>{job.department}</span>
-              <h1 style={{ fontSize: '2.5rem', color: '#1a1a1a', margin: '0.5rem 0 1rem 0', fontFamily: 'Inter, sans-serif', fontWeight: 800 }}>{job.title}</h1>
+              <h1 style={{ fontSize: '2.5rem', color: '#1a1a1a', margin: '0.5rem 0 1rem 0', fontWeight: 800 }}>{job.title}</h1>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', color: '#6c757d', fontSize: '1rem', fontWeight: 500 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Building size={18} /> {job.company}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><MapPin size={18} /> {job.location}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Briefcase size={18} /> {job.experience}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Clock size={18} /> {job.type}</div>
               </div>
             </div>
           </div>
@@ -229,9 +176,11 @@ const JobDetails: React.FC = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #e9ecef', paddingTop: '2rem' }}>
             <div>
               <p style={{ color: '#6c757d', fontSize: '0.9rem', marginBottom: '0.3rem' }}>Posted {job.postedAt}</p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ color: '#2b8a3e', background: '#e3fbee', padding: '0.3rem 0.6rem', borderRadius: '4px', fontSize: '0.85rem', fontWeight: 600 }}>Alumni Priority Profile Match</span>
-              </div>
+              {isApplied && application && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f0f4ff', padding: '0.4rem 0.8rem', borderRadius: '6px', color: '#2563eb', fontWeight: 700, fontSize: '0.9rem' }}>
+                  <CheckCircle2 size={16} /> Status: {application.status}
+                </div>
+              )}
             </div>
             <button 
               onClick={handleApply}
@@ -247,28 +196,12 @@ const JobDetails: React.FC = () => {
                 alignItems: 'center',
                 gap: '0.5rem',
                 cursor: isApplied ? 'default' : 'pointer',
-                border: isApplied ? '1px solid #b2f2bb' : 'none',
-                transition: 'all 0.3s',
-                boxShadow: isApplied ? 'none' : '0 4px 12px rgba(200, 16, 46, 0.2)'
-              }}
-              onMouseEnter={(e) => { 
-                if (!isApplied) {
-                  e.currentTarget.style.background = '#a00d25'; 
-                  e.currentTarget.style.transform = 'translateY(-2px)'; 
-                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(200, 16, 46, 0.3)';
-                }
-              }}
-              onMouseLeave={(e) => { 
-                if (!isApplied) {
-                  e.currentTarget.style.background = '#c8102e'; 
-                  e.currentTarget.style.transform = 'translateY(0)'; 
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(200, 16, 46, 0.2)';
-                }
+                border: isApplied ? '1px solid #b2f2bb' : 'none'
               }}
             >
               {isApplied ? (
                 <>
-                  <Check size={18} /> Applied
+                  <Check size={18} /> {application?.status === 'Applied' ? 'Already Applied' : application?.status}
                 </>
               ) : (
                 <>
@@ -277,6 +210,20 @@ const JobDetails: React.FC = () => {
               )}
             </button>
           </div>
+          
+          {isApplied && application?.notes && (
+            <div style={{ marginTop: '2rem', padding: '1.5rem', background: '#fff9db', borderRadius: '12px', border: '1px solid #ffe066' }}>
+              <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9rem', color: '#e67700', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Clock size={16} /> Recruiter Note
+              </p>
+              <p style={{ margin: '0.5rem 0 0', color: '#5c940d', fontSize: '1rem' }}>{application.notes}</p>
+              {application.interviewDate && (
+                 <p style={{ margin: '0.5rem 0 0', fontWeight: 600, color: '#1a1a1a' }}>
+                   Scheduled for: {new Date(application.interviewDate).toLocaleDateString()}
+                 </p>
+              )}
+            </div>
+          )}
         </motion.div>
 
         {/* Content Section */}

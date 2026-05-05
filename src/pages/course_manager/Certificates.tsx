@@ -1,19 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
-  Award, 
-  Search, 
-  Mail, 
-  Download, 
-  CheckCircle, 
-  Clock, 
-  User,
-  BookOpen,
-  Send,
-  MoreVertical,
-  Filter
+  Award, Search, Mail, Download, CheckCircle, Clock, 
+  User, BookOpen, Send, MoreVertical, Filter, 
+  ChevronDown, ExternalLink, ShieldCheck, ArrowUpRight
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface CertificateRecord {
   id: string;
@@ -24,7 +16,94 @@ interface CertificateRecord {
   status: 'Pending Generation' | 'Generated' | 'Sent';
 }
 
+const GlassSelect: React.FC<{
+  label: string;
+  options: string[];
+  value: string;
+  onChange: (val: string) => void;
+}> = ({ label, options, value, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const brandPrimary = '#c8102e';
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', position: 'relative' }} ref={dropdownRef}>
+      <label style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</label>
+      <div 
+        onClick={() => setIsOpen(!isOpen)}
+        style={{ 
+          padding: '12px 16px', 
+          borderRadius: '14px', 
+          border: '1px solid #e2e8f0', 
+          background: '#fff', 
+          fontSize: '14px', 
+          width: '100%', 
+          color: '#1e293b', 
+          fontWeight: 700, 
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          transition: 'all 0.2s ease'
+        }}
+      >
+        {value}
+        <ChevronDown size={14} color="#94a3b8" style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }} />
+      </div>
+
+      {isOpen && (
+        <div style={{ 
+          position: 'absolute', 
+          top: '105%', 
+          left: 0, 
+          right: 0, 
+          zIndex: 100, 
+          background: '#fff', 
+          borderRadius: '14px', 
+          border: '1px solid #e2e8f0', 
+          boxShadow: '0 10px 30px rgba(0,0,0,0.08)',
+          overflow: 'hidden',
+          padding: '6px'
+        }}>
+          {options.map((opt) => (
+            <div 
+              key={opt}
+              onClick={() => {
+                onChange(opt);
+                setIsOpen(false);
+              }}
+              style={{ 
+                padding: '10px 14px', 
+                fontSize: '13px', 
+                fontWeight: 600, 
+                color: value === opt ? brandPrimary : '#475569',
+                background: value === opt ? 'rgba(200, 16, 46, 0.05)' : 'transparent',
+                borderRadius: '10px',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              {opt}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const CM_Certificates: React.FC = () => {
+  const brandPrimary = '#c8102e';
   const initialRecords: CertificateRecord[] = [
     { id: 'cert-001', studentName: 'David Chen', course: 'UX Design Fundamentals', completionDate: 'Oct 24, 2023', grade: '98%', status: 'Sent' },
     { id: 'cert-002', studentName: 'Emily Brown', course: 'Cloud Infrastructure with AWS', completionDate: 'Oct 23, 2023', grade: '92%', status: 'Generated' },
@@ -35,197 +114,176 @@ const CM_Certificates: React.FC = () => {
 
   const [records, setRecords] = useState<CertificateRecord[]>(initialRecords);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filter, setFilter] = useState<'All' | 'Pending Generation' | 'Generated' | 'Sent'>('All');
+  const [filter, setFilter] = useState('All Records');
 
   const filteredRecords = records.filter(record => {
     const matchesSearch = record.studentName.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           record.course.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFilter = filter === 'All' || record.status === filter;
+    const matchesFilter = filter === 'All Records' || record.status === filter;
     return matchesSearch && matchesFilter;
   });
 
   const handleAction = async (id: string, action: 'Generated' | 'Sent') => {
     const loadingToast = toast.loading(`${action === 'Generated' ? 'Generating' : 'Sending'} certificate...`);
     try {
-      // Simulating API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setRecords(prev => 
-        prev.map(rec => rec.id === id ? { ...rec, status: action } : rec)
-      );
-      
-      toast.success(`Certificate ${action === 'Generated' ? 'generated' : 'sent'} successfully!`, { id: loadingToast });
+      setRecords(prev => prev.map(rec => rec.id === id ? { ...rec, status: action } : rec));
+      toast.success(`Certificate ${action.toLowerCase()} successfully!`, { id: loadingToast });
     } catch (err) {
-      toast.error(`Failed to ${action.toLowerCase()} certificate.`, { id: loadingToast });
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Pending Generation': return 'bg-orange-50 text-orange-600 border-orange-100';
-      case 'Generated': return 'bg-blue-50 text-blue-600 border-blue-100';
-      case 'Sent': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
-      default: return 'bg-slate-50 text-slate-600 border-slate-100';
+      toast.error(`Failed to process certificate.`, { id: loadingToast });
     }
   };
 
   return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12 font-['Inter',sans-serif]">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h1 className="text-4xl font-black text-[#1e293b] tracking-tight">Certificates</h1>
-          <p className="text-slate-500 font-medium mt-1">Generate and distribute completion certificates to graduates.</p>
+          <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#1e293b', margin: '0 0 8px 0' }}>Credential Center</h1>
+          <p style={{ margin: 0, color: '#64748b', fontWeight: 500 }}>Issue and manage official digital academic certifications.</p>
         </div>
-        <div className="flex items-center gap-4 bg-white p-3 rounded-2xl border border-slate-100 shadow-sm">
-          <div className="p-3 bg-red-50 rounded-xl text-[#c8102e]">
-            <Award size={20} />
-          </div>
-          <div className="pr-6">
-            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Issued</div>
-            <div className="text-lg font-black text-[#1e293b] leading-tight">856</div>
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#fff', padding: '8px 20px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+           <div style={{ padding: '10px', borderRadius: '12px', background: 'rgba(200, 16, 46, 0.05)', color: brandPrimary }}>
+             <Award size={20} />
+           </div>
+           <div>
+             <div style={{ fontSize: '10px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Total Issued</div>
+             <div style={{ fontSize: '16px', fontWeight: 800, color: '#1e293b' }}>856</div>
+           </div>
         </div>
       </div>
 
-      {/* Filters & Search */}
-      <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-xl shadow-slate-200/30 flex flex-col md:flex-row gap-6 items-center">
-        <div className="relative flex-1 group w-full">
-          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#c8102e] transition-colors" />
+      {/* Filters Bar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', padding: '16px 24px', borderRadius: '24px', border: '1px solid #e2e8f0' }}>
+        <div style={{ position: 'relative', flex: 1, maxWidth: '400px' }}>
+          <Search size={18} color="#94a3b8" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
           <input 
             type="text" 
-            placeholder="Search by student or course..." 
+            placeholder="Search graduates..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-100 py-4 pl-12 pr-4 rounded-2xl text-sm focus:outline-none focus:ring-4 focus:ring-red-500/5 focus:border-red-500/30 transition-all font-bold text-[#1e293b] placeholder:text-slate-400"
+            style={{ 
+              padding: '12px 16px 12px 48px', 
+              borderRadius: '14px', 
+              border: '1px solid #e2e8f0', 
+              background: '#f8fafc', 
+              fontSize: '14px', 
+              width: '100%', 
+              outline: 'none',
+              fontWeight: 600
+            }}
           />
         </div>
-        <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-2xl border border-slate-100 w-full md:w-auto overflow-x-auto">
-          {(['All', 'Pending Generation', 'Generated', 'Sent'] as const).map(f => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-5 py-2.5 rounded-xl text-xs font-black transition-all whitespace-nowrap ${
-                filter === f 
-                  ? 'bg-white text-[#1a2652] shadow-md border border-slate-100' 
-                  : 'text-slate-400 hover:text-slate-600 border border-transparent'
-              }`}
-            >
-              {f}
-            </button>
-          ))}
+
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+          <div style={{ width: '220px' }}>
+             <GlassSelect 
+               label="Status Filter" 
+               options={['All Records', 'Pending Generation', 'Generated', 'Sent']} 
+               value={filter} 
+               onChange={setFilter} 
+             />
+          </div>
+          <button style={{ padding: '12px', borderRadius: '14px', border: '1px solid #e2e8f0', background: '#fff', color: '#64748b', cursor: 'pointer' }}>
+            <Filter size={18} />
+          </button>
         </div>
       </div>
 
-      {/* Certificates Table */}
-      <div className="bg-white rounded-[40px] border border-slate-100 shadow-xl shadow-slate-200/40 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[900px]">
+      {/* Table Container */}
+      <div style={{ background: '#fff', borderRadius: '32px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '900px' }}>
             <thead>
-              <tr className="bg-slate-50/50 border-b border-slate-50">
-                <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Student Graduate</th>
-                <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Academic Program</th>
-                <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Validation Status</th>
-                <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Operations</th>
+              <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                <th style={{ padding: '20px 24px', textAlign: 'left', fontSize: '11px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Graduate</th>
+                <th style={{ padding: '20px 24px', textAlign: 'left', fontSize: '11px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Academic Achievement</th>
+                <th style={{ padding: '20px 24px', textAlign: 'left', fontSize: '11px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Credential Status</th>
+                <th style={{ padding: '20px 24px', textAlign: 'right', fontSize: '11px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Operations</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50">
-              {filteredRecords.length > 0 ? (
-                filteredRecords.map((record) => (
-                  <tr key={record.id} className="hover:bg-slate-50/30 transition-colors group">
-                    {/* Student Info */}
-                    <td className="px-10 py-8">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-[#1a2652] flex items-center justify-center text-white font-black text-sm shadow-lg shadow-indigo-900/20">
-                          {record.studentName.split(' ').map(n => n[0]).join('')}
-                        </div>
-                        <div>
-                          <div className="font-black text-[#1e293b] text-base">{record.studentName}</div>
-                          <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">ID: {record.id}</div>
-                        </div>
-                      </div>
-                    </td>
-                    
-                    {/* Course & Date */}
-                    <td className="px-10 py-8">
-                      <div className="flex flex-col gap-2">
-                        <div className="flex items-start gap-2">
-                          <BookOpen size={16} className="text-[#c8102e] mt-0.5 shrink-0" />
-                          <span className="text-base font-bold text-[#1e293b] line-clamp-1">{record.course}</span>
-                        </div>
-                        <div className="flex items-center gap-4 text-[11px] font-bold text-slate-400 ml-6">
-                          <span className="flex items-center gap-1.5"><Clock size={12}/> Completed {record.completionDate}</span>
-                          <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-md">Grade: {record.grade}</span>
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Status */}
-                    <td className="px-10 py-8">
-                      <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-colors ${getStatusColor(record.status)}`}>
-                        {record.status === 'Sent' ? <CheckCircle size={12} strokeWidth={3} /> : record.status === 'Generated' ? <Award size={12} strokeWidth={3} /> : <Clock size={12} strokeWidth={3} />}
-                        {record.status}
-                      </span>
-                    </td>
-
-                    {/* Actions */}
-                    <td className="px-10 py-8 text-right">
-                      <div className="flex items-center justify-end gap-3">
-                        
-                        {record.status === 'Pending Generation' && (
-                          <motion.button 
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => handleAction(record.id, 'Generated')}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-[#1a2652] text-white hover:bg-[#c8102e] rounded-xl font-black text-xs transition-all shadow-lg shadow-indigo-900/10"
-                          >
-                            <Download size={14} /> Generate PDF
-                          </motion.button>
-                        )}
-
-                        {record.status === 'Generated' && (
-                          <motion.button 
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => handleAction(record.id, 'Sent')}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-[#c8102e] text-white hover:bg-[#a00d25] rounded-xl font-black text-xs shadow-xl shadow-red-900/20 transition-all"
-                          >
-                            <Send size={14} /> Dispatch Email
-                          </motion.button>
-                        )}
-
-                        {record.status === 'Sent' && (
-                          <button className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-100 text-slate-600 hover:bg-slate-50 rounded-xl font-black text-xs transition-all shadow-sm">
-                            <Download size={14} /> Archive Copy
-                          </button>
-                        )}
-
-                        <button className="p-2.5 text-slate-300 hover:text-[#1e293b] hover:bg-slate-100 rounded-xl transition-all">
-                          <MoreVertical size={20} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
+            <tbody>
+              {filteredRecords.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-10 py-24 text-center">
-                    <div className="flex flex-col items-center gap-4">
-                      <div className="w-16 h-16 bg-slate-50 rounded-3xl flex items-center justify-center text-slate-200">
-                        <Award size={32} />
+                  <td colSpan={4} style={{ padding: '60px', textAlign: 'center', color: '#64748b', fontWeight: 600 }}>No records found.</td>
+                </tr>
+              ) : filteredRecords.map((record) => (
+                <tr key={record.id} style={{ borderBottom: '1px solid #f1f5f9' }} className="hover-row">
+                  <td style={{ padding: '24px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ 
+                        width: '44px', height: '44px', borderRadius: '12px', background: 'linear-gradient(135deg, #1a2652 0%, #0f172a 100%)', 
+                        color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '14px' 
+                      }}>
+                        {record.studentName.charAt(0)}
                       </div>
-                      <p className="text-slate-400 font-bold">No academic records found matching your selection.</p>
+                      <div>
+                        <div style={{ fontSize: '15px', fontWeight: 800, color: '#1e293b' }}>{record.studentName}</div>
+                        <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 700 }}>ID: {record.id}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td style={{ padding: '24px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#475569', fontWeight: 700, fontSize: '14px' }}>
+                         <BookOpen size={14} color={brandPrimary} /> {record.course}
+                       </div>
+                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}><Clock size={12} /> {record.completionDate}</span>
+                          <span style={{ fontSize: '11px', padding: '2px 6px', borderRadius: '6px', background: '#ecfdf5', color: '#10b981', fontWeight: 700 }}>Grade: {record.grade}</span>
+                       </div>
+                    </div>
+                  </td>
+                  <td style={{ padding: '24px' }}>
+                    <span style={{ 
+                      display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '10px', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase',
+                      background: record.status === 'Sent' ? '#ecfdf5' : record.status === 'Generated' ? '#eff6ff' : '#fff7ed',
+                      color: record.status === 'Sent' ? '#10b981' : record.status === 'Generated' ? '#3b82f6' : '#f59e0b',
+                      border: `1px solid ${record.status === 'Sent' ? 'rgba(16, 185, 129, 0.1)' : record.status === 'Generated' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(245, 158, 11, 0.1)'}`
+                    }}>
+                      {record.status === 'Sent' ? <ShieldCheck size={14} /> : record.status === 'Generated' ? <Download size={14} /> : <Clock size={14} />}
+                      {record.status}
+                    </span>
+                  </td>
+                  <td style={{ padding: '24px', textAlign: 'right' }}>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                      {record.status === 'Pending Generation' && (
+                        <button 
+                          onClick={() => handleAction(record.id, 'Generated')}
+                          style={{ padding: '10px 16px', borderRadius: '12px', background: brandPrimary, color: '#fff', border: 'none', fontWeight: 700, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+                        >
+                          <Download size={14} /> Generate
+                        </button>
+                      )}
+                      {record.status === 'Generated' && (
+                        <button 
+                          onClick={() => handleAction(record.id, 'Sent')}
+                          style={{ padding: '10px 16px', borderRadius: '12px', background: '#10b981', color: '#fff', border: 'none', fontWeight: 700, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+                        >
+                          <Send size={14} /> Dispatch
+                        </button>
+                      )}
+                      {record.status === 'Sent' && (
+                        <button style={{ padding: '10px 16px', borderRadius: '12px', background: '#fff', border: '1px solid #e2e8f0', color: '#475569', fontWeight: 700, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <ExternalLink size={14} /> View
+                        </button>
+                      )}
+                      <button style={{ padding: '10px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#fff', color: '#94a3b8', cursor: 'pointer' }}>
+                        <MoreVertical size={18} />
+                      </button>
                     </div>
                   </td>
                 </tr>
-              )}
+              ))}
             </tbody>
           </table>
         </div>
       </div>
+      <style>{`
+        .hover-row:hover { background: #fcfdfe !important; }
+      `}</style>
     </div>
   );
 };
 
 export default CM_Certificates;
-

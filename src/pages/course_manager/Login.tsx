@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import nestMainLogo from '../../assets/nest_logo.png';
+import { authApi, setTokens, setUser } from '../../services/api';
 
 const CM_Login: React.FC = () => {
   const navigate = useNavigate();
@@ -22,14 +23,25 @@ const CM_Login: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Simulate API Auth
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const response = await authApi.login({
+        email: formData.email,
+        password: formData.password,
+      });
       
-      if (formData.email === 'admin@nest.com' && formData.password === 'admin123') {
+      if (response.success && response.data) {
+        setTokens(response.data.access_token, response.data.refresh_token);
+        setUser(response.data.user);
+        
         toast.success('Login Successful! Welcome, Course Manager.');
-        navigate('/course-manager/dashboard');
+        
+        // Check role and redirect
+        if (response.data.user.role === 'course_manager' || response.data.user.role === 'admin') {
+          navigate('/course-manager/dashboard');
+        } else {
+          toast.error('Unauthorized access. Only Course Managers can login here.');
+        }
       } else {
-        toast.error('Invalid credentials. Please use admin@nest.com / admin123');
+        toast.error(response.message || 'Invalid credentials.');
       }
     } catch (error) {
       toast.error('Login failed. Please try again.');

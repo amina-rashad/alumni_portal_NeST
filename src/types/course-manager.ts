@@ -176,13 +176,13 @@ export interface RecommendationRule {
 }
 
 export interface InsightSummary {
-  id: string;
-  courseName: string;
-  courseId: string;
-  totalEnrolled: number;
-  totalCompleted: number;
+  id?: string;
+  courseName?: string;
+  courseId?: string;
+  totalEnrolled?: number;
+  totalCompleted?: number;
   avgCompletionTime?: string;
-  completionRate: number;
+  completionRate?: number;
   dropOffRate?: number;
   avgScore?: number;
   trend?: 'up' | 'down' | 'stable';
@@ -190,4 +190,16 @@ export interface InsightSummary {
   streaks: { student: string; days: number }[];
   completionRates: { course: string; percentage: number }[];
   inactiveLearners: { name: string; lastActive: string; risk: string }[];
+}
+
+export interface StudentEnrollment {
+  id: string;
+  studentId: string;
+  studentName: string;
+  studentEmail: string;
+  courseId: string;
+  courseName: string;
+  enrolledAt: string;
+  status: 'Active' | 'Completed' | 'Dropped';
+  progress: number;
 }

@@ -8,7 +8,7 @@ import {
   MoreHorizontal, FileText, ArrowRight,
   BrainCircuit, BookOpen, Heart, ShieldCheck, Sparkles, X, Play
 } from 'lucide-react';
-import { getUser, coursesApi, jobsApi, type AuthUser, studentAPI } from '../services/api';
+import { getUser, coursesApi, jobsApi, type AuthUser, studentAPI, socialApi } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 
 // Premium Job Backgrounds
@@ -124,7 +124,23 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
 
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedJob, setSelectedJob] = useState<any | null>(null);
+  const [selectedJob, setSelectedJob] = useState<any>(null);
+  const [feedPosts, setFeedPosts] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchFeed = async () => {
+      try {
+        const res = await socialApi.getFeed(1, 5);
+        if (res.success && res.data) {
+          setFeedPosts((res.data as any).posts || []);
+        }
+      } catch (err) {
+        console.error('Dashboard Feed Error:', err);
+      }
+    };
+    fetchFeed();
+  }, []);
+
   const [isPlaying, setIsPlaying] = useState(false);
   const [insights, setInsights] = useState<any>(null);
   const [pathways, setPathways] = useState<any[]>([]);
@@ -744,7 +760,7 @@ const Dashboard: React.FC = () => {
                    whileHover={{ animationPlayState: 'paused' }}
                    style={{ display: 'flex', gap: '2.5rem', width: 'fit-content', padding: '0 3.5rem' }}
                  >
-                    {[...feed, ...feed, ...feed].map((post, i) => (
+                    {feedPosts.length > 0 ? [...feedPosts, ...feedPosts, ...feedPosts].map((post, i) => (
                       <motion.div 
                          key={i}
                          whileHover={{ y: -15, boxShadow: '0 30px 60px rgba(0,0,0,0.4), 0 0 20px rgba(212, 175, 55, 0.06)', transition: { duration: 0.5, ease: [0.23, 1, 0.32, 1] } }}
@@ -767,10 +783,14 @@ const Dashboard: React.FC = () => {
                          }}
                       >
                          <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '1.5rem' }}>
-                            <img src={post.author.avatar} style={{ width: '56px', height: '56px', borderRadius: '50%', border: '2px solid rgba(212, 175, 55, 0.2)', boxShadow: '0 8px 20px rgba(0,0,0,0.3)' }} alt="" />
+                            <img 
+                              src={post.author_picture || `https://ui-avatars.com/api/?name=${post.author_name}&background=random`} 
+                              style={{ width: '56px', height: '56px', borderRadius: '50%', border: '2px solid rgba(212, 175, 55, 0.2)', boxShadow: '0 8px 20px rgba(0,0,0,0.3)' }} 
+                              alt="" 
+                            />
                             <div>
-                               <h4 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.01em' }}>{post.author.name}</h4>
-                               <p style={{ margin: 0, fontSize: '0.95rem', color: 'rgba(212, 175, 55, 0.6)', fontWeight: 600 }}>{post.author.title}</p>
+                               <h4 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.01em' }}>{post.author_name}</h4>
+                               <p style={{ margin: 0, fontSize: '0.95rem', color: 'rgba(212, 175, 55, 0.6)', fontWeight: 600 }}>{post.author_type}</p>
                             </div>
                          </div>
                          <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '1.1rem', lineHeight: 1.6, marginBottom: '1.5rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', fontWeight: 500, letterSpacing: '-0.01em' }}>
@@ -778,20 +798,28 @@ const Dashboard: React.FC = () => {
                          </p>
                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div style={{ display: 'flex', gap: '2rem', color: 'rgba(255, 255, 255, 0.35)', fontSize: '1.05rem', fontWeight: 700 }}>
-                               <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}><ThumbsUp size={20} /> {post.likes}</span>
-                               <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}><MessageSquare size={20} /> {post.comments}</span>
+                               <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}><ThumbsUp size={20} /> {post.likes_count}</span>
+                               <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}><MessageSquare size={20} /> {post.comments_count}</span>
                             </div>
-                            <span style={{ color: '#D4AF37', fontWeight: 800, fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                              View Insight <ChevronRight size={20} />
-                            </span>
+                            <button 
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                 navigate('/dashboard/activity');
+                               }}
+                               style={{ background: 'none', border: 'none', color: '#D4AF37', fontWeight: 800, fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer', padding: 0 }}
+                             >
+                               View Insight <ChevronRight size={20} />
+                             </button>
                          </div>
-                         {post.isOfficial && (
+                         {post.author_type === 'Admin' && (
                            <div style={{ position: 'absolute', top: '2rem', right: '2rem', background: 'rgba(212, 175, 55, 0.1)', color: '#D4AF37', border: '0.5px solid rgba(212, 175, 55, 0.2)', padding: '10px 20px', borderRadius: '99px', fontSize: '0.8rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.15em' }}>
-                              OFFICIAL
+                               OFFICIAL
                            </div>
                          )}
                       </motion.div>
-                    ))}
+                    )) : (
+                      <div style={{ color: 'white', padding: '2rem', textAlign: 'center', width: '100%' }}>No insights shared yet. Be the first!</div>
+                    )}
                  </motion.div>
                </div>
             </div>

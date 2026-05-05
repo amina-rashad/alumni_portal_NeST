@@ -27,6 +27,8 @@ interface Job {
   isUrgent?: boolean;
   isNew?: boolean;
   matchScore?: number;
+  requirements?: string[];
+  createdAt?: string;
 }
 
 const MOCK_JOBS: Job[] = [
@@ -121,7 +123,7 @@ const MOCK_JOBS: Job[] = [
 ];
 
 const JobListings: React.FC = () => {
-  const [jobs] = useState<Job[]>(MOCK_JOBS);
+  const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('All');
@@ -130,12 +132,24 @@ const JobListings: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const listingsRef = useRef<HTMLDivElement>(null);
-
   const [toast, setToast] = useState<{message: string, type: 'success' | 'info'} | null>(null);
 
   const showNotification = (message: string, type: 'success' | 'info' = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
+  };
+
+  const timeAgo = (dateStr: string | undefined) => {
+    if (!dateStr) return 'Recently';
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+    return date.toLocaleDateString();
   };
 
   const scrollToJobs = () => {
@@ -148,8 +162,26 @@ const JobListings: React.FC = () => {
         setLoading(true);
         const res = await jobsApi.getAllJobs();
         if (res.success && res.data && (res.data as any).jobs) {
-          // Merge API jobs or use them if they match the UI quality
-          // setJobs((res.data as any).jobs);
+          const apiJobs = (res.data as any).jobs.map((j: any) => ({
+            id: j.id,
+            title: j.title,
+            company: j.company || 'NeST Digital',
+            location: j.location || 'Kochi, Kerala',
+            type: j.type || 'Full-time',
+            department: j.department || 'Technology',
+            experience: j.experience_level || 'Entry Level',
+            description: j.description || '',
+            skills: j.skills_required || j.skills || [],
+            salary: j.salary,
+            postedAt: timeAgo(j.createdAt),
+            createdAt: j.createdAt,
+            isNew: true, // Mark all fresh from DB as new for now
+            isUrgent: false
+          }));
+          
+          if (apiJobs.length > 0) {
+            setJobs(apiJobs);
+          }
         }
       } catch (err) {
         console.error("Failed to load jobs", err);

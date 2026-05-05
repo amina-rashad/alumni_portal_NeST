@@ -22,8 +22,8 @@ export const studentService = {
   searchStudents: async (query: string): Promise<StudentEnrollment[]> => {
     const students = await studentService.getManagedStudents();
     return students.filter(s => 
-      s.name.toLowerCase().includes(query.toLowerCase()) || 
-      s.email.toLowerCase().includes(query.toLowerCase())
+      s.studentName.toLowerCase().includes(query.toLowerCase()) || 
+      s.studentEmail.toLowerCase().includes(query.toLowerCase())
     );
   },
 

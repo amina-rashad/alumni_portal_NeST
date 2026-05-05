@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { applicationsApi } from '../services/api';
 
 // Status type
-type ApplicationStatus = 'Under Review' | 'Shortlisted' | 'Interview Scheduled' | 'Offered' | 'Rejected' | 'Withdrawn';
+type ApplicationStatus = 'Applied' | 'Aptitude' | 'Shortlisted' | 'Interview Scheduled' | 'Offered' | 'Rejected' | 'Withdrawn';
 
 interface Application {
   id: string;
@@ -22,7 +22,8 @@ interface Application {
 }
 
 const STATUS_CONFIG: Record<ApplicationStatus, { color: string; bg: string; border: string; icon: React.ReactNode }> = {
-  'Under Review': { color: '#e67700', bg: '#fff9db', border: '#ffd43b', icon: <Clock size={16} /> },
+  'Applied': { color: '#475569', bg: '#f1f5f9', border: '#e2e8f0', icon: <Briefcase size={16} /> },
+  'Aptitude': { color: '#e67700', bg: '#fff9db', border: '#ffd43b', icon: <Clock size={16} /> },
   'Shortlisted': { color: '#1971c2', bg: '#e7f5ff', border: '#74c0fc', icon: <Eye size={16} /> },
   'Interview Scheduled': { color: '#7048e8', bg: '#f3f0ff', border: '#b197fc', icon: <AlertCircle size={16} /> },
   'Offered': { color: '#2b8a3e', bg: '#ebfbee', border: '#69db7c', icon: <CheckCircle2 size={16} /> },
@@ -30,15 +31,22 @@ const STATUS_CONFIG: Record<ApplicationStatus, { color: string; bg: string; bord
   'Withdrawn': { color: '#868e96', bg: '#f8f9fa', border: '#dee2e6', icon: <XCircle size={16} /> }
 };
 
-const ALL_STATUSES: ApplicationStatus[] = ['Under Review', 'Shortlisted', 'Interview Scheduled', 'Offered', 'Rejected', 'Withdrawn'];
+const ALL_STATUSES: ApplicationStatus[] = ['Applied', 'Aptitude', 'Shortlisted', 'Interview Scheduled', 'Offered', 'Rejected', 'Withdrawn'];
 
 const STATUS_MAP: Record<string, ApplicationStatus> = {
-  'pending': 'Under Review',
-  'reviewed': 'Under Review',
+  'Applied': 'Applied',
+  'pending': 'Applied',
+  'Aptitude': 'Aptitude',
+  'Aptitude Test': 'Aptitude',
+  'Shortlisted': 'Shortlisted',
   'shortlisted': 'Shortlisted',
+  'Interview Scheduled': 'Interview Scheduled',
   'interview': 'Interview Scheduled',
+  'Offered': 'Offered',
   'hired': 'Offered',
+  'Rejected': 'Rejected',
   'rejected': 'Rejected',
+  'Withdrawn': 'Withdrawn',
   'withdrawn': 'Withdrawn'
 };
 
@@ -51,9 +59,9 @@ const MyApplications: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    const fetchApps = async () => {
+    const fetchApps = async (isPoll = false) => {
       try {
-        setLoading(true);
+        if (!isPoll) setLoading(true);
         const res = await applicationsApi.getMyApplications();
         if (res.success && res.data && (res.data as any).applications) {
           const apiApps = (res.data as any).applications.map((app: any) => ({
@@ -62,22 +70,27 @@ const MyApplications: React.FC = () => {
             title: app.job_title || 'Untitled Position',
             department: app.job_company || 'NeST Digital',
             location: app.job_location || 'Remote',
-            type: 'Full-time', // Backend doesn't explicitly store this in application yet
+            type: 'Full-time',
             appliedDate: app.applied_at,
-            status: STATUS_MAP[app.status] || 'Under Review',
-            lastUpdated: app.applied_at,
-            notes: app.cover_letter ? `Cover Letter: ${app.cover_letter}` : undefined
+            status: STATUS_MAP[app.status] || 'Applied',
+            lastUpdated: app.updated_at || app.applied_at,
+            interviewDate: app.interviewDate,
+            notes: app.notes || (app.cover_letter ? `Cover Letter: ${app.cover_letter}` : undefined)
           }));
           setApplications(apiApps);
         }
       } catch (err) {
-        console.error("Failed to fetch applications", err);
-        setError('Failed to load your applications.');
+        if (!isPoll) {
+          console.error("Failed to fetch applications", err);
+          setError('Failed to load your applications.');
+        }
       } finally {
-        setLoading(false);
+        if (!isPoll) setLoading(false);
       }
     };
     fetchApps();
+    const interval = setInterval(() => fetchApps(true), 60000);
+    return () => clearInterval(interval);
   }, []);
 
   const filteredApps = applications.filter(app => {
@@ -100,9 +113,10 @@ const MyApplications: React.FC = () => {
   };
 
   const getTimelineSteps = (status: ApplicationStatus) => {
-    const steps = ['Applied', 'Under Review', 'Shortlisted', 'Interview', 'Decision'];
+    const steps = ['Applied', 'Aptitude', 'Shortlisted', 'Interview', 'Decision'];
     const statusMap: Record<ApplicationStatus, number> = {
-      'Under Review': 1,
+      'Applied': 0,
+      'Aptitude': 1,
       'Shortlisted': 2,
       'Interview Scheduled': 3,
       'Offered': 4,

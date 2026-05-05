@@ -1,19 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  CheckCircle, 
-  XCircle, 
-  Github, 
-  Video, 
-  FileText, 
-  ExternalLink,
-  Clock,
-  User,
-  BookOpen,
-  Filter,
-  Search,
-  Loader2,
-  AlertCircle
+  CheckCircle, XCircle, Github, Video, 
+  FileText, ExternalLink, Clock, User, 
+  BookOpen, Filter, Search, Loader2, 
+  AlertCircle, ChevronRight, Activity,
+  CheckCircle2, AlertTriangle, ArrowRight
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { courseManagerAPI } from '../../services/api';
 import toast from 'react-hot-toast';
 
@@ -21,7 +14,7 @@ interface Submission {
   id: string;
   studentName: string;
   course: string;
-  assessmentType: string; // Changed to string for flexibility with API data
+  assessmentType: string;
   submittedAt: string;
   content: {
     type: 'github' | 'video' | 'text';
@@ -32,6 +25,7 @@ interface Submission {
 }
 
 const CM_Assessments: React.FC = () => {
+  const brandPrimary = '#c8102e';
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -43,14 +37,13 @@ const CM_Assessments: React.FC = () => {
       try {
         setIsLoading(true);
         const response = await courseManagerAPI.fetchSubmissions();
-        setSubmissions(response.data as Submission[]);
+        setSubmissions(response.data || []);
       } catch (err) {
-        setError('Failed to load submissions. Please try again later.');
+        setError('Failed to load submissions.');
       } finally {
         setIsLoading(false);
       }
     };
-
     loadSubmissions();
   }, []);
 
@@ -64,8 +57,7 @@ const CM_Assessments: React.FC = () => {
       );
       toast.success(`Submission ${action.toLowerCase()} successfully!`, { id: loadingToast });
     } catch (err) {
-      console.error('Failed to update status', err);
-      toast.error(`Failed to ${action.toLowerCase()} submission.`, { id: loadingToast });
+      toast.error(`Failed to update status.`, { id: loadingToast });
     } finally {
       setProcessingId(null);
     }
@@ -80,35 +72,44 @@ const CM_Assessments: React.FC = () => {
 
   const getIconForType = (type: string) => {
     switch (type) {
-      case 'github': return <Github size={18} className="text-slate-700" />;
-      case 'video': return <Video size={18} className="text-purple-600" />;
-      case 'text': return <FileText size={18} className="text-emerald-600" />;
+      case 'github': return <Github size={18} />;
+      case 'video': return <Video size={18} />;
+      case 'text': return <FileText size={18} />;
       default: return <ExternalLink size={18} />;
     }
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Assessment Reviews</h1>
-          <p className="text-slate-500 font-medium mt-1">Review and grade student submissions to unblock their progress.</p>
+          <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#1e293b', margin: '0 0 8px 0' }}>Assessment Queue</h1>
+          <p style={{ margin: 0, color: '#64748b', fontWeight: 500 }}>Validate learner competency through strategic submission review.</p>
         </div>
-        <div className="flex items-center gap-2 p-1.5 bg-slate-100 rounded-2xl border border-slate-200">
+        <div style={{ display: 'flex', gap: '8px', padding: '6px', background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
           {(['Pending', 'Reviewed', 'All'] as const).map(f => (
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-5 py-2 rounded-xl text-sm font-black transition-all ${
-                filter === f 
-                  ? 'bg-white text-[#1a2652] shadow-sm' 
-                  : 'text-slate-500 hover:text-slate-700'
-              }`}
+              style={{
+                padding: '8px 20px',
+                borderRadius: '12px',
+                fontSize: '13px',
+                fontWeight: 700,
+                border: 'none',
+                cursor: 'pointer',
+                background: filter === f ? brandPrimary : 'transparent',
+                color: filter === f ? '#fff' : '#64748b',
+                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
             >
               {f}
-              {f === 'Pending' && (
-                <span className="ml-2 px-2 py-0.5 bg-orange-100 text-orange-600 rounded-md text-[10px]">
+              {f === 'Pending' && submissions.some(s => s.status === 'Pending') && (
+                <span style={{ padding: '2px 6px', borderRadius: '6px', background: filter === f ? 'rgba(255,255,255,0.2)' : 'rgba(200, 16, 46, 0.1)', color: filter === f ? '#fff' : brandPrimary, fontSize: '10px' }}>
                   {submissions.filter(s => s.status === 'Pending').length}
                 </span>
               )}
@@ -117,136 +118,145 @@ const CM_Assessments: React.FC = () => {
         </div>
       </div>
 
-      {error && (
-        <div className="p-4 bg-red-50 text-red-600 font-bold flex items-center gap-2 rounded-2xl border border-red-100 shadow-sm">
-          <AlertCircle size={18} /> {error}
-        </div>
-      )}
+      {/* Stats Mini Row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+         <div style={{ background: '#fff', padding: '20px', borderRadius: '20px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ padding: '10px', borderRadius: '12px', background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}><Clock size={20} /></div>
+            <div>
+               <div style={{ fontSize: '10px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Awaiting Review</div>
+               <div style={{ fontSize: '18px', fontWeight: 800, color: '#1e293b' }}>{submissions.filter(s => s.status === 'Pending').length}</div>
+            </div>
+         </div>
+         <div style={{ background: '#fff', padding: '20px', borderRadius: '20px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ padding: '10px', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}><CheckCircle2 size={20} /></div>
+            <div>
+               <div style={{ fontSize: '10px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Validated Today</div>
+               <div style={{ fontSize: '18px', fontWeight: 800, color: '#1e293b' }}>14</div>
+            </div>
+         </div>
+      </div>
 
       {/* Submissions List */}
-      <div className="grid grid-cols-1 gap-6 relative min-h-[300px]">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         {isLoading ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-50/50 backdrop-blur-sm z-10 rounded-3xl border border-slate-200">
-            <Loader2 size={32} className="animate-spin text-indigo-500 mb-2" />
-            <span className="text-slate-500 font-bold text-sm">Loading submissions...</span>
+          Array(3).fill(0).map((_, i) => (
+            <div key={i} style={{ height: '200px', background: '#fff', borderRadius: '24px', border: '1px solid #e2e8f0' }} className="skeleton-pulse"></div>
+          ))
+        ) : filteredSubmissions.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '80px', background: '#fff', borderRadius: '32px', border: '1px solid #e2e8f0' }}>
+             <CheckCircle2 size={48} color="#10b981" style={{ marginBottom: '16px' }} />
+             <h3 style={{ margin: 0, color: '#1e293b', fontWeight: 800 }}>Queue Fully Optimized</h3>
+             <p style={{ color: '#64748b', fontSize: '14px' }}>All submissions have been processed for the current filters.</p>
           </div>
-        ) : filteredSubmissions.length > 0 ? (
-          filteredSubmissions.map((sub) => (
-            <div 
-              key={sub.id} 
-              className={`bg-white rounded-[32px] border ${
-                sub.status === 'Pending' ? 'border-orange-200 shadow-md shadow-orange-100/50' : 'border-slate-200 shadow-sm opacity-70 hover:opacity-100 transition-opacity'
-              } overflow-hidden flex flex-col md:flex-row`}
-            >
-              {/* Info Column */}
-              <div className="p-8 md:w-1/3 bg-slate-50/50 border-b md:border-b-0 md:border-r border-slate-100 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-12 h-12 rounded-2xl bg-[#1a2652] flex items-center justify-center text-white font-black text-sm">
-                      {sub.studentName.split(' ').map(n => n[0]).join('')}
-                    </div>
-                    <div>
-                      <h3 className="font-black text-slate-900">{sub.studentName}</h3>
-                      <div className="flex items-center gap-1 text-[11px] font-bold text-slate-400 mt-1">
-                        <Clock size={12} /> Submitted {sub.submittedAt}
-                      </div>
+        ) : filteredSubmissions.map((sub) => (
+          <motion.div
+            key={sub.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            style={{
+              background: '#fff',
+              borderRadius: '28px',
+              border: '1px solid #e2e8f0',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'row',
+              boxShadow: sub.status === 'Pending' ? '0 10px 30px rgba(200, 16, 46, 0.05)' : 'none'
+            }}
+          >
+            {/* Left Info Panel */}
+            <div style={{ width: '300px', padding: '32px', background: '#fcfdfe', borderRight: '1px solid #f1f5f9' }}>
+               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+                  <div style={{ 
+                    width: '44px', height: '44px', borderRadius: '12px', background: brandPrimary, 
+                    color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 
+                  }}>
+                    {sub.studentName.charAt(0)}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '15px', fontWeight: 800, color: '#1e293b' }}>{sub.studentName}</div>
+                    <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 700 }}>SUBMITTED {sub.submittedAt.toUpperCase()}</div>
+                  </div>
+               </div>
+
+               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <div>
+                    <label style={{ fontSize: '10px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '6px' }}>Academic Track</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#475569', fontWeight: 600, fontSize: '13px' }}>
+                      <BookOpen size={14} color={brandPrimary} /> {sub.course}
                     </div>
                   </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <div className="text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Course</div>
-                      <div className="flex items-start gap-2">
-                        <BookOpen size={14} className="text-indigo-500 mt-1 shrink-0" />
-                        <span className="text-sm font-bold text-slate-700">{sub.course}</span>
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Assessment Type</div>
-                      <span className="inline-block px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-black text-slate-600">
-                        {sub.assessmentType}
-                      </span>
+                  <div>
+                    <label style={{ fontSize: '10px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '6px' }}>Component</label>
+                    <div style={{ display: 'inline-block', padding: '4px 10px', borderRadius: '8px', background: 'rgba(200, 16, 46, 0.05)', color: brandPrimary, fontSize: '12px', fontWeight: 700 }}>
+                      {sub.assessmentType}
                     </div>
                   </div>
-                </div>
-              </div>
+               </div>
+            </div>
 
-              {/* Content & Action Column */}
-              <div className="p-8 md:w-2/3 flex flex-col justify-between bg-white">
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-wider">Submission Content</h4>
-                    {sub.status !== 'Pending' && (
-                      <span className={`px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider flex items-center gap-1 ${
-                        sub.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
-                      }`}>
-                        {sub.status === 'Approved' ? <CheckCircle size={14}/> : <XCircle size={14}/>}
-                        {sub.status}
-                      </span>
-                    )}
-                  </div>
+            {/* Right Content Panel */}
+            <div style={{ flex: 1, padding: '32px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: '#1e293b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Submission Payload</h4>
+                  {sub.status !== 'Pending' && (
+                    <div style={{ 
+                      display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '10px', fontSize: '11px', fontWeight: 800,
+                      background: sub.status === 'Approved' ? '#ecfdf5' : '#fff1f1',
+                      color: sub.status === 'Approved' ? '#10b981' : '#ef4444'
+                    }}>
+                      {sub.status === 'Approved' ? <CheckCircle2 size={14} /> : <AlertTriangle size={14} />} {sub.status.toUpperCase()}
+                    </div>
+                  )}
+               </div>
 
-                  <div className="bg-slate-50 border border-slate-100 rounded-2xl p-6">
-                    {sub.content.type === 'text' ? (
-                      <p className="text-sm font-medium text-slate-700 leading-relaxed italic">
-                        "{sub.content.text}"
-                      </p>
-                    ) : (
-                      <a 
-                        href={sub.content.url} 
-                        target="_blank" 
-                        rel="noreferrer"
-                        className="flex items-center gap-3 p-4 bg-white border border-slate-200 hover:border-indigo-300 rounded-xl transition-all group"
-                      >
-                        <div className="p-2 bg-slate-50 rounded-lg group-hover:bg-indigo-50 transition-colors">
-                          {getIconForType(sub.content.type)}
-                        </div>
-                        <div className="flex-1 overflow-hidden">
-                          <div className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
-                            View {sub.content.type === 'github' ? 'Repository' : 'Video Recording'}
+               <div style={{ background: '#f8fafc', padding: '24px', borderRadius: '20px', border: '1px solid #f1f5f9' }}>
+                  {sub.content.type === 'text' ? (
+                    <p style={{ margin: 0, fontSize: '14px', color: '#475569', lineHeight: 1.6, fontStyle: 'italic' }}>"{sub.content.text}"</p>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                          <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#fff', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#475569' }}>
+                            {getIconForType(sub.content.type)}
                           </div>
-                          <div className="text-xs font-medium text-slate-400 truncate mt-0.5">
-                            {sub.content.url}
+                          <div>
+                            <div style={{ fontSize: '14px', fontWeight: 700, color: '#1e293b' }}>{sub.content.type === 'github' ? 'Version Control Repository' : 'Video Demonstration'}</div>
+                            <div style={{ fontSize: '12px', color: '#94a3b8', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub.content.url}</div>
                           </div>
-                        </div>
-                        <ExternalLink size={16} className="text-slate-300 group-hover:text-indigo-500 transition-colors" />
-                      </a>
-                    )}
-                  </div>
-                </div>
+                       </div>
+                       <a 
+                         href={sub.content.url} target="_blank" rel="noreferrer"
+                         style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '12px', background: '#fff', border: '1px solid #e2e8f0', color: '#1e293b', fontSize: '13px', fontWeight: 700, textDecoration: 'none' }}
+                       >
+                         View Asset <ExternalLink size={14} />
+                       </a>
+                    </div>
+                  )}
+               </div>
 
-                {/* Actions */}
-                {sub.status === 'Pending' && (
-                  <div className="flex items-center gap-4 mt-8 pt-6 border-t border-slate-100">
+               {sub.status === 'Pending' && (
+                 <div style={{ display: 'flex', gap: '12px', marginTop: 'auto' }}>
                     <button 
                       onClick={() => handleAction(sub.id, 'Approved')}
-                      disabled={processingId === sub.id}
-                      className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-black shadow-lg shadow-emerald-500/20 transition-all active:scale-95 disabled:opacity-50"
+                      style={{ flex: 1, padding: '14px', borderRadius: '14px', background: '#10b981', color: '#fff', border: 'none', fontWeight: 700, fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 8px 20px rgba(16, 185, 129, 0.2)' }}
                     >
-                      {processingId === sub.id ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle size={18} />} Approve
+                      {processingId === sub.id ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle2 size={18} />} Approve Submission
                     </button>
                     <button 
                       onClick={() => handleAction(sub.id, 'Rejected')}
-                      disabled={processingId === sub.id}
-                      className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-white border-2 border-red-100 hover:border-red-500 text-red-600 hover:bg-red-50 rounded-xl font-black transition-all active:scale-95 disabled:opacity-50"
+                      style={{ flex: 1, padding: '14px', borderRadius: '14px', background: '#fff', color: '#ef4444', border: '1px solid #fee2e2', fontWeight: 700, fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                     >
-                      {processingId === sub.id ? <Loader2 size={18} className="animate-spin" /> : <XCircle size={18} />} Request Changes
+                      {processingId === sub.id ? <Loader2 size={18} className="animate-spin" /> : <XCircle size={18} />} Request Refinement
                     </button>
-                  </div>
-                )}
-              </div>
+                 </div>
+               )}
             </div>
-          ))
-        ) : (
-          <div className="bg-white rounded-[32px] border border-slate-200 p-12 text-center flex flex-col items-center">
-            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-              <CheckCircle size={32} className="text-emerald-500" />
-            </div>
-            <h3 className="text-xl font-black text-slate-900 mb-2">All Caught Up!</h3>
-            <p className="text-slate-500 font-medium">There are no {filter.toLowerCase()} submissions to review right now.</p>
-          </div>
-        )}
+          </motion.div>
+        ))}
       </div>
+      <style>{`
+        .skeleton-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+      `}</style>
     </div>
   );
 };

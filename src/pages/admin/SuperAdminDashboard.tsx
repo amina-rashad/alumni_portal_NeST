@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ShieldCheck, Users, Activity, Server, Database, 
   AlertTriangle, CheckCircle, Clock, Settings, Lock,
-  Search, X, UserPlus, ChevronRight, ArrowUpRight, TrendingUp
+  Search, X, UserPlus, ChevronRight, ArrowUpRight, TrendingUp,
+  Calendar
 } from 'lucide-react';
 import { adminApi } from '../../services/api';
 
@@ -19,37 +20,60 @@ const SuperAdminDashboard: React.FC = () => {
     lastBackup: '45 mins ago',
     activeSessions: 142,
     securityThreats: 0,
-    totalManagers: 0
+    totalManagers: 0,
+    totalEvents: 0
   });
 
   const [managers, setManagers] = useState<any[]>([]);
-
-  const [recentLogs, setRecentLogs] = useState([
-    { id: 1, action: 'Role Hierarchy Update', user: 'superadmin@nest.com', target: 'Global System', time: '5 mins ago', type: 'security' },
-    { id: 2, action: 'Admin Account Created', user: 'superadmin@nest.com', target: 'New Recruiter', time: '22 mins ago', type: 'user' },
-    { id: 3, action: 'Bulk Certificate Export', user: 'admin_12', target: 'Oct 2024 Batch', time: '1 hour ago', type: 'data' },
-    { id: 4, action: 'Database Index Optimization', user: 'System Auto', target: 'Users Collection', time: '3 hours ago', type: 'system' },
-  ]);
+  const [recentLogs, setRecentLogs] = useState<any[]>([]);
 
   useEffect(() => {
-    // Simulate data loading
-    const timer = setTimeout(() => setIsLoading(false), 1200);
-
-    const fetchManagers = async () => {
+    const fetchData = async () => {
       try {
-        const res = await adminApi.getManagers();
-        if (res.success && res.data) {
-          setManagers((res.data as any).managers || []);
-          setSystemStatus(prev => ({ ...prev, totalManagers: (res.data as any).managers?.length || 0 }));
+        const [mgrRes, statsRes, logRes] = await Promise.all([
+          adminApi.getManagers(),
+          adminApi.getStats(),
+          adminApi.getAuditLogs()
+        ]);
+        
+        if (mgrRes.success && mgrRes.data) {
+          setManagers((mgrRes.data as any).managers || []);
+          setSystemStatus(prev => ({ ...prev, totalManagers: (mgrRes.data as any).managers?.length || 0 }));
+        }
+        
+        if (statsRes.success && statsRes.data) {
+          setSystemStatus(prev => ({ 
+            ...prev, 
+            totalEvents: (statsRes.data as any).stats.total_events || 0 
+          }));
+        }
+
+        if (logRes.success && logRes.data) {
+          setRecentLogs(logRes.data.logs || []);
         }
       } catch (err) {
-        console.error("Failed to fetch managers", err);
+        console.error("Failed to fetch dashboard data", err);
+      } finally {
+        setIsLoading(false);
       }
     };
-    fetchManagers();
-
-    return () => clearTimeout(timer);
+    fetchData();
   }, []);
+
+  const formatTime = (iso: string) => {
+    if (iso === "Recently") return iso;
+    try {
+      const date = new Date(iso);
+      const now = new Date();
+      const diff = Math.floor((now.getTime() - date.getTime()) / 60000);
+      if (diff < 1) return 'Just now';
+      if (diff < 60) return `${diff}m ago`;
+      if (diff < 1440) return `${Math.floor(diff/60)}h ago`;
+      return date.toLocaleDateString();
+    } catch {
+      return iso;
+    }
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
@@ -83,6 +107,7 @@ const SuperAdminDashboard: React.FC = () => {
             <StatusCard title="API Latency" value={systemStatus.api} icon={<Server size={22} />} color={nestNavy} trend="+0.2ms" />
             <StatusCard title="Database" value={systemStatus.db} icon={<Database size={22} />} color="#8b5cf6" trend="Optimal" />
             <StatusCard title="System Staff" value={systemStatus.totalManagers.toString()} icon={<Users size={22} />} color="#6366f1" trend="Active Managers" />
+            <StatusCard title="Platform Events" value={systemStatus.totalEvents.toString()} icon={<Calendar size={22} />} color="#f43f5e" trend="Live Events" />
             <StatusCard title="Security Pulse" value={systemStatus.securityThreats.toString()} icon={<ShieldCheck size={22} />} color="#ef4444" isAlert={systemStatus.securityThreats > 0} trend="Protected" />
             <StatusCard title="Active Traffic" value={systemStatus.activeSessions.toString()} icon={<Activity size={22} />} color="#10b981" trend="+12% today" />
           </>
@@ -109,36 +134,40 @@ const SuperAdminDashboard: React.FC = () => {
              </div>
            ) : (
              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {recentLogs.map((log, index) => (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    key={log.id} 
-                    style={logItemStyle}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                      <div style={{ 
-                        width: '48px', height: '48px', borderRadius: '14px', 
-                        background: log.type === 'security' ? '#fef2f2' : '#f8fafc',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        color: log.type === 'security' ? '#ef4444' : nestNavy,
-                        border: '1px solid rgba(0,0,0,0.03)'
-                      }}>
-                        {log.type === 'security' ? <Lock size={20} /> : <Activity size={20} />}
-                      </div>
-                      <div>
-                        <div style={{ fontSize: '15px', fontWeight: 700, color: '#1e293b' }}>{log.action}</div>
-                        <div style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>
-                          <span style={{ fontWeight: 600, color: '#0f172a' }}>{log.user}</span> • {log.target}
-                        </div>
-                      </div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8' }}>{log.time}</div>
-                    </div>
-                  </motion.div>
-                ))}
+                {recentLogs.length > 0 ? recentLogs.map((log, index) => (
+                   <motion.div 
+                     initial={{ opacity: 0, y: 10 }}
+                     animate={{ opacity: 1, y: 0 }}
+                     transition={{ delay: index * 0.1 }}
+                     key={log.id} 
+                     style={logItemStyle}
+                   >
+                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                       <div style={{ 
+                         width: '48px', height: '48px', borderRadius: '14px', 
+                         background: log.type === 'security' ? '#fef2f2' : '#f8fafc',
+                         display: 'flex', alignItems: 'center', justifyContent: 'center',
+                         color: log.type === 'security' ? '#ef4444' : nestNavy,
+                         border: '1px solid rgba(0,0,0,0.03)'
+                       }}>
+                         {log.type === 'security' ? <Lock size={20} /> : <Activity size={20} />}
+                       </div>
+                       <div>
+                         <div style={{ fontSize: '15px', fontWeight: 700, color: '#1e293b' }}>{log.action}</div>
+                         <div style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>
+                           <span style={{ fontWeight: 600, color: '#0f172a' }}>{log.user}</span> • {log.target}
+                         </div>
+                       </div>
+                     </div>
+                     <div style={{ textAlign: 'right' }}>
+                       <div style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8' }}>{formatTime(log.time)}</div>
+                     </div>
+                   </motion.div>
+                )) : (
+                  <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
+                    No recent system logs detected.
+                  </div>
+                )}
              </div>
            )}
         </section>

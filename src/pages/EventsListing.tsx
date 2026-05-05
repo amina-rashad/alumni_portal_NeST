@@ -340,68 +340,6 @@ const EventsListing: React.FC = () => {
               </div>
             </motion.div>
 
-            {/* In-Between Add-on Banner for Events */}
-            {index === 1 && (
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.98 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                style={{ 
-                  background: 'linear-gradient(135deg, #7c1223 0%, #d32f2f 100%)', 
-                  borderRadius: '1.5rem', 
-                  padding: '3rem 4rem', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'space-between',
-                  boxShadow: '0 20px 40px rgba(211,47,47,0.2)',
-                  marginTop: '0.5rem',
-                  marginBottom: '0.5rem',
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}
-              >
-                <div style={{ position: 'absolute', right: '-5%', top: '-30%', opacity: 0.1 }}>
-                  <Users size={350} color="white" />
-                </div>
-                <motion.div 
-                  initial="hidden"
-                  whileInView="show"
-                  viewport={{ once: true }}
-                  variants={{
-                    hidden: { opacity: 0 },
-                    show: { opacity: 1, transition: { staggerChildren: 0.15 } }
-                  }}
-                  style={{ position: 'relative', zIndex: 1, maxWidth: '600px' }}
-                >
-                  <motion.span 
-                    variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } } }}
-                    style={{ display: 'inline-block', background: 'rgba(255,255,255,0.2)', color: 'white', padding: '0.4rem 1rem', borderRadius: '50px', fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}
-                  >
-                    Call for Speakers
-                  </motion.span>
-                  <motion.h2 
-                    variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } } }}
-                    style={{ color: 'white', fontSize: '2.5rem', fontWeight: 900, marginTop: '1rem', marginBottom: '1rem', lineHeight: '1.2' }}
-                  >
-                    Host your own masterclass.
-                  </motion.h2>
-                  <motion.p 
-                    variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } } }}
-                    style={{ color: 'rgba(255,255,255,0.9)', fontSize: '1.1rem', marginBottom: '2rem' }}
-                  >
-                    Share your industry expertise with thousands of NeST alumni globally.
-                  </motion.p>
-                  <motion.button 
-                    variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } } }}
-                    whileHover={{ scale: 1.05 }}
-                    style={{ background: 'white', color: '#d32f2f', border: 'none', padding: '1rem 2rem', borderRadius: '1rem', fontSize: '1rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                  >
-                    Apply to Speak <ChevronRight size={18} />
-                  </motion.button>
-                </motion.div>
-              </motion.div>
-            )}
             </React.Fragment>
           ))}
         </div>

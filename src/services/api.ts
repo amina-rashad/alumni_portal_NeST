@@ -8,6 +8,11 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const getAccessToken = () => localStorage.getItem('token');
 export const getRefreshToken = () => localStorage.getItem('refresh_token');
+export const setTokens = (token: string, refresh?: string) => {
+  localStorage.setItem('token', token);
+  if (refresh) localStorage.setItem('refresh_token', refresh);
+};
+
 const clearTokens = () => {
   localStorage.removeItem('token');
   localStorage.removeItem('refresh_token');
@@ -202,71 +207,6 @@ export const usersApi = {
   }
 };
 
-// --- ADMIN API ---
-export const adminApi = {
-  getStats: () => 
-    apiRequest<{ 
-      stats: { 
-        total_users: number, 
-        interns: number, 
-        active_jobs: number, 
-        applications: number,
-        total_managers: number,
-        distribution: { [key: string]: number }
-      } 
-    }>('/admin/stats'),
-
-  getAllUsers: () => 
-    apiRequest<{ users: any[] }>('/admin/users'),
-
-  createUser: (data: any) => 
-    apiRequest('/admin/users', { method: 'POST', body: JSON.stringify(data) }),
-
-  updateUser: (userId: string, data: any) => 
-    apiRequest(`/admin/users/${userId}`, { method: 'PATCH', body: JSON.stringify(data) }),
-
-  getInterns: () => 
-    apiRequest<{ users: any[] }>('/admin/users?type=Intern'),
-
-  addJob: (data: any) => 
-    apiRequest('/admin/jobs', { method: 'POST', body: JSON.stringify(data) }),
-
-  deleteJob: (jobId: string) => 
-    apiRequest(`/admin/jobs/${jobId}`, { method: 'DELETE' }),
-
-  getVisits: () => 
-    apiRequest<{ visits: any[] }>('/admin/visits'),
-
-  addVisit: (data: any) => 
-    apiRequest('/admin/visits', { method: 'POST', body: JSON.stringify(data) }),
-
-  deleteVisit: (visitId: string) => 
-    apiRequest(`/admin/visits/${visitId}`, { method: 'DELETE' }),
-
-  getApplications: () => 
-    apiRequest<{ applications: any[] }>('/admin/applications'),
-
-  addEvent: (data: any) =>
-    apiRequest('/admin/events', { method: 'POST', body: JSON.stringify(data) }),
-
-  getEvents: () =>
-    apiRequest<{ events: any[] }>('/admin/events'),
-
-  getPendingAssessments: () =>
-    apiRequest('/admin/assessments/pending'),
-
-  reviewAssessment: (id: string, data: any) =>
-    apiRequest(`/admin/assessments/${id}/review`, { method: 'POST', body: JSON.stringify(data) }),
-
-  deleteUser: (userId: string) =>
-    apiRequest(`/admin/users/${userId}`, { method: 'DELETE' }),
-
-  getUserById: (userId: string) =>
-    apiRequest(`/admin/users/${userId}`, { method: 'GET' }),
-
-  getManagers: () =>
-    apiRequest<{ managers: any[] }>('/admin/managers'),
-};
 
 // ── Courses API ──
 
@@ -325,8 +265,38 @@ export const eventManagerApi = {
   getUpcomingEvents: () =>
     apiRequest<{ events: any[] }>('/events/manager/upcoming', { method: 'GET' }),
 
+  getAttendees: () =>
+    apiRequest<{ attendees: any[] }>('/events/manager/attendees', { method: 'GET' }),
+
   createEvent: (data: any) =>
     apiRequest('/events/create', { method: 'POST', body: JSON.stringify(data) }),
+  
+  updateEvent: (eventId: string, data: any) =>
+    apiRequest(`/events/${eventId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    
+  deleteEvent: (eventId: string) =>
+    apiRequest(`/events/${eventId}`, { method: 'DELETE' }),
+
+  toggleAttendance: (eventId: string, userId: string) =>
+    apiRequest('/events/manager/attendees/toggle', { 
+      method: 'POST', 
+      body: JSON.stringify({ event_id: eventId, user_id: userId }) 
+    }),
+
+  issueCertificate: (eventId: string, userId: string) =>
+    apiRequest('/events/manager/attendees/issue-certificate', { 
+      method: 'POST', 
+      body: JSON.stringify({ event_id: eventId, user_id: userId }) 
+    }),
+
+  getRecentCertificates: () =>
+    apiRequest<{ certificates: any[] }>('/events/manager/recent-certificates', { method: 'GET' }),
+
+  removeRegistration: (eventId: string, userId: string) =>
+    apiRequest('/events/manager/attendees/remove', { 
+      method: 'POST', 
+      body: JSON.stringify({ event_id: eventId, user_id: userId }) 
+    }),
 };
 
 // ── Networking API ──
@@ -395,6 +365,7 @@ export const notificationsApi = {
   markAsRead: (id: string) => apiRequest(`/notifications/${id}/read`, { method: 'PATCH' }),
   markAllAsRead: () => apiRequest('/notifications/read-all', { method: 'PATCH' }),
   deleteNotification: (id: string) => apiRequest(`/notifications/${id}`, { method: 'DELETE' }),
+  deleteAllNotifications: () => apiRequest('/notifications/all', { method: 'DELETE' }),
 };
 
 // ── Applications API ──
@@ -425,12 +396,12 @@ export const achievementAPI = {
 };
 
 export const recommendationAPI = {
-  fetchRecommendations: async () => ({ success: true, data: [] }),
-  deleteRecommendation: async (id: string) => ({ success: true })
+  fetchRecommendations: async () => apiRequest('/recommendations', { method: 'GET' }),
+  deleteRecommendation: (id: string) => apiRequest(`/recommendations/${id}`, { method: 'DELETE' })
 };
 
 export const insightsAPI = {
-  fetchSummary: async () => ({ success: true, data: { dailyActiveUsers: [], completionRates: [], streaks: [], inactiveLearners: [] } })
+  fetchSummary: async () => apiRequest('/insights/summary', { method: 'GET' })
 };
 
 export const gamificationApi = {
@@ -438,9 +409,96 @@ export const gamificationApi = {
   fetchMyQueries: async () => ({ success: true, data: [] })
 };
 
+// --- ADMIN API ---
+export const adminApi = {
+  getStats: () => 
+    apiRequest<{ 
+      stats: { 
+        total_users: number, 
+        interns: number, 
+        active_jobs: number, 
+        applications: number,
+        total_managers: number,
+        total_events: number,
+        distribution: { [key: string]: number }
+      } 
+    }>('/admin/stats'),
+
+  getActivity: () =>
+    apiRequest<{ activities: any[] }>('/admin/activity'),
+
+  getAllUsers: (params?: { type?: string }) => 
+    apiRequest<{ users: any[] }>('/admin/users', { 
+      method: 'GET',
+      ...(params?.type ? { endpoint: `/admin/users?type=${params.type}` } : {}) // Note: apiRequest doesn't handle this well, let's fix
+    }),
+
+  getUsers: (params?: { type?: string }) => {
+    const query = params?.type ? `?type=${params.type}` : '';
+    return apiRequest<{ users: any[] }>(`/admin/users${query}`);
+  },
+
+  createUser: (data: any) => 
+    apiRequest('/admin/users', { method: 'POST', body: JSON.stringify(data) }),
+
+  updateUser: (userId: string, data: any) => 
+    apiRequest(`/admin/users/${userId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+
+  getInterns: () => 
+    apiRequest<{ users: any[] }>('/admin/users?type=Intern'),
+
+  addJob: (data: any) => 
+    apiRequest('/admin/jobs', { method: 'POST', body: JSON.stringify(data) }),
+
+  deleteJob: (jobId: string) => 
+    apiRequest(`/admin/jobs/${jobId}`, { method: 'DELETE' }),
+
+  getVisits: () => 
+    apiRequest<{ visits: any[] }>('/admin/visits'),
+
+  addVisit: (data: any) => 
+    apiRequest('/admin/visits', { method: 'POST', body: JSON.stringify(data) }),
+
+  deleteVisit: (visitId: string) => 
+    apiRequest(`/admin/visits/${visitId}`, { method: 'DELETE' }),
+
+  getApplications: () => 
+    apiRequest<{ applications: any[] }>('/admin/applications'),
+
+  addEvent: (data: any) =>
+    apiRequest('/admin/events', { method: 'POST', body: JSON.stringify(data) }),
+
+  getEvents: () =>
+    apiRequest<{ events: any[] }>('/admin/events'),
+
+  getPendingAssessments: () =>
+    apiRequest('/admin/assessments/pending'),
+
+  reviewAssessment: (id: string, data: any) =>
+    apiRequest(`/admin/assessments/${id}/review`, { method: 'POST', body: JSON.stringify(data) }),
+
+  deleteUser: (userId: string) =>
+    apiRequest(`/admin/users/${userId}`, { method: 'DELETE' }),
+
+  getUserById: (userId: string) =>
+    apiRequest(`/admin/users/${userId}`, { method: 'GET' }),
+
+  getManagers: () =>
+    apiRequest<{ managers: any[] }>('/admin/managers'),
+
+  getAuditLogs: () =>
+    apiRequest<{ logs: any[] }>('/admin/audit-logs'),
+};
+
 export const recruiterApi = {
   getApplications: () => 
     apiRequest<{ applications: any[] }>('/recruiter/applications'),
+
+  updateApplicationStatus: (appId: string, data: { status: string, interviewDate?: string, notes?: string }) =>
+    apiRequest(`/recruiter/applications/${appId}/status`, { 
+        method: 'PATCH', 
+        body: JSON.stringify(data) 
+    }),
 
   getMyJobs: () => 
     apiRequest<{ jobs: any[] }>('/recruiter/jobs'),
@@ -454,6 +512,9 @@ export const recruiterApi = {
   getStats: () => 
     apiRequest<{ stats: any }>('/recruiter/stats', { method: 'GET' }),
 
+  getRecentApplications: () => 
+    apiRequest<{ pipeline: any[] }>('/recruiter/applications/recent', { method: 'GET' }),
+
   getTalentFilters: () =>
     apiRequest<{ specializations: string[], courses: string[], skills: string[] }>('/recruiter/talent-filters'),
 
@@ -465,6 +526,12 @@ export const recruiterApi = {
     return apiRequest<{ talents: any[] }>(`/recruiter/talents?${query.toString()}`);
   },
 
+  broadcastMail: (data: { recipients: string[], subject: string, body: string }) =>
+    apiRequest('/recruiter/broadcast-mail', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+    
   sendBroadcastMail: (data: { recipients: string[], subject: string, body: string }) =>
     apiRequest('/recruiter/broadcast-mail', {
       method: 'POST',
@@ -475,4 +542,10 @@ export const recruiterApi = {
 export const logout = () => {
   clearTokens();
   window.location.href = '/login';
+};
+
+export const studentAPI = {
+  fetchPersonalInsights: async () => ({ success: true, data: [] }),
+  fetchRecommendedPathways: async () => ({ success: true, data: [] }),
+  fetchMyQueries: async () => ({ success: true, data: [] })
 };

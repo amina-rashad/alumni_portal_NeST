@@ -53,14 +53,16 @@ const EventManagerDashboard: React.FC = () => {
   const [stats, setStats] = useState<any>(null);
   const [distribution, setDistribution] = useState<any[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
+  const [recentCertificates, setRecentCertificates] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [statsRes, eventsRes] = await Promise.all([
+        const [statsRes, eventsRes, certRes] = await Promise.all([
           eventManagerApi.getStats(),
-          eventManagerApi.getUpcomingEvents()
+          eventManagerApi.getUpcomingEvents(),
+          eventManagerApi.getRecentCertificates()
         ]);
 
         if (statsRes.success && statsRes.data) {
@@ -70,6 +72,10 @@ const EventManagerDashboard: React.FC = () => {
 
         if (eventsRes.success && eventsRes.data) {
           setUpcomingEvents(eventsRes.data.events);
+        }
+
+        if (certRes.success && certRes.data) {
+          setRecentCertificates(certRes.data.certificates || []);
         }
       } catch (err) {
         console.error("Dashboard fetch error:", err);
@@ -165,25 +171,24 @@ const EventManagerDashboard: React.FC = () => {
               </button>
             </div>
             <div style={{ padding: '16px' }}>
-               {[
-                 { name: 'Annual Alumni Meet Final Report', date: 'March 20, 2024', size: '2.4 MB' },
-                 { name: 'Technical Workshop Registration List', date: 'March 18, 2024', size: '1.1 MB' },
-               ].map((file, idx) => (
-                 <div key={idx} style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: idx === 0 ? '1px solid #f8fafc' : 'none' }}>
-                   <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                      <div style={{ padding: '10px', background: 'rgba(35, 49, 103, 0.05)', color: brandPrimary, borderRadius: '12px' }}>
-                        <FileText size={20} />
-                      </div>
-                      <div>
-                        <div style={{ fontWeight: 700, color: '#1e293b', fontSize: '15px' }}>{file.name}</div>
-                        <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 500 }}>{file.date} • {file.size}</div>
-                      </div>
-                   </div>
-                   <button style={{ padding: '8px 16px', borderRadius: '10px', background: '#f8fafc', border: '1px solid #e2e8f0', color: '#475569', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
-                      Download
-                   </button>
+               {recentCertificates.length > 0 ? recentCertificates.map((cert, idx) => (
+                 <div key={cert.id || idx} style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: idx < recentCertificates.length - 1 ? '1px solid #f8fafc' : 'none' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                       <div style={{ padding: '10px', background: 'rgba(35, 49, 103, 0.05)', color: brandPrimary, borderRadius: '12px' }}>
+                         <FileText size={20} />
+                       </div>
+                       <div>
+                         <div style={{ fontWeight: 700, color: '#1e293b', fontSize: '15px' }}>{cert.user_name} - Certificate</div>
+                         <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 500 }}>{cert.event_name} • {cert.date}</div>
+                       </div>
+                    </div>
+                    <div style={{ padding: '4px 12px', borderRadius: '8px', background: '#f0fdf4', color: '#16a34a', fontSize: '11px', fontWeight: 800 }}>
+                       ISSUED
+                    </div>
                  </div>
-               ))}
+               )) : (
+                 <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>No certificates issued recently.</div>
+               )}
             </div>
           </section>
         </div>
@@ -197,7 +202,7 @@ const EventManagerDashboard: React.FC = () => {
           
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ position: 'relative', width: '180px', height: '180px', border: '12px solid rgba(255,255,255,0.05)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ fontSize: '32px', fontWeight: 800 }}>84%</div>
+              <div style={{ fontSize: '32px', fontWeight: 800 }}>{distribution.length > 0 ? distribution[0].value : '0%'}</div>
               <div style={{ position: 'absolute', top: '-12px', left: '-12px', right: '-12px', bottom: '-12px', border: '12px solid #0ea5e9', borderRadius: '50%', clipPath: 'polygon(50% 50%, -20% -20%, 120% -20%, 120% 120%)', transform: 'rotate(20deg)' }}></div>
             </div>
           </div>
@@ -205,15 +210,17 @@ const EventManagerDashboard: React.FC = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {isLoading ? (
               [1, 2, 3].map(i => <div key={i} style={{ height: '20px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px' }} className="skeleton-pulse" />)
-            ) : distribution.map((item) => (
+            ) : distribution.length > 0 ? distribution.map((item) => (
               <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ width: '12px', height: '12px', borderRadius: '4px', background: item.color }}></div>
+                  <div style={{ width: '12px', height: '12px', borderRadius: '4px', background: item.color || '#fff' }}></div>
                   <span style={{ fontSize: '14px', fontWeight: 500 }}>{item.label}</span>
                 </div>
                 <span style={{ fontSize: '14px', fontWeight: 700 }}>{item.value}</span>
               </div>
-            ))}
+            )) : (
+              <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.6)' }}>No distribution data</div>
+            )}
           </div>
         </section>
       </div>

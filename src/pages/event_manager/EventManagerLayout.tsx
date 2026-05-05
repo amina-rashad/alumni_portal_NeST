@@ -3,7 +3,7 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   LayoutDashboard, Calendar, Users, BarChart3, Settings, 
-  LogOut, Bell, Menu, X, ChevronDown, UserCheck, ArrowLeft, ImagePlus
+  LogOut, Bell, Menu, X, ChevronDown, UserCheck, ArrowLeft, ImagePlus, Activity
 } from 'lucide-react';
 import nestMainLogo from '../../assets/nest_logo.png';
 import { getUser, authApi, notificationsApi, type AuthUser } from '../../services/api';
@@ -297,6 +297,27 @@ const EventManagerLayout: React.FC = () => {
           </Link>
 
           <Link
+            to="/event-manager/community-feed"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 16px',
+              borderRadius: '12px',
+              textDecoration: 'none',
+              color: location.pathname === '/event-manager/community-feed' ? brandPrimary : '#334155',
+              background: location.pathname === '/event-manager/community-feed' ? 'rgba(35, 49, 103, 0.05)' : 'transparent',
+              fontWeight: location.pathname === '/event-manager/community-feed' ? 700 : 500,
+              fontSize: '13.5px',
+              transition: 'all 0.15s',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <Activity size={17} style={{ color: location.pathname === '/event-manager/community-feed' ? brandPrimary : '#64748b' }} />
+            Career Timelines
+          </Link>
+
+          <Link
             to="/event-manager/events"
             style={{
               display: 'flex',
@@ -550,7 +571,7 @@ const EventManagerLayout: React.FC = () => {
                     border: '1px solid #f1f5f9', padding: '6px', zIndex: 9999,
                   }}
                 >
-                  <Link to="/profile" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', textDecoration: 'none', color: '#334155', fontSize: '14px' }}> <Users size={16} /> View Profile </Link>
+                  <Link to="/event-manager/profile" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', textDecoration: 'none', color: '#334155', fontSize: '14px' }}> <Users size={16} /> View Profile </Link>
                   <Link to="/event-manager/settings" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', textDecoration: 'none', color: '#334155', fontSize: '14px' }}> <Settings size={16} /> Module Settings </Link>
                   <div style={{ height: '1px', background: '#f1f5f9', margin: '4px 8px' }} />
                   <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', width: '100%', textAlign: 'left', color: '#ef4444', fontSize: '14px', fontWeight: 600, border: 'none', background: 'none', cursor: 'pointer' }}> <LogOut size={16} /> Logout </button>

@@ -1,219 +1,362 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Plus, 
-  Search, 
-  Filter, 
-  MoreVertical, 
-  Eye, 
-  Edit3, 
-  Trash2,
-  Users,
-  Clock,
-  BookOpen,
-  Loader2,
-  AlertCircle,
-  ChevronRight
+  Plus, Search, Filter, MoreVertical, 
+  BookOpen, Users, Clock, Edit3, Trash2,
+  ChevronDown, ExternalLink, Star, TrendingUp,
+  AlertCircle, Loader2, Info, ArrowUpRight
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { courseManagerAPI } from '../../services/api';
-import { motion } from 'framer-motion';
 
-interface Course {
-  id: number;
-  title: string;
-  level: string;
-  duration: string;
-  students: number;
-  status: string;
-}
+const GlassSelect: React.FC<{
+  label: string;
+  options: string[];
+  value: string;
+  onChange: (val: string) => void;
+}> = ({ label, options, value, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const brandPrimary = '#c8102e';
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', position: 'relative' }} ref={dropdownRef}>
+      <label style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</label>
+      <div 
+        onClick={() => setIsOpen(!isOpen)}
+        style={{ 
+          padding: '12px 16px', 
+          borderRadius: '14px', 
+          border: '1px solid #e2e8f0', 
+          background: '#fff', 
+          fontSize: '14px', 
+          width: '100%', 
+          color: '#1e293b', 
+          fontWeight: 700, 
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          transition: 'all 0.2s ease'
+        }}
+      >
+        {value}
+        <ChevronDown size={14} color="#94a3b8" style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }} />
+      </div>
+
+      {isOpen && (
+        <div style={{ 
+          position: 'absolute', 
+          top: '105%', 
+          left: 0, 
+          right: 0, 
+          zIndex: 100, 
+          background: '#fff', 
+          borderRadius: '14px', 
+          border: '1px solid #e2e8f0', 
+          boxShadow: '0 10px 30px rgba(0,0,0,0.08)',
+          overflow: 'hidden',
+          padding: '6px'
+        }}>
+          {options.map((opt) => (
+            <div 
+              key={opt}
+              onClick={() => {
+                onChange(opt);
+                setIsOpen(false);
+              }}
+              style={{ 
+                padding: '10px 14px', 
+                fontSize: '13px', 
+                fontWeight: 600, 
+                color: value === opt ? brandPrimary : '#475569',
+                background: value === opt ? 'rgba(200, 16, 46, 0.05)' : 'transparent',
+                borderRadius: '10px',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              {opt}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const CM_Courses: React.FC = () => {
   const navigate = useNavigate();
+  const brandPrimary = '#c8102e';
   
-  const [courses, setCourses] = useState<Course[]>([]);
+  const [courses, setCourses] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeLevel, setActiveLevel] = useState('All Levels');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [menuOpenId, setMenuOpenId] = useState<number | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const loadCourses = async () => {
       try {
         setIsLoading(true);
         const response = await courseManagerAPI.fetchCourses();
-        setCourses(response.data);
+        setCourses(response.data || []);
       } catch (err) {
-        setError('Failed to load courses. Please try again later.');
+        setError('Failed to load courses.');
       } finally {
         setIsLoading(false);
       }
     };
-
     loadCourses();
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpenId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
-  const getLevelColor = (level: string) => {
-    switch (level) {
-      case 'Advanced': return 'bg-red-50 text-[#c8102e] border-red-100';
-      case 'Intermediate': return 'bg-blue-50 text-blue-600 border-blue-100';
-      case 'Beginner': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
-      default: return 'bg-slate-50 text-slate-600 border-slate-100';
+  const filteredCourses = courses.filter(course => {
+    const matchesSearch = course.title.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesLevel = activeLevel === 'All Levels' || course.level === activeLevel;
+    return matchesSearch && matchesLevel;
+  });
+
+  const handleDelete = async (id: number) => {
+    if (window.confirm('Are you sure you want to delete this program?')) {
+      // API call would go here
+      setCourses(prev => prev.filter(c => c.id !== id));
     }
   };
 
   return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 font-['Inter',sans-serif] pb-12">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h1 className="text-4xl font-black text-[#1e293b] tracking-tight">Course Portfolio</h1>
-          <p className="text-slate-500 font-medium mt-1">Strategic oversight of all academic programs and enrollments.</p>
+          <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#1e293b', margin: '0 0 8px 0' }}>Course Portfolio</h1>
+          <p style={{ margin: 0, color: '#64748b', fontWeight: 500 }}>Strategic oversight of all academic programs and curriculum.</p>
         </div>
-        <motion.button 
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+        <button 
           onClick={() => navigate('/course-manager/courses/create')}
-          className="flex items-center justify-center gap-3 px-8 py-4 bg-[#c8102e] text-white rounded-2xl font-black shadow-xl shadow-red-900/20 hover:bg-[#a00d25] transition-all"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '12px 24px',
+            borderRadius: '14px',
+            background: brandPrimary,
+            color: '#fff',
+            border: 'none',
+            fontWeight: 700,
+            cursor: 'pointer',
+            boxShadow: '0 10px 20px rgba(200, 16, 46, 0.2)'
+          }}
         >
-          <Plus size={20} strokeWidth={3} />
-          Create Program
-        </motion.button>
+          <Plus size={18} /> Create Program
+        </button>
       </div>
 
-      {/* Filters & Search */}
-      <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-xl shadow-slate-200/30 flex flex-col md:flex-row gap-6 items-center">
-        <div className="relative flex-1 group w-full">
-          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#c8102e] transition-colors" />
+      {/* Filters Bar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', padding: '16px 24px', borderRadius: '24px', border: '1px solid #e2e8f0' }}>
+        <div style={{ position: 'relative', flex: 1, maxWidth: '400px' }}>
+          <Search size={18} color="#94a3b8" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
           <input 
             type="text" 
-            placeholder="Search programs by title, stack, or level..." 
-            className="w-full bg-slate-50 border border-slate-100 py-4 pl-12 pr-4 rounded-2xl text-sm focus:outline-none focus:ring-4 focus:ring-red-500/5 focus:border-red-500/30 transition-all font-bold text-[#1e293b] placeholder:text-slate-400"
+            placeholder="Search programs..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ 
+              padding: '12px 16px 12px 48px', 
+              borderRadius: '14px', 
+              border: '1px solid #e2e8f0', 
+              background: '#f8fafc', 
+              fontSize: '14px', 
+              width: '100%', 
+              outline: 'none',
+              fontWeight: 600
+            }}
           />
         </div>
-        <div className="flex gap-4 w-full md:w-auto">
-          <button className="flex-1 md:flex-none flex items-center justify-center gap-3 px-6 py-4 bg-white border border-slate-100 rounded-2xl text-[#1e293b] font-black text-sm hover:bg-slate-50 transition-all shadow-sm">
-            <Filter size={18} />
-            Advanced Filters
-          </button>
-          <div className="relative flex-1 md:flex-none">
-            <select className="w-full px-6 py-4 bg-white border border-slate-100 rounded-2xl text-[#1e293b] font-black text-sm hover:bg-slate-50 transition-all shadow-sm appearance-none cursor-pointer focus:outline-none pr-12">
-              <option>Sort: Recent First</option>
-              <option>Sort: Highest Enrollment</option>
-              <option>Sort: Level (A-Z)</option>
-            </select>
-            <ChevronRight size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 rotate-90" />
+
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+          <div style={{ width: '180px' }}>
+             <GlassSelect 
+               label="Difficulty Level" 
+               options={['All Levels', 'Beginner', 'Intermediate', 'Advanced']} 
+               value={activeLevel} 
+               onChange={setActiveLevel} 
+             />
           </div>
+          <button style={{ padding: '12px', borderRadius: '14px', border: '1px solid #e2e8f0', background: '#fff', color: '#64748b', cursor: 'pointer' }}>
+            <Filter size={18} />
+          </button>
         </div>
       </div>
 
-      {/* Course Table */}
-      <div className="bg-white rounded-[40px] border border-slate-100 shadow-xl shadow-slate-200/40 overflow-hidden">
-        {error && (
-          <div className="p-6 bg-red-50 text-[#c8102e] font-bold flex items-center gap-3 m-6 rounded-2xl border border-red-100">
-            <AlertCircle size={20} /> {error}
-          </div>
-        )}
-        
-        <div className="overflow-x-auto relative min-h-[400px]">
+      {/* Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '24px' }}>
+        <AnimatePresence mode="popLayout">
           {isLoading ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/90 backdrop-blur-sm z-10">
-              <div className="relative">
-                <Loader2 size={48} className="animate-spin text-[#c8102e]" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <BookOpen size={16} className="text-[#1a2652]" />
+            Array(6).fill(0).map((_, i) => (
+              <div key={i} style={{ height: '300px', background: '#fff', borderRadius: '28px', border: '1px solid #e2e8f0', padding: '24px' }} className="skeleton-pulse">
+                <div style={{ height: '40px', width: '40px', borderRadius: '12px', background: '#f1f5f9', marginBottom: '20px' }}></div>
+                <div style={{ height: '24px', width: '70%', background: '#f1f5f9', marginBottom: '12px' }}></div>
+                <div style={{ height: '16px', width: '40%', background: '#f1f5f9' }}></div>
+              </div>
+            ))
+          ) : filteredCourses.length === 0 ? (
+            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '80px 0', background: '#f8fafc', borderRadius: '32px', border: '2px dashed #e2e8f0' }}>
+               <BookOpen size={48} color="#cbd5e1" style={{ marginBottom: '16px' }} />
+               <h3 style={{ margin: 0, color: '#1e293b', fontWeight: 800 }}>No programs found</h3>
+               <p style={{ color: '#64748b', fontSize: '14px' }}>Try adjusting your filters or search query.</p>
+            </div>
+          ) : filteredCourses.map((course) => (
+            <motion.div
+              key={course.id}
+              layout
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              whileHover={{ y: -5 }}
+              style={{
+                background: '#fff',
+                borderRadius: '28px',
+                border: '1px solid #e2e8f0',
+                padding: '24px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '20px',
+                position: 'relative'
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ 
+                  width: '48px', 
+                  height: '48px', 
+                  borderRadius: '16px', 
+                  background: 'rgba(200, 16, 46, 0.05)', 
+                  color: brandPrimary,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <BookOpen size={24} />
+                </div>
+                <div style={{ position: 'relative' }}>
+                  <button 
+                    onClick={() => setMenuOpenId(menuOpenId === course.id ? null : course.id)}
+                    style={{ padding: '8px', borderRadius: '10px', background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+                  >
+                    <MoreVertical size={20} />
+                  </button>
+                  <AnimatePresence>
+                    {menuOpenId === course.id && (
+                      <motion.div
+                        ref={menuRef}
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        style={{ position: 'absolute', top: '100%', right: 0, background: '#fff', borderRadius: '14px', border: '1px solid #e2e8f0', boxShadow: '0 10px 40px rgba(0,0,0,0.1)', padding: '6px', zIndex: 10, width: '160px' }}
+                      >
+                        <button onClick={() => navigate(`/course-manager/courses/edit/${course.id}`)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: 'none', background: 'none', textAlign: 'left', fontSize: '13px', fontWeight: 600, color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Edit3 size={14} /> Edit Program
+                        </button>
+                        <button onClick={() => handleDelete(course.id)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: 'none', background: 'none', textAlign: 'left', fontSize: '13px', fontWeight: 600, color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Trash2 size={14} /> Delete
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
-              <span className="text-[#1a2652] font-black text-sm mt-4 uppercase tracking-widest">Synchronizing Portfolio</span>
-            </div>
-          ) : (
-          <table className="w-full text-left border-collapse min-w-[1000px]">
-            <thead>
-              <tr className="bg-slate-50/50 border-b border-slate-50">
-                <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Academic Program</th>
-                <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Difficulty</th>
-                <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Duration</th>
-                <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Active Enrollment</th>
-                <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Operations</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {courses.map((course) => (
-                <tr key={course.id} className="hover:bg-slate-50/30 transition-colors group">
-                  <td className="px-10 py-8">
-                    <div className="flex items-center gap-5">
-                      <div className="w-14 h-14 bg-[#1a2652] rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-900/10 group-hover:bg-[#c8102e] transition-colors">
-                        <BookOpen size={24} />
-                      </div>
-                      <div>
-                        <div className="font-black text-[#1e293b] text-lg leading-tight">{course.title}</div>
-                        <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1.5 flex items-center gap-2">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                          Full Development Track
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-10 py-8">
-                    <span className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border ${getLevelColor(course.level)}`}>
-                      {course.level}
-                    </span>
-                  </td>
-                  <td className="px-10 py-8">
-                    <div className="flex items-center gap-2 text-[#1e293b] font-bold text-sm">
-                      <Clock size={16} className="text-[#c8102e]" />
-                      {course.duration}
-                    </div>
-                  </td>
-                  <td className="px-10 py-8">
-                    <div className="flex items-center gap-3">
-                      <div className="flex -space-x-2">
-                        {[1,2,3].map(i => (
-                          <div key={i} className="w-7 h-7 rounded-full border-2 border-white bg-slate-100 overflow-hidden">
-                            <img src={`https://i.pravatar.cc/100?img=${i+20}`} alt="Student" />
-                          </div>
-                        ))}
-                      </div>
-                      <div className="text-[#1e293b] font-black text-sm">
-                        {course.students.toLocaleString()} <span className="text-slate-400 font-bold ml-1">Students</span>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-10 py-8 text-right">
-                    <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-all">
-                      <motion.button whileHover={{ scale: 1.1 }} className="p-2.5 text-slate-300 hover:text-[#1a2652] hover:bg-slate-100 rounded-xl transition-all" title="View Analytics">
-                        <Eye size={20} />
-                      </motion.button>
-                      <motion.button whileHover={{ scale: 1.1 }} className="p-2.5 text-slate-300 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all" title="Modify Program">
-                        <Edit3 size={20} />
-                      </motion.button>
-                      <motion.button whileHover={{ scale: 1.1 }} className="p-2.5 text-slate-300 hover:text-[#c8102e] hover:bg-red-50 rounded-xl transition-all" title="Decommission Program">
-                        <Trash2 size={20} />
-                      </motion.button>
-                    </div>
-                    <div className="group-hover:hidden">
-                       <MoreVertical size={20} className="text-slate-200 ml-auto" />
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          )}
-        </div>
-        
-        {/* Pagination */}
-        <div className="p-8 border-t border-slate-50 flex items-center justify-between bg-slate-50/20">
-          <span className="text-xs text-slate-400 font-bold uppercase tracking-widest">
-            Visualizing <span className="text-[#1a2652]">{courses.length}</span> of <span className="text-[#1a2652]">24</span> Strategic Programs
-          </span>
-          <div className="flex gap-4">
-            <button className="px-6 py-3 border border-slate-100 rounded-xl text-xs font-black text-slate-300 cursor-not-allowed bg-white">Previous Track</button>
-            <button className="px-6 py-3 bg-white border border-slate-100 rounded-xl text-xs font-black text-[#1a2652] hover:bg-red-50 hover:text-[#c8102e] transition-all shadow-sm">Next Track</button>
-          </div>
-        </div>
+
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                  <span style={{ 
+                    fontSize: '10px', 
+                    fontWeight: 800, 
+                    textTransform: 'uppercase', 
+                    padding: '4px 10px', 
+                    borderRadius: '8px', 
+                    background: course.level === 'Advanced' ? '#fff1f1' : course.level === 'Intermediate' ? '#eff6ff' : '#ecfdf5',
+                    color: course.level === 'Advanced' ? '#c8102e' : course.level === 'Intermediate' ? '#3b82f6' : '#10b981'
+                  }}>
+                    {course.level}
+                  </span>
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8' }}>{course.duration}</span>
+                </div>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#1e293b', lineHeight: 1.3 }}>{course.title}</h3>
+              </div>
+
+              <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '20px', marginTop: 'auto' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 700, color: '#475569' }}>
+                    <Users size={16} /> {course.students?.toLocaleString() || 0} Learners
+                  </div>
+                  <div style={{ fontSize: '12px', fontWeight: 800, color: brandPrimary }}>
+                    Active
+                  </div>
+                </div>
+                <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: '65%', background: brandPrimary, borderRadius: '3px' }}></div>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => navigate(`/course-manager/courses/${course.id}`)}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  borderRadius: '12px',
+                  border: '1px solid #e2e8f0',
+                  background: '#fff',
+                  color: '#1e293b',
+                  fontWeight: 700,
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = brandPrimary;
+                  e.currentTarget.style.color = '#fff';
+                  e.currentTarget.style.borderColor = brandPrimary;
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = '#fff';
+                  e.currentTarget.style.color = '#1e293b';
+                  e.currentTarget.style.borderColor = '#e2e8f0';
+                }}
+              >
+                Manage Track <ArrowUpRight size={16} />
+              </button>
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
     </div>
   );
 };
 
 export default CM_Courses;
-

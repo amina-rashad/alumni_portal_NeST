@@ -9,6 +9,7 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from app import get_db
+from .notifications import create_notification
 
 social_bp = Blueprint("social", __name__)
 
@@ -20,6 +21,7 @@ def _serialize_post(post: dict, db=None, current_user_id=None) -> dict:
         "author_id": str(post.get("author_id", "")),
         "content": post.get("content", ""),
         "image_url": post.get("image_url"),
+        "video_url": post.get("video_url"),
         "likes_count": len(post.get("likes", [])),
         "comments_count": len(post.get("comments", [])),
         "is_liked": False,
@@ -103,12 +105,32 @@ def create_post():
         "author_id": ObjectId(user_id),
         "content": data["content"].strip(),
         "image_url": data.get("image_url"),
+        "video_url": data.get("video_url"),
         "likes": [],
         "comments": [],
         "created_at": datetime.now(timezone.utc),
     }
 
     result = db["posts"].insert_one(post_doc)
+    
+    # Notify all users about new community post
+    try:
+        user = db["users"].find_one({"_id": ObjectId(user_id)})
+        author_name = user.get("full_name", "Someone")
+        
+        # Notify everyone except the author
+        users_cursor = db["users"].find({"_id": {"$ne": ObjectId(user_id)}}, {"_id": 1})
+        for u in users_cursor:
+            create_notification(
+                db,
+                user_id=u["_id"],
+                type_str="social",
+                title="New Community Feed",
+                message=f"{author_name} shared a new post: '{post_doc['content'][:50]}...'",
+                link="/community"
+            )
+    except Exception as e:
+        print(f"Social notification error: {e}")
 
     return jsonify({
         "success": True,

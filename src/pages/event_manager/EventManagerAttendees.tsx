@@ -3,24 +3,44 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, Search, Filter, Download as DownloadIcon, 
   MoreHorizontal, Mail, MapPin, Calendar, UserCheck, UserX,
-  Video, Hash, Eye, Edit2, XCircle, CheckCircle, Trash2, X, Send
+  Video, Hash, Eye, Edit2, XCircle, CheckCircle, Trash2, X, Send, Loader2, FileText
 } from 'lucide-react';
+import { jsPDF } from 'jspdf';
+import { eventManagerApi } from '../../services/api';
+import { toast } from 'react-hot-toast';
 
-const attendeesData = [
-  { id: 1, pId: 'EV-1001', name: 'Adithya S', event: 'Global Alumni Meet 2024', email: 'adithya@example.com', mode: 'Offline', status: 'Attended', date: '2024-03-20', city: 'Kochi' },
-  { id: 2, pId: 'EV-1002', name: 'Meera Nair', event: 'Tech Talk: Future of AI', email: 'meera@example.com', mode: 'Online', status: 'Not Attended', date: '2024-03-21', city: 'Virtual' },
-  { id: 3, pId: 'EV-1003', name: 'Rahul Krishnan', event: 'Global Alumni Meet 2024', email: 'rahul@example.com', mode: 'Offline', status: 'Attended', date: '2024-03-20', city: 'Bangalore' },
-  { id: 4, pId: 'EV-1004', name: 'Sneha Joseph', event: 'Web Development Workshop', email: 'sneha@example.com', mode: 'Online', status: 'Not Attended', date: '2024-03-25', city: 'Virtual' },
-  { id: 5, pId: 'EV-1005', name: 'Kevin Thomas', event: 'Tech Talk: Future of AI', email: 'kevin@example.com', mode: 'Online', status: 'Attended', date: '2024-03-21', city: 'Virtual' },
-];
+interface Attendee {
+  id: string;
+  userId: string;
+  eventId: string;
+  pId: string;
+  name: string;
+  email: string;
+  event: string;
+  date: string;
+  time: string;
+  mode: string;
+  city: string;
+  status: 'Registered' | 'Attended' | 'Not Attended';
+  type: string;
+  is_certificate_issued: boolean;
+}
 
 const EventManagerAttendees: React.FC = () => {
+  const [attendees, setAttendees] = useState<Attendee[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState({
+    total: 0,
+    attended: 0,
+    notAttended: 0,
+    upcoming: 0
+  });
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [modeFilter, setModeFilter] = useState('All');
   const [showFilters, setShowFilters] = useState(false);
-  const [menuOpenId, setMenuOpenId] = useState<number | null>(null);
-  const [selectedAttendeeForEmail, setSelectedAttendeeForEmail] = useState<any>(null);
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [selectedAttendeeForEmail, setSelectedAttendeeForEmail] = useState<Attendee | null>(null);
   const [emailSubject, setEmailSubject] = useState('');
   const [emailMessage, setEmailMessage] = useState('');
   
@@ -28,7 +48,35 @@ const EventManagerAttendees: React.FC = () => {
   const filterRef = useRef<HTMLDivElement>(null);
   const brandPrimary = '#233167';
 
+  const fetchAttendees = async () => {
+    setIsLoading(true);
+    try {
+      const res = await eventManagerApi.getAttendees();
+      if (res.success && res.data) {
+        const data = res.data.attendees || [];
+        setAttendees(data);
+        
+        // Calculate stats
+        const total = data.length;
+        const attended = data.filter((a: Attendee) => a.status === 'Attended').length;
+        const upcoming = data.filter((a: Attendee) => new Date(a.date) > new Date()).length;
+        
+        setStats({
+          total,
+          attended,
+          notAttended: total - attended,
+          upcoming
+        });
+      }
+    } catch (err) {
+      console.error("Failed to fetch attendees:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
+    fetchAttendees();
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setMenuOpenId(null);
@@ -41,7 +89,7 @@ const EventManagerAttendees: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const filteredAttendees = attendeesData.filter((attendee) => {
+  const filteredAttendees = attendees.filter((attendee) => {
     const matchesSearch = 
       attendee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       attendee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -53,38 +101,209 @@ const EventManagerAttendees: React.FC = () => {
     return matchesSearch && matchesStatus && matchesMode;
   });
 
+  const handleToggleAttendance = async (attendee: Attendee) => {
+    try {
+      const res = await eventManagerApi.toggleAttendance(attendee.eventId, attendee.userId);
+      if (res.success) {
+        toast.success(res.message || "Status updated");
+        fetchAttendees(); // Refresh list
+      } else {
+        toast.error(res.message || "Failed to update status");
+      }
+    } catch (error) {
+      toast.error("Failed to update status");
+    }
+  };
+
+  const handleRemoveRegistration = async (attendee: Attendee) => {
+    if (!confirm(`Are you sure you want to remove ${attendee.name} from ${attendee.event}?`)) return;
+    
+    try {
+      const res = await eventManagerApi.removeRegistration(attendee.eventId, attendee.userId);
+      if (res.success) {
+        toast.success(res.message || "Registration removed");
+        fetchAttendees(); // Refresh list
+      } else {
+        toast.error(res.message || "Failed to remove registration");
+      }
+    } catch (error) {
+      toast.error("Failed to remove record");
+    }
+  };
+
+  const handleIssueCertificate = async (attendee: Attendee) => {
+    if (attendee.status !== 'Attended') {
+      toast.error("Certificates can only be issued to participants who attended the event.");
+      return;
+    }
+    
+    if (!confirm(`Are you sure you want to issue a certificate to ${attendee.name} for ${attendee.event}?`)) return;
+    
+    try {
+      const res = await eventManagerApi.issueCertificate(attendee.eventId, attendee.userId);
+      if (res.success) {
+        toast.success("Certificate issued successfully!");
+        fetchAttendees(); // Refresh list
+      } else {
+        toast.error(res.message || "Failed to issue certificate");
+      }
+    } catch (error) {
+      toast.error("Failed to issue certificate");
+    }
+  };
+
+  const handleExportPDF = () => {
+    if (filteredAttendees.length === 0) {
+      alert("No data available to export.");
+      return;
+    }
+
+    const doc = new jsPDF();
+    const brandColor = "#233167";
+    
+    // Add Header
+    doc.setFillColor(35, 49, 103); // brandPrimary
+    doc.rect(0, 0, 210, 40, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(22);
+    doc.setFont("helvetica", "bold");
+    doc.text("NeST Alumni Portal", 20, 20);
+    
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "normal");
+    doc.text("Event Registration & Attendance Report", 20, 30);
+    doc.text(`Generated on: ${new Date().toLocaleString()}`, 140, 30);
+
+    // Table Header
+    doc.setTextColor(0, 0, 0);
+    doc.setFillColor(248, 250, 252);
+    doc.rect(10, 50, 190, 10, 'F');
+    
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("Name", 15, 57);
+    doc.text("Event", 70, 57);
+    doc.text("Mode", 130, 57);
+    doc.text("Status", 160, 57);
+    doc.text("Type", 185, 57);
+
+    // Table Content
+    doc.setFont("helvetica", "normal");
+    let y = 70;
+    
+    filteredAttendees.forEach((a, index) => {
+      if (y > 280) {
+        doc.addPage();
+        y = 20;
+      }
+      
+      // Zebra striping
+      if (index % 2 === 0) {
+        doc.setFillColor(252, 252, 252);
+        doc.rect(10, y - 5, 190, 10, 'F');
+      }
+
+      doc.text(a.name.substring(0, 25), 15, y);
+      doc.text(a.event.substring(0, 30), 70, y);
+      doc.text(a.mode, 130, y);
+      doc.text(a.status, 160, y);
+      doc.text(a.type, 185, y);
+      
+      y += 10;
+    });
+
+    // Footer
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text(`Page ${i} of ${pageCount} - NeST Alumni Portal Management`, 105, 290, { align: "center" });
+    }
+
+    doc.save(`attendees_report_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
+  const isAttendanceAllowed = (dateStr: string, timeStr: string) => {
+    if (!dateStr) return true;
+    
+    try {
+      // Standardize date parsing (handle YYYY-MM-DD or DD-MM-YYYY)
+      let year, month, day;
+      if (dateStr.includes('-')) {
+        const parts = dateStr.split('-');
+        if (parts[0].length === 4) {
+          // YYYY-MM-DD
+          [year, month, day] = parts.map(Number);
+        } else {
+          // DD-MM-YYYY
+          [day, month, year] = parts.map(Number);
+        }
+      } else {
+        return true; 
+      }
+
+      const eventDate = new Date(year, month - 1, day);
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      if (eventDate < today) return true; // Past date
+      if (eventDate > today) return false; // Future date
+      
+      // Today, check time
+      if (!timeStr) return true;
+      
+      const timeParts = timeStr.split(' ');
+      const [hours, minutes] = (timeParts[0] || "00:00").split(':').map(Number);
+      const period = timeParts[1] || 'AM';
+      
+      let eventHours = hours;
+      if (period === 'PM' && hours < 12) eventHours += 12;
+      if (period === 'AM' && hours === 12) eventHours = 0;
+      
+      const eventTime = new Date(year, month - 1, day, eventHours, minutes);
+      return now >= eventTime;
+    } catch (e) {
+      return true; // Fallback to allowed if parsing fails
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Header Section */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#1e293b', margin: 0, fontFamily: "'Montserrat', sans-serif" }}>Attendee Management</h1>
-          <p style={{ color: '#64748b', marginTop: '4px' }}>Monitor and manage all event participants in one place.</p>
+          <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#1e293b', margin: 0, fontFamily: "'Montserrat', sans-serif" }}>Registration & Attendance</h1>
+          <p style={{ color: '#64748b', marginTop: '4px' }}>Track registered participants, manage check-ins, and communicate with attendees across all your events.</p>
         </div>
-        <button style={{ 
-          background: brandPrimary, 
-          color: '#fff', 
-          padding: '12px 20px', 
-          borderRadius: '12px', 
-          border: 'none', 
-          fontWeight: 600, 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: '8px',
-          cursor: 'pointer',
-          boxShadow: `0 4px 14px 0 rgba(79, 70, 229, 0.39)`
-        }}>
-          <DownloadIcon size={18} /> Export List
+        <button 
+          onClick={handleExportPDF}
+          style={{ 
+            background: brandPrimary, 
+            color: '#fff', 
+            padding: '12px 20px', 
+            borderRadius: '12px', 
+            border: 'none', 
+            fontWeight: 600, 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '8px',
+            cursor: 'pointer',
+            boxShadow: `0 4px 14px 0 rgba(79, 70, 229, 0.39)`
+          }}
+        >
+          <FileText size={18} /> Export PDF
         </button>
       </div>
 
       {/* Stats Quick View */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
         {[
-          { label: 'Total Participants', value: '1,280', icon: <Users size={24} />, color: brandPrimary },
-          { label: 'Total Attended', value: '945', icon: <UserCheck size={24} />, color: '#10b981' },
-          { label: 'Total Not Attended', value: '335', icon: <UserX size={24} />, color: '#ef4444' },
-          { label: 'Upcoming', value: '312', icon: <Calendar size={24} />, color: '#f59e0b' },
+          { label: 'Total Participants', value: stats.total.toLocaleString(), icon: <Users size={24} />, color: brandPrimary },
+          { label: 'Total Attended', value: stats.attended.toLocaleString(), icon: <UserCheck size={24} />, color: '#10b981' },
+          { label: 'Total Not Attended', value: stats.notAttended.toLocaleString(), icon: <UserX size={24} />, color: '#ef4444' },
+          { label: 'Upcoming', value: stats.upcoming.toLocaleString(), icon: <Calendar size={24} />, color: '#f59e0b' },
         ].map((stat, idx) => (
           <div key={idx} style={{ background: '#fff', padding: '24px', borderRadius: '20px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '20px' }}>
             <div style={{ background: `${stat.color}15`, color: stat.color, padding: '12px', borderRadius: '15px' }}>
@@ -166,16 +385,26 @@ const EventManagerAttendees: React.FC = () => {
             <thead>
               <tr style={{ background: '#f8fafc' }}>
                 <th style={{ padding: '16px 24px', color: '#64748b', fontWeight: 600, fontSize: '13px', textTransform: 'uppercase' }}>ID</th>
-                <th style={{ padding: '16px 24px', color: '#64748b', fontWeight: 600, fontSize: '13px', textTransform: 'uppercase' }}>Name</th>
-                <th style={{ padding: '16px 24px', color: '#64748b', fontWeight: 600, fontSize: '13px', textTransform: 'uppercase' }}>Event</th>
-                <th style={{ padding: '16px 24px', color: '#64748b', fontWeight: 600, fontSize: '13px', textTransform: 'uppercase' }}>Mode</th>
-                <th style={{ padding: '16px 24px', color: '#64748b', fontWeight: 600, fontSize: '13px', textTransform: 'uppercase' }}>Location</th>
-                <th style={{ padding: '16px 24px', color: '#64748b', fontWeight: 600, fontSize: '13px', textTransform: 'uppercase' }}>Status</th>
+                <th style={{ padding: '16px 24px', color: '#64748b', fontWeight: 600, fontSize: '13px', textTransform: 'uppercase' }}>Participant</th>
+                <th style={{ padding: '16px 24px', color: '#64748b', fontWeight: 600, fontSize: '13px', textTransform: 'uppercase' }}>Registration Details</th>
+                <th style={{ padding: '16px 24px', color: '#64748b', fontWeight: 600, fontSize: '13px', textTransform: 'uppercase' }}>Event Info</th>
+                <th style={{ padding: '16px 24px', color: '#64748b', fontWeight: 600, fontSize: '13px', textTransform: 'uppercase' }}>Attendance Status</th>
                 <th style={{ padding: '16px 24px', color: '#64748b', fontWeight: 600, fontSize: '13px', textTransform: 'uppercase' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filteredAttendees.length > 0 ? (
+              {isLoading ? (
+                <tr>
+                  <td colSpan={7} style={{ padding: '60px', textAlign: 'center' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+                      <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}>
+                        <Loader2 size={32} color={brandPrimary} />
+                      </motion.div>
+                      <div style={{ fontSize: '14px', fontWeight: 600, color: '#64748b' }}>Fetching participant records...</div>
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredAttendees.length > 0 ? (
                 filteredAttendees.map((attendee) => (
                   <tr key={attendee.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.2s' }}>
                   <td style={{ padding: '20px 24px' }}>
@@ -189,15 +418,14 @@ const EventManagerAttendees: React.FC = () => {
                         {attendee.name.charAt(0)}
                       </div>
                       <div>
-                        <div style={{ fontWeight: 700, color: '#1e293b' }}>{attendee.name}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div style={{ fontWeight: 700, color: '#1e293b' }}>{attendee.name}</div>
+                          <span style={{ fontSize: '10px', fontWeight: 800, padding: '2px 6px', borderRadius: '6px', background: attendee.type === 'Alumni' ? '#eff6ff' : '#ecfdf5', color: attendee.type === 'Alumni' ? '#3b82f6' : '#10b981', textTransform: 'uppercase' }}>
+                            {attendee.type}
+                          </span>
+                        </div>
                         <div style={{ fontSize: '12px', color: '#64748b' }}>{attendee.email}</div>
                       </div>
-                    </div>
-                  </td>
-                  <td style={{ padding: '20px 24px' }}>
-                    <div style={{ color: '#475569', fontSize: '14px', fontWeight: 500 }}>{attendee.event}</div>
-                    <div style={{ fontSize: '12px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
-                      <Calendar size={12} /> {attendee.date}
                     </div>
                   </td>
                   <td style={{ padding: '20px 24px' }}>
@@ -205,21 +433,24 @@ const EventManagerAttendees: React.FC = () => {
                       display: 'flex', 
                       alignItems: 'center', 
                       gap: '6px', 
-                      color: attendee.mode === 'Online' ? '#10b981' : '#334155',
-                      fontSize: '13px',
-                      fontWeight: 600,
-                      background: attendee.mode === 'Online' ? '#10b98110' : '#f1f5f9',
-                      padding: '4px 10px',
-                      borderRadius: '8px',
-                      width: 'fit-content'
+                      color: attendee.mode.toLowerCase() === 'online' ? '#10b981' : '#334155',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      background: attendee.mode.toLowerCase() === 'online' ? '#10b98110' : '#f1f5f9',
+                      padding: '4px 8px',
+                      borderRadius: '6px',
+                      width: 'fit-content',
+                      textTransform: 'uppercase'
                     }}>
-                      {attendee.mode === 'Online' ? <Video size={14} /> : <MapPin size={14} />}
+                      {attendee.mode.toLowerCase() === 'online' ? <Video size={12} /> : <MapPin size={12} />}
                       {attendee.mode}
                     </div>
+                    <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>{attendee.city}</div>
                   </td>
                   <td style={{ padding: '20px 24px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b', fontSize: '14px' }}>
-                      {attendee.city}
+                    <div style={{ color: '#1e293b', fontSize: '14px', fontWeight: 700 }}>{attendee.event}</div>
+                    <div style={{ fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                      <Calendar size={12} /> {attendee.date}
                     </div>
                   </td>
                   <td style={{ padding: '20px 24px' }}>
@@ -267,24 +498,46 @@ const EventManagerAttendees: React.FC = () => {
                             }}
                           >
                              {[
-                               { label: 'View Details', icon: <Eye size={14} />, action: () => alert('Viewing attendee details...') },
-                               { label: 'Edit Information', icon: <Edit2 size={14} />, action: () => alert('Opening edit form...') },
                                { 
                                  label: attendee.status === 'Attended' ? 'Mark as Absent' : 'Mark as Attended', 
                                  icon: attendee.status === 'Attended' ? <XCircle size={14} /> : <CheckCircle size={14} />, 
-                                 action: () => alert('Status updated successfully!') 
+                                 action: () => {
+                                   if (attendee.status === 'Registered' && !isAttendanceAllowed(attendee.date, attendee.time)) {
+                                     toast.error(`Attendance can only be marked after ${attendee.date} ${attendee.time}`);
+                                     return;
+                                   }
+                                   handleToggleAttendance(attendee);
+                                 },
+                                 disabled: attendee.status === 'Registered' && !isAttendanceAllowed(attendee.date, attendee.time)
                                },
-                               { label: 'Remove Record', icon: <Trash2 size={14} />, action: () => { if(confirm('Are you sure you want to remove this record?')) alert('Record removed!'); }, danger: true },
+                               { 
+                                 label: attendee.is_certificate_issued ? 'Certificate Issued' : 'Issue Certificate', 
+                                 icon: <CheckCircle size={14} />, 
+                                 action: () => handleIssueCertificate(attendee),
+                                 disabled: attendee.is_certificate_issued || attendee.status !== 'Attended'
+                               },
+                               { 
+                                 label: 'Remove Record', 
+                                 icon: <Trash2 size={14} />, 
+                                 action: () => handleRemoveRegistration(attendee), 
+                                 danger: true 
+                               },
                              ].map((item, i) => (
                                <button 
                                  key={i}
+                                 disabled={(item as any).disabled}
                                  onClick={(e) => { e.stopPropagation(); item.action(); setMenuOpenId(null); }}
                                  style={{ 
                                    width: '100%', padding: '10px 14px', borderRadius: '10px', border: 'none', background: 'none', 
-                                   display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', fontWeight: 600, color: item.danger ? '#ef4444' : '#475569', 
-                                   cursor: 'pointer', textAlign: 'left'
+                                   display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', fontWeight: 600, 
+                                   color: (item as any).disabled ? '#cbd5e1' : (item.danger ? '#ef4444' : '#475569'), 
+                                   cursor: (item as any).disabled ? 'not-allowed' : 'pointer', textAlign: 'left'
                                  }}
-                                 onMouseEnter={e => e.currentTarget.style.background = item.danger ? '#fef2f2' : '#f8fafc'}
+                                 onMouseEnter={e => {
+                                   if (!(item as any).disabled) {
+                                     e.currentTarget.style.background = item.danger ? '#fef2f2' : '#f8fafc';
+                                   }
+                                 }}
                                  onMouseLeave={e => e.currentTarget.style.background = 'none'}
                                >
                                  {item.icon} {item.label}

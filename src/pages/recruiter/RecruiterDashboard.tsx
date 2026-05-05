@@ -33,6 +33,7 @@ const RecruiterDashboard: React.FC = () => {
     hired: 0,
     pending: 0
   });
+  const [pipeline, setPipeline] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -40,19 +41,26 @@ const RecruiterDashboard: React.FC = () => {
     const currentUser = getUser() as unknown as AuthUser;
     if (currentUser) setUserData(currentUser);
 
-    const fetchStats = async () => {
+    const fetchData = async () => {
       try {
-        const response = await recruiterApi.getStats();
-        if (response.success && response.data) {
-          setStats(response.data.stats);
+        const [statsRes, pipeRes] = await Promise.all([
+          recruiterApi.getStats(),
+          recruiterApi.getRecentApplications()
+        ]);
+        
+        if (statsRes.success && statsRes.data) {
+          setStats(statsRes.data.stats);
+        }
+        if (pipeRes.success && pipeRes.data) {
+          setPipeline(pipeRes.data.pipeline || []);
         }
       } catch (error) {
-        console.error('Error fetching recruiter stats:', error);
+        console.error('Error fetching recruiter dashboard data:', error);
       } finally {
         setLoading(false);
       }
     };
-    fetchStats();
+    fetchData();
   }, []);
 
   const statCards = [
@@ -194,12 +202,7 @@ const RecruiterDashboard: React.FC = () => {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {[
-              { role: 'Senior Software Engineer', candidates: 12, stage: 'Interviewing', status: 'high' },
-              { role: 'UI/UX Designer', candidates: 8, stage: 'Technical Assessment', status: 'medium' },
-              { role: 'Product Manager', candidates: 15, stage: 'Resume Screening', status: 'critical' },
-              { role: 'Data Scientist', candidates: 5, stage: 'Offer Phase', status: 'success' },
-            ].map((item, idx) => (
+            {pipeline.length > 0 ? pipeline.map((item, idx) => (
               <motion.div
                 key={idx}
                 variants={itemVariants}
@@ -212,7 +215,7 @@ const RecruiterDashboard: React.FC = () => {
                   </div>
                   <div>
                     <h4 style={{ margin: '0 0 2px 0', fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>{item.role}</h4>
-                    <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>{item.candidates} Active Candidates</p>
+                    <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>{item.candidates} New Candidate{item.candidates > 1 ? 's' : ''}</p>
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
@@ -224,13 +227,17 @@ const RecruiterDashboard: React.FC = () => {
                   <div style={{ width: '120px', height: '6px', background: '#f1f5f9', borderRadius: '3px', overflow: 'hidden' }}>
                     <motion.div
                       initial={{ width: 0 }}
-                      animate={{ width: item.status === 'high' ? '70%' : item.status === 'medium' ? '40%' : item.status === 'critical' ? '20%' : '95%' }}
+                      animate={{ width: item.status === 'success' ? '100%' : item.status === 'critical' ? '100%' : '50%' }}
                       style={{ height: '100%', background: item.status === 'success' ? '#10b981' : item.status === 'critical' ? '#ef4444' : '#1a2652' }}
                     />
                   </div>
                 </div>
               </motion.div>
-            ))}
+            )) : (
+              <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8', background: '#f8fafc', borderRadius: '20px', border: '1px dashed #e2e8f0' }}>
+                No active applications in the pipeline yet.
+              </div>
+            )}
           </div>
         </motion.section>
 
@@ -267,30 +274,7 @@ const RecruiterDashboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="luxury-card" style={{ padding: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700 }}>Top Talent Pool</h3>
-              <MoreHorizontal size={18} color="#94a3b8" />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {[
-                { name: 'Arun Kumar', role: 'Fullstack Dev', score: '98%' },
-                { name: 'Kavita Iyer', role: 'System Architect', score: '95%' },
-                { name: 'Siddharth M', role: 'Data Engineer', score: '92%' }
-              ].map((person, idx) => (
-                <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, color: '#64748b' }}>{person.name.charAt(0)}</div>
-                    <div>
-                      <p style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>{person.name}</p>
-                      <p style={{ margin: 0, fontSize: '11px', color: '#64748b' }}>{person.role}</p>
-                    </div>
-                  </div>
-                  <span style={{ fontSize: '12px', fontWeight: 800, color: '#10b981' }}>{person.score}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+
         </motion.div>
 
       </div>

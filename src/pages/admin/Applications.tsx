@@ -5,7 +5,7 @@ import {
   Download, Send, Eye, Brain
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { adminApi } from '../../services/api';
+import { adminApi, recruiterApi } from '../../services/api';
 
 interface Application {
   id: string;
@@ -18,38 +18,41 @@ interface Application {
   date: string;
   aiScore: number;
   matchQuality: 'High' | 'Medium' | 'Low';
-  status: 'Pending' | 'Reviewing' | 'Interview' | 'Hired' | 'Rejected';
+  status: 'Applied' | 'Aptitude' | 'Shortlisted' | 'Interview Scheduled' | 'Offered' | 'Rejected';
 }
 
 const Applications: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [applications, setApplications] = useState<Application[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedApp, setSelectedApp] = useState<any>(null);
+  const [updateData, setUpdateData] = useState({ status: 'Applied', notes: '' });
 
   useEffect(() => {
-    const fetchApps = async () => {
-      setIsLoading(true);
-      const res = await adminApi.getApplications();
-      if (res.success && res.data && res.data.applications) {
-        const mapped = res.data.applications.map((app: any) => ({
-          id: app.id,
-          candidate: {
-            name: app.applicant_name || 'Alumni Member',
-            email: app.applicant_email || 'member@nest.com',
-            avatar: ''
-          },
-          role: app.job_title || 'Software Role',
-          date: app.applied_at ? new Date(app.applied_at).toLocaleDateString() : 'Today',
-          aiScore: Math.floor(Math.random() * 40) + 60, // Mock AI Score for demo
-          matchQuality: 'Medium' as 'Medium',
-          status: app.status || 'Pending'
-        }));
-        setApplications(mapped);
-      }
-      setIsLoading(false);
-    };
     fetchApps();
   }, []);
+
+  const fetchApps = async () => {
+    setIsLoading(true);
+    const res = await adminApi.getApplications();
+    if (res.success && res.data && res.data.applications) {
+      const mapped = res.data.applications.map((app: any) => ({
+        id: app.id,
+        candidate: {
+          name: app.applicant_name || 'Alumni Member',
+          email: app.applicant_email || 'member@nest.com',
+          avatar: ''
+        },
+        role: app.job_title || 'Software Role',
+        date: app.applied_at ? new Date(app.applied_at).toLocaleDateString() : 'Today',
+        aiScore: Math.floor(Math.random() * 40) + 60,
+        matchQuality: 'Medium' as 'Medium',
+        status: app.status || 'Applied'
+      }));
+      setApplications(mapped);
+    }
+    setIsLoading(false);
+  };
 
   const filteredApplications = applications.filter(app => 
     app.candidate?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -59,12 +62,38 @@ const Applications: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Pending': return { bg: '#fff7ed', border: '#ffedd5', text: '#9a3412', icon: <Clock size={12} /> };
-      case 'Reviewing': return { bg: '#e0e7ff', border: '#dbeafe', text: '#1e3a8a', icon: <Eye size={12} /> };
-      case 'Interview': return { bg: '#fdf4ff', border: '#fae8ff', text: '#86198f', icon: <Send size={12} /> };
-      case 'Hired': return { bg: '#f0fdf4', border: '#dcfce7', text: '#166534', icon: <CheckCircle2 size={12} /> };
+      case 'Applied': return { bg: '#f8fafc', border: '#e2e8f0', text: '#475569', icon: <Clock size={12} /> };
+      case 'Aptitude': return { bg: '#fff7ed', border: '#ffedd5', text: '#9a3412', icon: <Clock size={12} /> };
+      case 'Shortlisted': return { bg: '#e0e7ff', border: '#dbeafe', text: '#1e3a8a', icon: <Eye size={12} /> };
+      case 'Interview Scheduled': return { bg: '#fdf4ff', border: '#fae8ff', text: '#86198f', icon: <Send size={12} /> };
+      case 'Offered': return { bg: '#f0fdf4', border: '#dcfce7', text: '#166534', icon: <CheckCircle2 size={12} /> };
       case 'Rejected': return { bg: '#fef2f2', border: '#fee2e2', text: '#991b1b', icon: <XCircle size={12} /> };
       default: return { bg: '#f8fafc', border: '#f1f5f9', text: '#64748b', icon: <Clock size={12} /> };
+    }
+  };
+
+  const handleUpdateClick = (app: any) => {
+    setSelectedApp(app);
+    setUpdateData({
+        status: app.status || 'Applied',
+        notes: ''
+    });
+  };
+
+  const handleSaveUpdate = async () => {
+    try {
+        const response = await recruiterApi.updateApplicationStatus(selectedApp.id, updateData);
+        if (response.success) {
+            setApplications(apps => apps.map(a => 
+                a.id === selectedApp.id ? { ...a, status: updateData.status as any } : a
+            ));
+            setSelectedApp(null);
+        } else {
+            alert(response.message || "Failed to update application.");
+        }
+    } catch (err) {
+        console.error("Update error:", err);
+        alert("An error occurred while updating the application.");
     }
   };
 
@@ -82,7 +111,7 @@ const Applications: React.FC = () => {
         {[
           { label: 'Total Applications', value: applications.length, icon: <Users size={24} />, color: '#3b82f6' },
           { label: 'AI Shortlisted', value: applications.filter(a => (a.aiScore || 0) > 80).length, icon: <Brain size={24} />, color: '#8b5cf6' },
-          { label: 'Active Interviews', value: applications.filter(a => a.status === 'Interview').length, icon: <Send size={24} />, color: '#10b981' },
+          { label: 'Active Interviews', value: applications.filter(a => a.status === 'Interview Scheduled').length, icon: <Send size={24} />, color: '#10b981' },
           { label: 'Rejected', value: applications.filter(a => a.status === 'Rejected').length, icon: <XCircle size={24} />, color: '#f43f5e' }
         ].map((stat, i) => (
           <motion.div 
@@ -137,7 +166,7 @@ const Applications: React.FC = () => {
                     <td colSpan={6} style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>No applications found.</td>
                   </tr>
                 ) : applications.map((app, i) => {
-                  const status = getStatusColor(app.status || 'Pending');
+                  const status = getStatusColor(app.status || 'Applied');
                   return (
                     <tr key={app.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                       <td style={{ padding: '16px 24px' }}>
@@ -163,13 +192,17 @@ const Applications: React.FC = () => {
                       </td>
                       <td style={{ padding: '16px 24px' }}>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, background: status.bg, color: status.text, border: `1px solid ${status.border}` }}>
-                          {status.icon} {app.status || 'Pending'}
+                          {status.icon} {app.status || 'Applied'}
                         </span>
                       </td>
                       <td style={{ padding: '16px 24px' }}>
                         <div style={{ display: 'flex', gap: '8px' }}>
-                          <button style={{ padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#fff', color: '#64748b' }}><Eye size={16} /></button>
-                          <button style={{ padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#fff', color: '#64748b' }}><MoreVertical size={16} /></button>
+                          <button 
+                            onClick={() => handleUpdateClick(app)}
+                            style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #3b82f6', background: '#fff', color: '#3b82f6', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
+                          >
+                            Update
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -180,6 +213,45 @@ const Applications: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Update Status Modal */}
+      <AnimatePresence>
+        {selectedApp && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <motion.div 
+              initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
+              style={{ background: '#fff', padding: '32px', borderRadius: '20px', width: '400px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}
+            >
+              <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '8px' }}>Update Status</h2>
+              <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '24px' }}>For {selectedApp.candidate.name}</p>
+              
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '8px' }}>Application Status</label>
+                <select 
+                  value={updateData.status}
+                  onChange={e => setUpdateData({...updateData, status: e.target.value})}
+                  style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc', outline: 'none' }}
+                >
+                  <option value="Applied">Applied</option>
+                  <option value="Aptitude">Aptitude</option>
+                  <option value="Shortlisted">Shortlisted</option>
+                  <option value="Interview Scheduled">Interview Scheduled</option>
+                  <option value="Offered">Offered</option>
+                  <option value="Rejected">Rejected</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '32px' }}>
+                <button onClick={() => setSelectedApp(null)} style={{ flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#fff', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+                <button onClick={handleSaveUpdate} style={{ flex: 1, padding: '12px', borderRadius: '10px', border: 'none', background: '#3b82f6', color: '#fff', fontWeight: 600, cursor: 'pointer' }}>Save Changes</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

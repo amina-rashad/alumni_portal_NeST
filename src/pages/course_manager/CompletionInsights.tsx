@@ -109,9 +109,9 @@ const CompletionInsights: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
           { label: 'Avg. Velocity', value: '84%', icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-          { label: 'Daily Active', value: data?.dailyActiveUsers[6], icon: Activity, color: 'text-red-600', bg: 'bg-red-50' },
+          { label: 'Daily Active', value: data?.dailyActiveUsers?.[6], icon: Activity, color: 'text-red-600', bg: 'bg-red-50' },
           { label: 'Active Streaks', value: '124', icon: Flame, color: 'text-orange-600', bg: 'bg-orange-50' },
-          { label: 'Risk Students', value: data?.inactiveLearners.length, icon: AlertTriangle, color: 'text-amber-600', bg: 'bg-amber-50' },
+          { label: 'Risk Students', value: data?.inactiveLearners?.length, icon: AlertTriangle, color: 'text-amber-600', bg: 'bg-amber-50' },
         ].map((stat, i) => (
           <div key={i} className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm">
             <div className={`w-12 h-12 ${stat.bg} ${stat.color} rounded-2xl flex items-center justify-center mb-6`}>
@@ -147,7 +147,7 @@ const CompletionInsights: React.FC = () => {
             <Flame className="text-orange-500" size={20} /> Login Streaks
           </h3>
           <div className="space-y-4 flex-1">
-            {data?.streaks.map((s: any, i: number) => (
+            {data?.streaks?.map((s: any, i: number) => (
               <div key={i} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-orange-200 transition-colors">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center font-black text-sm text-[#1e293b]">
@@ -175,7 +175,7 @@ const CompletionInsights: React.FC = () => {
         <div className="bg-white p-10 rounded-[40px] border border-slate-100 shadow-sm">
           <h3 className="text-xl font-black text-[#1e293b] mb-8">Course-wise Completion</h3>
           <div className="space-y-8">
-            {data?.completionRates.map((c: any, i: number) => (
+            {data?.completionRates?.map((c: any, i: number) => (
               <div key={i} className="space-y-3">
                 <div className="flex justify-between items-end">
                   <div className="font-black text-sm text-slate-700">{c.course}</div>
@@ -203,7 +203,7 @@ const CompletionInsights: React.FC = () => {
             <p className="text-indigo-200 text-sm font-medium mb-8">Students inactive for more than 3 days. Reach out recommended.</p>
             
             <div className="space-y-4">
-              {data?.inactiveLearners.map((s: any, i: number) => (
+              {data?.inactiveLearners?.map((s: any, i: number) => (
                 <div key={i} className="flex items-center justify-between p-5 bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl group hover:bg-white/10 transition-all">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-2xl bg-indigo-900/50 flex items-center justify-center font-black text-sm text-indigo-300">

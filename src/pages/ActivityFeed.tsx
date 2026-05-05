@@ -1,80 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { motion, type Variants, AnimatePresence } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
 import { 
-  Briefcase, Clock, Sparkles,
-  ChevronRight, CheckCircle2,
-  Zap, FileText, Lightbulb, Search,
-  Award, ShieldCheck, TrendingUp,
-  MessageSquare, LayoutGrid, Users, Heart
+  Clock, CheckCircle2,
+  TrendingUp, Image as ImageIcon,
+  MessageSquare, Heart, Loader2
 } from 'lucide-react';
+import { socialApi, getUser } from '../services/api';
 import alumniStoriesBg from '../assets/alumni_stories_bg.png';
 
-// --- PREMIUM MOCK DATA (Admin & Senior Insights Only) ---
-const feedPosts = [
-  {
-    id: 1,
-    isOfficial: true,
-    type: 'announcement',
-    author: {
-      name: 'NeST Admin',
-      role: 'Alumni Relations Directorate',
-      avatar: 'https://ui-avatars.com/api/?name=NeST+Admin&background=0F172A&color=fff',
-      verified: true
-    },
-    time: '2 hours ago',
-    title: 'Global Alumni Meet 2026: Official Announcement',
-     content: "We are thrilled to announce that the Global Alumni Meet 2026 will be held at our Zurich Innovation Center. Early bird registrations for verified senior members open next week.",
-    tag: 'Official Announcement',
-    likes: 342
-  },
-  {
-    id: 4,
-    type: 'event',
-    author: {
-      name: 'Event Management Team',
-      role: 'NeST Events',
-      avatar: 'https://ui-avatars.com/api/?name=Events&background=DC2626&color=fff',
-      verified: true
-    },
-    time: '4 hours ago',
-    title: 'Highlights: Tech Synergy Summit 2026',
-     content: "Relive the best moments from last week's Tech Synergy Summit. Our alumni panel discussed the intersection of Quantum Computing and Fintech to a packed auditorium of 500+ attendees.",
-    media: 'https://images.unsplash.com/photo-1540575861501-7ad05823c9f5?q=80&w=1200&auto=format&fit=crop',
-    tag: 'Event Recap',
-    likes: 856
-  },
-  {
-    id: 5,
-    type: 'course',
-    author: {
-      name: 'NeST Academy',
-      role: 'Learning & Development',
-      avatar: 'https://ui-avatars.com/api/?name=Academy&background=F59E0B&color=fff',
-      verified: true
-    },
-    time: '6 hours ago',
-    title: 'New Course: Advanced Cloud Architecture',
-     content: "In collaboration with AWS, we are launching an exclusive certification course for our alumni. Master multi-region distributed systems and serverless orchestration. Enrollments close this Friday.",
-    tag: 'Course Update',
-    likes: 124
-  },
-  {
-    id: 2,
-    isSenior: true,
-    type: 'insight',
-    author: {
-      name: 'Dr. Elena Rossi',
-      role: 'SVP of Engineering @ NVIDIA | Batch of 2008',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150',
-      verified: true
-    },
-    time: '8 hours ago',
-    title: 'The Shift Towards Edge Intelligence',
-     content: "In my 15 years in silicon valley, the current shift from centralized LLMs to Edge-native intelligence is the most significant I've seen. Model quantization is the next big frontier.",
-    tag: 'Technical Insight',
-    likes: 219
-  }
-];
+interface Post {
+  id: string;
+  author_name: string;
+  author_type: string;
+  author_picture?: string;
+  content: string;
+  image_url?: string;
+  video_url?: string;
+  likes_count: number;
+  comments_count: number;
+  is_liked: boolean;
+  created_at: string;
+}
 
 const trendingTopics = [
   { topic: 'Quantum FinTech', growth: '+32%', interactions: '2.4k' },
@@ -82,7 +28,6 @@ const trendingTopics = [
   { topic: 'Alumni Meet 2026', growth: '+45%', interactions: '3.1k' }
 ];
 
-// --- ANIMATION VARIANTS ---
 const smoothSpring = { type: 'spring' as const, stiffness: 80, damping: 20, mass: 1 };
 
 const pageVariants: Variants = {
@@ -103,8 +48,6 @@ const itemVariants: Variants = {
   }
 };
 
-// --- COMPONENTS ---
-
 const verifiedBadge = (size = 14) => (
   <div style={{ background: '#DC2626', borderRadius: '50%', padding: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
     <CheckCircle2 size={size} color="white" />
@@ -112,15 +55,69 @@ const verifiedBadge = (size = 14) => (
 );
 
 const ActivityFeed: React.FC = () => {
-  const [likedPosts, setLikedPosts] = useState<Set<number>>(new Set());
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [tick, setTick] = useState(0);
 
-  const handleLike = (id: number) => {
-    setLikedPosts(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(id)) newSet.delete(id);
-      else newSet.add(id);
-      return newSet;
-    });
+  const fetchFeed = async () => {
+    try {
+      const res = await socialApi.getFeed();
+      if (res.success && res.data) {
+        setPosts((res.data as any).posts || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch feed:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFeed();
+    const timer = setInterval(() => setTick(t => t + 1), 60000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleLike = async (id: string) => {
+    try {
+      const res = await socialApi.likePost(id);
+      if (res.success && res.data) {
+        setPosts(prev => prev.map(p => {
+          if (p.id === id) {
+            const isLiked = res.data?.liked ?? p.is_liked;
+            return {
+              ...p,
+              is_liked: isLiked,
+              likes_count: isLiked !== p.is_liked 
+                ? (isLiked ? p.likes_count + 1 : p.likes_count - 1)
+                : p.likes_count
+            };
+          }
+          return p;
+        }));
+      }
+    } catch (err) {
+      console.error('Failed to like post:', err);
+    }
+  };
+
+  const timeAgo = (dateStr: string) => {
+    if (!dateStr) return 'Just now';
+    
+    // Ensure the date string is treated as UTC if it lacks timezone info
+    let normalizedDate = dateStr;
+    if (!dateStr.endsWith('Z') && !dateStr.includes('+') && !dateStr.includes('-')) {
+      normalizedDate += 'Z';
+    }
+    
+    const diff = Date.now() - new Date(normalizedDate).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    return `${days}d ago`;
   };
 
   return (
@@ -131,25 +128,24 @@ const ActivityFeed: React.FC = () => {
         radial-gradient(at 100% 0%, rgba(15, 23, 42, 0.03) 0px, transparent 50%)
       `,
       minHeight: '100vh', 
-      padding: '2rem 1.5rem', /* Tighter padding */
+      padding: '2rem 1.5rem',
       fontFamily: '"Montserrat", sans-serif' 
     }}>
       
-      {/* GLOBAL CSS */}
       <style>{`
         .insight-card {
           background: rgba(255, 255, 255, 0.85);
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
-          border-radius: 20px; /* Slightly tighter radius */
+          border-radius: 20px;
           border: 1px solid rgba(255, 255, 255, 0.5);
           box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
           transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
           overflow: hidden;
-          margin-bottom: 1.25rem; /* Reduced margin */
+          margin-bottom: 1.25rem;
         }
         .insight-card:hover {
-          transform: translateY(-4px); /* Subtler lift */
+          transform: translateY(-4px);
           box-shadow: 0 15px 35px rgba(0, 0, 0, 0.07);
           border-color: rgba(220, 38, 38, 0.2);
         }
@@ -157,7 +153,6 @@ const ActivityFeed: React.FC = () => {
           background-image: url('${alumniStoriesBg}');
           background-size: cover;
           background-position: center;
-          border-radius: 0;
           padding: 4rem 0;
           margin-bottom: 2.5rem;
           position: relative;
@@ -187,182 +182,194 @@ const ActivityFeed: React.FC = () => {
           mix-blend-mode: overlay;
           z-index: 1;
         }
-        .verified-glow {
-          box-shadow: 0 0 15px rgba(220, 38, 38, 0.15);
-        }
-        .hide-scroll::-webkit-scrollbar { display: none; }
-        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
 
       <div style={{ maxWidth: '1150px', margin: '0 auto' }}>
         
-        {/* CINEMATIC VIDEO BANNER SECTION - Full Width */}
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1 }}
           className="video-banner"
+          style={{ position: 'relative' }}
         >
+          {/* Background Video */}
+          <video 
+            autoPlay 
+            muted 
+            loop 
+            playsInline 
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              zIndex: 0,
+              filter: 'brightness(0.55) contrast(1.1)'
+            }}
+          >
+            <source src="https://assets.mixkit.co/videos/preview/mixkit-city-traffic-at-night-seen-from-above-3453-large.mp4" type="video/mp4" />
+          </video>
+
           <div className="banner-noise" style={{ zIndex: 3 }} />
           <div style={{ maxWidth: '1150px', margin: '0 auto', padding: '0 2rem', position: 'relative', zIndex: 10 }}>
-            <h1 style={{ margin: 0, fontSize: '3.5rem', fontWeight: 950, color: '#fff', letterSpacing: '-0.04em', lineHeight: 1.1, marginBottom: '1.25rem', textShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>Alumni Stories</h1>
-            
+            <h1 style={{ margin: 0, fontSize: '3.5rem', fontWeight: 950, color: '#fff', letterSpacing: '-0.04em', lineHeight: 1.1, marginBottom: '1.25rem', textShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>Career Timelines</h1>
             <p style={{ margin: 0, color: 'rgba(255,255,255,0.8)', fontSize: '1.2rem', fontWeight: 500, maxWidth: '550px', lineHeight: 1.4, letterSpacing: '-0.01em' }}>
               Chronicles of engineering leadership and professional breakthroughs from our global community.
             </p>
-
-            <div style={{ marginTop: '2.5rem', display: 'flex', gap: '1.25rem' }}>
-               <button className="btn-premium" style={{ background: '#fff', color: '#0F172A', border: 'none', padding: '14px 32px', borderRadius: '12px', fontWeight: 800, fontSize: '0.95rem', cursor: 'pointer' }}>Latest Chronicle</button>
-               <button className="btn-premium" style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', padding: '12px 32px', borderRadius: '12px', fontWeight: 700, fontSize: '0.95rem', backdropFilter: 'blur(10px)', cursor: 'pointer' }}>Archive Search</button>
-            </div>
           </div>
-
-          <div style={{ position: 'absolute', right: '-50px', bottom: '-50px', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(220,38,38,0.2) 0%, transparent 70%)', filter: 'blur(80px)', zIndex: 1 }} />
         </motion.div>
+
+        {/* Quick Post Box - Hidden for regular users */}
+        {getUser()?.role !== 'user' && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="insight-card"
+            style={{ padding: '1.25rem 1.75rem', marginBottom: '2.5rem', display: 'flex', alignItems: 'center', gap: '1.25rem' }}
+          >
+            <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#F1F5F9', border: '2px solid #fff', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#0F172A', overflow: 'hidden' }}>
+              {(getUser() as any)?.profile_picture ? (
+                <img src={(getUser() as any).profile_picture} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+              ) : (
+                (getUser() as any)?.full_name?.charAt(0) || 'U'
+              )}
+            </div>
+            <button 
+              onClick={() => window.location.href = '/social/post/create'}
+              style={{ 
+                flex: 1, 
+                background: '#F8FAFC', 
+                border: '1px solid #E2E8F0', 
+                borderRadius: '99px', 
+                padding: '12px 24px', 
+                textAlign: 'left', 
+                color: '#94A3B8', 
+                fontSize: '1rem', 
+                fontWeight: 500, 
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+              onMouseOver={(e) => (e.currentTarget.style.borderColor = '#DC2626')}
+              onMouseOut={(e) => (e.currentTarget.style.borderColor = '#E2E8F0')}
+            >
+              What's on your mind, {(getUser() as any)?.full_name?.split(' ')[0] || 'Alumnus'}?
+            </button>
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+               <button onClick={() => window.location.href = '/social/post/create'} style={{ background: 'rgba(16, 185, 129, 0.08)', color: '#10B981', border: 'none', padding: '10px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, fontSize: '0.85rem' }}>
+                  <ImageIcon size={18} /> Photo
+               </button>
+               <button onClick={() => window.location.href = '/social/post/create'} style={{ background: 'rgba(59, 130, 246, 0.08)', color: '#3B82F6', border: 'none', padding: '10px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, fontSize: '0.85rem' }}>
+                  <TrendingUp size={18} /> Video
+               </button>
+            </div>
+          </motion.div>
+        )}
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 420px', gap: '1.5rem' }}>
           
-          {/* MAIN FEED */}
           <motion.div variants={pageVariants} initial="hidden" animate="visible">
-            {feedPosts.map((post) => (
-              <motion.div key={post.id} variants={itemVariants} className="insight-card">
-                <div style={{ padding: '1.75rem' }}>
-                  {/* Tag & Meta */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <div style={{ 
-                      background: post.isOfficial ? 'rgba(220, 38, 38, 0.08)' : 'rgba(15, 23, 42, 0.04)', 
-                      color: post.isOfficial ? '#DC2626' : '#1e293b', 
-                      padding: '4px 12px', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em' 
-                    }}>
-                      {post.tag}
+            {loading ? (
+              <div style={{ textAlign: 'center', padding: '4rem', color: '#94a3b8' }}>
+                <Loader2 size={32} className="spin" style={{ margin: '0 auto 1rem' }} />
+                <p style={{ fontWeight: 600 }}>Syncing with global feed...</p>
+              </div>
+            ) : posts.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '4rem', background: '#fff', borderRadius: '24px', border: '1px solid #e2e8f0' }}>
+                 <MessageSquare size={48} color="#cbd5e1" style={{ marginBottom: '1rem' }} />
+                 <h3 style={{ color: '#1e293b', marginBottom: '0.5rem' }}>The feed is quiet...</h3>
+                 <p style={{ color: '#64748b' }}>Be the first to share an update with the community!</p>
+              </div>
+            ) : (
+              posts.map((post) => (
+                <motion.div key={post.id} variants={itemVariants} className="insight-card">
+                  <div style={{ padding: '1.75rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                      <div style={{ 
+                        background: post.author_type === 'Admin' ? 'rgba(220, 38, 38, 0.08)' : 'rgba(15, 23, 42, 0.04)', 
+                        color: post.author_type === 'Admin' ? '#DC2626' : '#1e293b', 
+                        padding: '4px 12px', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em' 
+                      }}>
+                        {post.author_type || 'Update'}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#94A3B8', fontSize: '0.75rem', fontWeight: 600 }}>
+                        <Clock size={12} /> {timeAgo(post.created_at)}
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#94A3B8', fontSize: '0.75rem', fontWeight: 600 }}>
-                      <Clock size={12} /> {post.time}
-                    </div>
-                  </div>
 
-                  <h2 style={{ margin: '0 0 0.75rem', fontSize: '1.5rem', fontWeight: 850, color: '#0F172A', lineHeight: 1.15, letterSpacing: '-0.02em' }}>{post.title}</h2>
-                  
-                  <p style={{ margin: '0 0 1.25rem', color: '#475569', fontSize: '0.95rem', lineHeight: 1.6, fontWeight: 450 }}>
-                    {post.content}
-                  </p>
+                    <p style={{ margin: '0 0 1.25rem', color: '#1e293b', fontSize: '1.05rem', lineHeight: 1.6, fontWeight: 500 }}>
+                      {post.content}
+                    </p>
 
-                  {(post as any).media && (
-                    <div style={{ marginBottom: '1.5rem', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}>
-                       <img src={(post as any).media} style={{ width: '100%', height: 'auto', objectFit: 'cover' }} alt="Content" />
-                    </div>
-                  )}
+                    {post.image_url && (
+                      <div style={{ marginBottom: '1.5rem', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}>
+                         <img src={post.image_url} style={{ width: '100%', height: 'auto', objectFit: 'cover' }} alt="Post content" />
+                      </div>
+                    )}
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '1.25rem', borderTop: '1px solid rgba(0,0,0,0.03)' }}>
-                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                      <div style={{ position: 'relative' }}>
-                        <img src={post.author.avatar} style={{ width: '44px', height: '44px', borderRadius: '50%', border: '2px solid white', boxShadow: '0 4px 10px rgba(0,0,0,0.05)' }} />
-                        <div style={{ position: 'absolute', bottom: 0, right: 0 }}>
-                          {verifiedBadge(10)}
+                    {post.video_url && (
+                      <div style={{ marginBottom: '1.5rem', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.08)', background: '#000' }}>
+                         <video src={post.video_url} controls style={{ width: '100%', maxHeight: '400px', outline: 'none' }} />
+                      </div>
+                    )}
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '1.25rem', borderTop: '1px solid rgba(0,0,0,0.03)' }}>
+                      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                        <div style={{ position: 'relative' }}>
+                          <img 
+                            src={post.author_picture || `https://ui-avatars.com/api/?name=${post.author_name}&background=random`} 
+                            style={{ width: '44px', height: '44px', borderRadius: '50%', border: '2px solid white', boxShadow: '0 4px 10px rgba(0,0,0,0.05)' }} 
+                          />
+                          <div style={{ position: 'absolute', bottom: 0, right: 0 }}>
+                            {verifiedBadge(10)}
+                          </div>
+                        </div>
+                        <div>
+                          <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 800, color: '#0F172A' }}>{post.author_name}</h4>
+                          <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748B', fontWeight: 600 }}>{post.author_type}</p>
                         </div>
                       </div>
-                      <div>
-                        <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 800, color: '#0F172A' }}>{post.author.name}</h4>
-                        <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748B', fontWeight: 600 }}>{post.author.role}</p>
-                      </div>
-                    </div>
 
-                    <div style={{ display: 'flex', gap: '0.75rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#DC2626', background: 'rgba(220, 38, 38, 0.04)', padding: '6px 12px', borderRadius: '10px', fontSize: '0.8rem', fontWeight: 700 }}>
-                        <Zap size={14} fill="#DC2626" /> Insight
+                      <div style={{ display: 'flex', gap: '1rem' }}>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => handleLike(post.id)}
+                          style={{ 
+                            background: post.is_liked ? 'rgba(220, 38, 38, 0.1)' : 'white', 
+                            border: '1px solid',
+                            borderColor: post.is_liked ? 'rgba(220, 38, 38, 0.2)' : '#E2E8F0',
+                            padding: '10px 20px', 
+                            borderRadius: '12px', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '0.75rem',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                          }}
+                        >
+                          <Heart 
+                            size={18} 
+                            color={post.is_liked ? '#DC2626' : '#64748B'} 
+                            fill={post.is_liked ? '#DC2626' : 'transparent'} 
+                          />
+                          <span style={{ fontWeight: 800, fontSize: '0.9rem', color: post.is_liked ? '#DC2626' : '#0F172A' }}>
+                            {post.likes_count}
+                          </span>
+                        </motion.button>
                       </div>
                     </div>
                   </div>
-                </div>
-
-                {/* INTERACTION BAR (LIKE ONLY) */}
-                <div style={{ background: 'rgba(248, 250, 252, 0.6)', padding: '1.25rem 2rem', borderTop: '1px solid rgba(0,0,0,0.03)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', gap: '2rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', color: '#64748B', fontSize: '0.85rem', fontWeight: 600 }}>
-                        <ShieldCheck size={16} color="#10B981" /> Verified Archive
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', color: '#64748B', fontSize: '0.85rem', fontWeight: 600 }}>
-                        <Sparkles size={16} color="#F59E0B" /> Alumni Story
-                      </div>
-                    </div>
-
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.85 }}
-                      onClick={() => handleLike(post.id)}
-                      style={{ 
-                        background: likedPosts.has(post.id) ? 'rgba(220, 38, 38, 0.1)' : 'white', 
-                        border: '1px solid',
-                        borderColor: likedPosts.has(post.id) ? 'rgba(220, 38, 38, 0.2)' : '#E2E8F0',
-                        padding: '10px 24px', 
-                        borderRadius: '12px', 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '0.75rem',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-                      }}
-                    >
-                      <motion.div
-                        animate={{ 
-                          scale: likedPosts.has(post.id) ? [1, 1.5, 1] : 1,
-                          rotate: likedPosts.has(post.id) ? [0, -15, 15, 0] : 0
-                        }}
-                        transition={{ duration: 0.4 }}
-                      >
-                        <Heart 
-                          size={20} 
-                          color={likedPosts.has(post.id) ? '#DC2626' : '#64748B'} 
-                          fill={likedPosts.has(post.id) ? '#DC2626' : 'transparent'} 
-                        />
-                      </motion.div>
-                      <span style={{ 
-                        fontWeight: 800, 
-                        fontSize: '0.95rem', 
-                        color: likedPosts.has(post.id) ? '#DC2626' : '#0F172A' 
-                      }}>
-                        {((post as any).likes || 0) + (likedPosts.has(post.id) ? 1 : 0)}
-                      </span>
-                    </motion.button>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              ))
+            )}
           </motion.div>
 
-          {/* SIDEBAR */}
           <div style={{ position: 'sticky', top: '2rem' }}>
-             
-
-
-             {/* CINEMATIC VIDEO CARD */}
-             <motion.div 
-               initial={{ opacity: 0, scale: 0.95 }} 
-               animate={{ opacity: 1, scale: 1 }} 
-               transition={{ duration: 0.8 }}
-               style={{ 
-                 width: '100%', 
-                 height: '260px', 
-                 borderRadius: '24px', 
-                 overflow: 'hidden', 
-                 marginBottom: '1.5rem',
-                 border: '0.5px solid rgba(212, 175, 55, 0.4)',
-                 boxShadow: '0 20px 40px rgba(0,0,0,0.4), 0 0 20px rgba(212, 175, 55, 0.1)',
-                 position: 'relative',
-                 background: '#000'
-               }}
-             >
-               <video 
-                 src="https://nestdigital.com/wp-content/uploads/2026/03/Nest-HP-Video.mp4" 
-                 autoPlay 
-                 muted 
-                 loop 
-                 playsInline
-                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-               />
-               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 40%)' }} />
-             </motion.div>
-
-             {/* TRENDING NOW */}
              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="insight-card" style={{ padding: '2rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                    <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -370,7 +377,6 @@ const ActivityFeed: React.FC = () => {
                    </h4>
                    <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 2 }} style={{ width: '8px', height: '8px', background: '#10B981', borderRadius: '50%' }} />
                 </div>
-
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
                    {trendingTopics.map((item, i) => (
                       <div key={i}>
@@ -382,20 +388,10 @@ const ActivityFeed: React.FC = () => {
                       </div>
                    ))}
                 </div>
-
-                <button className="btn-premium" style={{ width: '100%', marginTop: '2.5rem', background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '12px', borderRadius: '14px', fontWeight: 700, color: '#475569', fontSize: '0.85rem' }}>
-                   Discover More Topics
-                </button>
              </motion.div>
-
-
-
           </div>
-
         </div>
-
       </div>
-
     </div>
   );
 };

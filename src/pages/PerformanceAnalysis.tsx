@@ -31,10 +31,10 @@ const USER_POINTS = {
     { id: 5, type: 'Daily Check-in', name: '7-day streak bonus', points: 50, date: '2026-03-08', icon: <TrendingUp size={18} /> },
   ],
   waysToEarn: [
-    { title: 'Refer an Alumni', points: 1000, desc: 'Help your batchmates find the community.', icon: <Users /> },
-    { title: 'Complete a Certification', points: 500, desc: 'Finish any of our professional courses.', icon: <Award /> },
-    { title: 'Speak at an Event', points: 2000, desc: 'Share your expertise with the network.', icon: <TrendingUp /> },
-    { title: 'Mentorship Session', points: 300, desc: 'Conduct a 1-hour session for juniors.', icon: <Users /> },
+    { title: 'Refer an Alumni', points: 1000, desc: 'Help your batchmates find the community.', icon: <Users size={18} /> },
+    { title: 'Complete a Certification', points: 500, desc: 'Finish any of our professional courses.', icon: <Award size={18} /> },
+    { title: 'Speak at an Event', points: 2000, desc: 'Share your expertise with the network.', icon: <TrendingUp size={18} /> },
+    { title: 'Mentorship Session', points: 300, desc: 'Conduct a 1-hour session for juniors.', icon: <Users size={18} /> },
   ]
 };
 
@@ -51,7 +51,7 @@ const PerformanceAnalysis: React.FC = () => {
           animate={{ opacity: 1, x: 0 }}
         >
           <h1 style={{ fontSize: '2.8rem', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', marginBottom: '0.5rem' }}>
-            Performance <span style={{ color: '#d32f2f' }}>Analysis</span>
+            Performance <span style={{ color: '#c8102e' }}>Analysis</span>
           </h1>
           <p style={{ color: '#64748B', fontSize: '1.1rem' }}>Comprehensive overview of your technical growth and community contributions.</p>
         </motion.div>
@@ -135,7 +135,7 @@ const PerformanceAnalysis: React.FC = () => {
                     initial={{ width: 0 }}
                     animate={{ width: `${USER_POINTS.progressToNext}%` }}
                     transition={{ duration: 1.5, ease: 'easeOut' }}
-                    style={{ height: '100%', background: '#c8102e', borderRadius: '4px', boxShadow: '0 0 10px rgba(200, 16, 46, 0.5)' }}
+                    style={{ height: '100%', width: `${USER_POINTS.progressToNext}%`, background: '#c8102e', borderRadius: '4px', boxShadow: '0 0 10px rgba(200, 16, 46, 0.5)' }}
                   ></motion.div>
                 </div>
                 <p style={{ margin: 0, fontSize: '0.75rem', opacity: 0.6, fontWeight: 500 }}>
@@ -170,7 +170,8 @@ const PerformanceAnalysis: React.FC = () => {
                       transition={{ duration: 1, ease: 'easeOut', delay: 0.2 + index * 0.1 }}
                       style={{ 
                         height: '100%', 
-                        background: skill.level > 80 ? 'linear-gradient(90deg, #d32f2f, #ef4444)' : 'linear-gradient(90deg, #334155, #64748B)', 
+                        width: `${skill.level}%`,
+                        background: skill.level > 80 ? 'linear-gradient(90deg, #c8102e, #ef4444)' : 'linear-gradient(90deg, #334155, #64748B)', 
                         borderRadius: '10px' 
                       }} 
                     />
@@ -187,7 +188,7 @@ const PerformanceAnalysis: React.FC = () => {
           {/* Recent Activity Chart */}
           <div className="luxury-card" style={{ padding: '2rem' }}>
             <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0F172A', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-              <Activity size={20} color="#d32f2f" /> Engagement Velocity
+              <Activity size={20} color="#c8102e" /> Engagement Velocity
             </h3>
             
             <div style={{ position: 'relative', height: '140px', display: 'flex', alignItems: 'flex-end', gap: '12px', paddingBottom: '1.5rem', borderBottom: '1px solid #F1F5F9' }}>
@@ -197,7 +198,7 @@ const PerformanceAnalysis: React.FC = () => {
                   initial={{ height: 0 }}
                   animate={{ height: `${h}%` }}
                   transition={{ delay: 0.5 + i * 0.05 }}
-                  style={{ flex: 1, background: i === 4 ? '#d32f2f' : '#E2E8F0', borderRadius: '6px' }} 
+                  style={{ flex: 1, background: i === 4 ? '#c8102e' : '#E2E8F0', borderRadius: '6px' }} 
                 />
               ))}
             </div>
@@ -249,7 +250,7 @@ const PerformanceAnalysis: React.FC = () => {
                     borderRadius: '1rem',
                     transition: 'all 0.2s ease'
                   }}>
-                    {React.cloneElement(way.icon as React.ReactElement<{ size?: number }>, { size: 22 })}
+                    {way.icon}
                   </div>
                   <div style={{ flex: 1 }}>
                     <h4 style={{ margin: '0 0 0.15rem 0', fontSize: '1rem', fontWeight: 800, color: '#1e293b' }}>{way.title}</h4>
@@ -372,7 +373,7 @@ const PerformanceAnalysis: React.FC = () => {
                    width: '100%', 
                    padding: '1rem', 
                    borderRadius: '12px', 
-                   background: '#d32f2f', 
+                   background: '#c8102e', 
                    color: 'white', 
                    border: 'none', 
                    fontWeight: 800, 
@@ -386,7 +387,7 @@ const PerformanceAnalysis: React.FC = () => {
                    transition: '0.2s'
                  }}
                  onMouseEnter={e => e.currentTarget.style.background = '#b71c1c'}
-                 onMouseLeave={e => e.currentTarget.style.background = '#d32f2f'}
+                 onMouseLeave={e => e.currentTarget.style.background = '#c8102e'}
                >
                  View Recommended Course <ChevronRight size={18} />
                </Link>
@@ -399,7 +400,7 @@ const PerformanceAnalysis: React.FC = () => {
             <div>
               <p style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#92400E', marginBottom: '0.4rem' }}>Optimizing Results</p>
               <p style={{ margin: 0, fontSize: '0.9rem', color: '#B45309', lineHeight: 1.5, opacity: 0.9 }}>
-                Mentoring sessions for juniors yield a <strong style={{ color: '#92400E' }}>2.5x higher</strong> engagement score compared to standard forum activity.
+                Mentorship sessions for juniors yield a <strong style={{ color: '#92400E' }}>2.5x higher</strong> engagement score compared to standard forum activity.
               </p>
             </div>
           </div>

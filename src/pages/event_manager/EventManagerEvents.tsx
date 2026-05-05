@@ -6,7 +6,8 @@ import {
   Info, ChevronDown, ShieldCheck, AlertCircle, Video
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { eventsApi, eventManagerApi } from '../../services/api';
 
 const GlassSelect: React.FC<{
   label: string;
@@ -100,6 +101,9 @@ const GlassSelect: React.FC<{
 
 const EventManagerEvents: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const isAdminPath = location.pathname.startsWith('/admin');
+  const baseRoute = isAdminPath ? '/admin' : '/event-manager';
   const [activeTab, setActiveTab] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
@@ -120,18 +124,34 @@ const EventManagerEvents: React.FC = () => {
     description: '',
     date: '',
     startTime: '',
+    startTimePeriod: 'AM',
     endTime: '',
+    endTimePeriod: 'PM',
     venue: '',
     audience: 'Platform Wide',
     mode: 'offline'
   });
 
-  const events = [
-    { id: 1, title: 'Global Tech Summit 2026', category: 'Technology', date: '2026-10-24', location: 'Virtual', registrations: 450, capacity: 500, status: 'Active', image: 'https://images.unsplash.com/photo-1540575861501-7cf05a4b125a?w=800&auto=format&fit=crop&q=60' },
-    { id: 2, title: 'Alumni Networking Night', category: 'Networking', date: '2026-11-12', location: 'Grand Plaza Hotel', registrations: 120, capacity: 200, status: 'Draft', image: 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&auto=format&fit=crop&q=60' },
-    { id: 3, title: 'Leadership & Strategy Workshop', category: 'Professional Development', date: '2026-12-05', location: 'NeST Innovation Hub', registrations: 85, capacity: 100, status: 'Active', image: 'https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=800&auto=format&fit=crop&q=60' },
-    { id: 4, title: 'Annual Charity Gala', category: 'Social', date: '2026-12-20', location: 'Seafront Pavilion', registrations: 310, capacity: 400, status: 'Active', image: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=800&auto=format&fit=crop&q=60' },
-  ];
+  const [events, setEvents] = useState<any[]>([]);
+  const [isLoadingEvents, setIsLoadingEvents] = useState(true);
+
+  const fetchEvents = async () => {
+    setIsLoadingEvents(true);
+    try {
+      const res = await eventsApi.getAllEvents();
+      if (res.success && res.data) {
+        setEvents((res.data as any).events || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch events:', err);
+    } finally {
+      setIsLoadingEvents(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEvents();
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -171,33 +191,88 @@ const EventManagerEvents: React.FC = () => {
     }
   };
 
-  const handleLaunch = () => {
-    alert(editingEventId ? 'Event updated successfully!' : 'Event launched successfully!');
-    setIsAddingEvent(false);
-    setEditingEventId(null);
-    setFormData({
-      title: '', category: 'Networking & Mixer', limit: '',
-      description: '', date: '', startTime: '', endTime: '',
-      venue: '', audience: 'Platform Wide', mode: 'offline'
-    });
-    setSelectedImage(null);
+  const handleLaunch = async () => {
+    try {
+      const payload = {
+        title: formData.title,
+        description: formData.description,
+        date: formData.date,
+        time: `${formData.startTime} ${formData.startTimePeriod}`,
+        location: formData.venue,
+        category: formData.category,
+        max_attendees: parseInt(formData.limit) || 0,
+        mode: formData.mode,
+        cover_image: selectedImage || 'https://images.unsplash.com/photo-1540575861501-7cf05a4b125a?w=800&auto=format&fit=crop&q=60'
+      };
+
+      let res;
+      if (editingEventId) {
+        res = await eventManagerApi.updateEvent(String(editingEventId), payload);
+      } else {
+        res = await eventManagerApi.createEvent(payload);
+      }
+
+      if (res.success) {
+        alert(editingEventId ? 'Event updated successfully!' : 'Event launched successfully!');
+        setIsAddingEvent(false);
+        setEditingEventId(null);
+        setFormData({
+          title: '', category: 'Networking & Mixer', limit: '',
+          description: '', date: '', startTime: '', startTimePeriod: 'AM', endTime: '', endTimePeriod: 'PM',
+          venue: '', audience: 'Platform Wide', mode: 'offline'
+        });
+        setSelectedImage(null);
+        fetchEvents();
+      } else {
+        alert('Failed to save event: ' + res.message);
+      }
+    } catch (err) {
+      console.error('Error saving event:', err);
+      alert('An error occurred while saving the event.');
+    }
+  };
+
+  const handleDelete = async (eventId: string) => {
+    if (!window.confirm('Are you sure you want to delete this event? This action cannot be undone.')) return;
+    
+    try {
+      const res = await eventManagerApi.deleteEvent(String(eventId));
+      if (res.success) {
+        alert('Event deleted successfully!');
+        fetchEvents();
+      } else {
+        alert('Failed to delete event: ' + res.message);
+      }
+    } catch (err) {
+      console.error('Error deleting event:', err);
+      alert('An error occurred while deleting the event.');
+    }
   };
 
   const handleEdit = (event: any) => {
     setEditingEventId(event.id);
+    
+    // Parse time and period
+    const timeStr = event.time || '10:00 AM';
+    const timeParts = timeStr.split(' ');
+    const timeVal = timeParts[0] || '10:00';
+    const periodVal = timeParts[1] || 'AM';
+
     setFormData({
       title: event.title,
-      category: event.category === 'Technology' ? 'Seminar' : event.category,
-      limit: event.capacity?.toString() || '0',
-      description: 'Pre-filled details for ' + event.title,
+      category: event.category,
+      limit: event.max_attendees?.toString() || '0',
+      description: event.description || '',
       date: event.date,
-      startTime: '10:00',
+      startTime: timeVal,
+      startTimePeriod: periodVal,
       endTime: '12:00',
+      endTimePeriod: 'PM',
       venue: event.location,
-      audience: 'Public',
-      mode: event.location === 'Virtual' ? 'online' : 'offline'
+      audience: 'Platform Wide',
+      mode: event.mode || (event.location === 'Virtual' ? 'online' : 'offline')
     });
-    setSelectedImage(event.image);
+    setSelectedImage(event.cover_image);
     setIsAddingEvent(true);
   };
 
@@ -237,9 +312,9 @@ const EventManagerEvents: React.FC = () => {
             </button>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748b', fontSize: '12px', fontWeight: 800, marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                <Calendar size={14} color={brandPrimary} /> Event Management <span>{'>'}</span> New Event
+                <Calendar size={14} color={brandPrimary} /> Event Management <span>{'>'}</span> {editingEventId ? 'Edit Event' : 'New Event'}
               </div>
-              <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#1e293b', margin: 0 }}>Create Event</h1>
+              <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#1e293b', margin: 0 }}>{editingEventId ? 'Edit Event' : 'Create Event'}</h1>
             </div>
           </div>
 
@@ -248,7 +323,7 @@ const EventManagerEvents: React.FC = () => {
               Cancel
             </button>
             <button 
-              onClick={() => setIsAddingEvent(false)}
+              onClick={handleLaunch}
               style={{ 
                 display: 'flex', 
                 alignItems: 'center', 
@@ -334,7 +409,18 @@ const EventManagerEvents: React.FC = () => {
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <label style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8' }}>Start Time</label>
-                  <input type="time" name="startTime" value={formData.startTime} onChange={handleInputChange} style={glossyInputStyle} />
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input type="time" name="startTime" value={formData.startTime} onChange={handleInputChange} style={{ ...glossyInputStyle, flex: 1 }} />
+                    <select 
+                      name="startTimePeriod" 
+                      value={formData.startTimePeriod} 
+                      onChange={(e) => setFormData(prev => ({ ...prev, startTimePeriod: e.target.value }))}
+                      style={{ ...glossyInputStyle, width: '80px', padding: '14px 8px' }}
+                    >
+                      <option value="AM">AM</option>
+                      <option value="PM">PM</option>
+                    </select>
+                  </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <label style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8' }}>{formData.mode === 'online' ? 'Meeting Link' : 'Location'}</label>
@@ -382,7 +468,7 @@ const EventManagerEvents: React.FC = () => {
             setEditingEventId(null);
             setFormData({
               title: '', category: 'Networking & Mixer', limit: '',
-              description: '', date: '', startTime: '', endTime: '',
+              description: '', date: '', startTime: '', startTimePeriod: 'AM', endTime: '', endTimePeriod: 'PM',
               venue: '', audience: 'Platform Wide', mode: 'offline'
             });
             setSelectedImage(null);
@@ -515,7 +601,7 @@ const EventManagerEvents: React.FC = () => {
               }}
             >
               <div style={{ position: 'relative', height: '200px' }}>
-                <img src={event.image} alt={event.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={event.cover_image || 'https://images.unsplash.com/photo-1540575861501-7cf05a4b125a?w=800&auto=format&fit=crop&q=60'} alt={event.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 <div style={{ position: 'absolute', top: '16px', right: '16px' }}>
                   <div style={{
                     padding: '8px 16px',
@@ -554,14 +640,14 @@ const EventManagerEvents: React.FC = () => {
                 <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '20px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#1e293b', fontWeight: 700, fontSize: '14px' }}>
-                      <Users size={16} /> {event.registrations} Registrations
+                      <Users size={16} /> {event.attendees_count} Registrations
                     </div>
                     <div style={{ fontSize: '14px', fontWeight: 700, color: '#64748b' }}>
-                      {Math.round((event.registrations / event.capacity) * 100)}% Full
+                      {event.max_attendees > 0 ? Math.round((event.attendees_count / event.max_attendees) * 100) : 0}% Full
                     </div>
                   </div>
                   <div style={{ height: '8px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${(event.registrations / event.capacity) * 100}%`, background: brandPrimary, borderRadius: '4px' }}></div>
+                    <div style={{ height: '100%', width: `${event.max_attendees > 0 ? (event.attendees_count / event.max_attendees) * 100 : 0}%`, background: brandPrimary, borderRadius: '4px' }}></div>
                   </div>
                 </div>
 
@@ -573,7 +659,7 @@ const EventManagerEvents: React.FC = () => {
                     <Edit2 size={16} /> Edit
                   </button>
                   <button 
-                    onClick={() => navigate('/event-manager/attendees')}
+                    onClick={() => navigate(`${baseRoute}/attendees`)}
                     style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#fff', color: '#1e293b', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                   >
                     <Users size={16} /> Attendees
@@ -605,7 +691,7 @@ const EventManagerEvents: React.FC = () => {
                            {[
                              { label: 'View Public Portal', icon: <ExternalLink size={14} />, action: () => alert('Opening public portal...') },
                              { label: 'Duplicate Event', icon: <Plus size={14} />, action: () => alert('Event duplicated!') },
-                             { label: 'Delete Event', icon: <Trash2 size={14} />, action: () => { if(confirm('Are you sure you want to delete this event?')) alert('Event deleted!'); }, danger: true },
+                             { label: 'Delete Event', icon: <Trash2 size={14} />, action: () => handleDelete(event.id), danger: true },
                            ].map((item, i) => (
                              <button 
                                key={i}

@@ -1,37 +1,66 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowLeft, Calendar, MapPin, Clock, 
   Share2, 
-  Download
+  Download,
+  Award
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { eventsApi, usersApi } from '../services/api';
+import { generateEventCertificate } from '../utils/CertificateGenerator';
 
-interface Event {
-  id: string;
-  title: string;
-  date: string;
-  time: string;
-  location: string;
-  type: 'Online' | 'In-Person' | 'Hybrid';
-  status: 'Registered' | 'Attended' | 'Missed' | 'Cancelled';
-  thumbnail: string;
-  countdown?: string;
-}
-
-const MOCK_MY_EVENTS: Event[] = [
-  { id: '1', title: 'Global Alumni Tech Summit 2026', date: 'April 15, 2026', time: '10:00 AM - 4:00 PM', location: 'NeST Innovation Hub, Kochi', type: 'Hybrid', status: 'Registered', thumbnail: 'https://images.unsplash.com/photo-1540575861501-7ad05823c95b?auto=format&fit=crop&q=80&w=400', countdown: '18 Days to go' },
-  { id: '2', title: 'Career Pivot: AI Engineering', date: 'April 22, 2026', time: '6:30 PM - 8:00 PM', location: 'Zoom Webinar', type: 'Online', status: 'Registered', thumbnail: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&q=80&w=400', countdown: '25 Days to go' },
-  { id: '3', title: 'NeST Annual Networking Gala', date: 'March 10, 2026', time: '7:00 PM - 10:00 PM', location: 'The Grand Ballroom, Bangalore', type: 'In-Person', status: 'Attended', thumbnail: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&q=80&w=400' },
-  { id: '4', title: 'System Design for Scale: Go vs Rust', date: 'Feb 15, 2026', time: '11:00 AM', location: 'Virtual', type: 'Online', status: 'Attended', thumbnail: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&q=80&w=400' },
-];
 
 const MyEvents: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
+  const [events, setEvents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [userProfile, setUserProfile] = useState<any>(null);
 
-  const filteredEvents = MOCK_MY_EVENTS.filter(e => 
-    activeTab === 'upcoming' ? e.status === 'Registered' : (e.status === 'Attended' || e.status === 'Missed')
-  );
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [eventsRes, profileRes] = await Promise.all([
+        eventsApi.getMyEvents(),
+        usersApi.getProfile()
+      ]);
+      
+      if (eventsRes.success && eventsRes.data) {
+        setEvents((eventsRes.data as any).events || []);
+      }
+      
+      if (profileRes.success && profileRes.data) {
+        setUserProfile((profileRes.data as any).user);
+      }
+    } catch (err) {
+      console.error("Failed to fetch data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const handleDownloadCertificate = (event: any) => {
+    if (!userProfile) {
+      alert("User profile not loaded. Please try again.");
+      return;
+    }
+    
+    generateEventCertificate(
+      userProfile.full_name || userProfile.name || 'NeST Digital Member',
+      event.title,
+      event.date
+    );
+  };
+
+  const filteredEvents = events.filter(e => {
+    const eventDate = new Date(e.date);
+    const now = new Date();
+    return activeTab === 'upcoming' ? eventDate >= now : eventDate < now;
+  });
 
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto', paddingBottom: '5rem' }}>
@@ -108,7 +137,7 @@ const MyEvents: React.FC = () => {
             >
               {/* Thumbnail with Overlay */}
               <div style={{ position: 'relative', aspectRatio: '16/9' }}>
-                <img src={event.thumbnail} alt={event.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={event.cover_image || 'https://images.unsplash.com/photo-1540575861501-7ad05823c95b?auto=format&fit=crop&q=80&w=400'} alt={event.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 <div style={{ position: 'absolute', top: '1rem', right: '1rem' }}>
                   <div style={{ 
                     background: 'rgba(255, 255, 255, 0.9)', 
@@ -120,16 +149,9 @@ const MyEvents: React.FC = () => {
                     color: '#0F172A',
                     boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                   }}>
-                    {event.type}
+                    {event.mode || 'Hybrid'}
                   </div>
                 </div>
-                {event.countdown && (
-                   <div style={{ position: 'absolute', bottom: '1rem', left: '1rem' }}>
-                     <div style={{ background: '#d32f2f', color: 'white', padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 800 }}>
-                        {event.countdown}
-                     </div>
-                   </div>
-                )}
               </div>
 
               {/* Content */}
@@ -150,24 +172,46 @@ const MyEvents: React.FC = () => {
 
                 <div style={{ marginTop: 'auto', paddingTop: '1.5rem', display: 'flex', gap: '0.75rem' }}>
                   {activeTab === 'upcoming' ? (
-                    <button style={{ flex: 1, background: '#F1F5F9', borderRadius: '10px', border: 'none', color: '#0F172A', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: '0.75rem', fontWeight: 700, gap: '0.5rem' }}>
+                    <button 
+                      onClick={() => {
+                        const url = `${window.location.origin}/events/${event.id}`;
+                        if (navigator.share) {
+                          navigator.share({
+                            title: event.title,
+                            text: `Check out this event: ${event.title}`,
+                            url: url,
+                          }).catch(() => {});
+                        } else {
+                          navigator.clipboard.writeText(url);
+                          alert('Event link copied to clipboard!');
+                        }
+                      }}
+                      style={{ flex: 1, background: '#F1F5F9', borderRadius: '10px', border: 'none', color: '#0F172A', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: '0.75rem', fontWeight: 700, gap: '0.5rem' }}
+                    >
                       <Share2 size={18} /> Share Event
                     </button>
                   ) : (
-                    <>
                       <button 
-                        onClick={() => alert('Certificate download initiated.')}
-                        style={{ flex: 1, background: '#F1F5F9', color: '#0F172A', padding: '0.75rem', borderRadius: '10px', border: 'none', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                        onClick={() => handleDownloadCertificate(event)}
+                        disabled={!event.is_certificate_issued}
+                        style={{ 
+                          flex: 1, 
+                          background: event.is_certificate_issued ? '#f0fdf4' : '#F1F5F9', 
+                          color: event.is_certificate_issued ? '#166534' : '#94a3b8', 
+                          padding: '0.75rem', 
+                          borderRadius: '10px', 
+                          border: event.is_certificate_issued ? '1px solid #bbf7d0' : 'none', 
+                          fontWeight: 700, 
+                          cursor: event.is_certificate_issued ? 'pointer' : 'not-allowed', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          gap: '0.5rem' 
+                        }}
                       >
-                        <Download size={18} /> Certificate
+                        {event.is_certificate_issued ? <Award size={18} /> : <Download size={18} />}
+                        {event.is_certificate_issued ? 'Download Certificate' : 'Certificate Pending'}
                       </button>
-                      <button 
-                        onClick={() => alert('Opening recording player...')}
-                        style={{ flex: 1, background: 'transparent', border: '1.5px solid #E2E8F0', color: '#64748B', padding: '0.75rem', borderRadius: '10px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                      >
-                        Watch Recording
-                      </button>
-                    </>
                   )}
                 </div>
               </div>

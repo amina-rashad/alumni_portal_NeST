@@ -2,24 +2,43 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft, ImageIcon, FileText, 
-  MapPin, Sparkles, 
+  MapPin, Sparkles, Plus,
   Send, X, Globe, Lock
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { socialApi, getUser } from '../services/api';
 
 const CreatePost: React.FC = () => {
   const navigate = useNavigate();
+  const user = getUser() as any;
   const [content, setContent] = useState('');
   const [tags, setTags] = useState<string[]>(['NeSTLife']);
   const [newTag, setNewTag] = useState('');
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [visibility, setVisibility] = useState<'Public' | 'Connections'>('Public');
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const newImages = Array.from(e.target.files).map(file => URL.createObjectURL(file));
-      setSelectedImages(prev => [...prev, ...newImages]);
+      Array.from(e.target.files).forEach(file => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setSelectedImages(prev => [...prev, reader.result as string]);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  };
+
+  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSelectedVideo(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -27,14 +46,24 @@ const CreatePost: React.FC = () => {
     setSelectedImages(prev => prev.filter((_, idx) => idx !== indexToRemove));
   };
 
-  const handlePostSubmit = () => {
+  const handlePostSubmit = async () => {
     if (!content.trim()) return;
     setIsSubmitting(true);
-    // Mock API delay
-    setTimeout(() => {
+    try {
+      const payload = {
+        content: content.trim() + (tags.length > 0 ? '\n\n' + tags.map(t => '#' + t).join(' ') : ''),
+        image_url: selectedImages.length > 0 ? selectedImages[0] : undefined,
+        video_url: selectedVideo || undefined
+      };
+      const res = await socialApi.createPost(payload);
+      if (res.success) {
+        navigate('/dashboard/activity');
+      }
+    } catch (err) {
+      console.error('Create Post Error:', err);
+    } finally {
       setIsSubmitting(false);
-      navigate('/dashboard/activity');
-    }, 1500);
+    }
   };
 
   const addTag = (e: React.KeyboardEvent) => {
@@ -77,11 +106,11 @@ const CreatePost: React.FC = () => {
         {/* User Context */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#F1F5F9', border: '2px solid #fff', boxShadow: '0 0 0 2px #E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#0F172A' }}>
-              NS
+            <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#F1F5F9', border: '2px solid #fff', boxShadow: '0 0 0 2px #E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#0F172A', overflow: 'hidden' }}>
+              {user?.profile_picture ? <img src={user.profile_picture} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" /> : user?.full_name?.charAt(0) || 'U'}
             </div>
             <div>
-              <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#0F172A' }}>Noble Sibi</h4>
+              <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#0F172A' }}>{user?.full_name || 'Alumnus'}</h4>
               <button 
                 onClick={() => setVisibility(visibility === 'Public' ? 'Connections' : 'Public')}
                 style={{ 
@@ -126,12 +155,12 @@ const CreatePost: React.FC = () => {
           }}
         />
 
-        {/* Image Previews */}
-        {selectedImages.length > 0 && (
+        {/* Media Previews */}
+        {(selectedImages.length > 0 || selectedVideo) && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginBottom: '1.5rem' }}>
             {selectedImages.map((img, idx) => (
               <motion.div 
-                key={idx}
+                key={`img-${idx}`}
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 style={{ position: 'relative', width: '120px', height: '120px', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
@@ -145,6 +174,21 @@ const CreatePost: React.FC = () => {
                 </button>
               </motion.div>
             ))}
+            {selectedVideo && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                style={{ position: 'relative', width: '160px', height: '120px', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', background: '#000' }}
+              >
+                <video src={selectedVideo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <button 
+                  onClick={() => setSelectedVideo(null)}
+                  style={{ position: 'absolute', top: '6px', right: '6px', background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                >
+                  <X size={14} />
+                </button>
+              </motion.div>
+            )}
           </div>
         )}
 
@@ -190,16 +234,28 @@ const CreatePost: React.FC = () => {
             />
             <label 
               htmlFor="user-photo-upload" 
-              style={{ padding: '1rem', borderRadius: '14px', border: '1px solid #E2E8F0', background: '#fff', color: '#64748B', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', cursor: 'pointer', transition: 'all 0.2s', width: '100%' }}
+              style={{ padding: '0.8rem', borderRadius: '14px', border: '1px solid #E2E8F0', background: '#fff', color: '#64748B', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', cursor: 'pointer', transition: 'all 0.2s', width: '100%', fontSize: '0.9rem' }}
             >
-              <ImageIcon size={20} color="#10B981" /> Photo / Video
+              <ImageIcon size={18} color="#10B981" /> Photos
             </label>
           </div>
-          <button style={{ flex: 1, padding: '1rem', borderRadius: '14px', border: '1px solid #E2E8F0', background: '#fff', color: '#64748B', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', cursor: 'pointer', transition: 'all 0.2s' }}>
-            <FileText size={20} color="#3B82F6" /> Document
-          </button>
-          <button style={{ flex: 1, padding: '1rem', borderRadius: '14px', border: '1px solid #E2E8F0', background: '#fff', color: '#64748B', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', cursor: 'pointer', transition: 'all 0.2s' }}>
-            <MapPin size={20} color="#EF4444" /> Location
+          <div style={{ flex: 1 }}>
+            <input 
+              type="file" 
+              id="user-video-upload" 
+              accept="video/*" 
+              style={{ display: 'none' }} 
+              onChange={handleVideoUpload} 
+            />
+            <label 
+              htmlFor="user-video-upload" 
+              style={{ padding: '0.8rem', borderRadius: '14px', border: '1px solid #E2E8F0', background: '#fff', color: '#64748B', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', cursor: 'pointer', transition: 'all 0.2s', width: '100%', fontSize: '0.9rem' }}
+            >
+              <Plus size={18} color="#3B82F6" /> Video
+            </label>
+          </div>
+          <button style={{ flex: 1, padding: '0.8rem', borderRadius: '14px', border: '1px solid #E2E8F0', background: '#fff', color: '#64748B', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', cursor: 'pointer', transition: 'all 0.2s', fontSize: '0.9rem' }}>
+            <FileText size={18} color="#EF4444" /> Doc
           </button>
         </div>
 

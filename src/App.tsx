@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { getUser } from './services/api';
+import { getUser, studentAPI, setTokens } from './services/api';
 
 // Splash & Styles
 import './App.css';
 import nestMainLogo from './assets/nest_logo.png';
+import heroBg from './assets/hero-bg.png';
 
 // Main / Public Pages
 import Home from './pages/Home';
@@ -124,9 +125,10 @@ import RecruiterApplications from './pages/recruiter/RecruiterApplications';
 import RecruiterReports from './pages/recruiter/RecruiterReports';
 import RecruiterSettings from './pages/recruiter/RecruiterSettings';
 import RecruiterPost from './pages/recruiter/RecruiterPost';
+import RecruiterPosts from './pages/recruiter/RecruiterPosts';
 
 import RecruiterHelp from './pages/recruiter/RecruiterHelp';
-import RecruiterMail from './pages/recruiter/RecruiterMail 2';
+import RecruiterMail from './pages/recruiter/RecruiterMail';
 
 // Course Manager Pages
 import CourseManagerLayout from './pages/course_manager/CourseManagerLayout';
@@ -139,10 +141,11 @@ import CourseManagerCertificates from './pages/course_manager/Certificates';
 import CourseManagerAttendance from './pages/course_manager/Attendance';
 import CourseManagerReminderCenter from './pages/course_manager/ReminderCenter';
 import CourseManagerRecommendations from './pages/course_manager/RecommendationSetup';
+import CourseManagerPerformance from './pages/course_manager/PAModule';
 import CourseManagerInsights from './pages/course_manager/CompletionInsights';
 
 /* -- Luxury Splash Screen with Mask Reveal -- */
-import heroBg from './assets/hero-bg.jpg';
+import heroBgSplash from './assets/hero-bg.jpg';
 const SplashScreen: React.FC = () => (
   <motion.div
     className="splash-screen"
@@ -346,7 +349,7 @@ const AnimatedRoutes: React.FC = () => {
   return (
     <React.Fragment>
       <ScrollToTop />
-      <Routes location={location}>
+      <Routes>
         {/* Public Routes */}
         <Route path="/" element={<PageTransition><Home /></PageTransition>} />
         <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
@@ -423,6 +426,7 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="certification" element={<PageTransition><AdminCertification /></PageTransition>} />
           <Route path="applications" element={<PageTransition><Applications /></PageTransition>} />
           <Route path="reports" element={<PageTransition><Reports /></PageTransition>} />
+          <Route path="events" element={<PageTransition><EventManagerEvents /></PageTransition>} />
           <Route path="settings" element={<PageTransition><Settings /></PageTransition>} />
         </Route>
 
@@ -433,10 +437,14 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="events" element={<PageTransition><EventManagerEvents /></PageTransition>} />
           <Route path="attendees" element={<PageTransition><EventManagerAttendees /></PageTransition>} />
           <Route path="posts" element={<PageTransition><EventManagerPosts /></PageTransition>} />
+          <Route path="community-feed" element={<PageTransition><ActivityFeed /></PageTransition>} />
 
           <Route path="registrations" element={<PageTransition><EventManagerRegistrations /></PageTransition>} />
           <Route path="reports" element={<PageTransition><EventManagerReports /></PageTransition>} />
           <Route path="settings" element={<PageTransition><EventManagerSettings /></PageTransition>} />
+          <Route path="profile" element={<PageTransition><ViewProfile /></PageTransition>} />
+          <Route path="profile/edit" element={<PageTransition><EditProfile /></PageTransition>} />
+          <Route path="profile/:id" element={<PageTransition><PublicProfile /></PageTransition>} />
         </Route>
 
         {/* Recruiter Protected Routes */}
@@ -445,13 +453,17 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="dashboard" element={<PageTransition><RecruiterDashboard /></PageTransition>} />
           <Route path="jobs" element={<PageTransition><RecruiterJobs /></PageTransition>} />
           <Route path="jobs/post" element={<PageTransition><RecruiterPostJob /></PageTransition>} />
-          <Route path="post" element={<PageTransition><RecruiterPost /></PageTransition>} />
+          <Route path="post" element={<PageTransition><RecruiterPosts /></PageTransition>} />
+          <Route path="community-feed" element={<PageTransition><ActivityFeed /></PageTransition>} />
 
           <Route path="applications" element={<PageTransition><RecruiterApplications /></PageTransition>} />
           <Route path="reports" element={<PageTransition><RecruiterReports /></PageTransition>} />
           <Route path="settings" element={<PageTransition><RecruiterSettings /></PageTransition>} />
           <Route path="help" element={<PageTransition><RecruiterHelp /></PageTransition>} />
           <Route path="mail" element={<PageTransition><RecruiterMail /></PageTransition>} />
+          <Route path="profile" element={<PageTransition><ViewProfile /></PageTransition>} />
+          <Route path="profile/edit" element={<PageTransition><EditProfile /></PageTransition>} />
+          <Route path="profile/:id" element={<PageTransition><PublicProfile /></PageTransition>} />
         </Route>
 
         {/* Course Manager Protected Routes */}
@@ -467,6 +479,7 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="attendance" element={<CourseManagerAttendance />} />
           <Route path="reminders" element={<CourseManagerReminderCenter />} />
           <Route path="recommendations" element={<CourseManagerRecommendations />} />
+          <Route path="performance" element={<CourseManagerPerformance />} />
           <Route path="insights" element={<CourseManagerInsights />} />
         </Route>
 
@@ -494,10 +507,15 @@ const App: React.FC = () => {
         {isLoading ? (
           <SplashScreen key="splash" />
         ) : (
-          <React.Fragment>
+          <motion.div 
+            key="main-app"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+          >
             <ScrollToTop />
             <AnimatedRoutes />
-          </React.Fragment>
+          </motion.div>
         )}
       </AnimatePresence>
     </Router>

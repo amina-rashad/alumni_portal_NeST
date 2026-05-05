@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  LayoutDashboard, Briefcase, FileText, Settings, LogOut, Bell, Menu, X, ChevronDown, UserCheck, UserPlus, BarChart3, HelpCircle, Send, ArrowLeft, Mail
+  LayoutDashboard, Briefcase, FileText, Settings, LogOut, Bell, Menu, X, ChevronDown, UserCheck, UserPlus, BarChart3, HelpCircle, Send, ArrowLeft, Mail, Activity
 } from 'lucide-react';
 import nestMainLogo from '../../assets/nest_logo.png';
 import { getUser, authApi, notificationsApi, type AuthUser } from '../../services/api';
@@ -18,6 +18,7 @@ const recruiterMenuGroups: NavGroup[] = [
     section: 'Overview', icon: <LayoutDashboard size={17} />,
     items: [
       { name: 'Dashboard', path: '/recruiter/dashboard', icon: <LayoutDashboard size={15} /> },
+      { name: 'Community Feed', path: '/recruiter/community-feed', icon: <Activity size={15} /> },
       { name: 'Hiring Insights', path: '/recruiter/reports', icon: <BarChart3 size={15} /> },
     ]
   },
@@ -537,7 +538,7 @@ const RecruiterLayout: React.FC = () => {
                     border: '1px solid #f1f5f9', padding: '6px', zIndex: 9999,
                   }}
                 >
-                  <Link to="/profile" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', textDecoration: 'none', color: '#334155', fontSize: '14px' }}> <LayoutDashboard size={16} /> View Profile </Link>
+                  <Link to="/recruiter/profile" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', textDecoration: 'none', color: '#334155', fontSize: '14px' }}> <LayoutDashboard size={16} /> View Profile </Link>
                   <Link to="/recruiter/settings" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', textDecoration: 'none', color: '#334155', fontSize: '14px' }}> <Settings size={16} /> Recruiter Settings </Link>
                   <div style={{ height: '1px', background: '#f1f5f9', margin: '4px 8px' }} />
                   <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', width: '100%', textAlign: 'left', color: '#ef4444', fontSize: '14px', fontWeight: 600 }}> <LogOut size={16} /> Logout </button>

@@ -22,8 +22,11 @@ def _serialize_application(app_doc: dict, db=None) -> dict:
         "user_id": str(app_doc.get("user_id", "")),
         "cover_letter": app_doc.get("cover_letter", ""),
         "resume_url": app_doc.get("resume_url", ""),
-        "status": app_doc.get("status", "pending"),
+        "status": "Applied" if app_doc.get("status") in ["pending", None] else app_doc.get("status"),
         "applied_at": app_doc.get("applied_at").isoformat() if app_doc.get("applied_at") else None,
+        "updated_at": app_doc.get("updatedAt").isoformat() if app_doc.get("updatedAt") else None,
+        "interviewDate": app_doc.get("interviewDate"),
+        "notes": app_doc.get("notes", ""),
     }
 
     # Optionally populate job details
@@ -89,7 +92,7 @@ def apply_for_job():
             "job_id": ObjectId(data["job_id"]),
             "cover_letter": data.get("cover_letter", ""),
             "resume_url": data.get("resume_url", ""),
-            "status": "pending",  # pending | reviewed | shortlisted | rejected | hired
+            "status": "Applied",  # Applied | Aptitude | Shortlisted | Interview Scheduled | Offered | Rejected
             "applied_at": datetime.now(timezone.utc),
         }
 
@@ -195,8 +198,8 @@ def withdraw_application(application_id):
     if str(app_doc["user_id"]) != user_id:
         return jsonify({"success": False, "message": "Access denied."}), 403
 
-    if app_doc.get("status") != "pending":
-        return jsonify({"success": False, "message": "Can only withdraw pending applications."}), 400
+    if app_doc.get("status") != "Applied":
+        return jsonify({"success": False, "message": "Can only withdraw initial applications."}), 400
 
     db["applications"].delete_one({"_id": ObjectId(application_id)})
 

@@ -3,7 +3,8 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, Users, GraduationCap, School, Briefcase,
-  FileText, BarChart3, Settings, LogOut, Bell, Menu, X, ChevronDown, BookOpen, Calendar, Award, Shield, UserPlus
+  FileText, BarChart3, Settings, LogOut, Bell, Menu, X, ChevronDown, BookOpen, Calendar, Award, Shield, UserPlus,
+  Activity
 } from 'lucide-react';
 import nestMainLogo from '../../assets/nest_logo.png';
 import { getUser, authApi, type AuthUser } from '../../services/api';
@@ -50,7 +51,8 @@ const AdminLayout: React.FC = () => {
     { name: 'Job Management', path: '/recruiter/dashboard', icon: <Briefcase size={20} />, roles: ['super_admin', 'admin', 'job_recruiter'] },
     { name: 'Applications', path: '/recruiter/applications', icon: <FileText size={20} />, roles: ['super_admin', 'admin', 'job_recruiter'] },
     { name: 'Reports', path: '/admin/reports', icon: <BarChart3 size={20} />, roles: ['super_admin', 'admin'] },
-    { name: 'Event Management', path: '/event-manager/dashboard', icon: <Calendar size={20} />, roles: ['super_admin', 'admin', 'event_manager'] },
+    { name: 'Community Feed', path: '/dashboard/activity', icon: <Activity size={20} />, roles: ['super_admin', 'admin'] },
+    { name: 'Event Management', path: '/admin/events', icon: <Calendar size={20} />, roles: ['super_admin', 'admin', 'event_manager'] },
     { name: 'Course Management', path: '/course-manager/dashboard', icon: <BookOpen size={20} />, roles: ['super_admin', 'admin', 'course_manager'] },
     { name: 'System Roles', path: '/admin/roles', icon: <Shield size={20} />, roles: ['super_admin'] },
     { name: 'Settings', path: '/admin/settings', icon: <Settings size={20} />, roles: ['super_admin', 'admin'] },

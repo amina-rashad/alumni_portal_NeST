@@ -2,16 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ImagePlus, Send, X, Loader2,
-  CheckCircle2, Trash2, Clock, MessageSquare, Video as VideoIcon, Plus
+  CheckCircle2, Trash2, Clock, MessageSquare, Video as VideoIcon
 } from 'lucide-react';
 import { socialApi } from '../../services/api';
 import StatusModal from '../../components/StatusModal';
-
-const mockEvents = [
-  { id: '1', name: 'Global Alumni Meet 2024' },
-  { id: '2', name: 'Tech Talk: Future of AI' },
-  { id: '3', name: 'Web Development Workshop' },
-];
 
 interface Post {
   id: string;
@@ -22,11 +16,9 @@ interface Post {
   created_at: string;
 }
 
-const EventManagerPosts: React.FC = () => {
-  const brandPrimary = '#233167';
+const RecruiterPosts: React.FC = () => {
+  const brandPrimary = '#1a2652'; // Nest Navy
   
-  const [selectedEvent, setSelectedEvent] = useState('');
-  const [selectedClass, setSelectedClass] = useState('');
   const [postContent, setPostContent] = useState('');
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
@@ -99,7 +91,7 @@ const EventManagerPosts: React.FC = () => {
   };
 
   const handlePost = async () => {
-    if (!postContent) return;
+    if (!postContent.trim()) return;
     setIsPosting(true);
     setMessage({ type: '', text: '' });
     try {
@@ -111,9 +103,7 @@ const EventManagerPosts: React.FC = () => {
       
       const res = await socialApi.createPost(payload);
       if (res.success) {
-        setMessage({ type: 'success', text: 'Event broadcast sent successfully!' });
-        setSelectedEvent('');
-        setSelectedClass('');
+        setMessage({ type: 'success', text: 'Broadcast sent successfully!' });
         setPostContent('');
         setSelectedImages([]);
         setSelectedVideo(null);
@@ -122,7 +112,7 @@ const EventManagerPosts: React.FC = () => {
         setMessage({ type: 'error', text: res.message || 'Failed to post update.' });
       }
     } catch (err) {
-      console.error('Event Post Error:', err);
+      console.error('Recruiter Post Error:', err);
       setMessage({ type: 'error', text: 'Network error. Please try again.' });
     } finally {
       setIsPosting(false);
@@ -185,13 +175,10 @@ const EventManagerPosts: React.FC = () => {
 
   const timeAgo = (dateStr: string) => {
     if (!dateStr) return 'Just now';
-    
-    // Ensure the date string is treated as UTC if it lacks timezone info
     let normalizedDate = dateStr;
     if (!dateStr.endsWith('Z') && !dateStr.includes('+') && !dateStr.includes('-')) {
       normalizedDate += 'Z';
     }
-    
     const diff = Date.now() - new Date(normalizedDate).getTime();
     const mins = Math.floor(diff / 60000);
     if (mins < 1) return 'Just now';
@@ -206,13 +193,12 @@ const EventManagerPosts: React.FC = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '1200px', margin: '0 auto', width: '100%', paddingBottom: '60px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#1e293b', margin: 0, fontFamily: "'Montserrat', sans-serif" }}>Event Posts</h1>
-          <p style={{ color: '#64748b', marginTop: '4px' }}>Share event highlights, photos, and updates with participants.</p>
+          <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#1e293b', margin: 0, fontFamily: "'Montserrat', sans-serif" }}>Community Feed</h1>
+          <p style={{ color: '#64748b', marginTop: '4px' }}>Share updates, job alerts, and company news with the alumni community.</p>
         </div>
       </div>
 
       <div>
-        {/* Main Feed Area */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', width: '100%' }}>
           
           {/* Create Post Card */}
@@ -221,7 +207,7 @@ const EventManagerPosts: React.FC = () => {
               <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: `${brandPrimary}15`, color: brandPrimary, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <ImagePlus size={20} />
               </div>
-              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#1e293b' }}>Create New Post</h3>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#1e293b' }}>Create New Broadcast</h3>
             </div>
 
             {message.text && (
@@ -245,10 +231,10 @@ const EventManagerPosts: React.FC = () => {
             
 
             <textarea 
-              placeholder="What do you want to share about this event? Add highlights or after-event thoughts..."
+              placeholder="What would you like to broadcast today? Share job updates or company highlights..."
               value={postContent}
               onChange={(e) => setPostContent(e.target.value)}
-              rows={8}
+              rows={6}
               style={{ width: '100%', padding: '20px', borderRadius: '20px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '15px', resize: 'none', background: '#fff', color: '#1e293b', fontFamily: 'inherit', marginBottom: '16px', transition: 'all 0.2s', lineHeight: '1.6' }}
             />
 
@@ -336,15 +322,15 @@ const EventManagerPosts: React.FC = () => {
               </div>
               <button 
                 onClick={handlePost}
-                disabled={!postContent || isPosting}
+                disabled={!postContent.trim() || isPosting}
                 style={{ 
                   display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 24px', 
-                  background: (!postContent) ? '#cbd5e1' : brandPrimary, 
-                  color: '#fff', borderRadius: '10px', fontWeight: 600, border: 'none', cursor: (!postContent) ? 'not-allowed' : 'pointer', transition: 'all 0.2s',
-                  boxShadow: (!postContent) ? 'none' : `0 4px 14px 0 rgba(35, 49, 103, 0.3)`
+                  background: (!postContent.trim()) ? '#cbd5e1' : brandPrimary, 
+                  color: '#fff', borderRadius: '10px', fontWeight: 600, border: 'none', cursor: (!postContent.trim()) ? 'not-allowed' : 'pointer', transition: 'all 0.2s',
+                  boxShadow: (!postContent.trim()) ? 'none' : `0 4px 14px 0 rgba(26, 38, 82, 0.3)`
                 }}
               >
-                {isPosting ? 'Posting...' : <><Send size={16} /> Post</>}
+                {isPosting ? 'Broadcasting...' : <><Send size={16} /> Broadcast Now</>}
               </button>
             </div>
           </div>
@@ -356,18 +342,18 @@ const EventManagerPosts: React.FC = () => {
       <div style={{ marginTop: '20px', paddingTop: '40px', borderTop: '2px solid #f1f5f9' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <div>
-            <h3 style={{ fontSize: '22px', fontWeight: 800, color: '#1e293b', margin: 0 }}>My Post History</h3>
+            <h3 style={{ fontSize: '22px', fontWeight: 800, color: '#1e293b', margin: 0 }}>My Broadcast History</h3>
             <p style={{ color: '#64748b', fontSize: '14px', margin: '4px 0 0' }}>Manage and track all updates you've shared with the community.</p>
           </div>
           <div style={{ background: `${brandPrimary}10`, color: brandPrimary, padding: '8px 16px', borderRadius: '12px', fontSize: '14px', fontWeight: 700 }}>
-            {myPosts.length} {myPosts.length === 1 ? 'Post' : 'Posts'}
+            {myPosts.length} {myPosts.length === 1 ? 'Broadcast' : 'Broadcasts'}
           </div>
         </div>
 
         {loadingPosts ? (
           <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
             <Loader2 size={28} className="spin" style={{ margin: '0 auto 12px' }} />
-            <p style={{ fontWeight: 600 }}>Loading your posts...</p>
+            <p style={{ fontWeight: 600 }}>Loading your broadcasts...</p>
           </div>
         ) : myPosts.length === 0 ? (
           <div style={{ 
@@ -378,7 +364,7 @@ const EventManagerPosts: React.FC = () => {
             border: '1px solid #f1f5f9' 
           }}>
             <MessageSquare size={32} style={{ color: '#cbd5e1', marginBottom: '12px' }} />
-            <p style={{ color: '#94a3b8', fontWeight: 600, margin: 0 }}>You haven't posted anything yet.</p>
+            <p style={{ color: '#94a3b8', fontWeight: 600, margin: 0 }}>You haven't broadcasted anything yet.</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -484,4 +470,4 @@ const EventManagerPosts: React.FC = () => {
   );
 };
 
-export default EventManagerPosts;
+export default RecruiterPosts;

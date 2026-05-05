@@ -26,22 +26,22 @@ MOCK_RECOMMENDATIONS = [
     }
 ]
 
-@recommendations_bp.route('/api/recommendations', methods=['GET'])
+@recommendations_bp.route('/', methods=['GET'])
 def get_recommendations():
     return jsonify({"success": True, "data": MOCK_RECOMMENDATIONS})
 
-@recommendations_bp.route('/api/recommendations', methods=['POST'])
+@recommendations_bp.route('/', methods=['POST'])
 def create_recommendation():
     data = request.json
     # mongo.db.recommendations.insert_one(data)
     return jsonify({"success": True, "message": "Course pathway established"})
 
-@recommendations_bp.route('/api/recommendations/<id>', methods=['DELETE'])
+@recommendations_bp.route('/<id>', methods=['DELETE'])
 def delete_recommendation(id):
     # mongo.db.recommendations.delete_one({"_id": ObjectId(id)})
     return jsonify({"success": True, "message": "Recommendation mapping removed"})
 
-@recommendations_bp.route('/api/recommendations/stats', methods=['GET'])
+@recommendations_bp.route('/stats', methods=['GET'])
 def get_stats():
     return jsonify({
         "success": True, 

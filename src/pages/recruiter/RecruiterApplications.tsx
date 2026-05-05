@@ -1,8 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
-import { Search, Mail, User, FileText, Briefcase, Users, Calendar, Clock, Filter, Download, ChevronDown, DownloadCloud, FileArchive, X, AlertCircle, Edit, CheckSquare, MessageSquare } from 'lucide-react';
+import { Search, Mail, User, FileText, Briefcase, Users, Calendar, Clock, Filter, Download, ChevronDown, DownloadCloud, FileArchive, X, AlertCircle, Edit, CheckSquare, MessageSquare, Loader2 } from 'lucide-react';
 import { recruiterApi } from '../../services/api';
 import nestIcon from '../../assets/nest_icon.png';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
+import JSZip from 'jszip';
 
 const smoothSpring = { type: 'spring' as const, stiffness: 100, damping: 20, mass: 1 };
 
@@ -26,6 +29,11 @@ const RecruiterApplications: React.FC = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [selectedApp, setSelectedApp] = useState<any>(null);
   const [updateData, setUpdateData] = useState({ status: 'Aptitude', interviewDate: '', notes: '' });
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [isBulkDownloading, setIsBulkDownloading] = useState(false);
+  
+  const resumeRef = useRef<HTMLDivElement>(null);
+  const [renderData, setRenderData] = useState<any>(null);
 
   const getStatusStyles = (status: string) => {
     switch (status) {
@@ -52,15 +60,6 @@ const RecruiterApplications: React.FC = () => {
       const response = await recruiterApi.getApplications();
       if (response.success && response.data) {
         let apps = response.data.applications;
-        // Inject dummy data for testing if empty
-        if (apps.length === 0) {
-            apps = [
-                { id: 'd1', applicant_name: 'Arjun Panicker', applicant_email: 'arjun.p@alumni.nest.com', job_title: 'Senior Software Engineer', applied_at: new Date().toISOString(), status: 'Aptitude', interviewDate: '', notes: '' },
-                { id: 'd2', applicant_name: 'Sneha Nair', applicant_email: 'sneha.n@alumni.nest.com', job_title: 'UI/UX Designer', applied_at: new Date().toISOString(), status: 'Shortlisted', interviewDate: '', notes: '' },
-                { id: 'd3', applicant_name: 'Rahul K.R.', applicant_email: 'rahul.kr@alumni.nest.com', job_title: 'Senior Software Engineer', applied_at: new Date().toISOString(), status: 'Interview Scheduled', interviewDate: '2026-03-28', notes: 'Technical round scheduled.' },
-                { id: 'd4', applicant_name: 'Meera Joseph', applicant_email: 'meera.j@alumni.nest.com', job_title: 'Product Manager', applied_at: new Date().toISOString(), status: 'Applied', interviewDate: '', notes: '' },
-            ];
-        }
         setApplications(apps);
       }
     } catch (error) {
@@ -70,17 +69,119 @@ const RecruiterApplications: React.FC = () => {
     }
   };
 
+  const generatePDF = async (data: any): Promise<Blob | null> => {
+    return new Promise((resolve) => {
+      setRenderData(data);
+      // Wait for re-render
+      setTimeout(async () => {
+        if (!resumeRef.current) {
+          resolve(null);
+          return;
+        }
+        
+        try {
+          const canvas = await html2canvas(resumeRef.current, { 
+            scale: 2, 
+            useCORS: true, 
+            backgroundColor: '#ffffff',
+            logging: false
+          });
+          
+          const imgData = canvas.toDataURL('image/png');
+          const pdf = new jsPDF('p', 'mm', 'a4');
+          const pdfWidth = pdf.internal.pageSize.getWidth();
+          const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+          
+          pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+          resolve(pdf.output('blob'));
+        } catch (err) {
+          console.error('PDF Generation Error:', err);
+          resolve(null);
+        } finally {
+          setRenderData(null);
+        }
+      }, 100);
+    });
+  };
+
+  const handleDownloadCV = async (app: any) => {
+    if (app.resume_url && (app.resume_url.startsWith('http') || app.resume_url.startsWith('data:'))) {
+        // Direct download
+        const link = document.createElement('a');
+        link.href = app.resume_url;
+        link.download = `${app.applicant_name.replace(/\s+/g, '_')}_Resume.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        return;
+    }
+
+    if (!app.resume_data) {
+        alert("No resume data found for this applicant.");
+        return;
+    }
+
+    setDownloadingId(app.id);
+    const blob = await generatePDF(app.resume_data);
+    if (blob) {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${app.applicant_name.replace(/\s+/g, '_')}_Resume.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+    setDownloadingId(null);
+  };
+
+  const confirmBulkDownload = async () => {
+    setShowConfirmModal(false);
+    setIsBulkDownloading(true);
+    
+    try {
+        const zip = new JSZip();
+        const appsToDownload = filter === 'all' ? applications : applications.filter(a => a.job_title === filter);
+        
+        for (const app of appsToDownload) {
+            if (app.resume_url && (app.resume_url.startsWith('http') || app.resume_url.startsWith('data:'))) {
+                try {
+                    const response = await fetch(app.resume_url);
+                    const blob = await response.blob();
+                    zip.file(`${app.applicant_name.replace(/\s+/g, '_')}_Resume.pdf`, blob);
+                } catch (err) {
+                    console.error(`Failed to fetch resume for ${app.applicant_name}`, err);
+                }
+            } else if (app.resume_data) {
+                const blob = await generatePDF(app.resume_data);
+                if (blob) {
+                    zip.file(`${app.applicant_name.replace(/\s+/g, '_')}_Resume.pdf`, blob);
+                }
+            }
+        }
+        
+        const content = await zip.generateAsync({ type: "blob" });
+        const url = URL.createObjectURL(content);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Resumes_${filter === 'all' ? 'All_Jobs' : filter.replace(/\s+/g, '_')}.zip`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error('Bulk download failed:', error);
+    } finally {
+        setIsBulkDownloading(false);
+    }
+  };
+
   const uniqueJobs = Array.from(new Set(applications.map(app => app.job_title)));
 
   const filteredApps = filter === 'all' 
     ? applications 
     : applications.filter(app => app.job_title === filter);
-
-  const confirmBulkDownload = () => {
-    setShowConfirmModal(false);
-    // Real download logic would go here
-    console.log("Starting download for:", filter);
-  };
 
   const handleUpdateClick = (app: any) => {
     setSelectedApp(app);
@@ -91,11 +192,44 @@ const RecruiterApplications: React.FC = () => {
     });
   };
 
-  const handleSaveUpdate = () => {
-    setApplications(apps => apps.map(a => 
-      a.id === selectedApp.id ? { ...a, ...updateData } : a
-    ));
-    setSelectedApp(null);
+  const handleSaveUpdate = async () => {
+    try {
+        const response = await recruiterApi.updateApplicationStatus(selectedApp.id, updateData);
+        if (response.success) {
+            setApplications(apps => apps.map(a => 
+                a.id === selectedApp.id ? { ...a, ...updateData } : a
+            ));
+            setSelectedApp(null);
+        } else {
+            alert(response.message || "Failed to update application.");
+        }
+    } catch (err) {
+        console.error("Update error:", err);
+        alert("An error occurred while updating the application.");
+    }
+  };
+
+  const renderTextBlock = (text: string, columns: number = 1) => {
+    if (!text) return null;
+    const blocks = text.split('\n\n').filter(Boolean);
+    return (
+      <div style={{ display: 'grid', gridTemplateColumns: columns > 1 ? `repeat(${columns}, 1fr)` : '1fr', gap: '8px' }}>
+        {blocks.map((block, idx) => {
+          const lines = block.split('\n');
+          return (
+            <div key={idx} style={{ marginBottom: columns === 1 ? '8px' : 0 }}>
+              {lines.map((line, lIdx) => {
+                if (lIdx === 0) return <div key={lIdx} style={{ fontWeight: 700, fontSize: '9px', marginBottom: '2px', color: '#000' }}>{line}</div>;
+                if (line.startsWith('-')) return <div key={lIdx} style={{ fontSize: '8px', paddingLeft: '8px', position: 'relative', marginBottom: '2px', color: '#000' }}>
+                  <span style={{ position: 'absolute', left: 0 }}>•</span> {line.substring(1).trim()}
+                </div>;
+                return <div key={lIdx} style={{ fontSize: '9px', marginBottom: '2px', color: '#000' }}>{line}</div>;
+              })}
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
   return (
@@ -175,10 +309,11 @@ const RecruiterApplications: React.FC = () => {
 
             <button 
                 onClick={() => setShowConfirmModal(true)}
+                disabled={isBulkDownloading}
                 className="btn-bulk"
             >
-                <DownloadCloud size={20} />
-                Bulk Download CVs
+                {isBulkDownloading ? <Loader2 size={20} className="animate-spin" /> : <DownloadCloud size={20} />}
+                {isBulkDownloading ? 'Preparing ZIP...' : 'Bulk Download CVs'}
             </button>
         </div>
 
@@ -260,14 +395,18 @@ const RecruiterApplications: React.FC = () => {
                             }}>
                             <Edit size={14} /> Update
                         </button>
-                        <a href={app.resume_url || '#'} download target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
-                            <button className="btn-action" style={{ 
+                        <button 
+                            onClick={() => handleDownloadCV(app)}
+                            disabled={downloadingId === app.id}
+                            className="btn-action" 
+                            style={{ 
                                 padding: '8px 16px', borderRadius: '10px', border: `1px solid ${nestNavy}`, background: nestNavy, 
-                                color: '#fff', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', cursor: 'pointer'
+                                color: '#fff', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', cursor: 'pointer',
+                                opacity: downloadingId === app.id ? 0.7 : 1
                             }}>
-                            <Download size={14} /> CV
-                            </button>
-                        </a>
+                            {downloadingId === app.id ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />} 
+                            CV
+                        </button>
                     </div>
                   </div>
                 </motion.div>
@@ -284,6 +423,69 @@ const RecruiterApplications: React.FC = () => {
           </AnimatePresence>
         </motion.div>
       )}
+
+      {/* Hidden Resume Renderer for PDF generation */}
+      <div style={{ position: 'fixed', left: '-9999px', top: 0, zIndex: -1 }}>
+        <div ref={resumeRef} style={{ 
+          background: 'white', 
+          padding: '40px', 
+          width: '595px', // A4 width at 72dpi
+          minHeight: '842px', // A4 height
+          fontFamily: 'Helvetica, Arial, sans-serif',
+          color: '#000',
+          lineHeight: 1.4,
+          boxSizing: 'border-box'
+        }}>
+          {renderData && (
+            <>
+              <div style={{ marginBottom: '20px', borderBottom: '2px solid #1a2652', paddingBottom: '15px' }}>
+                <h1 style={{ margin: '0', fontSize: '28px', fontWeight: 900, textTransform: 'uppercase', color: '#1a2652' }}>{renderData.fullName}</h1>
+                <h2 style={{ margin: '5px 0 0', fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', color: '#c8102e' }}>{renderData.title}</h2>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '10px', fontSize: '9px', color: '#555' }}>
+                  {renderData.email && <span>{renderData.email}</span>}
+                  {renderData.phone && <span>{renderData.phone}</span>}
+                  {renderData.address && <span>{renderData.address}</span>}
+                </div>
+              </div>
+
+              {renderData.summary && (
+                <div style={{ marginBottom: '15px' }}>
+                  <h3 style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', margin: '0 0 6px', color: '#1a2652', borderBottom: '1px solid #eee', paddingBottom: '3px' }}>Professional Summary</h3>
+                  <p style={{ fontSize: '9px', margin: 0, color: '#333' }}>{renderData.summary}</p>
+                </div>
+              )}
+
+              {renderData.experience && (
+                <div style={{ marginBottom: '15px' }}>
+                  <h3 style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', margin: '0 0 6px', color: '#1a2652', borderBottom: '1px solid #eee', paddingBottom: '3px' }}>Experience</h3>
+                  {renderTextBlock(renderData.experience)}
+                </div>
+              )}
+
+              {renderData.education && (
+                <div style={{ marginBottom: '15px' }}>
+                  <h3 style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', margin: '0 0 6px', color: '#1a2652', borderBottom: '1px solid #eee', paddingBottom: '3px' }}>Education</h3>
+                  {renderTextBlock(renderData.education, 2)}
+                </div>
+              )}
+
+              {renderData.projects && (
+                <div style={{ marginBottom: '15px' }}>
+                  <h3 style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', margin: '0 0 6px', color: '#1a2652', borderBottom: '1px solid #eee', paddingBottom: '3px' }}>Key Projects</h3>
+                  {renderTextBlock(renderData.projects)}
+                </div>
+              )}
+
+              {renderData.certification && (
+                <div>
+                  <h3 style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', margin: '0 0 6px', color: '#1a2652', borderBottom: '1px solid #eee', paddingBottom: '3px' }}>Certifications</h3>
+                  {renderTextBlock(renderData.certification, 2)}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
 
       {/* NeST Branded Professional Modal */}
       <AnimatePresence>

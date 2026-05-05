@@ -11,7 +11,7 @@ from app import get_db
 
 jobs_bp = Blueprint("jobs", __name__)
 
-@jobs_bp.route("/", methods=["GET"])
+@jobs_bp.route("", methods=["GET"])
 def get_all_jobs():
     """Fetch all jobs (Public)."""
     db = get_db()

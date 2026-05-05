@@ -16,10 +16,9 @@ const Login: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
-    otp: ''
+    password: ''
   });
-  const [otpSent, setOtpSent] = useState(false);
-  const [isOtpLoading, setIsOtpLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [activeProvider, setActiveProvider] = useState<SocialProvider>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -37,35 +36,11 @@ const Login: React.FC = () => {
     if (error) setError('');
   };
 
-  const handleSendOtp = async () => {
-    if (!formData.email) {
-      setError('Please enter your email first.');
-      return;
-    }
-    
-    setIsOtpLoading(true);
-    setError('');
-    
-    try {
-      const response = await authApi.sendOtp(formData.email);
-      if (response.success) {
-        setOtpSent(true);
-      } else {
-        // Fallback for mock/demo purposes if API isn't ready
-        console.warn('OTP API failed, using mock flow');
-        setOtpSent(true);
-      }
-    } catch (err) {
-      setOtpSent(true);
-    } finally {
-      setIsOtpLoading(false);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!otpSent) {
-      handleSendOtp();
+    
+    if (!formData.email || !formData.password) {
+      setError('Email and password are required.');
       return;
     }
 
@@ -73,9 +48,9 @@ const Login: React.FC = () => {
     setError('');
 
     try {
-      const response = await authApi.loginWithOtp({
+      const response = await authApi.login({
         email: formData.email,
-        otp: formData.otp,
+        password: formData.password,
       });
 
       if (response.success && response.data) {
@@ -85,22 +60,7 @@ const Login: React.FC = () => {
         setShowSuccess(true);
         setShowSuccessPopup(true);
       } else {
-        // Mock success for demo if hardcoded OTP '123456' is used or for any OTP
-        if (formData.otp.length >= 4) {
-          const mockUser = {
-            full_name: formData.email.split('@')[0],
-            email: formData.email,
-            role: 'user',
-            user_type: 'Alumni'
-          };
-          setTokens('mock_token', 'mock_refresh');
-          setUser(mockUser);
-          setLoggedInUser(mockUser);
-          setShowSuccess(true);
-          setShowSuccessPopup(true);
-        } else {
-          setError(response.message || 'Verification failed. Please check your OTP.');
-        }
+        setError(response.message || 'Login failed. Please check your credentials.');
       }
     } catch {
       setError('Something went wrong. Please try again.');
@@ -138,12 +98,14 @@ const Login: React.FC = () => {
   const handleSuccessClose = () => {
     setShowSuccessPopup(false);
     let targetPath = '/dashboard';
-    if (loggedInUser?.role === 'admin') {
+    if (loggedInUser?.role === 'admin' || loggedInUser?.role === 'super_admin') {
       targetPath = '/admin';
     } else if (loggedInUser?.role === 'event_manager') {
       targetPath = '/event-manager';
     } else if (loggedInUser?.role === 'course_manager') {
       targetPath = '/course-manager/dashboard';
+    } else if (loggedInUser?.role === 'recruiter' || loggedInUser?.role === 'job_recruiter') {
+      targetPath = '/recruiter';
     }
     navigate(targetPath);
   };
@@ -250,47 +212,39 @@ const Login: React.FC = () => {
               <label>Email Address</label>
               <div className="input-wrapper">
                 <Mail className="input-icon" size={18} />
-                <input type="email" name="email" placeholder="name@company.com" required value={formData.email} onChange={handleChange} disabled={isLoading || otpSent} />
+                <input type="email" name="email" placeholder="name@company.com" required value={formData.email} onChange={handleChange} disabled={isLoading} />
               </div>
             </div>
 
-            {!otpSent ? (
-              <button 
-                type="button" 
-                className="auth-btn" 
-                onClick={handleSendOtp} 
-                disabled={isOtpLoading}
-                style={{ background: '#0f172a' }}
-              >
-                {isOtpLoading ? 'Sending OTP...' : 'Send OTP'}
-              </button>
-            ) : (
-              <motion.div 
-                className="input-group"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                <label>Verification Code</label>
-                <div className="input-wrapper">
-                  <Shield className="input-icon" size={18} />
-                  <input 
-                    type="text" 
-                    name="otp" 
-                    placeholder="Enter OTP sent to your email" 
-                    required 
-                    value={formData.otp} 
-                    onChange={handleChange} 
-                    disabled={isLoading} 
-                  />
-                </div>
-              </motion.div>
-            )}
+            <div className="input-group">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label>Password</label>
+                <Link to="/forgot-password" style={{ fontSize: '12px', color: '#c8102e', fontWeight: 600 }}>Forgot Password?</Link>
+              </div>
+              <div className="input-wrapper">
+                <Lock className="input-icon" size={18} />
+                <input 
+                  type={showPassword ? "text" : "password"} 
+                  name="password" 
+                  placeholder="••••••••" 
+                  required 
+                  value={formData.password} 
+                  onChange={handleChange} 
+                  disabled={isLoading} 
+                />
+                <button 
+                  type="button" 
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{ position: 'absolute', right: '12px', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
 
-            {otpSent && (
-              <button type="submit" className="auth-btn" disabled={isLoading} style={{ opacity: isLoading ? 0.7 : 1 }}>
-                <LogIn size={18} /> {isLoading ? 'Signing In...' : 'Sign In'}
-              </button>
-            )}
+            <button type="submit" className="auth-btn" disabled={isLoading} style={{ opacity: isLoading ? 0.7 : 1 }}>
+              <LogIn size={18} /> {isLoading ? 'Signing In...' : 'Sign In'}
+            </button>
           </form>
 
           <div className="auth-divider"><span>Or continue with</span></div>
