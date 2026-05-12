@@ -337,16 +337,26 @@ export const courseManagerAPI = {
   fetchCourses: async () => {
     return apiRequest('/admin/courses', { method: 'GET' });
   },
+  getStats: () =>
+    apiRequest<{ stats: any }>('/course-manager/stats', { method: 'GET' }),
   createCourse: (data: any) => apiRequest('/admin/courses', { method: 'POST', body: JSON.stringify(data) }),
   updateCourse: (id: string | number, data: any) => apiRequest(`/admin/courses/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteCourse: (id: string | number) => apiRequest(`/admin/courses/${id}`, { method: 'DELETE' }),
   fetchStudents: async () => {
-    return apiRequest('/admin/users?type=Intern', { method: 'GET' });
+    return apiRequest('/course-manager/students', { method: 'GET' });
   },
+  fetchCertificates: () =>
+    apiRequest<{ certificates: any[] }>('/course-manager/certificates', { method: 'GET' }),
+  updateCertificateStatus: (enrollmentId: string, status: string) =>
+    apiRequest(`/course-manager/certificates/${enrollmentId}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
   fetchSubmissions: async () => {
-    return apiRequest('/admin/assessments/pending', { method: 'GET' });
+    return apiRequest('/course-manager/assessments/pending', { method: 'GET' });
   },
-  updateSubmissionStatus: (id: string, status: string) => apiRequest(`/admin/assessments/${id}/review`, { method: 'POST', body: JSON.stringify({ status }) })
+  updateSubmissionStatus: (id: string, action: string, stage: number = 2) => 
+    apiRequest(`/course-manager/assessments/${id}/review`, { 
+      method: 'PATCH', 
+      body: JSON.stringify({ action, stage }) 
+    })
 };
 
 // ── Social API ──
@@ -448,11 +458,10 @@ export const adminApi = {
   getActivity: () =>
     apiRequest<{ activities: any[] }>('/admin/activity'),
 
-  getAllUsers: (params?: { type?: string }) => 
-    apiRequest<{ users: any[] }>('/admin/users', { 
-      method: 'GET',
-      ...(params?.type ? { endpoint: `/admin/users?type=${params.type}` } : {}) // Note: apiRequest doesn't handle this well, let's fix
-    }),
+  getAllUsers: (params?: { type?: string }) => {
+    const query = params?.type ? `?type=${params.type}` : '';
+    return apiRequest<{ users: any[] }>(`/admin/users${query}`);
+  },
 
   getUsers: (params?: { type?: string }) => {
     const query = params?.type ? `?type=${params.type}` : '';

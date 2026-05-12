@@ -25,7 +25,7 @@ interface Submission {
 }
 
 const CM_Assessments: React.FC = () => {
-  const brandPrimary = '#c8102e';
+  const brandPrimary = '#233167';
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +37,21 @@ const CM_Assessments: React.FC = () => {
       try {
         setIsLoading(true);
         const response = await courseManagerAPI.fetchSubmissions();
-        setSubmissions(response.data || []);
+        const mapped = (response.data?.pending_assessments || []).map((p: any) => ({
+          id: p.id,
+          studentName: p.studentName,
+          course: p.courseName,
+          assessmentType: `Stage ${p.stage} Assessment`,
+          stage: p.stage,
+          submittedAt: p.submittedAt ? new Date(p.submittedAt).toLocaleDateString() : 'Just now',
+          content: {
+            type: p.submission?.type || 'text',
+            url: p.submission?.url,
+            text: p.submission?.text || 'Review required'
+          },
+          status: 'Pending'
+        }));
+        setSubmissions(mapped);
       } catch (err) {
         setError('Failed to load submissions.');
       } finally {
@@ -48,10 +62,11 @@ const CM_Assessments: React.FC = () => {
   }, []);
 
   const handleAction = async (id: string, action: 'Approved' | 'Rejected') => {
+    const sub = submissions.find(s => s.id === id);
     const loadingToast = toast.loading(`${action === 'Approved' ? 'Approving' : 'Rejecting'} submission...`);
     try {
       setProcessingId(id);
-      await courseManagerAPI.updateSubmissionStatus(id, action);
+      await courseManagerAPI.updateSubmissionStatus(id, action, (sub as any)?.stage || 2);
       setSubmissions(prev => 
         prev.map(sub => sub.id === id ? { ...sub, status: action } : sub)
       );

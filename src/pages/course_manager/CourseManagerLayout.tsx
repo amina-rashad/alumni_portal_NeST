@@ -78,7 +78,6 @@ const CourseManagerLayout: React.FC = () => {
     { path: '/course-manager/students', name: 'Students', icon: <Users size={17} /> },
     { path: '/course-manager/assessments', name: 'Assessments', icon: <ClipboardCheck size={17} /> },
     { path: '/course-manager/certificates', name: 'Certificates', icon: <Award size={17} /> },
-    { path: '/course-manager/attendance', name: 'Attendance', icon: <Clock size={17} /> },
   ];
 
   return (

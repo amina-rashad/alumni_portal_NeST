@@ -57,25 +57,19 @@ const CM_Dashboard: React.FC = () => {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const loadStats = async () => {
       try {
-        // Using existing API for now, simulating stats if not fully implemented in backend
-        const res = await courseManagerAPI.fetchCourses();
-        if (res.data) {
-          setStats({
-            total_courses: res.data.length || 0,
-            total_enrollments: res.data.reduce((acc: number, curr: any) => acc + (curr.students || 0), 0),
-            pending_reviews: 8,
-            certificates_issued: 856
-          });
+        const res = await courseManagerAPI.getStats();
+        if (res.success && res.data) {
+          setStats(res.data.stats);
         }
       } catch (err) {
-        console.error("Dashboard fetch error:", err);
+        console.error("Dashboard stats fetch error:", err);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchStats();
+    loadStats();
   }, []);
 
   return (
@@ -110,10 +104,10 @@ const CM_Dashboard: React.FC = () => {
 
       {/* Stats Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px' }}>
-        <StatCard title="Active Courses" value={stats?.total_courses || "0"} change="+3" icon={<BookOpen size={24} />} color={brandPrimary} loading={isLoading} />
-        <StatCard title="Learner Enrollments" value={stats?.total_enrollments?.toLocaleString() || "0"} change="+12.4%" icon={<Users size={24} />} color="#0ea5e9" loading={isLoading} />
-        <StatCard title="Pending Assessments" value={stats?.pending_reviews || "0"} change="+5" icon={<ClipboardCheck size={24} />} color="#f59e0b" loading={isLoading} />
-        <StatCard title="Credentials Issued" value={stats?.certificates_issued || "0"} change="+24" icon={<Award size={24} />} color="#10b981" loading={isLoading} />
+        <StatCard title="Active Courses" value={stats?.total_courses?.toString() || "0"} change="+3" icon={<BookOpen size={24} />} color={brandPrimary} loading={isLoading} />
+        <StatCard title="Learner Enrollments" value={stats?.active_enrollments?.toLocaleString() || "0"} change="+12.4%" icon={<Users size={24} />} color="#0ea5e9" loading={isLoading} />
+        <StatCard title="Pending Assessments" value={stats?.pending_reviews?.toString() || "0"} change="+5" icon={<ClipboardCheck size={24} />} color="#f59e0b" loading={isLoading} />
+        <StatCard title="Credentials Issued" value={stats?.certificates_issued?.toString() || "0"} change="+24" icon={<Award size={24} />} color="#10b981" loading={isLoading} />
       </div>
 
       {/* Main Content Sections */}

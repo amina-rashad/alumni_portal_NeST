@@ -42,13 +42,14 @@ const CourseListing: React.FC = () => {
     const filtered = courses.filter(c => {
       const matchesSearch = c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            (c.instructor && c.instructor.toLowerCase().includes(searchTerm.toLowerCase()));
-      const matchesCategory = selectedCategory === 'All' || c.level === selectedCategory;
+      const matchesCategory = selectedCategory === 'All' || 
+                             (c.level && c.level.toLowerCase().includes(selectedCategory.split(' ')[0].toLowerCase()));
       return matchesSearch && matchesCategory;
     });
     setFilteredCourses(filtered);
   }, [searchTerm, selectedCategory, courses]);
  
-  const levels = ['All', 'Beginner', 'Intermediate', 'Advanced'];
+  const levels = ['All', 'Beginner Friendly', 'Intermediate Professional', 'Advanced Strategic'];
  
   return (
     <motion.div
@@ -207,30 +208,82 @@ const CourseListing: React.FC = () => {
                 }}
                 onClick={() => navigate(`/courses/${course.id}`)}
               >
-                <div style={{ height: '180px', background: '#0d2046', position: 'relative', overflow: 'hidden' }}>
-                  <div style={{ position: 'absolute', inset: 0, opacity: 0.1 }}>
-                    <BookOpen size={100} color="white" />
+                <div style={{ height: '220px', backgroundColor: '#0d2046', position: 'relative', overflow: 'hidden' }}>
+                  {course.cover_image ? (
+                    <img src={course.cover_image} alt={course.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <div style={{ position: 'absolute', inset: 0, opacity: 0.1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <BookOpen size={120} color="white" />
+                    </div>
+                  )}
+                  {/* Overlay Badges */}
+                  <div style={{ position: 'absolute', top: '1.25rem', right: '1.25rem' }}>
+                    <span style={{ 
+                      background: 'rgba(255,255,255,0.1)', 
+                      backdropFilter: 'blur(10px)', 
+                      padding: '0.6rem 1.2rem', 
+                      borderRadius: '1rem', 
+                      fontSize: '0.7rem', 
+                      fontWeight: 900, 
+                      color: 'white', 
+                      textTransform: 'uppercase', 
+                      letterSpacing: '0.1em',
+                      border: '1px solid rgba(255,255,255,0.2)' 
+                    }}>
+                      {course.level || 'Standard'}
+                    </span>
                   </div>
-                  <div style={{ position: 'absolute', top: '1rem', left: '1rem' }}>
-                    <span style={{ background: 'white', padding: '0.4rem 0.8rem', borderRadius: '0.5rem', fontSize: '0.65rem', fontWeight: 800, color: '#0d2046' }}>{course.level}</span>
+                  <div style={{ position: 'absolute', bottom: '1.25rem', left: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#eab308' }}>
+                    <div style={{ display: 'flex', gap: '2px' }}>
+                      {[1,2,3,4].map(i => <Star key={i} size={14} fill="currentColor" />)}
+                      <Star size={14} />
+                    </div>
+                    <span style={{ color: 'white', fontSize: '0.9rem', fontWeight: 800 }}>4.9 <span style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>({course.enrolled_count || 0})</span></span>
                   </div>
                 </div>
  
-                <div style={{ padding: '1.5rem', flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', color: '#eab308' }}>
-                    <Star size={14} fill="currentColor" />
-                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b' }}>4.9 (240)</span>
+                <div style={{ padding: '1.75rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <h3 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#0d2046', margin: 0, lineHeight: 1.2 }}>{course.title}</h3>
+                  <p style={{ color: '#64748b', fontSize: '0.9rem', lineHeight: 1.6, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    {course.description || "Master these professional skills with our industry-standard certification program."}
+                  </p>
+
+                  {/* Instructor Section */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.5rem' }}>
+                    <div style={{ 
+                      width: '36px', height: '36px', borderRadius: '50%', background: '#3b82f6', 
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', 
+                      fontWeight: 800, fontSize: '0.7rem' 
+                    }}>
+                      {course.instructor ? course.instructor.split(' ').map((n: any) => n[0]).join('') : 'NE'}
+                    </div>
+                    <span style={{ color: '#475569', fontSize: '0.95rem', fontWeight: 700 }}>{course.instructor || "NeST Expert"}</span>
                   </div>
-                  <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0d2046', marginBottom: '0.75rem' }}>{course.title}</h3>
-                  <p style={{ color: '#64748b', fontSize: '0.85rem', lineHeight: 1.5 }}>{course.description || "Master these skills with our professional certification."}</p>
                 </div>
  
-                <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155' }}>{course.instructor || "Expert"}</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#94a3b8', fontSize: '0.8rem' }}>
-                    <Clock size={14} />
-                    <span>{course.duration || '24h'}</span>
+                <div style={{ padding: '1.25rem 1.75rem', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fcfdfe' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#475569', fontWeight: 700, fontSize: '0.9rem' }}>
+                    <Clock size={16} color="#3b82f6" />
+                    <span>{course.duration || '12 Weeks'}</span>
                   </div>
+                  <button 
+                    style={{ 
+                      background: '#3b82f6', 
+                      color: 'white', 
+                      border: 'none', 
+                      padding: '0.7rem 1.4rem', 
+                      borderRadius: '1rem', 
+                      fontWeight: 800, 
+                      fontSize: '0.85rem', 
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      boxShadow: '0 4px 12px rgba(59, 130, 246, 0.2)'
+                    }}
+                  >
+                    Enroll Now <ChevronRight size={14} />
+                  </button>
                 </div>
               </motion.div>
  

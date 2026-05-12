@@ -28,6 +28,19 @@ def admin_required(fn):
         return fn(*args, **kwargs)
     return wrapper
 
+def course_management_required(fn):
+    """Decorator to check if user has course_manager, admin or super_admin role."""
+    from functools import wraps
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        user_id = get_jwt_identity()
+        db = get_db()
+        user = db["users"].find_one({"_id": ObjectId(user_id)})
+        if not user or user.get("role") not in ("admin", "super_admin", "course_manager"):
+            return jsonify({"success": False, "message": "Course Management privileges required."}), 403
+        return fn(*args, **kwargs)
+    return wrapper
+
 # ── Stats ──
 
 @admin_bp.route("/stats", methods=["GET"])
@@ -467,7 +480,7 @@ def delete_job(job_id):
 
 @admin_bp.route("/courses", methods=["GET"])
 @jwt_required()
-@admin_required
+@course_management_required
 def get_all_courses():
     """List all courses for admin management."""
     db = get_db()
@@ -493,7 +506,7 @@ def get_all_courses():
 
 @admin_bp.route("/courses", methods=["POST"])
 @jwt_required()
-@admin_required
+@course_management_required
 def add_course():
     """Add a new course."""
     data = request.get_json()
@@ -525,10 +538,10 @@ def add_course():
     
     result = db["courses"].insert_one(course_doc)
     
-    # Notify all users
+    # Notify all users across all roles
     try:
         from .notifications import create_notification
-        users_cursor = db["users"].find({"role": {"$ne": "admin"}})
+        users_cursor = db["users"].find({}) # Empty query = All Users
         for user in users_cursor:
             create_notification(
                 db,
@@ -549,7 +562,7 @@ def add_course():
 
 @admin_bp.route("/courses/<course_id>", methods=["PATCH"])
 @jwt_required()
-@admin_required
+@course_management_required
 def update_course(course_id):
     """Update a course."""
     data = request.get_json()
@@ -574,7 +587,7 @@ def update_course(course_id):
 
 @admin_bp.route("/courses/<course_id>", methods=["DELETE"])
 @jwt_required()
-@admin_required
+@course_management_required
 def delete_course(course_id):
     """Delete a course."""
     db = get_db()

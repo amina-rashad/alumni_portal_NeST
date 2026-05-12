@@ -81,55 +81,65 @@ const CourseDetails: React.FC = () => {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc', paddingBottom: '5rem', overflowX: 'hidden', fontFamily: '"Inter", sans-serif', margin: '-28px -32px 0 -32px' }}>
       {/* Hero Section */}
-      <div style={{ backgroundColor: '#0d2046', color: 'white', padding: '4rem 2rem 6rem 2rem', position: 'relative' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+      <div style={{ backgroundColor: '#0d2046', color: 'white', padding: '4rem 2rem 6rem 2rem', position: 'relative', overflow: 'hidden' }}>
+        {/* Decorative Glow */}
+        <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(200, 16, 46, 0.15) 0%, transparent 70%)', filter: 'blur(80px)', pointerEvents: 'none' }} />
+        
+        <div style={{ maxWidth: '1200px', margin: '0 auto', position: 'relative', zIndex: 10 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '4rem', alignItems: 'center' }}>
             <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }}>
-              <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
-                <span style={{ backgroundColor: '#c8102e', padding: '0.5rem 1rem', borderRadius: '0.5rem', fontSize: '0.75rem', fontWeight: 800 }}>{course.level}</span>
-                <span style={{ backgroundColor: 'rgba(255,255,255,0.1)', padding: '0.5rem 1rem', borderRadius: '0.5rem', fontSize: '0.75rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Star size={14} fill="#c8102e" color="#c8102e" /> 4.9 (240 Ratings)
-                </span>
+              <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', alignItems: 'center' }}>
+                <span style={{ backgroundColor: '#1e293b', padding: '0.4rem 1rem', borderRadius: '0.6rem', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em', border: '1px solid rgba(255,255,255,0.1)' }}>{course.level || 'Beginner Friendly'}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#eab308' }}>
+                  <Star size={16} fill="currentColor" />
+                  <span style={{ color: 'white', fontSize: '0.85rem', fontWeight: 800 }}>4.9 <span style={{ color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>(2,840)</span></span>
+                </div>
               </div>
-              <h1 style={{ fontSize: '3rem', fontWeight: 900, marginBottom: '1.5rem', lineHeight: '1.1', letterSpacing: '-0.02em' }}>{course.title}</h1>
-              <p style={{ fontSize: '1.25rem', color: '#cbd5e1', lineHeight: '1.6', marginBottom: '2.5rem', maxWidth: '600px' }}>{course.description || "Master industry-standard engineering practices and lead with expertise."}</p>
+              <h1 style={{ fontSize: '3.5rem', fontWeight: 900, marginBottom: '1.5rem', lineHeight: '1.1', letterSpacing: '-0.03em' }}>{course.title}</h1>
+              <p style={{ fontSize: '1.2rem', color: '#94a3b8', lineHeight: '1.6', marginBottom: '2.5rem', maxWidth: '600px', fontWeight: 500 }}>{course.description || "Master industry-standard engineering practices and lead with expertise."}</p>
               
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <Clock size={20} color="#c8102e" />
+                   <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Clock size={20} color="#c8102e" />
+                   </div>
                   <div>
-                    <p style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Duration</p>
-                    <p style={{ fontWeight: 800 }}>{course.duration || "24 Hours"}</p>
+                    <p style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', margin: 0, letterSpacing: '0.02em' }}>Duration</p>
+                    <p style={{ fontWeight: 800, margin: 0, fontSize: '0.95rem' }}>{course.duration || "12 Weeks"}</p>
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <Calendar size={20} color="#c8102e" />
+                  <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <User size={20} color="#c8102e" />
+                   </div>
                   <div>
-                    <p style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Start Date</p>
-                    <p style={{ fontWeight: 800 }}>On Demand</p>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <Globe size={20} color="#c8102e" />
-                  <div>
-                    <p style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Enrolled</p>
-                    <p style={{ fontWeight: 800 }}>2.4k Students</p>
+                    <p style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', margin: 0, letterSpacing: '0.02em' }}>Instructor</p>
+                    <p style={{ fontWeight: 800, margin: 0, fontSize: '0.95rem' }}>{course.instructor || "Lead NeST Expert"}</p>
                   </div>
                 </div>
               </div>
             </motion.div>
 
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} style={{ position: 'relative' }}>
-              <div style={{ background: 'linear-gradient(135deg, rgba(200,16,46,0.3) 0%, rgba(255,255,255,0.1) 100%)', borderRadius: '2rem', padding: '1rem', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden' }}>
-                <div style={{ position: 'relative', borderRadius: '1.5rem', overflow: 'hidden' }}>
-                  <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop" alt={course.title} style={{ width: '100%', display: 'block' }} />
-                  <Link to={`/courses/${id}/play`} style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(13,32,70,0.4)', cursor: 'pointer' }}>
-                    <PlayCircle size={80} color="white" />
-                  </Link>
+              <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '2.5rem', padding: '1.25rem', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)' }}>
+                <div style={{ position: 'relative', borderRadius: '1.8rem', overflow: 'hidden', boxShadow: '0 30px 60px rgba(0,0,0,0.4)' }}>
+                  {course.cover_image ? (
+                    <img src={course.cover_image} alt={course.title} style={{ width: '100%', display: 'block' }} />
+                  ) : (
+                    <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop" alt={course.title} style={{ width: '100%', display: 'block' }} />
+                  )}
+                  <div 
+                    onClick={() => navigate(`/courses/${id}/play`)}
+                    style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(13,32,70,0.3)', cursor: 'pointer', transition: 'all 0.3s' }}
+                  >
+                    <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                       <PlayCircle size={80} color="white" />
+                    </motion.div>
+                  </div>
                 </div>
               </div>
-              <div style={{ position: 'absolute', top: '2rem', right: '2rem', backgroundColor: '#22c55e', color: 'white', padding: '0.5rem 1rem', borderRadius: '1rem', fontSize: '0.7rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', boxShadow: '0 10px 20px rgba(34, 197, 94, 0.3)' }}>
-                Preview Video
+              <div style={{ position: 'absolute', top: '2.5rem', right: '2.5rem', backgroundColor: '#3b82f6', color: 'white', padding: '0.6rem 1.2rem', borderRadius: '1rem', fontSize: '0.7rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', boxShadow: '0 10px 20px rgba(59, 130, 246, 0.3)' }}>
+                {course.level || 'Standard'}
               </div>
             </motion.div>
           </div>
@@ -137,48 +147,67 @@ const CourseDetails: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div style={{ maxWidth: '1200px', margin: '-4rem auto 0 auto', padding: '0 2rem', display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 380px', gap: '3rem' }}>
+      <div style={{ maxWidth: '1200px', margin: '-4rem auto 0 auto', padding: '0 2rem', display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 400px', gap: '3.5rem' }}>
         <div>
-          <div style={{ background: 'white', padding: '3rem', borderRadius: '2rem', boxShadow: '0 20px 40px rgba(0,0,0,0.04)', border: '1px solid #f1f5f9', marginBottom: '3rem', position: 'relative', zIndex: 2 }}>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0d2046', marginBottom: '1.5rem' }}>Course Overview</h3>
-            <p style={{ color: '#1e293b', lineHeight: '1.8', fontSize: '1.05rem' }}>
-              This comprehensive course is designed for professionals looking to master the intricacies of {course.title}. 
-              Our industry-expert instructors provide a blend of theoretical foundation and hands-on practical exercises.
+          <div style={{ background: 'white', padding: '3.5rem', borderRadius: '2.5rem', boxShadow: '0 20px 40px rgba(0,0,0,0.03)', border: '1px solid #f1f5f9', marginBottom: '3.5rem', position: 'relative', zIndex: 2 }}>
+            <h3 style={{ fontSize: '1.8rem', fontWeight: 900, color: '#0d2046', marginBottom: '1.5rem', letterSpacing: '-0.02em' }}>Course Intelligence</h3>
+            <p style={{ color: '#475569', lineHeight: '1.8', fontSize: '1.1rem', fontWeight: 500 }}>
+              This specialized program provides strategic insights into {course.title}. 
+              Architected by industry veterans, the curriculum bridges the gap between complex engineering theory and high-impact enterprise execution.
             </p>
             
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem', marginTop: '2.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '3rem', marginTop: '3rem' }}>
               <div>
-                <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#0d2046', marginBottom: '1.25rem' }}>What You'll Learn</h4>
-                <ul style={{ listStyle: 'none', padding: 0 }}>
-                  {['Deep dive foundations', 'Advanced techniques', 'Industry best practices', 'Portfolio projects'].map(item => (
-                    <li key={item} style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem', color: '#1e293b', fontSize: '0.95rem', fontWeight: 600 }}>
-                      <CheckCircle2 size={18} color="#c8102e" style={{ flexShrink: 0 }} /> {item}
-                    </li>
+                <h4 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0d2046', marginBottom: '1.5rem' }}>Learning Outcomes</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {['Foundational Architectural Logic', 'Advanced System Scalability', 'NeST Digital Engineering Standards', 'High-Performance Lab Exercises'].map(item => (
+                    <div key={item} style={{ display: 'flex', gap: '1rem', alignItems: 'center', color: '#1e293b', fontSize: '1rem', fontWeight: 600 }}>
+                      <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <CheckCircle2 size={16} color="#c8102e" />
+                      </div>
+                      {item}
+                    </div>
                   ))}
-                </ul>
+                </div>
               </div>
-              <p style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500, lineHeight: 1.5 }}>
-                Earn an industry-recognized certification verified on the NeST network upon successful completion.
-              </p>
+              <div style={{ background: '#f8fafc', padding: '2rem', borderRadius: '2rem', border: '1px solid #f1f5f9' }}>
+                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+                    <Award size={24} color="#c8102e" />
+                    <span style={{ fontWeight: 800, color: '#0d2046', fontSize: '1rem' }}>Certified Program</span>
+                 </div>
+                 <p style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 500, lineHeight: 1.6, margin: 0 }}>
+                    Earn a verifiable digital credential upon successful completion, recognized across the global NeST Digital network.
+                 </p>
+              </div>
             </div>
           </div>
 
-          <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0d2046', marginBottom: '1.5rem' }}>Curriculum Schedule</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+             <h3 style={{ fontSize: '1.8rem', fontWeight: 900, color: '#0d2046', margin: 0, letterSpacing: '-0.02em' }}>Curriculum Schedule</h3>
+             <span style={{ color: '#64748b', fontSize: '0.9rem', fontWeight: 700 }}>4 Detailed Lessons</span>
+          </div>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             {curriculum.map((item, idx) => (
               <motion.div 
                 key={idx} 
-                whileHover={{ x: 10 }}
-                style={{ background: 'white', padding: '1.5rem 2rem', borderRadius: '1.25rem', border: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
+                whileHover={{ x: 10, backgroundColor: '#fff' }}
+                style={{ background: '#fff', padding: '1.8rem 2.5rem', borderRadius: '1.8rem', border: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', transition: 'all 0.2s' }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                  <span style={{ width: '40px', height: '40px', backgroundColor: '#f1f5f9', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.875rem', color: '#0d2046' }}>{idx + 1}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+                  <span style={{ width: '48px', height: '48px', backgroundColor: '#f8fafc', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '1rem', color: '#0d2046', border: '1px solid #f1f5f9' }}>{idx + 1}</span>
                   <div>
-                    <h5 style={{ fontWeight: 800, color: '#334155', margin: 0 }}>{item.title}</h5>
-                    <p style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', margin: 0 }}>Lesson {idx + 1} • {item.duration}</p>
+                    <h5 style={{ fontWeight: 800, color: '#334155', margin: '0 0 4px 0', fontSize: '1.1rem' }}>{item.title}</h5>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                       <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Lesson {idx + 1}</span>
+                       <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#cbd5e1' }}></div>
+                       <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>{item.duration}</span>
+                    </div>
                   </div>
                 </div>
-                <ChevronRight size={20} color="#cbd5e1" />
+                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cbd5e1' }}>
+                   <ChevronRight size={20} />
+                </div>
               </motion.div>
             ))}
           </div>
@@ -186,27 +215,32 @@ const CourseDetails: React.FC = () => {
 
         {/* Sidebar */}
         <div style={{ position: 'sticky', top: '2rem', alignSelf: 'start' }}>
-          <div style={{ background: 'white', padding: '2.5rem', borderRadius: '2.4rem', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.08)', border: '1px solid #f1f5f9' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '2.5rem' }}>
-              <div style={{ width: '64px', height: '64px', borderRadius: '1.2rem', backgroundColor: '#0d2046', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 900, fontSize: '1.75rem' }}>
-                {course.instructor ? course.instructor.charAt(0) : 'I'}
+          <div style={{ background: 'white', padding: '3rem', borderRadius: '3rem', boxShadow: '0 30px 60px rgba(0,0,0,0.06)', border: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+            
+            {/* Instructor Section */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', padding: '1.5rem', background: '#f8fafc', borderRadius: '2rem', border: '1px solid #f1f5f9' }}>
+              <div style={{ 
+                width: '60px', height: '60px', borderRadius: '1.2rem', backgroundColor: '#3b82f6', 
+                display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', 
+                fontWeight: 900, fontSize: '1rem', flexShrink: 0, boxShadow: '0 8px 20px rgba(59, 130, 246, 0.2)' 
+              }}>
+                {course.instructor ? course.instructor.split(' ').map((n: string) => n[0]).join('') : 'NE'}
               </div>
               <div>
-                <p style={{ fontSize: '0.75rem', fontWeight: 800, color: '#c8102e', textTransform: 'uppercase', margin: 0 }}>Expert Instructor</p>
-                <h4 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#0d2046', margin: 0 }}>{course.instructor || "Sarah Jenkins"}</h4>
+                <p style={{ fontSize: '0.7rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', margin: 0, letterSpacing: '0.05em' }}>Expert Mentor</p>
+                <h4 style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0d2046', margin: 0 }}>{course.instructor || "Dr. Sarah Chen"}</h4>
               </div>
             </div>
 
-
-
-
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: '#475569', fontSize: '0.95rem', fontWeight: 600 }}>
-                <div style={{ color: '#c8102e' }}><Award size={20} /></div> Professional Certificate
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', padding: '0 1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', color: '#475569', fontSize: '1rem', fontWeight: 700 }}>
+                <Award size={24} color="#c8102e" /> Professional Certificate
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: '#475569', fontSize: '0.95rem', fontWeight: 600 }}>
-                <div style={{ color: '#c8102e' }}><User size={20} /></div> One-on-one Mentorship
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', color: '#475569', fontSize: '1rem', fontWeight: 700 }}>
+                <User size={24} color="#c8102e" /> Lifetime Access
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', color: '#475569', fontSize: '1rem', fontWeight: 700 }}>
+                <Globe size={24} color="#c8102e" /> Industry Network
               </div>
             </div>
           </div>

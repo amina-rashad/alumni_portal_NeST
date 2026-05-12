@@ -16,7 +16,7 @@ const GlassSelect: React.FC<{
 }> = ({ label, options, value, onChange }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const brandPrimary = '#c8102e';
+  const brandPrimary = '#233167';
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -95,7 +95,7 @@ const GlassSelect: React.FC<{
 };
 
 const CM_Students: React.FC = () => {
-  const brandPrimary = '#c8102e';
+  const brandPrimary = '#233167';
   const [students, setStudents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -108,7 +108,7 @@ const CM_Students: React.FC = () => {
       try {
         setIsLoading(true);
         const response = await courseManagerAPI.fetchStudents();
-        setStudents(response.data || []);
+        setStudents(response.data?.students || []);
       } catch (err) {
         setError('Failed to load students.');
       } finally {

@@ -103,7 +103,7 @@ const GlassSelect: React.FC<{
 };
 
 const CM_Certificates: React.FC = () => {
-  const brandPrimary = '#c8102e';
+  const brandPrimary = '#233167';
   const initialRecords: CertificateRecord[] = [
     { id: 'cert-001', studentName: 'David Chen', course: 'UX Design Fundamentals', completionDate: 'Oct 24, 2023', grade: '98%', status: 'Sent' },
     { id: 'cert-002', studentName: 'Emily Brown', course: 'Cloud Infrastructure with AWS', completionDate: 'Oct 23, 2023', grade: '92%', status: 'Generated' },
@@ -112,9 +112,36 @@ const CM_Certificates: React.FC = () => {
     { id: 'cert-005', studentName: 'Lucas Wilson', course: 'UX Design Fundamentals', completionDate: 'Oct 25, 2023', grade: '91%', status: 'Pending Generation' },
   ];
 
-  const [records, setRecords] = useState<CertificateRecord[]>(initialRecords);
+  const [records, setRecords] = useState<CertificateRecord[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState('All Records');
+  const [isLoading, setIsLoading] = useState(true);
+
+  const loadCertificates = async () => {
+    try {
+      setIsLoading(true);
+      const res = await courseManagerAPI.fetchCertificates();
+      if (res.success && res.data) {
+        const mapped = res.data.certificates.map((c: any) => ({
+          id: c.id,
+          studentName: c.studentName,
+          course: c.courseName,
+          completionDate: c.issuedDate || 'Recently',
+          grade: c.grade || 'N/A',
+          status: c.status
+        }));
+        setRecords(mapped);
+      }
+    } catch (err) {
+      toast.error("Failed to load certificates");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadCertificates();
+  }, []);
 
   const filteredRecords = records.filter(record => {
     const matchesSearch = record.studentName.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -126,11 +153,15 @@ const CM_Certificates: React.FC = () => {
   const handleAction = async (id: string, action: 'Generated' | 'Sent') => {
     const loadingToast = toast.loading(`${action === 'Generated' ? 'Generating' : 'Sending'} certificate...`);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setRecords(prev => prev.map(rec => rec.id === id ? { ...rec, status: action } : rec));
-      toast.success(`Certificate ${action.toLowerCase()} successfully!`, { id: loadingToast });
-    } catch (err) {
-      toast.error(`Failed to process certificate.`, { id: loadingToast });
+      const res = await courseManagerAPI.updateCertificateStatus(id, action);
+      if (res.success) {
+        setRecords(prev => prev.map(rec => rec.id === id ? { ...rec, status: action } : rec));
+        toast.success(`Certificate ${action.toLowerCase()} successfully!`, { id: loadingToast });
+      } else {
+        throw new Error(res.message);
+      }
+    } catch (err: any) {
+      toast.error(err.message || `Failed to process certificate.`, { id: loadingToast });
     }
   };
 
@@ -203,7 +234,11 @@ const CM_Certificates: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredRecords.length === 0 ? (
+              {isLoading ? (
+                 Array(5).fill(0).map((_, i) => (
+                   <tr key={i}><td colSpan={4} style={{ padding: '24px' }} className="skeleton-pulse"><div style={{ height: '50px', background: '#f1f5f9', borderRadius: '14px' }}></div></td></tr>
+                 ))
+              ) : filteredRecords.length === 0 ? (
                 <tr>
                   <td colSpan={4} style={{ padding: '60px', textAlign: 'center', color: '#64748b', fontWeight: 600 }}>No records found.</td>
                 </tr>

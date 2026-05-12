@@ -138,7 +138,6 @@ import CourseManagerCreateCourse from './pages/course_manager/CreateCourse';
 import CourseManagerStudents from './pages/course_manager/Students';
 import CourseManagerAssessments from './pages/course_manager/Assessments';
 import CourseManagerCertificates from './pages/course_manager/Certificates';
-import CourseManagerAttendance from './pages/course_manager/Attendance';
 import CourseManagerReminderCenter from './pages/course_manager/ReminderCenter';
 import CourseManagerRecommendations from './pages/course_manager/RecommendationSetup';
 import CourseManagerPerformance from './pages/course_manager/PAModule';
@@ -523,7 +522,6 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="students" element={<CourseManagerStudents />} />
           <Route path="assessments" element={<CourseManagerAssessments />} />
           <Route path="certificates" element={<CourseManagerCertificates />} />
-          <Route path="attendance" element={<CourseManagerAttendance />} />
           <Route path="reminders" element={<CourseManagerReminderCenter />} />
           <Route path="recommendations" element={<CourseManagerRecommendations />} />
           <Route path="performance" element={<CourseManagerPerformance />} />

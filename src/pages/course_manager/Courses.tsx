@@ -104,7 +104,7 @@ const CM_Courses: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeLevel, setActiveLevel] = useState('All Levels');
-  const [menuOpenId, setMenuOpenId] = useState<number | null>(null);
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -112,7 +112,7 @@ const CM_Courses: React.FC = () => {
       try {
         setIsLoading(true);
         const response = await courseManagerAPI.fetchCourses();
-        setCourses(response.data || []);
+        setCourses(response.data?.courses || []);
       } catch (err) {
         setError('Failed to load courses.');
       } finally {
@@ -133,14 +133,15 @@ const CM_Courses: React.FC = () => {
   }, []);
 
   const filteredCourses = courses.filter(course => {
-    const matchesSearch = course.title.toLowerCase().includes(searchQuery.toLowerCase());
+    const title = course.title || '';
+    const matchesSearch = title.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesLevel = activeLevel === 'All Levels' || 
-                       course.level?.toLowerCase().includes(activeLevel.split(' ')[0].toLowerCase());
+                       (course.level && course.level.toLowerCase().includes(activeLevel.split(' ')[0].toLowerCase()));
     return matchesSearch && matchesLevel;
   });
 
-  const handleDelete = async (id: number) => {
-    if (window.confirm('Are you sure you want to delete this program?')) {
+  const handleDelete = async (id: string | number) => {
+    if (window.confirm('Are you sure you want to delete this course?')) {
       try {
         await courseManagerAPI.deleteCourse(id);
         setCourses(prev => prev.filter(c => c.id !== id));
@@ -299,7 +300,7 @@ const CM_Courses: React.FC = () => {
                         style={{ position: 'absolute', top: '100%', right: 0, background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 10px 40px rgba(0,0,0,0.12)', padding: '8px', zIndex: 10, width: '180px', marginTop: '8px' }}
                       >
                         <button onClick={() => navigate(`/course-manager/courses/edit/${course.id}`)} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: 'none', background: 'none', textAlign: 'left', fontSize: '13px', fontWeight: 700, color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <Edit3 size={16} /> Edit Program
+                          <Edit3 size={16} /> Edit Course
                         </button>
                         <button onClick={() => handleDelete(course.id)} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: 'none', background: 'none', textAlign: 'left', fontSize: '13px', fontWeight: 700, color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px' }}>
                           <Trash2 size={16} /> Delete Course
@@ -318,7 +319,7 @@ const CM_Courses: React.FC = () => {
                     </div>
                     <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#cbd5e1' }}></div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#94a3b8', fontSize: '12px', fontWeight: 700 }}>
-                      <Users size={14} /> {course.students?.toLocaleString() || 0} Learners
+                      <Users size={14} /> {course.enrolled_count?.toLocaleString() || 0} Learners
                     </div>
                   </div>
                   <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 800, color: '#1e293b', lineHeight: 1.3 }}>{course.title}</h3>
