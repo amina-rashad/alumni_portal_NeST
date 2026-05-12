@@ -217,6 +217,14 @@ const CourseDetails: React.FC = () => {
         <div style={{ position: 'sticky', top: '2rem', alignSelf: 'start' }}>
           <div style={{ background: 'white', padding: '3rem', borderRadius: '3rem', boxShadow: '0 30px 60px rgba(0,0,0,0.06)', border: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
             
+            {/* Primary Action Button */}
+            <button 
+                onClick={() => navigate(`/courses/${id}/play`)}
+                style={{ width: '100%', padding: '1.25rem', borderRadius: '1.5rem', background: '#3b82f6', color: 'white', border: 'none', fontWeight: 800, fontSize: '1.1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', boxShadow: '0 15px 30px rgba(59, 130, 246, 0.25)' }}
+            >
+                Start Learning <ChevronRight size={20} />
+            </button>
+
             {/* Instructor Section */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', padding: '1.5rem', background: '#f8fafc', borderRadius: '2rem', border: '1px solid #f1f5f9' }}>
               <div style={{ 
