@@ -113,3 +113,84 @@ section {
   scrollbar-width: thin;
   scrollbar-color: #c1c9d4 transparent;
 }
+
+/* -- Native Date/Time Picker Fixes -- */
+input[type="date"],
+input[type="time"] {
+  color-scheme: light !important;
+  color: #1e293b !important;
+}
+
+/* -- Premium Progress Button -- */
+.progress-button {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  background: #1a1a1a; /* Graphite */
+  color: white !important;
+  border-radius: 12px;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  min-width: 220px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.progress-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  border-color: rgba(255, 255, 255, 0.2);
+  background: #262626;
+}
+
+.progress-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.progress-button:disabled {
+  cursor: wait;
+}
+
+.progress-button .progress-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #1e4fa0, #3b82f6); /* Premium NeST Blue */
+  transition: width 0.15s ease-out;
+  z-index: 1;
+}
+
+.progress-button .button-text {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.progress-button.completed {
+  background: #059669 !important; /* Success Green */
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.progress-button.completed .progress-fill {
+  width: 100%;
+  background: transparent;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  display: none !important;
+  -webkit-appearance: none !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+}

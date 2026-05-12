@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Plus, Search, Filter, MoreVertical, 
+  Plus, Search, MoreVertical, 
   BookOpen, Users, Clock, Edit3, Trash2,
   ChevronDown, ExternalLink, Star, TrendingUp,
   AlertCircle, Loader2, Info, ArrowUpRight
@@ -97,14 +97,13 @@ const GlassSelect: React.FC<{
 
 const CM_Courses: React.FC = () => {
   const navigate = useNavigate();
-  const brandPrimary = '#c8102e';
+  const brandPrimary = '#233167';
   
   const [courses, setCourses] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeLevel, setActiveLevel] = useState('All Levels');
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [menuOpenId, setMenuOpenId] = useState<number | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -135,98 +134,106 @@ const CM_Courses: React.FC = () => {
 
   const filteredCourses = courses.filter(course => {
     const matchesSearch = course.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesLevel = activeLevel === 'All Levels' || course.level === activeLevel;
+    const matchesLevel = activeLevel === 'All Levels' || 
+                       course.level?.toLowerCase().includes(activeLevel.split(' ')[0].toLowerCase());
     return matchesSearch && matchesLevel;
   });
 
   const handleDelete = async (id: number) => {
     if (window.confirm('Are you sure you want to delete this program?')) {
-      // API call would go here
-      setCourses(prev => prev.filter(c => c.id !== id));
+      try {
+        await courseManagerAPI.deleteCourse(id);
+        setCourses(prev => prev.filter(c => c.id !== id));
+      } catch (err) {
+        alert('Failed to delete course');
+      }
     }
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', fontFamily: "'Montserrat', sans-serif" }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#1e293b', margin: '0 0 8px 0' }}>Course Portfolio</h1>
-          <p style={{ margin: 0, color: '#64748b', fontWeight: 500 }}>Strategic oversight of all academic programs and curriculum.</p>
+          <h1 style={{ fontSize: '32px', fontWeight: 800, color: '#1e293b', margin: '0 0 8px 0', letterSpacing: '-0.02em' }}>Academic Portfolio</h1>
+          <p style={{ margin: 0, color: '#64748b', fontWeight: 500 }}>Strategic oversight and design for all academic courses.</p>
         </div>
         <button 
           onClick={() => navigate('/course-manager/courses/create')}
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '8px',
-            padding: '12px 24px',
-            borderRadius: '14px',
+            gap: '10px',
+            padding: '14px 28px',
+            borderRadius: '16px',
             background: brandPrimary,
             color: '#fff',
             border: 'none',
-            fontWeight: 700,
+            fontWeight: 800,
             cursor: 'pointer',
-            boxShadow: '0 10px 20px rgba(200, 16, 46, 0.2)'
+            boxShadow: '0 8px 32px rgba(35, 49, 103, 0.2)',
+            transition: 'all 0.2s ease'
           }}
+          onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+          onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
         >
-          <Plus size={18} /> Create Program
+          <Plus size={20} /> Create Course
         </button>
       </div>
 
       {/* Filters Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', padding: '16px 24px', borderRadius: '24px', border: '1px solid #e2e8f0' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', padding: '16px 24px', borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(35, 49, 103, 0.03)' }}>
         <div style={{ position: 'relative', flex: 1, maxWidth: '400px' }}>
           <Search size={18} color="#94a3b8" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
           <input 
             type="text" 
-            placeholder="Search programs..." 
+            placeholder="Search courses..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{ 
-              padding: '12px 16px 12px 48px', 
-              borderRadius: '14px', 
-              border: '1px solid #e2e8f0', 
+              padding: '14px 16px 14px 48px', 
+              borderRadius: '16px', 
+              border: '1px solid #f1f5f9', 
               background: '#f8fafc', 
               fontSize: '14px', 
               width: '100%', 
               outline: 'none',
-              fontWeight: 600
+              fontWeight: 700,
+              color: '#1e293b'
             }}
           />
         </div>
 
         <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-          <div style={{ width: '180px' }}>
+          <div style={{ width: '200px' }}>
              <GlassSelect 
-               label="Difficulty Level" 
-               options={['All Levels', 'Beginner', 'Intermediate', 'Advanced']} 
+               label="Expertise Level" 
+               options={['All Levels', 'Beginner Friendly', 'Intermediate Professional', 'Advanced Strategic']} 
                value={activeLevel} 
                onChange={setActiveLevel} 
              />
           </div>
-          <button style={{ padding: '12px', borderRadius: '14px', border: '1px solid #e2e8f0', background: '#fff', color: '#64748b', cursor: 'pointer' }}>
-            <Filter size={18} />
-          </button>
         </div>
       </div>
 
       {/* Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '32px' }}>
         <AnimatePresence mode="popLayout">
           {isLoading ? (
             Array(6).fill(0).map((_, i) => (
-              <div key={i} style={{ height: '300px', background: '#fff', borderRadius: '28px', border: '1px solid #e2e8f0', padding: '24px' }} className="skeleton-pulse">
-                <div style={{ height: '40px', width: '40px', borderRadius: '12px', background: '#f1f5f9', marginBottom: '20px' }}></div>
+              <div key={i} style={{ height: '400px', background: '#fff', borderRadius: '32px', border: '1px solid #e2e8f0', padding: '24px' }} className="skeleton-pulse">
+                <div style={{ height: '200px', width: '100%', borderRadius: '20px', background: '#f1f5f9', marginBottom: '20px' }}></div>
                 <div style={{ height: '24px', width: '70%', background: '#f1f5f9', marginBottom: '12px' }}></div>
                 <div style={{ height: '16px', width: '40%', background: '#f1f5f9' }}></div>
               </div>
             ))
           ) : filteredCourses.length === 0 ? (
-            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '80px 0', background: '#f8fafc', borderRadius: '32px', border: '2px dashed #e2e8f0' }}>
-               <BookOpen size={48} color="#cbd5e1" style={{ marginBottom: '16px' }} />
-               <h3 style={{ margin: 0, color: '#1e293b', fontWeight: 800 }}>No programs found</h3>
-               <p style={{ color: '#64748b', fontSize: '14px' }}>Try adjusting your filters or search query.</p>
+            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '100px 0', background: '#f8fafc', borderRadius: '40px', border: '2px dashed #e2e8f0' }}>
+               <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', border: '1px solid #e2e8f0' }}>
+                 <BookOpen size={32} color="#cbd5e1" />
+               </div>
+               <h3 style={{ margin: '0 0 8px 0', color: '#1e293b', fontSize: '20px', fontWeight: 800 }}>No Courses Discovered</h3>
+               <p style={{ color: '#64748b', fontSize: '15px', fontWeight: 500, maxWidth: '300px', margin: '0 auto' }}>Adjust your filters or initiate a new course creation.</p>
             </div>
           ) : filteredCourses.map((course) => (
             <motion.div
@@ -235,37 +242,52 @@ const CM_Courses: React.FC = () => {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              whileHover={{ y: -5 }}
+              whileHover={{ y: -8 }}
               style={{
                 background: '#fff',
-                borderRadius: '28px',
+                borderRadius: '32px',
                 border: '1px solid #e2e8f0',
-                padding: '24px',
+                overflow: 'hidden',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '20px',
-                position: 'relative'
+                position: 'relative',
+                boxShadow: '0 10px 30px rgba(35, 49, 103, 0.04)'
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div style={{ 
-                  width: '48px', 
-                  height: '48px', 
-                  borderRadius: '16px', 
-                  background: 'rgba(200, 16, 46, 0.05)', 
-                  color: brandPrimary,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <BookOpen size={24} />
+              {/* Card Image Header */}
+              <div style={{ height: '200px', width: '100%', position: 'relative', background: '#1e1b4b' }}>
+                {course.cover_image ? (
+                  <img src={course.cover_image} alt={course.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #233167 0%, #1e1b4b 100%)' }}>
+                    <BookOpen size={48} color="rgba(255,255,255,0.2)" />
+                  </div>
+                )}
+                <div style={{ position: 'absolute', top: '16px', left: '16px', display: 'flex', gap: '8px' }}>
+                  <span style={{ 
+                    fontSize: '10px', 
+                    fontWeight: 800, 
+                    textTransform: 'uppercase', 
+                    padding: '6px 12px', 
+                    borderRadius: '10px', 
+                    background: 'rgba(255, 255, 255, 0.95)',
+                    backdropFilter: 'blur(8px)',
+                    color: brandPrimary,
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                  }}>
+                    {course.level || 'Standard'}
+                  </span>
                 </div>
-                <div style={{ position: 'relative' }}>
+                
+                <div style={{ position: 'absolute', top: '16px', right: '16px' }}>
                   <button 
-                    onClick={() => setMenuOpenId(menuOpenId === course.id ? null : course.id)}
-                    style={{ padding: '8px', borderRadius: '10px', background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMenuOpenId(menuOpenId === course.id ? null : course.id);
+                    }}
+                    style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(255, 255, 255, 0.95)', border: 'none', color: brandPrimary, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                   >
-                    <MoreVertical size={20} />
+                    <MoreVertical size={18} />
                   </button>
                   <AnimatePresence>
                     {menuOpenId === course.id && (
@@ -274,13 +296,13 @@ const CM_Courses: React.FC = () => {
                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        style={{ position: 'absolute', top: '100%', right: 0, background: '#fff', borderRadius: '14px', border: '1px solid #e2e8f0', boxShadow: '0 10px 40px rgba(0,0,0,0.1)', padding: '6px', zIndex: 10, width: '160px' }}
+                        style={{ position: 'absolute', top: '100%', right: 0, background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 10px 40px rgba(0,0,0,0.12)', padding: '8px', zIndex: 10, width: '180px', marginTop: '8px' }}
                       >
-                        <button onClick={() => navigate(`/course-manager/courses/edit/${course.id}`)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: 'none', background: 'none', textAlign: 'left', fontSize: '13px', fontWeight: 600, color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <Edit3 size={14} /> Edit Program
+                        <button onClick={() => navigate(`/course-manager/courses/edit/${course.id}`)} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: 'none', background: 'none', textAlign: 'left', fontSize: '13px', fontWeight: 700, color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <Edit3 size={16} /> Edit Program
                         </button>
-                        <button onClick={() => handleDelete(course.id)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: 'none', background: 'none', textAlign: 'left', fontSize: '13px', fontWeight: 600, color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <Trash2 size={14} /> Delete
+                        <button onClick={() => handleDelete(course.id)} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: 'none', background: 'none', textAlign: 'left', fontSize: '13px', fontWeight: 700, color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <Trash2 size={16} /> Delete Course
                         </button>
                       </motion.div>
                     )}
@@ -288,69 +310,63 @@ const CM_Courses: React.FC = () => {
                 </div>
               </div>
 
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                  <span style={{ 
-                    fontSize: '10px', 
-                    fontWeight: 800, 
-                    textTransform: 'uppercase', 
-                    padding: '4px 10px', 
-                    borderRadius: '8px', 
-                    background: course.level === 'Advanced' ? '#fff1f1' : course.level === 'Intermediate' ? '#eff6ff' : '#ecfdf5',
-                    color: course.level === 'Advanced' ? '#c8102e' : course.level === 'Intermediate' ? '#3b82f6' : '#10b981'
-                  }}>
-                    {course.level}
-                  </span>
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8' }}>{course.duration}</span>
-                </div>
-                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#1e293b', lineHeight: 1.3 }}>{course.title}</h3>
-              </div>
-
-              <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '20px', marginTop: 'auto' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 700, color: '#475569' }}>
-                    <Users size={16} /> {course.students?.toLocaleString() || 0} Learners
+              <div style={{ padding: '24px', flex: 1, display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#94a3b8', fontSize: '12px', fontWeight: 700 }}>
+                      <Clock size={14} /> {course.duration}
+                    </div>
+                    <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#cbd5e1' }}></div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#94a3b8', fontSize: '12px', fontWeight: 700 }}>
+                      <Users size={14} /> {course.students?.toLocaleString() || 0} Learners
+                    </div>
                   </div>
-                  <div style={{ fontSize: '12px', fontWeight: 800, color: brandPrimary }}>
-                    Active
+                  <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 800, color: '#1e293b', lineHeight: 1.3 }}>{course.title}</h3>
+                  <p style={{ margin: '8px 0 0 0', fontSize: '13px', color: '#64748b', fontWeight: 500, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{course.description}</p>
+                </div>
+
+                <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '20px', marginTop: 'auto' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 800, color: brandPrimary, textTransform: 'uppercase', letterSpacing: '0.02em' }}>Course Health</span>
+                    <span style={{ fontSize: '12px', fontWeight: 800, color: '#10b981' }}>94% Active</span>
+                  </div>
+                  <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: '94%', background: brandPrimary, borderRadius: '3px' }}></div>
                   </div>
                 </div>
-                <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: '65%', background: brandPrimary, borderRadius: '3px' }}></div>
-                </div>
-              </div>
 
-              <button 
-                onClick={() => navigate(`/course-manager/courses/${course.id}`)}
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  borderRadius: '12px',
-                  border: '1px solid #e2e8f0',
-                  background: '#fff',
-                  color: '#1e293b',
-                  fontWeight: 700,
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  transition: 'all 0.2s'
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.background = brandPrimary;
-                  e.currentTarget.style.color = '#fff';
-                  e.currentTarget.style.borderColor = brandPrimary;
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.background = '#fff';
-                  e.currentTarget.style.color = '#1e293b';
-                  e.currentTarget.style.borderColor = '#e2e8f0';
-                }}
-              >
-                Manage Track <ArrowUpRight size={16} />
-              </button>
+                <button 
+                  onClick={() => navigate(`/course-manager/courses/${course.id}`)}
+                  style={{
+                    width: '100%',
+                    padding: '14px',
+                    borderRadius: '16px',
+                    border: '1px solid #e2e8f0',
+                    background: '#fff',
+                    color: brandPrimary,
+                    fontWeight: 800,
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '10px',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = brandPrimary;
+                    e.currentTarget.style.color = '#fff';
+                    e.currentTarget.style.borderColor = brandPrimary;
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = '#fff';
+                    e.currentTarget.style.color = brandPrimary;
+                    e.currentTarget.style.borderColor = '#e2e8f0';
+                  }}
+                >
+                  Manage Curriculum <ArrowUpRight size={18} />
+                </button>
+              </div>
             </motion.div>
           ))}
         </AnimatePresence>
@@ -360,3 +376,4 @@ const CM_Courses: React.FC = () => {
 };
 
 export default CM_Courses;
+

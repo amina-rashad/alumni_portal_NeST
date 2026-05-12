@@ -1,150 +1,141 @@
-import { jsPDF } from 'jspdf';
+import jsPDF from 'jspdf';
+import { NEST_OVAL_LOGO, CERTIFICATE_BG, EVENT_CERTIFICATE_BG } from './LogoBase64';
 
 export const generateEventCertificate = (participantName: string, eventName: string, date: string) => {
-  const doc = new jsPDF({
-    orientation: 'landscape',
-    unit: 'mm',
-    format: 'a4'
-  });
+  try {
+    const doc = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: 'a4'
+    });
 
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const centerX = pageWidth / 2;
 
-  // ── BRAND COLORS ──
-  const nestRed = [227, 30, 36];   // #E31E24
-  const nestNavy = [27, 54, 93];   // #1B365D
-  const goldAccent = [199, 160, 81];
+    // ── 1. BACKGROUND (DYNAMIC RED & BLUE GEOMETRIC) ──
+    try {
+      doc.addImage(EVENT_CERTIFICATE_BG, 'PNG', 0, 0, pageWidth, pageHeight);
+    } catch (e) {
+      console.error("BG Load Error:", e);
+      doc.setFillColor(255, 255, 255);
+      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+    }
 
-  // ── BACKGROUND & BORDER ──
-  // Luxury Navy Outer Border
-  doc.setFillColor(27, 54, 93); 
-  doc.rect(0, 0, pageWidth, pageHeight, 'F');
+    // ── 2. OFFICIAL NeST LOGO (Top Left - Blended) ──
+    try {
+      // Placing logo in the top-left area, integrated with the white space
+      doc.addImage(NEST_OVAL_LOGO, 'PNG', 25, 20, 35, 21);
+    } catch (e) {
+      console.error("Logo Load Error:", e);
+    }
 
-  // Gold Inner Border
-  doc.setDrawColor(199, 160, 81);
-  doc.setLineWidth(1.5);
-  doc.rect(7, 7, pageWidth - 14, pageHeight - 14, 'S');
+    // ── 3. HEADER (Centered & Bold) ──
+    doc.setTextColor(20, 40, 80); // Professional Deep Blue
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(40);
+    doc.text("CERTIFICATE", centerX, 65, { align: 'center' });
+    
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100, 100, 100);
+    doc.text("OF PARTICIPATION", centerX, 75, { align: 'center' });
 
-  // White Certificate Area
-  doc.setFillColor(255, 255, 255);
-  doc.rect(12, 12, pageWidth - 24, pageHeight - 24, 'F');
+    // ── 4. BODY CONTENT (Centered) ──
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.setTextColor(80, 80, 80);
+    doc.text("PROUDLY PRESENTED TO", centerX, 100, { align: 'center' });
 
-  // Decorative Corner Accents
-  doc.setFillColor(199, 160, 81);
-  doc.triangle(12, 12, 42, 12, 12, 42, 'F'); // Top Left
-  doc.triangle(pageWidth - 12, 12, pageWidth - 42, 12, pageWidth - 12, 42, 'F'); // Top Right
-  doc.triangle(12, pageHeight - 12, 42, pageHeight - 12, 12, pageHeight - 42, 'F'); // Bottom Left
-  doc.triangle(pageWidth - 12, pageHeight - 12, pageWidth - 42, pageHeight - 12, pageWidth - 12, pageHeight - 42, 'F'); // Bottom Right
+    // Participant Name (Elegant Large Script)
+    doc.setTextColor(0, 0, 0);
+    doc.setFont("times", "italic");
+    doc.setFontSize(60);
+    doc.text(participantName, centerX, 125, { align: 'center' });
 
-  // ── HEADER ──
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(32);
-  
-  const nestText = "NeST";
-  const digitalText = "DIGITAL";
-  
-  // Calculate exact widths for centering
-  const nestWidth = doc.getTextWidth(nestText);
-  const digitalWidth = doc.getTextWidth(digitalText);
-  const spacing = 4; // Space between NeST and DIGITAL
-  const totalHeaderWidth = nestWidth + digitalWidth + spacing;
-  const headerStartX = (pageWidth - totalHeaderWidth) / 2;
+    // Divider Line (Subtle)
+    doc.setDrawColor(200, 200, 200);
+    doc.line(centerX - 50, 130, centerX + 50, 130);
 
-  // Draw Header Text
-  doc.setTextColor(227, 30, 36); // NeST Red
-  doc.text(nestText, headerStartX, 35);
-  
-  doc.setTextColor(27, 54, 93); // NeST Navy
-  doc.text(digitalText, headerStartX + nestWidth + spacing, 35);
+    // Achievement details
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(12);
+    doc.setTextColor(60, 60, 60);
+    const description = `FOR SUCCESSFULLY PARTICIPATING IN THE EVENT\n${eventName.toUpperCase()}\nHELD ON ${date.toUpperCase()} AT NeST TECH PARK`;
+    doc.text(description, centerX, 145, { align: 'center', maxWidth: 160 });
 
-  // Red accent line - centered with text
-  doc.setDrawColor(227, 30, 36);
-  doc.setLineWidth(1);
-  doc.line(headerStartX, 40, headerStartX + totalHeaderWidth, 40);
+    doc.save(`${participantName.replace(/\s+/g, '_')}_Event_Certificate.pdf`);
+  } catch (err) {
+    console.error(err);
+    alert("Generation failed: " + (err instanceof Error ? err.message : "Unknown error"));
+  }
+};
 
-  // Tagline - precisely centered
-  doc.setTextColor(100, 116, 139);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(11);
-  doc.text("ENGINEERING TRANSFORMATION", pageWidth / 2, 47, { align: 'center', charSpace: 1 });
+export const generateCourseCertificate = (participantName: string, courseName: string, date: string) => {
+  try {
+    const doc = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: 'a4'
+    });
 
-  // ── MAIN CONTENT ──
-  doc.setTextColor(27, 54, 93);
-  doc.setFont("times", "normal");
-  doc.setFontSize(48);
-  doc.text("CERTIFICATE", pageWidth / 2, 75, { align: 'center' });
-  
-  doc.setFontSize(20);
-  doc.setFont("helvetica", "bold");
-  doc.text("OF PARTICIPATION", pageWidth / 2, 87, { align: 'center', charSpace: 3 });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const centerX = pageWidth / 2;
 
-  doc.setFontSize(14);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(71, 85, 105);
-  doc.text("This certificate is proudly presented to", pageWidth / 2, 105, { align: 'center' });
+    // ── 1. BACKGROUND (DYNAMIC RED & BLUE GEOMETRIC) ──
+    try {
+      doc.addImage(CERTIFICATE_BG, 'PNG', 0, 0, pageWidth, pageHeight);
+    } catch (e) {
+      console.error("BG Load Error:", e);
+      doc.setFillColor(255, 255, 255);
+      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+    }
 
-  // Participant Name
-  doc.setTextColor(27, 54, 93);
-  doc.setFont("times", "bolditalic");
-  doc.setFontSize(40);
-  doc.text(participantName, pageWidth / 2, 122, { align: 'center' });
+    // ── 2. LOGO (Top Left - Blended) ──
+    try {
+      doc.addImage(NEST_OVAL_LOGO, 'PNG', 25, 20, 35, 21);
+    } catch (e) {
+      console.error("Logo Load Error:", e);
+    }
 
-  // Elegant line under name
-  doc.setDrawColor(199, 160, 81);
-  doc.setLineWidth(1.2);
-  doc.line(pageWidth / 2 - 80, 128, pageWidth / 2 + 80, 128);
+    // ── 3. HEADER (Centered) ──
+    doc.setTextColor(20, 40, 80);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(40);
+    doc.text("CERTIFICATE", centerX, 65, { align: 'center' });
+    
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100, 100, 100);
+    doc.text("OF COMPLETION", centerX, 75, { align: 'center' });
 
-  doc.setFontSize(14);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(71, 85, 105);
-  doc.text("for successfully participating in the event", pageWidth / 2, 142, { align: 'center' });
+    // ── 4. BODY CONTENT (Centered) ──
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.setTextColor(80, 80, 80);
+    doc.text("PROUDLY PRESENTED TO", centerX, 100, { align: 'center' });
 
-  // Event Name
-  doc.setTextColor(227, 30, 36);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(26);
-  doc.text(eventName, pageWidth / 2, 158, { align: 'center' });
+    // Participant Name (Elegant Script)
+    doc.setTextColor(0, 0, 0);
+    doc.setFont("times", "italic");
+    doc.setFontSize(60);
+    doc.text(participantName, centerX, 125, { align: 'center' });
 
-  doc.setFontSize(12);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(71, 85, 105);
-  doc.text(`held on ${date}`, pageWidth / 2, 168, { align: 'center' });
+    // Divider Line
+    doc.setDrawColor(200, 200, 200);
+    doc.line(centerX - 50, 130, centerX + 50, 130);
 
-  // ── FOOTER / SIGNATURES ──
-  doc.setDrawColor(27, 54, 93);
-  doc.setLineWidth(0.5);
-  
-  // Repositioned to avoid badge overlap
-  const signatureY = 192;
-  const labelY = 197;
-  const companyY = 202;
+    // Achievement details
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(12);
+    doc.setTextColor(60, 60, 60);
+    const description = `HAS SUCCESSFULLY COMPLETED THE TRAINING COURSE IN\n${courseName.toUpperCase()}\nCONDUCTED BY NeST DIGITAL ACADEMY ON ${date.toUpperCase()}`;
+    doc.text(description, centerX, 145, { align: 'center', maxWidth: 160 });
 
-  // Left Signature
-  doc.line(40, signatureY, 95, signatureY);
-  doc.setTextColor(27, 54, 93);
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "bold");
-  doc.text("Event Coordinator", 67.5, labelY, { align: 'center' });
-  doc.setFont("helvetica", "normal");
-  doc.text("NeST Alumni Association", 67.5, companyY, { align: 'center' });
-
-  // Right Signature
-  doc.line(pageWidth - 95, signatureY, pageWidth - 40, signatureY);
-  doc.setFont("helvetica", "bold");
-  doc.text("HR Department", pageWidth - 67.5, labelY, { align: 'center' });
-  doc.setFont("helvetica", "normal");
-  doc.text("NeST Digital", pageWidth - 67.5, companyY, { align: 'center' });
-
-  // Verified Badge - Shifted up slightly
-  doc.setDrawColor(199, 160, 81);
-  doc.setLineWidth(0.3);
-  doc.circle(pageWidth / 2, 185, 15, 'S');
-  doc.setFontSize(8);
-  doc.setTextColor(199, 160, 81);
-  doc.text("OFFICIAL", pageWidth / 2, 181, { align: 'center' });
-  doc.text("VERIFIED", pageWidth / 2, 185, { align: 'center' });
-  doc.text("CREDENTIAL", pageWidth / 2, 189, { align: 'center' });
-
-  // Save the PDF
-  doc.save(`${participantName.replace(/\s+/g, '_')}_Certificate.pdf`);
+    doc.save(`${participantName.replace(/\s+/g, '_')}_Course_Certificate.pdf`);
+  } catch (err) {
+    console.error(err);
+    alert("Generation failed: " + (err instanceof Error ? err.message : "Unknown error"));
+  }
 };

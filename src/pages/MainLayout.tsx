@@ -433,45 +433,53 @@ const MainLayout: React.FC = () => {
 
         {/* Right: Bell + User avatar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexShrink: 0, marginLeft: '12px' }}>
-          <button
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => navigate('/notifications')}
             style={{ 
               background: 'none', 
               border: 'none', 
               cursor: 'pointer', 
-              color: '#c8102e', 
               display: 'flex', 
+              flexDirection: 'column',
               alignItems: 'center', 
-              padding: '8px', 
-              borderRadius: '10px', 
-              transition: '0.2s',
+              padding: '4px', 
               position: 'relative'
             }}
-            onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'none')}
           >
-            <Bell size={20} />
-            {unreadCount > 0 && (
-              <span style={{
-                position: 'absolute',
-                top: '4px',
-                right: '4px',
-                background: '#ef4444',
-                color: 'white',
-                fontSize: '10px',
-                fontWeight: 800,
-                width: '16px',
-                height: '16px',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: '2px solid white'
-              }}>
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </span>
-            )}
-          </button>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Bell 
+                size={26} 
+                color="#555555" 
+                fill="#555555" 
+                strokeWidth={1}
+              />
+              
+              {unreadCount > 0 && (
+                <span style={{
+                  position: 'absolute',
+                  top: '-4px',
+                  right: '-10px',
+                  background: '#c8102e',
+                  color: 'white',
+                  fontSize: '11px',
+                  fontWeight: 800,
+                  padding: '2px 8px',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+                  minWidth: '20px',
+                  height: '18px',
+                  border: '1px solid #fff'
+                }}>
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </div>
+          </motion.button>
 
           {/* User Profile Dropdown */}
           <div ref={profileRef} style={{ position: 'relative' }}>
@@ -494,6 +502,9 @@ const MainLayout: React.FC = () => {
               <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1, userSelect: 'none' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>{user?.full_name || 'Guest'}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '11px', color: '#94a3b8' }}>{user?.user_type || 'User'}</span>
                   {user?.status === 'open_to_work' && (
                     <span style={{ 
                       fontSize: '9px', 
@@ -509,9 +520,7 @@ const MainLayout: React.FC = () => {
                     </span>
                   )}
                 </div>
-                <span style={{ fontSize: '11px', color: '#94a3b8' }}>{user?.user_type || 'User'}</span>
               </div>
-
             </div>
 
             <AnimatePresence>
@@ -588,9 +597,30 @@ const MainLayout: React.FC = () => {
         style={{ flex: 1, overflowY: 'auto', position: 'relative', scrollBehavior: 'smooth' }}
       >
         <div style={{ 
-          padding: location.pathname === '/dashboard' ? '0' : '28px 32px', 
-          maxWidth: location.pathname === '/dashboard' ? 'none' : '1400px', 
-          margin: '0 auto' 
+          padding: (
+            location.pathname === '/dashboard' || 
+            location.pathname === '/dashboard/' || 
+            location.pathname === '/dashboard/activity' || 
+            location.pathname === '/jobs' || 
+            location.pathname === '/jobs/' || 
+            location.pathname === '/jobs/applications' || 
+            location.pathname === '/jobs/recommended' || 
+            location.pathname === '/courses' ||
+            location.pathname === '/courses/'
+          ) ? '0' : '28px 32px', 
+          maxWidth: (
+            location.pathname === '/dashboard' || 
+            location.pathname === '/dashboard/' || 
+            location.pathname === '/dashboard/activity' || 
+            location.pathname === '/jobs' || 
+            location.pathname === '/jobs/' || 
+            location.pathname === '/jobs/applications' || 
+            location.pathname === '/jobs/recommended' || 
+            location.pathname === '/courses' ||
+            location.pathname === '/courses/'
+          ) ? 'none' : '1400px', 
+          margin: '0 auto',
+          width: '100%'
         }}>
           <AnimatePresence mode="wait">
             <motion.div

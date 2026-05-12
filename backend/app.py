@@ -32,6 +32,7 @@ def create_app(config_name=None):
 
     app = Flask(__name__)
     app.config.from_object(config_by_name[config_name])
+    app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500 MB Limit
     app.url_map.strict_slashes = False
 
     # ── CORS ── allow all devices on the network to connect

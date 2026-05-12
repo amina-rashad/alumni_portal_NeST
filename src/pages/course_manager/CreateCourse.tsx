@@ -1,582 +1,408 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
-  ArrowLeft, 
-  CheckCircle, 
-  AlertCircle,
-  BookOpen,
-  Clock,
-  Layout,
-  Layers,
-  Video,
-  Plus,
-  Trash2,
-  FileText,
-  Link as LinkIcon,
-  ClipboardList,
-  Check,
-  ChevronUp,
-  ChevronDown
+  ArrowLeft, BookOpen, Clock,
+  Upload, X, Image as ImageIcon,
+  Info, ChevronDown, Plus, Check
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { courseManagerAPI } from '../../services/api';
-import toast from 'react-hot-toast';
-import { motion } from 'framer-motion';
+import StatusModal from '../../components/StatusModal';
+import { motion, AnimatePresence } from 'framer-motion';
 
-interface AssessmentConfig {
-  id: string;
-  type: string;
-  selected: boolean;
-  order: number;
-  isMandatory: boolean;
-}
+// --- Components ---
 
+const GlassSelect: React.FC<{
+  label: string;
+  options: string[];
+  value: string;
+  onChange: (val: string) => void;
+  name: string;
+}> = ({ label, options, value, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const brandPrimary = '#233167';
 
-interface Lesson {
-  id: string;
-  title: string;
-  videoUrl: string;
-  pdfUrl: string;
-}
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
-interface Module {
-  id: string;
-  title: string;
-  lessons: Lesson[];
-}
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', position: 'relative' }} ref={dropdownRef}>
+      <label style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</label>
+      <div 
+        onClick={() => setIsOpen(!isOpen)}
+        style={{ 
+          padding: '14px 20px', 
+          borderRadius: '16px', 
+          border: '1px solid rgba(35, 49, 103, 0.1)', 
+          background: 'rgba(255, 255, 255, 0.8)', 
+          backdropFilter: 'blur(16px)', 
+          fontSize: '15px', 
+          width: '100%', 
+          color: '#1e293b', 
+          fontWeight: 700, 
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          boxShadow: '0 4px 12px rgba(35, 49, 103, 0.03)',
+          transition: 'all 0.2s ease'
+        }}
+      >
+        {value}
+        <ChevronDown size={14} color="#94a3b8" style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }} />
+      </div>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            style={{ 
+              position: 'absolute', 
+              top: '105%', 
+              left: 0, 
+              right: 0, 
+              zIndex: 100, 
+              background: 'rgba(255, 255, 255, 0.95)', 
+              backdropFilter: 'blur(24px)', 
+              borderRadius: '18px', 
+              border: '1px solid rgba(35, 49, 103, 0.1)', 
+              boxShadow: '0 10px 30px rgba(35, 49, 103, 0.1)',
+              overflow: 'hidden',
+              padding: '8px'
+            }}
+          >
+            {options.map((opt) => (
+              <div 
+                key={opt}
+                onClick={() => {
+                  onChange(opt);
+                  setIsOpen(false);
+                }}
+                style={{ 
+                  padding: '12px 16px', 
+                  fontSize: '14px', 
+                  fontWeight: 700, 
+                  color: value === opt ? brandPrimary : '#475569',
+                  background: value === opt ? 'rgba(35, 49, 103, 0.05)' : 'transparent',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                {opt}
+              </div>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+// --- Interfaces ---
 
 const CM_CreateCourse: React.FC = () => {
   const navigate = useNavigate();
+  const brandPrimary = '#233167';
+  const [dragActive, setDragActive] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  
+  const [statusModal, setStatusModal] = useState<{
+    show: boolean;
+    type: 'success' | 'error' | 'info';
+    title: string;
+    message: string;
+  }>({
+    show: false,
+    type: 'info',
+    title: '',
+    message: ''
+  });
 
   // Form State
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    level: 'Beginner',
-    duration: '',
-    numClasses: '',
-    totalHours: ''
+    level: 'Beginner Friendly',
+    duration: ''
   });
 
-  // Modules and Lessons State
-  const [modules, setModules] = useState<Module[]>([
-    { id: 'mod-1', title: '', lessons: [{ id: 'les-1', title: '', videoUrl: '', pdfUrl: '' }] }
-  ]);
-
-  // Assessment Configuration State
-  const [assessments, setAssessments] = useState<AssessmentConfig[]>([
-    { id: 'quiz', type: 'Quiz', selected: false, order: 1, isMandatory: true },
-    { id: 'scenario', type: 'Scenario', selected: false, order: 2, isMandatory: true },
-    { id: 'debugging', type: 'Debugging', selected: false, order: 3, isMandatory: true },
-    { id: 'project', type: 'Project', selected: false, order: 4, isMandatory: true },
-    { id: 'video', type: 'Video Demo', selected: false, order: 5, isMandatory: true },
-  ]);
-
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
-
-  const validate = () => {
-    const newErrors: Record<string, string> = {};
-    if (!formData.title.trim()) newErrors.title = 'Title is required';
-    if (!formData.description.trim()) newErrors.description = 'Description is required';
-    if (!formData.duration.trim()) newErrors.duration = 'Duration is required';
-    if (!formData.numClasses || parseInt(formData.numClasses) <= 0) newErrors.numClasses = 'Enter valid number of classes';
-    if (!formData.totalHours || parseInt(formData.totalHours) <= 0) newErrors.totalHours = 'Enter valid total hours';
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    // Clear error when user types
-    if (errors[name]) {
-      setErrors(prev => {
-        const updated = { ...prev };
-        delete updated[name];
-        return updated;
-      });
+  };
+
+  const setLevel = (val: string) => setFormData(prev => ({ ...prev, level: val }));
+
+  // Image Handlers
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(e.type === "dragenter" || e.type === "dragover");
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
+      const base64 = await fileToBase64(file);
+      setSelectedImage(base64);
     }
   };
 
-  // Module & Lesson Handlers
-  const addModule = () => {
-    setModules([...modules, { id: `mod-${Date.now()}`, title: '', lessons: [] }]);
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const base64 = await fileToBase64(file);
+      setSelectedImage(base64);
+    }
   };
 
-  const removeModule = (modId: string) => {
-    setModules(modules.filter(m => m.id !== modId));
-  };
-
-  const updateModuleTitle = (modId: string, title: string) => {
-    setModules(modules.map(m => m.id === modId ? { ...m, title } : m));
-  };
-
-  const addLesson = (modId: string) => {
-    setModules(modules.map(m => {
-      if (m.id === modId) {
-        return { ...m, lessons: [...m.lessons, { id: `les-${Date.now()}`, title: '', videoUrl: '', pdfUrl: '' }] };
-      }
-      return m;
-    }));
-  };
-
-  const removeLesson = (modId: string, lesId: string) => {
-    setModules(modules.map(m => {
-      if (m.id === modId) {
-        return { ...m, lessons: m.lessons.filter(l => l.id !== lesId) };
-      }
-      return m;
-    }));
-  };
-
-  const updateLesson = (modId: string, lesId: string, field: keyof Lesson, value: string) => {
-    setModules(modules.map(m => {
-      if (m.id === modId) {
-        return {
-          ...m,
-          lessons: m.lessons.map(l => l.id === lesId ? { ...l, [field]: value } : l)
-        };
-      }
-      return m;
-    }));
-  };
-
-  // Assessment Handlers
-  const toggleAssessment = (id: string) => {
-    setAssessments(prev => prev.map(a => a.id === id ? { ...a, selected: !a.selected } : a));
-  };
-
-  const toggleMandatory = (id: string) => {
-    setAssessments(prev => prev.map(a => a.id === id ? { ...a, isMandatory: !a.isMandatory } : a));
-  };
-
-  const moveAssessment = (index: number, direction: 'up' | 'down') => {
-    if ((direction === 'up' && index === 0) || (direction === 'down' && index === assessments.length - 1)) return;
-    
-    const newAssessments = [...assessments];
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    
-    // Swap order numbers
-    const tempOrder = newAssessments[index].order;
-    newAssessments[index].order = newAssessments[targetIndex].order;
-    newAssessments[targetIndex].order = tempOrder;
-    
-    // Swap positions in array
-    [newAssessments[index], newAssessments[targetIndex]] = [newAssessments[targetIndex], newAssessments[index]];
-    
-    setAssessments(newAssessments);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validate()) {
-      toast.error('Please fix the errors in the form.');
+  const handleSubmit = async () => {
+    if (!formData.title || !formData.duration) {
+      setStatusModal({
+        show: true,
+        type: 'error',
+        title: 'Missing Fields',
+        message: 'Please provide at least a title and duration for the course.'
+      });
       return;
     }
 
-    setIsSubmitting(true);
-    const loadingToast = toast.loading('Creating your course...');
-    
+    setLoading(true);
+    setStatusModal({
+      show: true,
+      type: 'info',
+      title: 'Adding Course',
+      message: 'Uploading your new course to the platform...'
+    });
+
     try {
-      const activeAssessments = assessments.filter(a => a.selected);
-      const payload = { ...formData, modules, assessments: activeAssessments };
+      const payload = { 
+        ...formData, 
+        cover_image: selectedImage 
+      };
       
-      await courseManagerAPI.createCourse(payload);
+      const res = await courseManagerAPI.createCourse(payload);
       
-      toast.success('Course created successfully!', { id: loadingToast });
-      setIsSuccess(true);
-      setTimeout(() => {
-        navigate('/course-manager/courses');
-      }, 2000);
-    } catch (error) {
+      if (res.success) {
+        setStatusModal({
+          show: true,
+          type: 'success',
+          title: 'Course Published!',
+          message: 'Your course has been successfully created and is now available.'
+        });
+        setTimeout(() => navigate('/course-manager/courses'), 2000);
+      } else {
+        throw new Error(res.message || 'Failed to create course');
+      }
+    } catch (error: any) {
       console.error('Failed to create course:', error);
-      toast.error('Failed to create course. Please try again.', { id: loadingToast });
+      setStatusModal({
+        show: true,
+        type: 'error',
+        title: 'Deployment Failed',
+        message: error.message || 'Something went wrong. Please try again.'
+      });
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
+  const glossyInputStyle = {
+    padding: '14px',
+    borderRadius: '16px',
+    border: '1px solid rgba(35, 49, 103, 0.1)',
+    background: 'rgba(35, 49, 103, 0.05)', 
+    backdropFilter: 'blur(16px)',
+    fontSize: '15px',
+    width: '100%',
+    outline: 'none',
+    color: '#1e1b4b', 
+    fontWeight: 700,
+    transition: 'all 0.2s ease',
+    boxShadow: '0 4px 12px rgba(35, 49, 103, 0.02)'
+  };
+
   return (
-    <div className="max-w-4xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20 font-['Inter',sans-serif]">
+    <div style={{ maxWidth: '1200px', margin: '0 auto', paddingBottom: '100px', fontFamily: "'Montserrat', sans-serif" }}>
       {/* Header */}
-      <div className="flex items-center gap-6">
-        <motion.button 
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => navigate(-1)}
-          className="p-4 rounded-2xl bg-white border border-slate-100 text-[#1a2652] hover:bg-red-50 hover:text-[#c8102e] transition-all shadow-sm"
-        >
-          <ArrowLeft size={20} />
-        </motion.button>
-        <div>
-          <h1 className="text-4xl font-black text-[#1e293b] tracking-tight">Create New Course</h1>
-          <p className="text-slate-500 font-medium mt-1">Define the foundation of your new academic program.</p>
-        </div>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-10">
-        {/* Core Details Card */}
-        <div className="bg-white p-10 rounded-[40px] border border-slate-100 shadow-xl shadow-slate-200/40 space-y-8 relative overflow-hidden">
-          <div className="flex items-center gap-4 pb-6 border-b border-slate-50">
-            <div className="p-3.5 rounded-2xl bg-red-50 text-[#c8102e]">
-              <BookOpen size={24} />
-            </div>
-            <h3 className="text-2xl font-black text-[#1e293b]">Basic Information</h3>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
-            <div className="md:col-span-2 space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Course Title</label>
-              <input 
-                type="text" 
-                name="title" 
-                value={formData.title} 
-                onChange={handleInputChange}
-                placeholder="e.g. Master Class in Software Architecture"
-                className={`w-full p-4.5 rounded-2xl border ${errors.title ? 'border-red-300 bg-red-50' : 'border-slate-100 bg-slate-50'} text-[#1e293b] font-bold focus:outline-none focus:ring-4 focus:ring-red-500/5 focus:border-red-500/30 transition-all placeholder:text-slate-400`}
-              />
-              {errors.title && <p className="text-[#c8102e] text-[11px] font-bold flex items-center gap-1 pl-1"><AlertCircle size={12}/> {errors.title}</p>}
-            </div>
-
-            <div className="md:col-span-2 space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Description</label>
-              <textarea 
-                name="description" 
-                value={formData.description} 
-                onChange={handleInputChange}
-                rows={4}
-                placeholder="Describe what this course covers..."
-                className={`w-full p-4.5 rounded-2xl border ${errors.description ? 'border-red-300 bg-red-50' : 'border-slate-100 bg-slate-50'} text-[#1e293b] font-medium focus:outline-none focus:ring-4 focus:ring-red-500/5 focus:border-red-500/30 transition-all resize-none placeholder:text-slate-400`}
-              />
-              {errors.description && <p className="text-[#c8102e] text-[11px] font-bold flex items-center gap-1 pl-1"><AlertCircle size={12}/> {errors.description}</p>}
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Level</label>
-              <div className="relative">
-                <select 
-                  name="level" 
-                  value={formData.level} 
-                  onChange={handleInputChange}
-                  className="w-full p-4.5 rounded-2xl border border-slate-100 bg-slate-50 text-[#1e293b] font-bold focus:outline-none focus:ring-4 focus:ring-red-500/5 focus:border-red-500/30 appearance-none cursor-pointer"
-                >
-                  <option value="Beginner">Beginner Friendly</option>
-                  <option value="Intermediate">Intermediate Professional</option>
-                  <option value="Advanced">Advanced Strategic</option>
-                </select>
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                  <Layers size={18} />
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Duration</label>
-              <div className="relative">
-                <input 
-                  type="text" 
-                  name="duration" 
-                  value={formData.duration} 
-                  onChange={handleInputChange}
-                  placeholder="e.g. 12 Weeks"
-                  className={`w-full p-4.5 pr-12 rounded-2xl border ${errors.duration ? 'border-red-300 bg-red-50' : 'border-slate-100 bg-slate-50'} text-[#1e293b] font-bold focus:outline-none focus:ring-4 focus:ring-red-500/5 focus:border-red-500/30 transition-all placeholder:text-slate-400`}
-                />
-                <Clock size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
-              </div>
-              {errors.duration && <p className="text-[#c8102e] text-[11px] font-bold flex items-center gap-1 pl-1"><AlertCircle size={12}/> {errors.duration}</p>}
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Number of Classes</label>
-              <input 
-                type="number" 
-                name="numClasses" 
-                value={formData.numClasses} 
-                onChange={handleInputChange}
-                placeholder="24"
-                className={`w-full p-4.5 rounded-2xl border ${errors.numClasses ? 'border-red-300 bg-red-50' : 'border-slate-100 bg-slate-50'} text-[#1e293b] font-bold focus:outline-none focus:ring-4 focus:ring-red-500/5 focus:border-red-500/30 transition-all placeholder:text-slate-400`}
-              />
-              {errors.numClasses && <p className="text-[#c8102e] text-[11px] font-bold flex items-center gap-1 pl-1"><AlertCircle size={12}/> {errors.numClasses}</p>}
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Total Hours</label>
-              <input 
-                type="number" 
-                name="totalHours" 
-                value={formData.totalHours} 
-                onChange={handleInputChange}
-                placeholder="48"
-                className={`w-full p-4.5 rounded-2xl border ${errors.totalHours ? 'border-red-300 bg-red-50' : 'border-slate-100 bg-slate-50'} text-[#1e293b] font-bold focus:outline-none focus:ring-4 focus:ring-red-500/5 focus:border-red-500/30 transition-all placeholder:text-slate-400`}
-              />
-              {errors.totalHours && <p className="text-[#c8102e] text-[11px] font-bold flex items-center gap-1 pl-1"><AlertCircle size={12}/> {errors.totalHours}</p>}
-            </div>
-          </div>
-        </div>
-
-        {/* Course Content Section (Modules & Lessons) */}
-        <div className="bg-white p-10 rounded-[40px] border border-slate-100 shadow-xl shadow-slate-200/40 space-y-8">
-          <div className="flex items-center justify-between pb-6 border-b border-slate-50">
-            <div className="flex items-center gap-4">
-              <div className="p-3.5 rounded-2xl bg-indigo-50 text-[#1a2652]">
-                <Video size={24} />
-              </div>
-              <div>
-                <h3 className="text-2xl font-black text-[#1e293b]">Course Curriculum</h3>
-                <p className="text-slate-500 font-medium text-sm mt-0.5">Structure your course with modules and video lessons.</p>
-              </div>
-            </div>
-            <button 
-              type="button" 
-              onClick={addModule}
-              className="flex items-center gap-2 px-6 py-3 bg-red-50 text-[#c8102e] font-black rounded-xl hover:bg-[#c8102e] hover:text-white transition-all text-sm shadow-sm"
-            >
-              <Plus size={18} /> Add Module
-            </button>
-          </div>
-
-          <div className="space-y-8">
-            {modules.map((mod, index) => (
-              <div key={mod.id} className="p-8 bg-slate-50/50 border border-slate-100 rounded-[32px] relative group">
-                {/* Module Delete Button */}
-                <div className="absolute right-6 top-6 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button 
-                    type="button" 
-                    onClick={() => removeModule(mod.id)} 
-                    className="p-2.5 text-red-400 hover:text-[#c8102e] hover:bg-red-50 rounded-xl transition-colors"
-                    title="Remove Module"
-                  >
-                    <Trash2 size={20} />
-                  </button>
-                </div>
-                
-                {/* Module Title */}
-                <div className="mb-8 max-w-2xl">
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Module {index + 1} Title</label>
-                  <input 
-                    type="text" 
-                    value={mod.title} 
-                    onChange={(e) => updateModuleTitle(mod.id, e.target.value)}
-                    placeholder="e.g. Introduction to React Fundamentals" 
-                    className="w-full p-4.5 rounded-2xl border border-slate-100 bg-white text-[#1e293b] font-black focus:outline-none focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500/30 transition-all shadow-sm placeholder:text-slate-400" 
-                  />
-                </div>
-
-                {/* Lessons Container */}
-                <div className="space-y-5 pl-4 md:pl-8 border-l-2 border-red-100">
-                  {mod.lessons.map((lesson, lIdx) => (
-                    <div key={lesson.id} className="p-6 bg-white border border-slate-50 rounded-2xl relative shadow-sm hover:shadow-xl transition-all group/lesson">
-                      
-                      {/* Lesson Delete Button */}
-                      <button 
-                        type="button" 
-                        onClick={() => removeLesson(mod.id, lesson.id)} 
-                        className="absolute right-4 top-4 p-2 text-slate-300 hover:text-[#c8102e] hover:bg-red-50 rounded-xl transition-colors opacity-0 group-hover/lesson:opacity-100"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mr-8">
-                        {/* Lesson Title */}
-                        <div className="md:col-span-2">
-                          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">Lesson {lIdx + 1} Title</label>
-                          <input 
-                            type="text" 
-                            value={lesson.title} 
-                            onChange={(e) => updateLesson(mod.id, lesson.id, 'title', e.target.value)}
-                            placeholder="Lesson name" 
-                            className="w-full p-3.5 rounded-xl border border-slate-50 bg-slate-50/50 text-sm font-bold text-[#1e293b] focus:outline-none focus:ring-2 focus:ring-red-500/20" 
-                          />
-                        </div>
-                        
-                        {/* Video URL */}
-                        <div>
-                          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1 flex items-center gap-1">
-                            <Video size={10} /> Video URL
-                          </label>
-                          <div className="relative">
-                            <LinkIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                            <input 
-                              type="url" 
-                              value={lesson.videoUrl} 
-                              onChange={(e) => updateLesson(mod.id, lesson.id, 'videoUrl', e.target.value)}
-                              placeholder="https://..." 
-                              className="w-full p-3 pl-9 rounded-xl border border-slate-50 bg-slate-50/50 text-sm font-medium text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20" 
-                            />
-                          </div>
-                        </div>
-
-                        {/* PDF Notes URL */}
-                        <div>
-                          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1 flex items-center gap-1">
-                            <FileText size={10} /> Notes / PDF Link
-                          </label>
-                          <div className="relative">
-                            <LinkIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                            <input 
-                              type="url" 
-                              value={lesson.pdfUrl} 
-                              onChange={(e) => updateLesson(mod.id, lesson.id, 'pdfUrl', e.target.value)}
-                              placeholder="https://..." 
-                              className="w-full p-3 pl-9 rounded-xl border border-slate-50 bg-slate-50/50 text-sm font-medium text-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/20" 
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {/* Add Lesson Button */}
-                  <button 
-                    type="button" 
-                    onClick={() => addLesson(mod.id)}
-                    className="flex items-center gap-2 px-5 py-3 mt-4 text-xs font-black text-[#1a2652] bg-slate-100 hover:bg-[#1a2652] hover:text-white rounded-xl transition-all border border-slate-200"
-                  >
-                    <Plus size={16} /> Add Lesson to Module
-                  </button>
-                </div>
-              </div>
-            ))}
-            
-            {modules.length === 0 && (
-              <div className="p-12 text-center border-3 border-dashed border-slate-100 rounded-[32px] bg-slate-50/30">
-                <Video size={40} className="mx-auto text-slate-200 mb-4" />
-                <p className="text-slate-400 font-bold mb-6">No modules added yet.</p>
-                <button 
-                  type="button" 
-                  onClick={addModule}
-                  className="inline-flex items-center gap-2 px-8 py-4 bg-[#1a2652] text-white font-black rounded-2xl hover:bg-[#c8102e] transition-all shadow-xl shadow-indigo-900/20"
-                >
-                  <Plus size={20} /> Add Your First Module
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Assessment Configuration Section */}
-        <div className="bg-white p-10 rounded-[40px] border border-slate-100 shadow-xl shadow-slate-200/40 space-y-8">
-          <div className="flex items-center gap-4 pb-6 border-b border-slate-50">
-            <div className="p-3.5 rounded-2xl bg-orange-50 text-orange-600">
-              <ClipboardList size={24} />
-            </div>
-            <div>
-              <h3 className="text-2xl font-black text-[#1e293b]">Assessment Flow</h3>
-              <p className="text-slate-500 font-medium text-sm mt-0.5">Select and order the evaluations required to complete this course.</p>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            {assessments.map((assessment, index) => (
-              <motion.div 
-                key={assessment.id} 
-                initial={false}
-                animate={{ scale: assessment.selected ? 1.01 : 1 }}
-                className={`flex items-center justify-between p-6 rounded-[24px] border transition-all ${
-                  assessment.selected ? 'border-orange-200 bg-orange-50/30 shadow-lg shadow-orange-100' : 'border-slate-50 bg-white hover:bg-slate-50'
-                }`}
-              >
-                <div className="flex items-center gap-5">
-                  {/* Checkbox */}
-                  <button
-                    type="button"
-                    onClick={() => toggleAssessment(assessment.id)}
-                    className={`w-7 h-7 rounded-xl flex items-center justify-center border-2 transition-all ${
-                      assessment.selected ? 'bg-orange-500 border-orange-500 text-white' : 'bg-white border-slate-200 text-transparent'
-                    }`}
-                  >
-                    <Check size={16} strokeWidth={4} />
-                  </button>
-                  
-                  {/* Order Badge */}
-                  <div className="w-10 h-10 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-xs font-black text-slate-500 shadow-sm">
-                    #{assessment.order}
-                  </div>
-                  
-                  {/* Title */}
-                  <span className={`font-black text-base ${assessment.selected ? 'text-[#1e293b]' : 'text-slate-400'}`}>
-                    {assessment.type}
-                  </span>
-                </div>
-
-                {/* Controls (Only visible if selected) */}
-                {assessment.selected && (
-                  <div className="flex items-center gap-8">
-                    {/* Mandatory/Optional Toggle */}
-                    <div className="flex items-center gap-3">
-                      <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Mandatory</span>
-                      <button
-                        type="button"
-                        onClick={() => toggleMandatory(assessment.id)}
-                        className={`relative w-12 h-7 rounded-full transition-all ${
-                          assessment.isMandatory ? 'bg-[#1a2652]' : 'bg-slate-200'
-                        }`}
-                      >
-                        <div className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform ${
-                          assessment.isMandatory ? 'translate-x-5' : 'translate-x-0'
-                        } shadow-sm`} />
-                      </button>
-                    </div>
-
-                    {/* Reorder Buttons */}
-                    <div className="flex flex-col gap-1.5">
-                      <button 
-                        type="button"
-                        disabled={index === 0}
-                        onClick={() => moveAssessment(index, 'up')}
-                        className="text-slate-300 hover:text-[#1a2652] disabled:opacity-30 disabled:hover:text-slate-300 transition-colors"
-                      >
-                        <ChevronUp size={20} />
-                      </button>
-                      <button 
-                        type="button"
-                        disabled={index === assessments.length - 1}
-                        onClick={() => moveAssessment(index, 'down')}
-                        className="text-slate-300 hover:text-[#1a2652] disabled:opacity-30 disabled:hover:text-slate-300 transition-colors"
-                      >
-                        <ChevronDown size={20} />
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </motion.div>
-            ))}
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex gap-6 items-center justify-end pt-8">
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between', 
+        marginBottom: '40px', 
+        background: '#fff', 
+        padding: '24px 32px', 
+        borderRadius: '24px', 
+        border: '1px solid #e2e8f0', 
+        boxShadow: '0 4px 20px rgba(35, 49, 103, 0.04)' 
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
           <button 
-            type="button" 
+            onClick={() => navigate('/course-manager/courses')}
+            style={{ padding: '10px', borderRadius: '12px', background: '#f8fafc', border: '1px solid #e2e8f0', color: '#64748b', cursor: 'pointer', display: 'flex' }}
+          >
+            <ArrowLeft size={20} />
+          </button>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748b', fontSize: '12px', fontWeight: 800, marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <BookOpen size={14} color={brandPrimary} /> Academic Governance <span>{'>'}</span> New Course
+            </div>
+            <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#1e293b', margin: 0 }}>Add Course</h1>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: '16px' }}>
+          <button 
             onClick={() => navigate(-1)}
-            className="px-10 py-4.5 rounded-2xl bg-white border border-slate-100 text-slate-500 font-black hover:bg-red-50 hover:text-[#c8102e] transition-all"
+            style={{ padding: '12px 24px', borderRadius: '14px', background: '#f1f5f9', color: '#475569', fontWeight: 700, border: 'none', cursor: 'pointer' }}
           >
             Cancel
           </button>
-          <motion.button 
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            type="submit" 
-            disabled={isSubmitting || isSuccess}
-            className={`flex items-center gap-3 px-16 py-4.5 rounded-2xl font-black text-white shadow-2xl shadow-indigo-900/20 transition-all ${
-              isSuccess ? 'bg-emerald-600' : 'bg-[#1a2652] hover:bg-[#c8102e]'
-            }`}
-          >
-            {isSubmitting ? (
-              <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
-            ) : isSuccess ? (
-              <><CheckCircle size={22} /> Course Created Successfully</>
-            ) : (
-              'Deploy Course Program'
-            )}
-          </motion.button>
+          <button 
+            onClick={handleSubmit}
+            disabled={loading}
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '10px', 
+              padding: '12px 28px', 
+              borderRadius: '14px', 
+              background: brandPrimary, 
+              border: 'none',
+              color: '#fff', 
+              fontWeight: 800, 
+              cursor: 'pointer',
+              boxShadow: '0 8px 32px rgba(35, 49, 103, 0.2)',
+              opacity: loading ? 0.7 : 1
+            }}>
+            {loading ? 'Adding...' : 'Add Course'}
+          </button>
         </div>
-      </form>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1fr', gap: '32px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+          {/* Section 1: Basic Info */}
+          <section style={{ background: '#fff', padding: '40px', borderRadius: '32px', border: '1px solid #e2e8f0', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#1e293b', marginBottom: '32px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(35, 49, 103, 0.08)', color: brandPrimary }}><Info size={18} /></div> Course Information
+            </h3>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <label style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Course Title</label>
+                <input 
+                  type="text" 
+                  name="title" 
+                  value={formData.title} 
+                  onChange={handleInputChange} 
+                  placeholder="e.g. Advanced System Architecture & Design" 
+                  style={glossyInputStyle as any} 
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <label style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Description / Details</label>
+                <textarea 
+                  rows={6} 
+                  name="description" 
+                  value={formData.description} 
+                  onChange={handleInputChange} 
+                  placeholder="What will students master in this course?" 
+                  style={{ ...glossyInputStyle, resize: 'none', height: 'auto', fontFamily: 'inherit' } as any} 
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                <GlassSelect 
+                  label="Difficulty Level" 
+                  name="level" 
+                  value={formData.level} 
+                  options={['Beginner Friendly', 'Intermediate Professional', 'Advanced Strategic']} 
+                  onChange={setLevel} 
+                />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                   <label style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Duration</label>
+                   <div style={{ position: 'relative' }}>
+                     <Clock size={16} color={brandPrimary} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                     <input 
+                       type="text" 
+                       name="duration" 
+                       value={formData.duration} 
+                       onChange={handleInputChange} 
+                       placeholder="e.g. 12 Weeks" 
+                       style={{ ...glossyInputStyle, paddingLeft: '40px' } as any} 
+                     />
+                   </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+          {/* Sidebar Section 1: Cover Media */}
+          <section style={{ background: '#fff', padding: '32px', borderRadius: '32px', border: '1px solid #e2e8f0' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#1e293b', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <ImageIcon size={18} color={brandPrimary} /> Cover Media
+            </h3>
+            <div 
+              onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}
+              style={{ border: `2px dashed ${dragActive ? brandPrimary : '#cbd5e1'}`, borderRadius: '24px', padding: '32px', textAlign: 'center', background: dragActive ? 'rgba(35, 49, 103, 0.05)' : '#f8fafc', position: 'relative', minHeight: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              {selectedImage ? (
+                <div style={{ position: 'relative', width: '100%' }}>
+                  <img src={selectedImage} alt="Preview" style={{ width: '100%', height: '160px', objectFit: 'cover', borderRadius: '16px' }} />
+                  <button onClick={() => setSelectedImage(null)} style={{ position: 'absolute', top: '10px', right: '10px', background: '#ef4444', color: '#fff', border: 'none', borderRadius: '50%', padding: '6px', cursor: 'pointer', display: 'flex' }}><X size={14} /></button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                  <Upload size={28} color={brandPrimary} />
+                  <div>
+                    <div style={{ fontWeight: 700, color: '#1e293b', fontSize: '14px' }}>Upload Banner</div>
+                    <div style={{ fontSize: '12px', color: '#64748b' }}>PNG, JPG up to 10MB</div>
+                  </div>
+                  <input type="file" style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }} onChange={handleImageSelect} />
+                </div>
+              )}
+            </div>
+          </section>
+
+        </div>
+      </div>
+
+      <StatusModal
+        isOpen={statusModal.show}
+        onClose={() => setStatusModal(prev => ({ ...prev, show: false }))}
+        type={statusModal.type}
+        title={statusModal.title}
+        message={statusModal.message}
+      />
     </div>
   );
 };
 
 export default CM_CreateCourse;
-

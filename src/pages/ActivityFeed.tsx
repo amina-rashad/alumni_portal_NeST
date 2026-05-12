@@ -3,7 +3,8 @@ import { motion, type Variants } from 'framer-motion';
 import { 
   Clock, CheckCircle2,
   TrendingUp, Image as ImageIcon,
-  MessageSquare, Heart, Loader2
+  MessageSquare, Heart, Loader2,
+  Users, Award, Calendar
 } from 'lucide-react';
 import { socialApi, getUser } from '../services/api';
 import alumniStoriesBg from '../assets/alumni_stories_bg.png';
@@ -25,7 +26,9 @@ interface Post {
 const trendingTopics = [
   { topic: 'Quantum FinTech', growth: '+32%', interactions: '2.4k' },
   { topic: 'Cloud Governance', growth: '+15%', interactions: '920' },
-  { topic: 'Alumni Meet 2026', growth: '+45%', interactions: '3.1k' }
+  { topic: 'Alumni Meet 2026', growth: '+45%', interactions: '3.1k' },
+  { topic: 'Industrial IoT', growth: '+28%', interactions: '1.2k' },
+  { topic: 'Cyber Security', growth: '+12%', interactions: '850' }
 ];
 
 const smoothSpring = { type: 'spring' as const, stiffness: 80, damping: 20, mass: 1 };
@@ -128,7 +131,7 @@ const ActivityFeed: React.FC = () => {
         radial-gradient(at 100% 0%, rgba(15, 23, 42, 0.03) 0px, transparent 50%)
       `,
       minHeight: '100vh', 
-      padding: '2rem 1.5rem',
+      padding: '0 1.5rem 2rem',
       fontFamily: '"Montserrat", sans-serif' 
     }}>
       
@@ -153,7 +156,7 @@ const ActivityFeed: React.FC = () => {
           background-image: url('${alumniStoriesBg}');
           background-size: cover;
           background-position: center;
-          padding: 4rem 0;
+          padding: 6rem 0;
           margin-bottom: 2.5rem;
           position: relative;
           overflow: hidden;
@@ -272,7 +275,7 @@ const ActivityFeed: React.FC = () => {
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 420px', gap: '1.5rem' }}>
           
-          <motion.div variants={pageVariants} initial="hidden" animate="visible">
+          <motion.div variants={pageVariants} initial="hidden" animate="visible" style={{ alignSelf: 'start' }}>
             {loading ? (
               <div style={{ textAlign: 'center', padding: '4rem', color: '#94a3b8' }}>
                 <Loader2 size={32} className="spin" style={{ margin: '0 auto 1rem' }} />
@@ -287,6 +290,7 @@ const ActivityFeed: React.FC = () => {
             ) : (
               posts.map((post) => (
                 <motion.div key={post.id} variants={itemVariants} className="insight-card">
+                  {/* ... post content ... */}
                   <div style={{ padding: '1.75rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                       <div style={{ 
@@ -369,8 +373,77 @@ const ActivityFeed: React.FC = () => {
             )}
           </motion.div>
 
-          <div style={{ position: 'sticky', top: '2rem' }}>
-             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="insight-card" style={{ padding: '2rem' }}>
+          <aside style={{ 
+             display: 'flex',
+             flexDirection: 'column',
+             gap: '1.5rem',
+             height: '100%'
+          }}>
+             {/* Card 1: Scrolls with the page */}
+             <motion.div 
+                initial={{ opacity: 0, y: 20 }} 
+                animate={{ opacity: 1, y: 0 }} 
+                transition={{ delay: 0.25 }} 
+                className="insight-card" 
+                style={{ 
+                  height: '280px', 
+                  position: 'relative', 
+                  overflow: 'hidden',
+                  padding: 0,
+                  margin: 0,
+                  flexShrink: 0
+                }}
+             >
+                <video 
+                  autoPlay 
+                  muted 
+                  loop 
+                  playsInline 
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    filter: 'brightness(0.9) contrast(1.1)'
+                  }}
+                >
+                  <source src="https://nestdigital.com/wp-content/uploads/2026/03/Nest-HP-Video.mp4" type="video/mp4" />
+                </video>
+                <div style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  padding: '1.5rem',
+                  background: 'linear-gradient(to top, rgba(15, 23, 42, 0.9) 0%, transparent 100%)',
+                  color: 'white',
+                  zIndex: 2
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                    <div style={{ width: '8px', height: '8px', background: '#DC2626', borderRadius: '50%' }} />
+                    <span style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.9 }}>Digital Transformation</span>
+                  </div>
+                  <h4 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, letterSpacing: '-0.02em' }}>Inside NeST Digital</h4>
+                </div>
+             </motion.div>
+
+             {/* Card 2: Sticks once reached */}
+             <motion.div 
+                initial={{ opacity: 0, y: 20 }} 
+                animate={{ opacity: 1, y: 0 }} 
+                transition={{ delay: 0.3 }} 
+                className="insight-card custom-scrollbar" 
+                style={{ 
+                  padding: '2rem', 
+                  margin: 0,
+                  position: 'sticky',
+                  top: '24px',
+                  zIndex: 10,
+                  minHeight: 'calc(100vh - 100px)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  overflowY: 'auto'
+                }}
+             >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                    <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                      <TrendingUp size={20} color="#DC2626" /> Trending Now
@@ -388,8 +461,42 @@ const ActivityFeed: React.FC = () => {
                       </div>
                    ))}
                 </div>
+
+                {/* Community Highlights Section */}
+                <div style={{ marginTop: '2.5rem', paddingTop: '2.5rem', borderTop: '1px solid rgba(0,0,0,0.1)' }}>
+                   <h4 style={{ margin: '0 0 1.5rem', fontSize: '1.1rem', fontWeight: 800, color: '#0F172A' }}>Community Highlights</h4>
+                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                      <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
+                         <div style={{ width: '48px', height: '48px', background: 'rgba(59, 130, 246, 0.1)', color: '#3B82F6', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <Users size={22} />
+                         </div>
+                         <div>
+                            <div style={{ fontSize: '1rem', fontWeight: 800, color: '#1e293b', lineHeight: 1.2 }}>124 New Alumni</div>
+                            <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Joined this month</div>
+                         </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
+                         <div style={{ width: '48px', height: '48px', background: 'rgba(16, 185, 129, 0.1)', color: '#10B981', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <Award size={22} />
+                          </div>
+                          <div>
+                             <div style={{ fontSize: '1rem', fontWeight: 800, color: '#1e293b', lineHeight: 1.2 }}>45 Certifications</div>
+                             <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Awarded last week</div>
+                          </div>
+                       </div>
+                       <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
+                          <div style={{ width: '48px', height: '48px', background: 'rgba(220, 38, 38, 0.1)', color: '#DC2626', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                             <Calendar size={22} />
+                          </div>
+                          <div>
+                             <div style={{ fontSize: '1rem', fontWeight: 800, color: '#1e293b', lineHeight: 1.2 }}>Annual Meetup</div>
+                             <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>June 15, 2026</div>
+                          </div>
+                       </div>
+                    </div>
+                 </div>
              </motion.div>
-          </div>
+          </aside>
         </div>
       </div>
     </div>

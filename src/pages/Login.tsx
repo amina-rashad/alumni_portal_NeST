@@ -31,6 +31,16 @@ const Login: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Scroll Lock for Success Popup
+  useEffect(() => {
+    if (showSuccessPopup) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [showSuccessPopup]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     if (error) setError('');
@@ -249,24 +259,16 @@ const Login: React.FC = () => {
 
           <div className="auth-divider"><span>Or continue with</span></div>
 
-          <div className="social-auth">
+          <div className="social-auth" style={{ display: 'flex', justifyContent: 'center', gap: '16px', width: '100%' }}>
             <button type="button" className="social-btn" onClick={() => handleSocialSignIn('Google')}>
               {getProviderIcon('Google')} Google
-            </button>
-            <button type="button" className="social-btn" onClick={() => handleSocialSignIn('LinkedIn')}>
-              {getProviderIcon('LinkedIn')} LinkedIn
             </button>
             <button type="button" className="social-btn" onClick={() => handleSocialSignIn('Microsoft')}>
               {getProviderIcon('Microsoft')} Microsoft
             </button>
           </div>
 
-          <p className="auth-footer">New to the portal? <Link to="/register">Create an account</Link></p>
-          <div style={{ marginTop: '16px', textAlign: 'center' }}>
-            <Link to="/course-manager/login" style={{ fontSize: '13px', fontWeight: 700, color: '#1a2652', textDecoration: 'none', padding: '8px 16px', border: '1px solid #e2e8f0', borderRadius: '12px', background: '#f8fafc' }}>
-              Switch to Course Manager Login
-            </Link>
-          </div>
+          <p className="auth-footer" style={{ textAlign: 'center', marginTop: '24px', width: '100%' }}>New to the portal? <Link to="/register">Create an account</Link></p>
         </div>
 
         <div className="auth-image-side">
@@ -315,7 +317,7 @@ const Login: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Login Success Popup */}
+      {/* Login Success Popup - Cinematic Experience */}
       <AnimatePresence>
         {showSuccessPopup && (
           <motion.div 
@@ -324,43 +326,141 @@ const Login: React.FC = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             style={{ 
-              position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
-              zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', 
-              background: 'rgba(15, 23, 42, 0.9)', backdropFilter: 'blur(12px)' 
+              position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', 
+              zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', 
+              background: 'rgba(10, 15, 30, 0.92)', backdropFilter: 'blur(16px)',
             }}
           >
             <motion.div 
-              initial={{ scale: 0.9, y: 20, opacity: 0 }}
+              initial={{ scale: 0.9, y: 30, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
-              exit={{ scale: 0.9, y: 20, opacity: 0 }}
+              exit={{ scale: 0.8, y: 20, opacity: 0 }}
+              transition={{ type: "spring", damping: 20, stiffness: 100 }}
               style={{ 
-                background: '#fff', width: '420px', borderRadius: '24px', 
-                padding: '40px', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' 
+                background: '#fff', width: '380px', borderRadius: '28px', 
+                padding: '32px', textAlign: 'center', boxShadow: '0 25px 80px -12px rgba(0,0,0,0.6)',
+                position: 'relative', overflow: 'hidden'
               }}
             >
-              <div style={{ 
-                width: '180px', height: '100px', 
-                display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                margin: '0 auto 12px'
-              }}>
-                <img 
-                  src={nestIcon} 
-                  alt="NeST Logo" 
-                  style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+              {/* Animated Glow Background Decor */}
+              <motion.div 
+                animate={{ 
+                  scale: [1, 1.2, 1],
+                  opacity: [0.1, 0.2, 0.1]
+                }}
+                transition={{ duration: 4, repeat: Infinity }}
+                style={{ 
+                  position: 'absolute', top: '-50%', left: '-50%', width: '200%', height: '200%',
+                  background: 'radial-gradient(circle, rgba(200, 16, 46, 0.08) 0%, transparent 60%)',
+                  pointerEvents: 'none'
+                }}
+              />
+
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.5, rotate: -10 }}
+                animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                transition={{ delay: 0.2, type: "spring" }}
+                style={{ width: '140px', height: '80px', margin: '0 auto 16px' }}
+              >
+                <img src={nestIcon} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              </motion.div>
+
+              {/* Staggered Character Reveal */}
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px', overflow: 'hidden' }}>
+                {"Welcome Back!".split("").map((char, i) => (
+                  <motion.span
+                    key={i}
+                    initial={{ y: 30, opacity: 0, filter: 'blur(10px)' }}
+                    animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
+                    transition={{ delay: 0.3 + (i * 0.04), duration: 0.5, ease: "easeOut" }}
+                    style={{ 
+                      fontSize: '26px', fontWeight: 900, color: '#0f172a', 
+                      display: 'inline-block', whiteSpace: char === " " ? "pre" : "normal",
+                      textShadow: '0 0 15px rgba(0,0,0,0.05)'
+                    }}
+                  >
+                    {char}
+                  </motion.span>
+                ))}
+              </div>
+
+              <motion.p 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.8 }}
+                style={{ color: '#64748b', fontSize: '15px', lineHeight: '1.5', marginBottom: '32px' }}
+              >
+                Hello, <br/>
+                <motion.span 
+                  animate={{ 
+                    backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+                  }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                  style={{ 
+                    fontWeight: 900, 
+                    fontSize: '20px',
+                    background: 'linear-gradient(90deg, #c8102e, #1a2652, #c8102e)',
+                    backgroundSize: '200% auto',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    display: 'inline-block',
+                    marginTop: '4px'
+                  }}
+                >
+                  {loggedInUser?.full_name}
+                </motion.span>
+              </motion.p>
+
+              {/* Magnetic Dashboard Button */}
+              <div style={{ position: 'relative' }}>
+                <motion.button 
+                  onClick={handleSuccessClose} 
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.96 }}
+                  style={{ 
+                    width: '100%', padding: '16px', fontSize: '15px', fontWeight: 800,
+                    borderRadius: '14px', background: '#c8102e', color: 'white',
+                    border: 'none', cursor: 'pointer', position: 'relative',
+                    boxShadow: '0 8px 25px rgba(200, 16, 46, 0.3)',
+                    overflow: 'hidden'
+                  }}
+                  onMouseMove={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const x = e.clientX - rect.left - rect.width / 2;
+                    const y = e.clientY - rect.top - rect.height / 2;
+                    e.currentTarget.style.transform = `translate(${x * 0.15}px, ${y * 0.3}px) scale(1.02)`;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = `translate(0, 0) scale(1)`;
+                  }}
+                >
+                  {/* Ripple Glow Trail Effect */}
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    whileHover={{ opacity: 1 }}
+                    style={{ 
+                      position: 'absolute', inset: 0,
+                      background: 'radial-gradient(circle at var(--x, 50%) var(--y, 50%), rgba(255,255,255,0.2) 0%, transparent 50%)',
+                      pointerEvents: 'none'
+                    }}
+                  />
+                  Go to Dashboard
+                </motion.button>
+                
+                {/* Magnetic Glow Aura */}
+                <motion.div 
+                  animate={{ 
+                    opacity: [0.3, 0.6, 0.3],
+                    scale: [1, 1.05, 1]
+                  }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  style={{ 
+                    position: 'absolute', inset: '-10px',
+                    borderRadius: '20px', border: '2px solid rgba(200, 16, 46, 0.1)',
+                    pointerEvents: 'none', zIndex: -1
+                  }}
                 />
               </div>
-              <h2 style={{ fontSize: '28px', fontWeight: 800, color: '#0f172a', marginBottom: '12px' }}>Welcome Back!</h2>
-              <p style={{ color: '#64748b', fontSize: '16px', lineHeight: '1.6', marginBottom: '32px' }}>
-                Hello <span style={{ fontWeight: 700, color: '#c8102e' }}>{loggedInUser?.full_name}</span>,<br/>
-                You have successfully signed in to your portal.
-              </p>
-              <button 
-                onClick={handleSuccessClose} 
-                className="auth-btn" 
-                style={{ width: '100%', padding: '16px', fontSize: '16px' }}
-              >
-                Go to Dashboard
-              </button>
             </motion.div>
           </motion.div>
         )}

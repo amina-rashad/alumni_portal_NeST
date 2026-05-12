@@ -1,15 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Download, CheckCheck, Loader2, AlertCircle, Sparkles, RefreshCw } from 'lucide-react';
+import { Download, CheckCheck, Loader2, AlertCircle, Sparkles, RefreshCw, Check, Paperclip } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
 interface InlineResumeBuilderProps {
   onAttach: (file: File, data: any) => void;
+  onChange?: (data: any) => void; // Added for automatic sync
   initialData?: any;
   buttonText?: string;
 }
 
-const InlineResumeBuilder: React.FC<InlineResumeBuilderProps> = ({ onAttach, initialData, buttonText }) => {
+const InlineResumeBuilder: React.FC<InlineResumeBuilderProps> = ({ onAttach, onChange, initialData, buttonText }) => {
   const resumeRef = useRef<HTMLDivElement>(null);
   const [isGeneratingDownload, setIsGeneratingDownload] = useState(false);
   const [isGeneratingAttach, setIsGeneratingAttach] = useState(false);
@@ -55,18 +56,43 @@ const InlineResumeBuilder: React.FC<InlineResumeBuilderProps> = ({ onAttach, ini
     return formatted;
   };
 
-  // Sync state if initialData changes (useful for autofill)
+  // Sync state ONLY ONCE on mount if initialData is provided
   useEffect(() => {
     if (initialData) {
       const formatted = formatProfileData(initialData);
       setData(prev => ({
         ...prev,
-        ...formatted
+        ...formatted,
+        // Ensure core fields from initialData are used
+        fullName: initialData.fullName || prev.fullName,
+        email: initialData.email || prev.email,
+        phone: initialData.phone || prev.phone,
+        title: initialData.title || prev.title,
+        summary: initialData.summary || prev.summary,
       }));
     }
-  }, [initialData]);
+    // We only run this on mount to prevent infinite loops with parent state
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [isAttached, setIsAttached] = useState(false);
+  const isInitialMount = useRef(true);
+  const lastEmittedData = useRef<string>("");
+
+  // New: Emit changes to parent for automatic sync with stability guard
+  useEffect(() => {
+    // Skip the very first run to prevent boot-up loops
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    const dataString = JSON.stringify(data);
+    if (onChange && dataString !== lastEmittedData.current) {
+      lastEmittedData.current = dataString;
+      onChange(data);
+    }
+  }, [data, onChange]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setData({ ...data, [e.target.name]: e.target.value });
@@ -125,21 +151,31 @@ const InlineResumeBuilder: React.FC<InlineResumeBuilderProps> = ({ onAttach, ini
   };
 
   // Helper to render text blocks with bold first lines and bullet points
-  const renderTextBlock = (text: string, columns: number = 1) => {
+  const renderTextBlock = (text: string, columns: number = 1, isSectionTitle: boolean = false) => {
     const blocks = text.split('\n\n').filter(Boolean);
     
     return (
-      <div style={{ display: 'grid', gridTemplateColumns: columns > 1 ? `repeat(${columns}, 1fr)` : '1fr', gap: '1rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: columns > 1 ? `repeat(${columns}, 1fr)` : '1fr', gap: '2rem' }}>
         {blocks.map((block, idx) => {
           const lines = block.split('\n');
           return (
-            <div key={idx} style={{ marginBottom: columns === 1 ? '1rem' : 0 }}>
+            <div key={idx} style={{ marginBottom: columns === 1 ? '1.5rem' : 0 }}>
               {lines.map((line, lIdx) => {
-                if (lIdx === 0) return <div key={lIdx} style={{ fontWeight: 700, fontSize: '9px', marginBottom: '2px', color: '#000' }}>{line}</div>;
-                if (line.startsWith('-')) return <div key={lIdx} style={{ fontSize: '8px', paddingLeft: '8px', position: 'relative', marginBottom: '2px', color: '#000' }}>
-                  <span style={{ position: 'absolute', left: 0 }}>•</span> {line.substring(1).trim()}
-                </div>;
-                return <div key={lIdx} style={{ fontSize: '9px', marginBottom: '2px', color: '#000' }}>{line}</div>;
+                if (lIdx === 0) return (
+                  <div key={lIdx} style={{ fontWeight: 700, fontSize: '11px', marginBottom: '4px', color: '#000', display: 'flex', justifyContent: 'space-between' }}>
+                    {line}
+                  </div>
+                );
+                if (line.startsWith('-')) return (
+                  <div key={lIdx} style={{ fontSize: '10px', paddingLeft: '12px', position: 'relative', marginBottom: '4px', color: '#334155', lineHeight: 1.5 }}>
+                    <span style={{ position: 'absolute', left: 0 }}>•</span> {line.substring(1).trim()}
+                  </div>
+                );
+                return (
+                  <div key={lIdx} style={{ fontSize: '10px', marginBottom: '2px', color: '#475569', lineHeight: 1.5 }}>
+                    {line}
+                  </div>
+                );
               })}
             </div>
           );
@@ -267,32 +303,32 @@ const InlineResumeBuilder: React.FC<InlineResumeBuilderProps> = ({ onAttach, ini
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div>
             <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#4a4a4a', marginBottom: '0.3rem', display: 'block' }}>Full Name</label>
-            <input name="fullName" value={data.fullName} onChange={handleChange} placeholder="LAURICE MORETTI" style={{ width: '100%', padding: '0.6rem', border: '1px solid #ced4da', borderRadius: '8px', boxSizing: 'border-box', background: '#f8f9fa' }} />
+            <input name="fullName" value={data.fullName} onChange={handleChange} placeholder="ARJUN KRISHNAN" style={{ width: '100%', padding: '0.6rem', border: '1px solid #ced4da', borderRadius: '8px', boxSizing: 'border-box', background: '#f8f9fa' }} />
           </div>
           <div>
             <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#4a4a4a', marginBottom: '0.3rem', display: 'block' }}>Professional Title</label>
-            <input name="title" value={data.title} onChange={handleChange} placeholder="SYSTEMS DESIGNER" style={{ width: '100%', padding: '0.6rem', border: '1px solid #ced4da', borderRadius: '8px', boxSizing: 'border-box', background: '#f8f9fa' }} />
+            <input name="title" value={data.title} onChange={handleChange} placeholder="SENIOR SOFTWARE ENGINEER" style={{ width: '100%', padding: '0.6rem', border: '1px solid #ced4da', borderRadius: '8px', boxSizing: 'border-box', background: '#f8f9fa' }} />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '0.8rem' }}>
             <div>
               <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#4a4a4a', marginBottom: '0.3rem', display: 'block' }}>Phone</label>
-              <input name="phone" value={data.phone} onChange={handleChange} placeholder="+123-456-7890" style={{ width: '100%', padding: '0.6rem', border: '1px solid #ced4da', borderRadius: '8px', boxSizing: 'border-box', background: '#f8f9fa' }} />
+              <input name="phone" value={data.phone} onChange={handleChange} placeholder="+91-98765 43210" style={{ width: '100%', padding: '0.6rem', border: '1px solid #ced4da', borderRadius: '8px', boxSizing: 'border-box', background: '#f8f9fa' }} />
             </div>
             <div>
               <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#4a4a4a', marginBottom: '0.3rem', display: 'block' }}>Address</label>
-              <input name="address" value={data.address} onChange={handleChange} placeholder="123 Anywhere St..." style={{ width: '100%', padding: '0.6rem', border: '1px solid #ced4da', borderRadius: '8px', boxSizing: 'border-box', background: '#f8f9fa' }} />
+              <input name="address" value={data.address} onChange={handleChange} placeholder="Kochi, India" style={{ width: '100%', padding: '0.6rem', border: '1px solid #ced4da', borderRadius: '8px', boxSizing: 'border-box', background: '#f8f9fa' }} />
             </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '0.8rem' }}>
             <div>
               <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#4a4a4a', marginBottom: '0.3rem', display: 'block' }}>Email</label>
-              <input name="email" value={data.email} onChange={handleChange} placeholder="hello@reallygreatsite.com" style={{ width: '100%', padding: '0.6rem', border: '1px solid #ced4da', borderRadius: '8px', boxSizing: 'border-box', background: '#f8f9fa' }} />
+              <input name="email" value={data.email} onChange={handleChange} placeholder="hello@example.com" style={{ width: '100%', padding: '0.6rem', border: '1px solid #ced4da', borderRadius: '8px', boxSizing: 'border-box', background: '#f8f9fa' }} />
             </div>
             <div>
-              <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#4a4a4a', marginBottom: '0.3rem', display: 'block' }}>Portfolio</label>
-              <input name="portfolio" value={data.portfolio} onChange={handleChange} placeholder="www.reallygreatsite.com" style={{ width: '100%', padding: '0.6rem', border: '1px solid #ced4da', borderRadius: '8px', boxSizing: 'border-box', background: '#f8f9fa' }} />
+              <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#4a4a4a', marginBottom: '0.3rem', display: 'block' }}>Portfolio / LinkedIn</label>
+              <input name="portfolio" value={data.portfolio} onChange={handleChange} placeholder="linkedin.com/in/arjun" style={{ width: '100%', padding: '0.6rem', border: '1px solid #ced4da', borderRadius: '8px', boxSizing: 'border-box', background: '#f8f9fa' }} />
             </div>
           </div>
 
@@ -305,85 +341,92 @@ const InlineResumeBuilder: React.FC<InlineResumeBuilderProps> = ({ onAttach, ini
             <textarea name="experience" value={data.experience} onChange={handleChange} rows={6} placeholder="Title | Dates\nCompany\n- Bullet 1\n- Bullet 2" style={{ width: '100%', padding: '0.6rem', border: '1px solid #ced4da', borderRadius: '8px', boxSizing: 'border-box', resize: 'vertical', background: '#f8f9fa', fontFamily: 'inherit' }} />
           </div>
           <div>
-            <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#4a4a4a', marginBottom: '0.3rem', display: 'block' }}>Projects (Separate by double enter)</label>
-            <textarea name="projects" value={data.projects} onChange={handleChange} rows={5} placeholder="Project Name | Dates\nRole/Tech Stack\n- Bullet 1" style={{ width: '100%', padding: '0.6rem', border: '1px solid #ced4da', borderRadius: '8px', boxSizing: 'border-box', resize: 'vertical', background: '#f8f9fa', fontFamily: 'inherit' }} />
+            <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#4a4a4a', marginBottom: '0.3rem', display: 'block' }}>Academic History (Separate by double enter)</label>
+            <textarea name="education" value={data.education} onChange={handleChange} rows={5} placeholder="Degree | Year\nUniversity" style={{ width: '100%', padding: '0.6rem', border: '1px solid #ced4da', borderRadius: '8px', boxSizing: 'border-box', resize: 'vertical', background: '#f8f9fa', fontFamily: 'inherit' }} />
           </div>
           <div>
-            <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#4a4a4a', marginBottom: '0.3rem', display: 'block' }}>Academic History (Separate by double enter)</label>
-            <textarea name="education" value={data.education} onChange={handleChange} rows={5} placeholder="University | Dates\nDegree\n- Bullet 1" style={{ width: '100%', padding: '0.6rem', border: '1px solid #ced4da', borderRadius: '8px', boxSizing: 'border-box', resize: 'vertical', background: '#f8f9fa', fontFamily: 'inherit' }} />
+            <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#4a4a4a', marginBottom: '0.3rem', display: 'block' }}>Key Projects (Separate by double enter)</label>
+            <textarea name="projects" value={data.projects} onChange={handleChange} rows={5} placeholder="Project Title | Dates\nDescription\n- Bullet 1" style={{ width: '100%', padding: '0.6rem', border: '1px solid #ced4da', borderRadius: '8px', boxSizing: 'border-box', resize: 'vertical', background: '#f8f9fa', fontFamily: 'inherit' }} />
           </div>
           <div>
             <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#4a4a4a', marginBottom: '0.3rem', display: 'block' }}>Certification (Separate by double enter)</label>
-            <textarea name="certification" value={data.certification} onChange={handleChange} rows={5} placeholder="Certificate | Dates\nIssuer" style={{ width: '100%', padding: '0.6rem', border: '1px solid #ced4da', borderRadius: '8px', boxSizing: 'border-box', resize: 'vertical', background: '#f8f9fa', fontFamily: 'inherit' }} />
+            <textarea name="certification" value={data.certification} onChange={handleChange} rows={5} placeholder="Certificate | Year\nIssuer" style={{ width: '100%', padding: '0.6rem', border: '1px solid #ced4da', borderRadius: '8px', boxSizing: 'border-box', resize: 'vertical', background: '#f8f9fa', fontFamily: 'inherit' }} />
           </div>
         </div>
 
         {/* Live Preview Section styled to match the image */}
-        <div style={{ background: '#f1f3f5', padding: '1.5rem', borderRadius: '8px', overflowY: 'auto', maxHeight: '600px', textAlign: 'center' }}>
+        <div style={{ background: '#f1f5f9', padding: '2rem', borderRadius: '16px', overflowY: 'auto', maxHeight: '800px', textAlign: 'center' }}>
           <div ref={resumeRef} style={{ 
             background: 'white', 
-            padding: '2.5rem', 
+            padding: '3rem 3rem', 
             width: '100%', 
-            maxWidth: '550px', 
-            minHeight: '700px',
+            maxWidth: '210mm', 
+            minHeight: '297mm',
             height: 'max-content',
-            boxShadow: '0 4px 15px rgba(0,0,0,0.05)', 
-            fontFamily: 'Helvetica, Arial, sans-serif',
-            color: '#000',
-            lineHeight: 1.4,
+            boxShadow: '0 8px 30px rgba(0,0,0,0.08)', 
+            fontFamily: '"Montserrat", "Helvetica", Arial, sans-serif',
+            color: '#1e293b',
+            lineHeight: 1.5,
             boxSizing: 'border-box',
             wordBreak: 'break-word',
             margin: '0 auto',
             textAlign: 'left',
-            display: 'inline-block'
+            display: 'inline-block',
+            border: '1px solid #f1f5f9'
           }}>
-            <div style={{ marginBottom: '2rem' }}>
-              <h1 style={{ margin: '0', fontSize: '26px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{data.fullName}</h1>
-              <h2 style={{ margin: '4px 0 0', fontSize: '12px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '1px' }}>{data.title}</h2>
+            {/* Header section from screenshot */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <h1 style={{ margin: '0', fontSize: '32px', fontWeight: 900, color: '#1e2652', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{data.fullName}</h1>
+              <h2 style={{ margin: '8px 0 12px', fontSize: '14px', fontWeight: 800, color: '#c8102e', textTransform: 'uppercase', letterSpacing: '1px' }}>{data.title}</h2>
+              
+              <div style={{ display: 'flex', gap: '1.5rem', fontSize: '11px', color: '#64748b', fontWeight: 500 }}>
+                <span>{data.email}</span>
+                <span>{data.phone}</span>
+                <span>{data.address}</span>
+              </div>
             </div>
+
+            {/* Thick Navy Divider */}
+            <div style={{ height: '2.5px', background: '#1e2652', width: '100%', marginBottom: '2.5rem' }} />
             
             {data.summary && (
-              <div style={{ marginBottom: '1.2rem' }}>
-                <h3 style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', margin: '0 0 6px' }}>Professional Summary</h3>
-                <p style={{ fontSize: '9px', margin: 0, paddingRight: '20px' }}>{data.summary}</p>
+              <div style={{ marginBottom: '2.5rem' }}>
+                <h3 style={{ fontSize: '13px', fontWeight: 800, color: '#1e2652', textTransform: 'uppercase', margin: '0 0 12px', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>Professional Summary</h3>
+                <p style={{ fontSize: '10.5px', margin: 0, color: '#334155', lineHeight: 1.6 }}>{data.summary}</p>
               </div>
             )}
 
-            <div style={{ marginBottom: '1.2rem' }}>
-              <h3 style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', margin: '0 0 6px' }}>Contact</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '4px', fontSize: '9px' }}>
-                <div>Phone: {data.phone}</div>
-                <div>Address: {data.address}</div>
-                <div>Email: {data.email}</div>
-                <div>Portfolio: {data.portfolio}</div>
-              </div>
-            </div>
-
             {data.experience && (
-              <div style={{ marginBottom: '1.2rem' }}>
-                <h3 style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', margin: '0 0 6px' }}>Work Experience</h3>
+              <div style={{ marginBottom: '2.5rem' }}>
+                <h3 style={{ fontSize: '13px', fontWeight: 800, color: '#1e2652', textTransform: 'uppercase', margin: '0 0 12px', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>Work Experience</h3>
                 {renderTextBlock(data.experience, 1)}
               </div>
             )}
 
-            {data.projects && (
-              <div style={{ marginBottom: '1.2rem' }}>
-                <h3 style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', margin: '0 0 6px' }}>Projects</h3>
-                {renderTextBlock(data.projects, 1)}
-              </div>
-            )}
-
-            {data.education && (
-              <div style={{ marginBottom: '1.2rem' }}>
-                <h3 style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', margin: '0 0 6px' }}>Academic History</h3>
-                {renderTextBlock(data.education, 2)}
-              </div>
-            )}
-
-            {data.certification && (
+            {/* Side-by-side Education and Certifications */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4rem' }}>
               <div>
-                <h3 style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', margin: '0 0 6px' }}>Certification</h3>
-                {renderTextBlock(data.certification, 2)}
+                {data.education && (
+                  <div>
+                    <h3 style={{ fontSize: '13px', fontWeight: 800, color: '#1e2652', textTransform: 'uppercase', margin: '0 0 12px', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>Education</h3>
+                    {renderTextBlock(data.education, 1)}
+                  </div>
+                )}
+              </div>
+              <div>
+                {data.certification && (
+                  <div>
+                    <h3 style={{ fontSize: '13px', fontWeight: 800, color: '#1e2652', textTransform: 'uppercase', margin: '0 0 12px', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>Certifications</h3>
+                    {renderTextBlock(data.certification, 1)}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {data.projects && (
+              <div style={{ marginTop: '2.5rem' }}>
+                <h3 style={{ fontSize: '13px', fontWeight: 800, color: '#1e2652', textTransform: 'uppercase', margin: '0 0 12px', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>Key Projects</h3>
+                {renderTextBlock(data.projects, 1)}
               </div>
             )}
           </div>

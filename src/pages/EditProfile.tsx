@@ -1,13 +1,73 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   ArrowLeft, Save, User as UserIcon, Book, Building, 
   Phone, AlignLeft, ShieldCheck, CheckCircle2, 
-  FileText, UploadCloud, Edit3, X, Upload, Camera, Briefcase, Award, GraduationCap
+  FileText, UploadCloud, Edit3, X, Upload, Camera, Briefcase, Award, GraduationCap, Check
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { usersApi, setUser, getUser, type AuthUser } from '../services/api';
 import { AnimatePresence, motion } from 'framer-motion';
 import InlineResumeBuilder from './InlineResumeBuilder';
+
+const resizeImage = (file: File, maxWidth: number, maxHeight: number): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height *= maxWidth / width;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width *= maxHeight / height;
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.8));
+      };
+      img.onerror = reject;
+    };
+    reader.onerror = reject;
+  });
+};
+
+// --- Utilities ---
+const compressImage = (base64: string, maxWidth = 1000, quality = 0.7): Promise<string> => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.src = base64;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+
+      if (width > maxWidth) {
+        height = (maxWidth / width) * height;
+        width = maxWidth;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx?.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+  });
+};
 
 const EditProfile: React.FC = () => {
   const navigate = useNavigate();
@@ -32,13 +92,31 @@ const EditProfile: React.FC = () => {
     portfolio_url: ''
   });
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [certificates, setCertificates] = useState<{id: string, name: string, url: string, issuer: string, date: string, type: 'uploaded' | 'portal'}[]>([]);
   const [experience, setExperience] = useState<{id: string, role: string, company: string, type: string, duration: string, description?: string}[]>([]);
   const [education, setEducation] = useState<{id: string, degree: string, school: string, year: string}[]>([]);
 
-  // Overlay state for adding items
   const [activeOverlay, setActiveOverlay] = useState<'none' | 'experience' | 'education' | 'certificate'>('none');
   const [overlayData, setOverlayData] = useState<any>({});
+
+  const handleResumeChange = useCallback((data: any) => {
+    setResumeData(data);
+  }, []);
+
+  const builderInitialData = useMemo(() => ({
+    fullName: formData.full_name,
+    phone: formData.phone,
+    email: getUser()?.email || '',
+    address: formData.batch ? `Batch of ${formData.batch}` : '',
+    title: formData.specialization,
+    summary: formData.bio,
+    experience: experience,
+    education: education,
+    certificates: certificates,
+    portfolio: formData.portfolio_url,
+    projects: resumeData?.projects || ''
+  }), [formData.full_name, formData.phone, formData.batch, formData.specialization, formData.bio, experience, education, certificates, formData.portfolio_url, resumeData?.projects]);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -65,6 +143,8 @@ const EditProfile: React.FC = () => {
           setExperience(u.experience || []);
           setEducation(u.education || []);
           setCertificates(u.certificates || []);
+          if (u.is_resume_created) setResumeOption('create');
+          setResumeData(u.resume_data || null);
         } else {
           // Mock data fallback if guest
           const u = getUser() as any;
@@ -107,10 +187,10 @@ const EditProfile: React.FC = () => {
     setMessage({ type: '', text: '' });
 
     try {
+      // Auto-sync handles resumeData now, so no need to force 'Attach'
       if (resumeOption === 'create' && !resumeData) {
-        setMessage({ type: 'error', text: "Please click 'Attach as PDF' inside the resume builder before saving." });
-        setSaving(false);
-        return;
+        // Fallback: If for some reason resumeData isn't set, try to use initial data if available
+        // but generally onChange will have populated this.
       }
 
       const skillsArray = formData.skills.split(',').map(s => s.trim()).filter(s => s !== '');
@@ -123,21 +203,31 @@ const EditProfile: React.FC = () => {
         education: education
       };
 
-      if (resumeFile) {
-        const fileData = await new Promise((resolve) => {
+      if (photoFile) {
+        const photoData = await new Promise((resolve) => {
           const reader = new FileReader();
           reader.onloadend = () => resolve(reader.result);
-          reader.readAsDataURL(resumeFile);
+          reader.readAsDataURL(photoFile);
         });
-        updatePayload.resume_url = fileData;
+        updatePayload.profile_picture = await compressImage(photoData as string, 800, 0.8);
       }
 
       if (resumeOption === 'create') {
         updatePayload.is_resume_created = true;
         if (resumeData) updatePayload.resume_data = resumeData;
+        // Don't send the heavy PDF file for AI resumes as it's rendered dynamically
+        updatePayload.resume_url = null; 
       } else {
         updatePayload.is_resume_created = false;
-        // If they uploaded a new file, it overwrites the old resume_data flag
+        updatePayload.resume_data = null; 
+        if (resumeFile) {
+          const fileData = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(resumeFile);
+          });
+          updatePayload.resume_url = fileData;
+        }
       }
 
       const currentUser = getUser() as any;
@@ -159,7 +249,9 @@ const EditProfile: React.FC = () => {
           setUser({ ...currentUser, ...updatedUser });
         }
         
-        setTimeout(() => navigate('..'), 1500);
+        setTimeout(() => navigate('/profile'), 1500);
+      } else if (res.message === 'DocumentTooLarge') {
+        setMessage({ type: 'error', text: 'Profile data is too large. Please reduce image sizes.' });
       } else {
         setMessage({ 
           type: 'error', 
@@ -173,6 +265,8 @@ const EditProfile: React.FC = () => {
       setSaving(false);
     }
   };
+
+  const showFinalSaveHint = resumeOption === 'create' && resumeFile;
 
   const inputStyle = {
     width: '100%',
@@ -213,6 +307,25 @@ const EditProfile: React.FC = () => {
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <button 
+            onClick={() => navigate('/profile')}
+            style={{ 
+              background: '#f1f5f9', 
+              border: 'none', 
+              borderRadius: '12px', 
+              padding: '10px', 
+              cursor: 'pointer', 
+              color: '#64748b',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = '#e2e8f0'}
+            onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}
+          >
+            <ArrowLeft size={20} />
+          </button>
           <div>
             <h1 style={{ margin: 0, color: '#0f172a', fontSize: '24px', fontWeight: 800 }}>Edit Profile</h1>
             <p style={{ margin: 0, color: '#64748b', fontSize: '14px' }}>Update your professional identity and contact details</p>
@@ -272,11 +385,17 @@ const EditProfile: React.FC = () => {
                 type="file" 
                 accept="image/*"
                 style={{ display: 'none' }} 
-                onChange={async (e) => {
+                onChange={(e) => {
                   if (e.target.files && e.target.files[0]) {
+                    const file = e.target.files[0];
+                    if (file.size > 10 * 1024 * 1024) {
+                      setMessage({ type: 'error', text: 'Image is too large. Please select a file under 10MB.' });
+                      return;
+                    }
+                    setPhotoFile(file);
                     const reader = new FileReader();
                     reader.onloadend = () => setProfilePicture(reader.result as string);
-                    reader.readAsDataURL(e.target.files[0]);
+                    reader.readAsDataURL(file);
                   }
                 }}
               />
@@ -348,6 +467,17 @@ const EditProfile: React.FC = () => {
               <div>
                 <label style={labelStyle}><CheckCircle2 size={16} color="#c8102e"/> Skills (Comma separated)</label>
                 <input name="skills" value={formData.skills} onChange={handleChange} style={inputStyle} placeholder="React, TypeScript, Node.js..." />
+              </div>
+              <div>
+                <label style={labelStyle}><Edit3 size={16} color="#c8102e"/> Key Projects (Summary)</label>
+                <textarea 
+                  name="projects" 
+                  value={resumeData?.projects || ''} 
+                  onChange={(e) => setResumeData({...resumeData, projects: e.target.value})} 
+                  rows={3} 
+                  style={{ ...inputStyle, resize: 'none', lineHeight: 1.6 }} 
+                  placeholder="Summarize your top projects for the profile..." 
+                />
               </div>
             </div>
           </section>
@@ -442,43 +572,39 @@ const EditProfile: React.FC = () => {
             </div>
           </section>
 
-          {/* Resume Options Section */}
+          {/* Resume Options Section - Sleek & Slim Redesign */}
           <section>
             <h3 style={{ margin: '0 0 20px', fontSize: '17px', fontWeight: 800, color: '#1e293b', borderLeft: '4px solid #c8102e', paddingLeft: '12px' }}>Resume Managed</h3>
-            <p style={{ margin: '8px 0 20px', fontSize: '14px', color: '#64748b' }}>Choose Resume Option *</p>
+            <p style={{ margin: '8px 0 20px', fontSize: '13px', color: '#64748b', fontWeight: 500 }}>Choose Resume Option *</p>
             
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px', marginBottom: '32px' }}>
+            <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
               {[
-                { id: 'upload', label: 'Upload New File', icon: <UploadCloud size={24} /> },
-                { id: 'create', label: 'Create New Resume', icon: <Edit3 size={24} /> }
+                { id: 'upload', label: 'Upload New File', icon: <UploadCloud size={20} /> },
+                { id: 'create', label: 'Create New Resume', icon: <Edit3 size={20} /> }
               ].map((option) => (
                 <div
                   key={option.id}
                   onClick={() => setResumeOption(option.id)}
                   style={{
-                    padding: '32px 20px',
-                    borderRadius: '16px',
-                    border: `2px solid ${resumeOption === option.id ? '#c8102e' : '#e2e8f0'}`,
-                    background: 'white',
+                    flex: 1,
+                    padding: '14px 20px',
+                    borderRadius: '12px',
+                    border: `1.5px solid ${resumeOption === option.id ? '#c8102e' : '#e2e8f0'}`,
+                    background: resumeOption === option.id ? '#fff1f1' : 'white',
                     display: 'flex',
-                    flexDirection: 'column',
                     alignItems: 'center',
-                    gap: '16px',
+                    justifyContent: 'center',
+                    gap: '12px',
                     cursor: 'pointer',
-                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                    textAlign: 'center',
-                    boxShadow: resumeOption === option.id ? '0 8px 16px rgba(200, 16, 46, 0.08)' : 'none',
-                    transform: resumeOption === option.id ? 'translateY(-2px)' : 'none'
+                    transition: 'all 0.2s ease',
+                    boxShadow: resumeOption === option.id ? '0 4px 12px rgba(200, 16, 46, 0.05)' : 'none'
                   }}
                 >
-                  <div style={{ 
-                    color: resumeOption === option.id ? '#c8102e' : '#64748b',
-                    transition: 'color 0.2s'
-                  }}>
+                  <div style={{ color: resumeOption === option.id ? '#c8102e' : '#94a3b8' }}>
                     {option.icon}
                   </div>
                   <span style={{ 
-                    fontSize: '15px', 
+                    fontSize: '14px', 
                     fontWeight: 700, 
                     color: resumeOption === option.id ? '#c8102e' : '#475569' 
                   }}>
@@ -492,47 +618,47 @@ const EditProfile: React.FC = () => {
               {resumeOption === 'upload' && (
                 <motion.div
                   key="upload"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.98 }}
                   style={{
-                    border: '2px dashed #c8102e',
-                    borderRadius: '20px',
-                    padding: '60px 40px',
+                    border: '1.5px dashed #cbd5e1',
+                    borderRadius: '16px',
+                    padding: '30px 24px',
                     textAlign: 'center',
-                    background: '#fcfcfc',
+                    background: '#f8fafc',
                     cursor: 'pointer',
                     transition: 'all 0.2s',
                     position: 'relative'
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.background = '#fff1f1'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = '#fcfcfc'; e.currentTarget.style.transform = 'none'; }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#c8102e'; e.currentTarget.style.background = '#fff' }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.background = '#f8fafc' }}
                   onClick={() => document.getElementById('resume-upload')?.click()}
                 >
                   {resumeFile ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ width: '64px', height: '64px', borderRadius: '16px', background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c8102e' }}>
-                        <FileText size={32} />
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px' }}>
+                      <div style={{ width: '48px', height: '48px', borderRadius: '10px', background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c8102e' }}>
+                        <FileText size={24} />
                       </div>
-                      <div>
-                        <h4 style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>{resumeFile.name}</h4>
-                        <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>{(resumeFile.size / 1024 / 1024).toFixed(2)} MB • Ready to upload</p>
+                      <div style={{ textAlign: 'left' }}>
+                        <h4 style={{ margin: '0 0 2px', fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>{resumeFile.name}</h4>
+                        <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>{(resumeFile.size / 1024 / 1024).toFixed(2)} MB • Ready</p>
                       </div>
                       <button 
                         onClick={(e) => { e.stopPropagation(); setResumeFile(null); }}
-                        style={{ marginTop: '8px', padding: '8px 16px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', color: '#ef4444', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                        style={{ marginLeft: 'auto', padding: '6px 12px', background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: '8px', color: '#ef4444', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
                       >
-                        <X size={14} /> Remove
+                        Change
                       </button>
                     </div>
                   ) : (
-                    <>
-                      <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'center' }}>
-                        <Upload size={48} color="#c8102e" />
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px' }}>
+                      <Upload size={24} color="#c8102e" />
+                      <div style={{ textAlign: 'left' }}>
+                        <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>Click to upload or drag and drop</h4>
+                        <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8', fontWeight: 500 }}>PDF, DOCX up to 5MB</p>
                       </div>
-                      <h4 style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>Click to upload or drag and drop</h4>
-                      <p style={{ margin: 0, fontSize: '14px', color: '#94a3b8', fontWeight: 500 }}>PDF, DOCX up to 5MB</p>
-                    </>
+                    </div>
                   )}
                   <input 
                     id="resume-upload"
@@ -541,7 +667,12 @@ const EditProfile: React.FC = () => {
                     style={{ display: 'none' }} 
                     onChange={(e) => {
                       if (e.target.files && e.target.files[0]) {
-                        setResumeFile(e.target.files[0]);
+                        const file = e.target.files[0];
+                        if (file.size > 5 * 1024 * 1024) {
+                          setMessage({ type: 'error', text: 'Resume file is too large. Please select a file under 5MB.' });
+                          return;
+                        }
+                        setResumeFile(file);
                       }
                     }}
                   />
@@ -556,23 +687,38 @@ const EditProfile: React.FC = () => {
                   exit={{ opacity: 0, y: -10 }}
                 >
                   <InlineResumeBuilder 
-                    initialData={{
-                      fullName: formData.full_name,
-                      phone: formData.phone,
-                      email: getUser()?.email || '',
-                      address: formData.batch ? `Batch of ${formData.batch}` : '',
-                      title: formData.specialization,
-                      summary: formData.bio,
-                      experience: experience,
-                      education: education,
-                      certificates: certificates,
-                      portfolio: formData.portfolio_url
-                    }}
+                    initialData={builderInitialData}
+                    onChange={handleResumeChange}
                     onAttach={(file, data) => {
                       setResumeFile(file);
                       setResumeData(data);
+                      setResumeOption('create'); // Auto-switch to create mode
                     }}
                   />
+                  {showFinalSaveHint && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      style={{ 
+                        marginTop: '20px', 
+                        padding: '16px', 
+                        background: '#f0fdf4', 
+                        border: '1px solid #bbf7d0', 
+                        borderRadius: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        color: '#166534',
+                        fontWeight: 600,
+                        fontSize: '14px'
+                      }}
+                    >
+                      <div style={{ background: '#16a34a', color: 'white', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Check size={14} />
+                      </div>
+                      <span>Resume attached! Now click <strong style={{ textDecoration: 'underline' }}>Save Changes</strong> at the top right to finalize your profile.</span>
+                    </motion.div>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -608,40 +754,41 @@ const EditProfile: React.FC = () => {
               ))}
             </div>
 
-            <div style={{ padding: '24px', border: '2px dashed #e2e8f0', borderRadius: '20px', textAlign: 'center' }}>
-              <Award size={32} color="#94a3b8" style={{ marginBottom: '12px' }} />
-              <h4 style={{ margin: '0 0 4px', fontSize: '16px', fontWeight: 700 }}>Add New Certificate</h4>
-              <p style={{ margin: '0 0 20px', fontSize: '13px', color: '#94a3b8' }}>Upload certificates you've earned from other platforms</p>
-              
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-                <input 
-                  id="cert-upload"
-                  type="file" 
-                  accept=".pdf,image/*"
-                  style={{ display: 'none' }}
-                  onChange={async (e) => {
-                    if (e.target.files && e.target.files[0]) {
-                      const file = e.target.files[0];
-                      const reader = new FileReader();
-                      reader.onloadend = () => {
-                        setOverlayData({
-                          name: file.name.split('.')[0],
-                          issuer: '',
-                          url: reader.result as string
-                        });
-                        setActiveOverlay('certificate');
-                      };
-                      reader.readAsDataURL(file);
-                    }
-                  }}
-                />
-                <button 
-                  onClick={() => document.getElementById('cert-upload')?.click()}
-                  style={{ padding: '10px 20px', background: 'white', border: '1px solid #c8102e', color: '#c8102e', borderRadius: '10px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
-                >
-                  <Upload size={16} /> Upload Certificate
-                </button>
-              </div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '12px' }}>
+              <input 
+                id="cert-upload"
+                type="file" 
+                accept=".pdf,image/*"
+                style={{ display: 'none' }}
+                onChange={async (e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    const file = e.target.files[0];
+                    const reader = new FileReader();
+                    reader.onloadend = async () => {
+                      let finalUrl = reader.result as string;
+                      if (file.type.startsWith('image/')) {
+                        finalUrl = await compressImage(finalUrl, 1200, 0.7);
+                      }
+                      setOverlayData({
+                        name: file.name.split('.')[0],
+                        issuer: '',
+                        url: finalUrl
+                      });
+                      setActiveOverlay('certificate');
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+              />
+              <button 
+                type="button"
+                onClick={() => document.getElementById('cert-upload')?.click()}
+                style={{ padding: '12px 24px', background: 'white', border: '1.5px solid #c8102e', color: '#c8102e', borderRadius: '12px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s' }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#fff1f1'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(200, 16, 46, 0.1)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.boxShadow = 'none'; }}
+              >
+                <Upload size={18} /> Upload Certificate
+              </button>
             </div>
           </section>
         </div>

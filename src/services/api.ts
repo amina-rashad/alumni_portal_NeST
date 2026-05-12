@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // --- CONFIG ---
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://192.168.220.9:5000/api';
 
 // --- HELPERS ---
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -59,6 +59,11 @@ async function apiRequest<T = any>(
     ...(options.headers as Record<string, string>),
   };
 
+  if (options.body && typeof options.body === 'string') {
+    const size = (options.body.length / (1024 * 1024)).toFixed(2);
+    console.log(`[API] Sending payload of size: ${size}MB to ${endpoint}`);
+  }
+
   const token = getAccessToken();
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
@@ -76,6 +81,9 @@ async function apiRequest<T = any>(
       if (refreshed) {
         headers['Authorization'] = `Bearer ${getAccessToken()}`;
         const retryResponse = await fetch(fullUrl, { ...options, headers });
+        if (!retryResponse.ok) {
+           return { success: false, message: `Server error: ${retryResponse.status}` };
+        }
         return await retryResponse.json();
       } else {
         if (token && token !== 'mock_token' && token !== 'social_mock_token') {
@@ -84,10 +92,23 @@ async function apiRequest<T = any>(
       }
     }
 
+    if (!response.ok) {
+      if (response.status === 413) {
+        return { success: false, message: 'File is too large for the server to process.' };
+      }
+      const text = await response.text();
+      try {
+        const errJson = JSON.parse(text);
+        return { success: false, message: errJson.message || `Error ${response.status}` };
+      } catch {
+        return { success: false, message: `Server error occurred (${response.status})` };
+      }
+    }
+
     return await response.json();
   } catch (error) {
     console.error('API Request Error:', error);
-    return { success: false, message: 'Network error occurred' };
+    return { success: false, message: 'Network connection failed. Please check if the backend is running.' };
   }
 }
 
@@ -233,8 +254,8 @@ export const coursesApi = {
 // ── Jobs API ──
 
 export const jobsApi = {
-  getAllJobs: () =>
-    apiRequest('/jobs', { method: 'GET' }),
+  getAllJobs: (page: number = 1, limit: number = 6) =>
+    apiRequest(`/jobs?page=${page}&limit=${limit}`, { method: 'GET' }),
 
   getJobById: (jobId: string) =>
     apiRequest(`/jobs/${jobId}`, { method: 'GET' }),
@@ -243,8 +264,8 @@ export const jobsApi = {
 // ── Events API ──
 
 export const eventsApi = {
-  getAllEvents: () =>
-    apiRequest('/events', { method: 'GET' }),
+  getAllEvents: (page: number = 1, limit: number = 5) =>
+    apiRequest(`/events?page=${page}&limit=${limit}`, { method: 'GET' }),
 
   getEventById: (eventId: string) =>
     apiRequest(`/events/${eventId}`, { method: 'GET' }),

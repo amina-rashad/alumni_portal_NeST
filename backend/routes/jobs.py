@@ -13,11 +13,17 @@ jobs_bp = Blueprint("jobs", __name__)
 
 @jobs_bp.route("", methods=["GET"])
 def get_all_jobs():
-    """Fetch all jobs (Public)."""
+    """Fetch jobs with pagination (Public)."""
+    from flask import request
+    page = request.args.get("page", 1, type=int)
+    limit = request.args.get("limit", 6, type=int)
+    skip = (page - 1) * limit
+
     db = get_db()
+    total_jobs = db["jobs"].count_documents({})
     
     # Sort by creation date descending if it exists
-    jobs_cursor = db["jobs"].find().sort("createdAt", -1)
+    jobs_cursor = db["jobs"].find().sort("createdAt", -1).skip(skip).limit(limit)
     
     jobs_list = []
     for j in jobs_cursor:
@@ -33,7 +39,11 @@ def get_all_jobs():
     return jsonify({
         "success": True,
         "data": {
-            "jobs": jobs_list
+            "jobs": jobs_list,
+            "total": total_jobs,
+            "page": page,
+            "limit": limit,
+            "pages": (total_jobs + limit - 1) // limit if limit > 0 else 1
         }
     }), 200
 

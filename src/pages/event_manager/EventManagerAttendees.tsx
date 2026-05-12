@@ -8,6 +8,7 @@ import {
 import { jsPDF } from 'jspdf';
 import { eventManagerApi } from '../../services/api';
 import { toast } from 'react-hot-toast';
+import StatusModal from '../../components/StatusModal';
 
 interface Attendee {
   id: string;
@@ -43,6 +44,20 @@ const EventManagerAttendees: React.FC = () => {
   const [selectedAttendeeForEmail, setSelectedAttendeeForEmail] = useState<Attendee | null>(null);
   const [emailSubject, setEmailSubject] = useState('');
   const [emailMessage, setEmailMessage] = useState('');
+  
+  // Modal State
+  const [modalConfig, setModalConfig] = useState({
+    isOpen: false,
+    type: 'success' as 'success' | 'error' | 'info' | 'warning',
+    title: '',
+    message: '',
+    confirmText: 'Okay',
+    showConfirmOnly: true,
+    onConfirm: undefined as (() => void) | undefined
+  });
+  
+  // Selection State
+  const [selectedAttendeeIds, setSelectedAttendeeIds] = useState<Set<string>>(new Set());
   
   const menuRef = useRef<HTMLDivElement>(null);
   const filterRef = useRef<HTMLDivElement>(null);
@@ -115,9 +130,20 @@ const EventManagerAttendees: React.FC = () => {
     }
   };
 
-  const handleRemoveRegistration = async (attendee: Attendee) => {
-    if (!confirm(`Are you sure you want to remove ${attendee.name} from ${attendee.event}?`)) return;
-    
+  const handleRemoveRegistration = (attendee: Attendee) => {
+    setModalConfig({
+      isOpen: true,
+      type: 'warning',
+      title: 'Confirm Removal',
+      message: `Are you sure you want to remove ${attendee.name} from ${attendee.event}? This action cannot be undone.`,
+      confirmText: 'Remove Record',
+      showConfirmOnly: false,
+      onConfirm: () => confirmRemoveRegistration(attendee)
+    });
+  };
+
+  const confirmRemoveRegistration = async (attendee: Attendee) => {
+    setModalConfig(prev => ({ ...prev, isOpen: false }));
     try {
       const res = await eventManagerApi.removeRegistration(attendee.eventId, attendee.userId);
       if (res.success) {
@@ -131,14 +157,75 @@ const EventManagerAttendees: React.FC = () => {
     }
   };
 
-  const handleIssueCertificate = async (attendee: Attendee) => {
+  const handleBulkRemove = () => {
+    const selectedCount = selectedAttendeeIds.size;
+    if (selectedCount === 0) return;
+    
+    setModalConfig({
+      isOpen: true,
+      type: 'warning',
+      title: 'Bulk Removal',
+      message: `Are you sure you want to remove ${selectedCount} selected participant records? This action cannot be undone.`,
+      confirmText: 'Remove All Selected',
+      showConfirmOnly: false,
+      onConfirm: () => confirmBulkRemove()
+    });
+  };
+
+  const confirmBulkRemove = async () => {
+    setModalConfig(prev => ({ ...prev, isOpen: false }));
+    setIsLoading(true);
+    let successCount = 0;
+    let failCount = 0;
+    
+    const selectedAttendees = attendees.filter(a => selectedAttendeeIds.has(a.id));
+    
+    try {
+      await Promise.all(selectedAttendees.map(async (attendee) => {
+        try {
+          const res = await eventManagerApi.removeRegistration(attendee.eventId, attendee.userId);
+          if (res.success) successCount++;
+          else failCount++;
+        } catch (err) {
+          failCount++;
+        }
+      }));
+      
+      if (successCount > 0) {
+        toast.success(`Successfully removed ${successCount} records.`);
+      }
+      if (failCount > 0) {
+        toast.error(`Failed to remove ${failCount} records.`);
+      }
+      
+      setSelectedAttendeeIds(new Set());
+      fetchAttendees();
+    } catch (error) {
+      toast.error("An error occurred during bulk removal.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleIssueCertificate = (attendee: Attendee) => {
     if (attendee.status !== 'Attended') {
       toast.error("Certificates can only be issued to participants who attended the event.");
       return;
     }
     
-    if (!confirm(`Are you sure you want to issue a certificate to ${attendee.name} for ${attendee.event}?`)) return;
-    
+    setModalConfig({
+      isOpen: true,
+      type: 'info',
+      title: 'Issue Certificate',
+      message: `Are you sure you want to issue a certificate to ${attendee.name} for ${attendee.event}?`,
+      confirmText: 'Issue Certificate',
+      showConfirmOnly: false,
+      onConfirm: () => confirmIssueCertificate(attendee)
+    });
+  };
+
+  const confirmIssueCertificate = async (attendee: Attendee) => {
+    setModalConfig(prev => ({ ...prev, isOpen: false }));
     try {
       const res = await eventManagerApi.issueCertificate(attendee.eventId, attendee.userId);
       if (res.success) {
@@ -150,6 +237,24 @@ const EventManagerAttendees: React.FC = () => {
     } catch (error) {
       toast.error("Failed to issue certificate");
     }
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedAttendeeIds.size === filteredAttendees.length && filteredAttendees.length > 0) {
+      setSelectedAttendeeIds(new Set());
+    } else {
+      setSelectedAttendeeIds(new Set(filteredAttendees.map(a => a.id)));
+    }
+  };
+
+  const toggleSelectAttendee = (id: string) => {
+    const newSelected = new Set(selectedAttendeeIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedAttendeeIds(newSelected);
   };
 
   const handleExportPDF = () => {
@@ -320,24 +425,57 @@ const EventManagerAttendees: React.FC = () => {
       {/* Table Section */}
       <div style={{ background: '#fff', borderRadius: '24px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
         <div style={{ padding: '24px', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative', flex: 1, minWidth: '300px' }}>
-            <Search style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={18} />
+          <div style={{ position: 'relative', flex: 1, minWidth: '300px', display: 'flex', alignItems: 'center' }}>
+            <Search style={{ position: 'absolute', left: '16px', color: '#94a3b8', pointerEvents: 'none' }} size={18} />
             <input 
               type="text" 
               placeholder="Search by name, email or event..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ width: '100%', padding: '12px 16px 12px 48px', borderRadius: '14px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '14px' }} 
+              style={{ 
+                width: '100%', 
+                padding: '12px 16px 12px 48px', 
+                borderRadius: '14px', 
+                border: '1px solid #e2e8f0', 
+                outline: 'none', 
+                fontSize: '14px',
+                background: '#ffffff',
+                color: '#1e293b',
+                transition: 'all 0.2s',
+                height: '46px' // Explicit height for better alignment
+              }} 
             />
           </div>
           <div style={{ position: 'relative' }} ref={filterRef}>
             <button 
               onClick={() => setShowFilters(!showFilters)}
-              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 18px', borderRadius: '14px', border: '1px solid #e2e8f0', background: showFilters ? '#f8fafc' : '#fff', color: showFilters ? brandPrimary : '#64748b', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 18px', borderRadius: '14px', border: '1px solid #e2e8f0', background: showFilters ? `${brandPrimary}10` : '#fff', color: showFilters ? brandPrimary : '#64748b', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
             >
               <Filter size={18} /> Filters
             </button>
             
+            {filteredAttendees.length > 0 && (
+              <button 
+                onClick={toggleSelectAll}
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '8px', 
+                  padding: '12px 18px', 
+                  borderRadius: '14px', 
+                  border: `1px solid ${selectedAttendeeIds.size === filteredAttendees.length ? brandPrimary : '#e2e8f0'}`, 
+                  background: selectedAttendeeIds.size === filteredAttendees.length ? `${brandPrimary}10` : '#fff', 
+                  color: selectedAttendeeIds.size === filteredAttendees.length ? brandPrimary : '#64748b', 
+                  fontWeight: 700, 
+                  cursor: 'pointer', 
+                  transition: 'all 0.2s',
+                  fontSize: '13px'
+                }}
+              >
+                {selectedAttendeeIds.size === filteredAttendees.length ? 'Deselect All' : 'Select All'}
+              </button>
+            )}
+
             <AnimatePresence>
               {showFilters && (
                 <motion.div
@@ -380,11 +518,108 @@ const EventManagerAttendees: React.FC = () => {
           </div>
         </div>
 
+        {/* Bulk Action Bar - Perfectly Aligned */}
+        <AnimatePresence>
+          {selectedAttendeeIds.size > 0 && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              style={{ 
+                background: '#f8fafc', 
+                borderBottom: '1px solid #e2e8f0',
+                overflow: 'hidden'
+              }}
+            >
+              <div style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ background: brandPrimary, color: '#fff', width: '24px', height: '24px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 800 }}>
+                    {selectedAttendeeIds.size}
+                  </div>
+                  <span style={{ fontWeight: 700, color: '#1e293b', fontSize: '14px' }}>
+                    Participants Selected
+                  </span>
+                  <div style={{ width: '1px', height: '20px', background: '#e2e8f0', margin: '0 8px' }} />
+                  <button 
+                    onClick={() => setSelectedAttendeeIds(new Set())}
+                    style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '13px', fontWeight: 600, cursor: 'pointer', hover: { color: brandPrimary } } as any}
+                  >
+                    Clear Selection
+                  </button>
+                </div>
+                
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button 
+                    onClick={handleBulkRemove}
+                    style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '8px', 
+                      padding: '8px 16px', 
+                      borderRadius: '10px', 
+                      border: '1px solid #fee2e2', 
+                      background: '#fff', 
+                      color: '#ef4444', 
+                      fontWeight: 700, 
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <Trash2 size={16} /> Remove Selected
+                  </button>
+                  <button 
+                    style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '8px', 
+                      padding: '8px 16px', 
+                      borderRadius: '10px', 
+                      border: '1px solid #e2e8f0', 
+                      background: '#fff', 
+                      color: brandPrimary, 
+                      fontWeight: 700, 
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <Mail size={16} /> Message Selected
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
               <tr style={{ background: '#f8fafc' }}>
-                <th style={{ padding: '16px 24px', color: '#64748b', fontWeight: 600, fontSize: '13px', textTransform: 'uppercase' }}>ID</th>
+                <th style={{ padding: '16px 24px', width: '120px' }}>
+                  <div 
+                    onClick={toggleSelectAll}
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+                  >
+                    <div style={{ 
+                      width: '18px', 
+                      height: '18px', 
+                      borderRadius: '4px', 
+                      border: `2px solid ${selectedAttendeeIds.size === filteredAttendees.length && filteredAttendees.length > 0 ? brandPrimary : '#cbd5e1'}`,
+                      background: selectedAttendeeIds.size === filteredAttendees.length && filteredAttendees.length > 0 ? brandPrimary : '#fff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.2s'
+                    }}>
+                      {selectedAttendeeIds.size === filteredAttendees.length && filteredAttendees.length > 0 && (
+                        <CheckCircle size={12} color="#fff" />
+                      )}
+                    </div>
+                    <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 700 }}>SELECT ALL</span>
+                  </div>
+                </th>
+                <th style={{ padding: '16px 12px', color: '#64748b', fontWeight: 600, fontSize: '13px', textTransform: 'uppercase' }}>ID</th>
                 <th style={{ padding: '16px 24px', color: '#64748b', fontWeight: 600, fontSize: '13px', textTransform: 'uppercase' }}>Participant</th>
                 <th style={{ padding: '16px 24px', color: '#64748b', fontWeight: 600, fontSize: '13px', textTransform: 'uppercase' }}>Registration Details</th>
                 <th style={{ padding: '16px 24px', color: '#64748b', fontWeight: 600, fontSize: '13px', textTransform: 'uppercase' }}>Event Info</th>
@@ -406,8 +641,29 @@ const EventManagerAttendees: React.FC = () => {
                 </tr>
               ) : filteredAttendees.length > 0 ? (
                 filteredAttendees.map((attendee) => (
-                  <tr key={attendee.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.2s' }}>
+                  <tr key={attendee.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.2s', background: selectedAttendeeIds.has(attendee.id) ? `${brandPrimary}05` : 'transparent' }}>
                   <td style={{ padding: '20px 24px' }}>
+                    <div 
+                      onClick={() => toggleSelectAttendee(attendee.id)}
+                      style={{ 
+                        width: '18px', 
+                        height: '18px', 
+                        borderRadius: '4px', 
+                        border: `2px solid ${selectedAttendeeIds.has(attendee.id) ? brandPrimary : '#cbd5e1'}`,
+                        background: selectedAttendeeIds.has(attendee.id) ? brandPrimary : '#fff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      {selectedAttendeeIds.has(attendee.id) && (
+                        <CheckCircle size={12} color="#fff" />
+                      )}
+                    </div>
+                  </td>
+                  <td style={{ padding: '20px 12px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: brandPrimary, fontSize: '13px', fontWeight: 700 }}>
                       <Hash size={12} /> {attendee.pId}
                     </div>
@@ -673,6 +929,17 @@ const EventManagerAttendees: React.FC = () => {
           </div>
         )}
       </AnimatePresence>
+
+      <StatusModal
+        isOpen={modalConfig.isOpen}
+        onClose={() => setModalConfig({ ...modalConfig, isOpen: false })}
+        type={modalConfig.type}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        confirmText={modalConfig.confirmText}
+        showConfirmOnly={modalConfig.showConfirmOnly}
+        onConfirm={modalConfig.onConfirm}
+      />
     </div>
   );
 };

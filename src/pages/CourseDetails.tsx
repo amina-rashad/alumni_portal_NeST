@@ -197,35 +197,9 @@ const CourseDetails: React.FC = () => {
               </div>
             </div>
 
-            <div style={{ marginBottom: '2.5rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem', alignItems: 'baseline' }}>
-                <span style={{ fontWeight: 800, color: '#64748b', fontSize: '0.9rem' }}>Course Price</span>
-                <div style={{ textAlign: 'right' }}>
-                  <span style={{ fontSize: '1.75rem', fontWeight: 900, color: '#c8102e', display: 'block', lineHeight: 1 }}>Free</span>
-                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#c8102e', opacity: 0.8 }}>for Alumni</span>
-                </div>
-              </div>
-              <p style={{ fontSize: '0.8rem', color: '#94a3b8', lineHeight: 1.5, margin: 0 }}>Exclusively available to verified NeST graduates.</p>
-            </div>
 
-            <button 
-              onClick={() => navigate(`/courses/${id}/play`)}
-              style={{ 
-                width: '100%', 
-                padding: '1.4rem', 
-                backgroundColor: '#c8102e', 
-                color: 'white', 
-                fontWeight: 900, 
-                borderRadius: '1.2rem', 
-                marginBottom: '2rem', 
-                fontSize: '1.15rem', 
-                boxShadow: '0 15px 25px -5px rgba(200, 16, 46, 0.4)', 
-                cursor: 'pointer', 
-                border: 'none'
-              }}
-            >
-              Enroll This Course
-            </button>
+
+
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: '#475569', fontSize: '0.95rem', fontWeight: 600 }}>

@@ -71,7 +71,10 @@ const EventManagerDashboard: React.FC = () => {
         }
 
         if (eventsRes.success && eventsRes.data) {
-          setUpcomingEvents(eventsRes.data.events);
+          const sortedEvents = (eventsRes.data.events || []).sort((a: any, b: any) => 
+            new Date(a.date).getTime() - new Date(b.date).getTime()
+          );
+          setUpcomingEvents(sortedEvents);
         }
 
         if (certRes.success && certRes.data) {

@@ -289,7 +289,7 @@ def update_application_status(app_id):
     job = db["jobs"].find_one({"_id": app_doc["job_id"]})
     user_doc = db["users"].find_one({"_id": ObjectId(user_id)})
     
-    if not job or (job.get("posted_by") != user_id and user_doc.get("role") not in ["admin", "super_admin"]):
+    if not job or (job.get("posted_by") != user_id and user_doc.get("role") not in ["admin", "super_admin", "recruiter", "job_recruiter"]):
         return jsonify({"success": False, "message": "Access denied."}), 403
     
     update_fields = {

@@ -68,23 +68,8 @@ const AdminRoleManager: React.FC = () => {
           <h1 style={{ fontSize: '32px', fontWeight: 800, color: '#0f172a', margin: 0 }}>Appoint Managers</h1>
           <p style={{ color: '#64748b', fontSize: '16px', marginTop: '4px' }}>Assign administrative privileges and system oversight roles.</p>
         </div>
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-          <button 
-            onClick={() => navigate('/admin/roles/add')}
-            style={{ 
-              display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 20px', borderRadius: '12px', border: 'none', 
-              background: nestNavy, color: '#fff', fontWeight: 700, fontSize: '14px', cursor: 'pointer', transition: 'all 0.2s',
-              boxShadow: '0 4px 12px rgba(26, 38, 82, 0.2)'
-            }}
-          >
-            <UserPlus size={18} /> Add New Manager
-          </button>
-          <div style={{ padding: '8px 16px', background: '#f1f5f9', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px', border: '1px solid #e2e8f0' }}>
-            <Shield size={16} color={nestNavy} />
-            <span style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b' }}>
-              {isSuperAdmin ? 'Full Authorization' : 'Standard Admin'}
-            </span>
-          </div>
+        <div style={{ display: 'none' }}>
+          {/* Action buttons removed as per request */}
         </div>
       </div>
 

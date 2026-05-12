@@ -161,41 +161,6 @@ const RecommendedJobs: React.FC = () => {
     fetchData();
   }, []);
 
-  const handleAddSkill = async () => {
-    const skill = prompt("Enter a new skill to add to your profile:");
-    if (skill && !userSkills.includes(skill)) {
-      try {
-        setIsUpdatingSkills(true);
-        const newSkills = [...userSkills, skill];
-        const res = await usersApi.updateProfile({ skills: newSkills });
-        if (res.success) {
-          setUserSkills(newSkills);
-          // Re-calculate matches
-          await fetchData();
-        }
-      } catch (err) {
-        console.error("Failed to update skills", err);
-      } finally {
-        setIsUpdatingSkills(false);
-      }
-    }
-  };
-
-  const handleRemoveSkill = async (skillToRemove: string) => {
-    try {
-      setIsUpdatingSkills(true);
-      const newSkills = userSkills.filter(s => s !== skillToRemove);
-      const res = await usersApi.updateProfile({ skills: newSkills });
-      if (res.success) {
-        setUserSkills(newSkills);
-        await fetchData();
-      }
-    } catch (err) {
-      console.error("Failed to remove skill", err);
-    } finally {
-      setIsUpdatingSkills(false);
-    }
-  };
 
   const toggleSaveJob = (e: React.MouseEvent, id: string) => {
     e.preventDefault();
@@ -209,10 +174,20 @@ const RecommendedJobs: React.FC = () => {
     setSavedJobs(newSaved);
   };
 
-  const handleApply = (id: string) => {
-    const newApplied = new Set(appliedJobs);
-    newApplied.add(id);
-    setAppliedJobs(newApplied);
+  const handleApply = async (id: string) => {
+    try {
+      const res = await applicationsApi.applyForJob({ job_id: id });
+      if (res.success) {
+        const newApplied = new Set(appliedJobs);
+        newApplied.add(id);
+        setAppliedJobs(newApplied);
+      } else {
+        alert(res.message || "Failed to apply for job.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("An error occurred while applying.");
+    }
   };
 
   const sortedJobs = [...jobs].sort((a, b) => {
@@ -247,9 +222,66 @@ const RecommendedJobs: React.FC = () => {
         >
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '0.5rem' }}>
-            <h1 style={{ fontSize: '2.8rem', color: '#1a1a1a', margin: 0 }}>
-              Recommended <span style={{ color: 'var(--primary)' }}>For You</span>
+            <h1 style={{ fontSize: '3.5rem', fontWeight: 800, margin: 0, fontFamily: "'Montserrat', sans-serif" }}>
+              <span style={{ color: '#1e1b4b' }}>Recommended</span> <span style={{ color: '#ef4444' }}>For You</span>
             </h1>
+          </div>
+        </motion.div>
+
+        {/* Career Category Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.1 }}
+          style={{ marginBottom: '4rem' }}
+        >
+          <h2 style={{ 
+            fontSize: '2rem', 
+            fontWeight: 400, 
+            color: '#0F172A', 
+            marginBottom: '2.5rem', 
+            letterSpacing: '0.02em', 
+            textAlign: 'left',
+            fontFamily: '"Outfit", sans-serif'
+          }}>
+            Are you ready to shape your future with confidence?
+          </h2>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2rem' }}>
+            {[
+              { title: 'Experienced professionals', img: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=800&q=80' },
+              { title: 'Early careers', img: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=800&q=80' },
+              { title: 'Contract opportunities', img: 'https://images.unsplash.com/photo-1515378960530-7c0da6231fb1?auto=format&fit=crop&w=800&q=80' }
+            ].map((card, idx) => (
+              <motion.div
+                key={idx}
+                whileHover={{ y: -10 }}
+                style={{ cursor: 'pointer' }}
+              >
+                <div style={{ 
+                  borderRadius: '20px', 
+                  overflow: 'hidden', 
+                  aspectRatio: '16/10', 
+                  marginBottom: '1.2rem',
+                  boxShadow: '0 15px 35px rgba(0,0,0,0.1)',
+                  border: '1px solid rgba(0,0,0,0.05)'
+                }}>
+                  <img src={card.img} alt={card.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </div>
+                <span style={{ 
+                  fontSize: '1.1rem', 
+                  fontWeight: 600, 
+                  color: '#ef4444', 
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.6rem',
+                  letterSpacing: '0.02em',
+                  fontFamily: '"Outfit", sans-serif'
+                }}>
+                  {card.title}
+                </span>
+              </motion.div>
+            ))}
           </div>
         </motion.div>
 
@@ -276,23 +308,6 @@ const RecommendedJobs: React.FC = () => {
                 <Target size={18} color="var(--primary)" />
                 <span style={{ fontWeight: 700, color: '#1a1a1a', fontSize: '1rem' }}>Your Profile Strengths</span>
               </div>
-              <button
-                onClick={handleAddSkill}
-                disabled={isUpdatingSkills}
-                style={{
-                  fontSize: '0.75rem',
-                  color: 'var(--primary)',
-                  background: 'none',
-                  border: 'none',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}
-              >
-                + Add Skill
-              </button>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.5rem' }}>
               {userSkills.length > 0 ? (
@@ -300,39 +315,24 @@ const RecommendedJobs: React.FC = () => {
                   <span
                     key={skill}
                     style={{
-                      fontSize: '0.78rem',
+                      fontSize: '0.85rem',
                       background: '#ffffff',
                       color: '#4a4a4a',
                       border: '1px solid #dee2e6',
-                      padding: '0.25rem 0.7rem',
-                      borderRadius: '14px',
-                      fontWeight: 500,
+                      padding: '0.35rem 0.9rem',
+                      borderRadius: '16px',
+                      fontWeight: 600,
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '6px'
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
                     }}
                   >
                     {skill}
-                    <button
-                      onClick={() => handleRemoveSkill(skill)}
-                      style={{
-                        border: 'none',
-                        background: 'none',
-                        color: '#adb5bd',
-                        cursor: 'pointer',
-                        padding: 0,
-                        display: 'flex',
-                        alignItems: 'center',
-                        fontSize: '12px'
-                      }}
-                    >
-                      ×
-                    </button>
                   </span>
                 ))
               ) : (
                 <span style={{ fontSize: '0.85rem', color: '#6c757d', fontStyle: 'italic' }}>
-                  Add skills to your profile to see matched jobs
+                  No skills listed in your profile
                 </span>
               )}
             </div>
@@ -622,25 +622,6 @@ const RecommendedJobs: React.FC = () => {
                             'Apply Now'
                           )}
                         </button>
-                        <motion.button
-                          onClick={(e) => toggleSaveJob(e, job.id)}
-                          style={{
-                            background: '#f8f9fa',
-                            border: '1px solid #e9ecef',
-                            padding: '0.5rem',
-                            borderRadius: '50%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
-                            color: savedJobs.has(job.id) ? '#ffd700' : '#adb5bd',
-                            transition: 'all 0.2s'
-                          }}
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          <Star size={18} fill={savedJobs.has(job.id) ? '#ffd700' : 'none'} />
-                        </motion.button>
                       </div>
                     </div>
                   </div>

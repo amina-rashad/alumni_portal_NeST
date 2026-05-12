@@ -146,143 +146,190 @@ import CourseManagerInsights from './pages/course_manager/CompletionInsights';
 
 /* -- Luxury Splash Screen with Mask Reveal -- */
 import heroBgSplash from './assets/hero-bg.jpg';
-const SplashScreen: React.FC = () => (
-  <motion.div
-    className="splash-screen"
-    initial={{ opacity: 1 }}
-    exit={{
-      opacity: 0,
-      scale: 1.05,
-      filter: 'blur(10px)',
-      transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] }
-    }}
-    style={{ overflow: 'hidden' }}
-  >
-    {/* Ambient Ambient Blurred Background */}
+const SplashScreen: React.FC = () => {
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let animationFrameId: number;
+    let particles: Particle[] = [];
+    const particleCount = 1800;
+    const connectionDistance = 80;
+    const mouse = { x: -100, y: -100 };
+
+    class Particle {
+      x: number; y: number; vx: number; vy: number; size: number; alpha: number;
+      originX: number; originY: number; targetX: number; targetY: number; 
+      isAssembling: boolean = false;
+
+      constructor(w: number, h: number) {
+        this.x = Math.random() * w;
+        this.y = Math.random() * h;
+        this.originX = this.x;
+        this.originY = this.y;
+        this.vx = (Math.random() - 0.5) * 0.4;
+        this.vy = (Math.random() - 0.5) * 0.4;
+        this.size = Math.random() * 1.5 + 0.5;
+        this.alpha = Math.random() * 0.5 + 0.2;
+        this.targetX = w / 2 + (Math.random() - 0.5) * 400;
+        this.targetY = h / 2 + (Math.random() - 0.5) * 150;
+      }
+
+      update(w: number, h: number, time: number) {
+        if (time > 1200) this.isAssembling = true;
+
+        if (this.isAssembling) {
+          const dx = this.targetX - this.x;
+          const dy = this.targetY - this.y;
+          this.x += dx * 0.05;
+          this.y += dy * 0.05;
+          this.alpha = Math.max(this.alpha - 0.01, 0.1);
+        } else {
+          this.x += this.vx;
+          this.y += this.vy;
+          if (this.x < 0 || this.x > w) this.vx *= -1;
+          if (this.y < 0 || this.y > h) this.vy *= -1;
+        }
+      }
+
+      draw(ctx: CanvasRenderingContext2D) {
+        ctx.fillStyle = `rgba(200, 210, 255, ${this.alpha})`;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    const init = () => {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      canvas.width = w;
+      canvas.height = h;
+      particles = [];
+      for (let i = 0; i < particleCount; i++) {
+        particles.push(new Particle(w, h));
+      }
+    };
+
+    const startTime = Date.now();
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Depth Layer: Subtle Glow Background
+      const gradient = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 0, canvas.width/2, canvas.height/2, canvas.width);
+      gradient.addColorStop(0, '#050a1a');
+      gradient.addColorStop(1, '#000000');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.strokeStyle = 'rgba(100, 150, 255, 0.05)';
+      ctx.lineWidth = 0.5;
+
+      for (let i = 0; i < particles.length; i++) {
+        const p1 = particles[i];
+        p1.update(canvas.width, canvas.height, elapsed);
+        p1.draw(ctx);
+
+        if (elapsed < 1500) {
+          for (let j = i + 1; j < particles.length; j += 40) {
+            const p2 = particles[j];
+            const dist = Math.hypot(p1.x - p2.x, p1.y - p2.y);
+            if (dist < connectionDistance) {
+              ctx.beginPath();
+              ctx.moveTo(p1.x, p1.y);
+              ctx.lineTo(p2.x, p2.y);
+              ctx.stroke();
+            }
+          }
+        }
+      }
+
+      animationFrameId = requestAnimationFrame(animate);
+    };
+
+    init();
+    animate();
+    window.addEventListener('resize', init);
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      window.removeEventListener('resize', init);
+    };
+  }, []);
+
+  return (
     <motion.div
-      style={{
-        position: 'absolute',
-        inset: -20,
-        backgroundImage: `url(${heroBg})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        filter: 'blur(30px) brightness(0.25)',
-        zIndex: 1
-      }}
-      initial={{ scale: 1.1, opacity: 0 }}
-      animate={{
-        scale: 1,
-        opacity: 0.6,
-        rotate: [0, 1, 0, -1, 0]
-      }}
-      transition={{
-        duration: 8,
-        opacity: { duration: 1.5 },
-        rotate: { duration: 20, repeat: Infinity, ease: 'linear' }
-      }}
-    />
+      className="splash-screen"
+      initial={{ opacity: 1 }}
+      exit={{ opacity: 0, transition: { duration: 1.2, ease: [0.4, 0, 0.2, 1] } }}
+      style={{ background: '#000', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+    >
+      {/* Cinematic Particle Canvas */}
+      <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, filter: 'blur(0.5px)' }} />
 
-    {/* Luxury Particles / Grain overlay (pseudo) */}
-    <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at center, transparent 0%, rgba(5,13,30,0.8) 100%)', zIndex: 2 }} />
+      {/* Floating Depth Layers (Blurred Glows) */}
+      <motion.div 
+        style={{ position: 'absolute', width: '600px', height: '600px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(200, 16, 46, 0.1) 0%, transparent 70%)', filter: 'blur(80px)', zIndex: 1 }}
+        animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
+        transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+      />
 
-    <div className="splash-logo" style={{ position: 'relative', zIndex: 3 }}>
-      <div className="splash-brand" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '32px' }}>
+      {/* Logo Assembly Container */}
+      <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8, filter: 'blur(20px)' }}
+          animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+          transition={{ duration: 1.5, delay: 1.2, ease: [0.16, 1, 0.3, 1] }}
+          style={{
+            background: 'rgba(255, 255, 255, 0.98)',
+            backdropFilter: 'blur(30px)',
+            padding: '28px 48px',
+            borderRadius: '28px',
+            boxShadow: '0 40px 100px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(255,255,255,0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          <img src={nestMainLogo} alt="NeST Digital" style={{ height: '75px', objectFit: 'contain' }} />
+        </motion.div>
 
-        {/* Logo Container with Mask Reveal Effect */}
-        <div style={{ position: 'relative' }}>
-          <motion.div
-            style={{
-              background: 'rgba(255, 255, 255, 0.98)',
-              backdropFilter: 'blur(20px)',
-              padding: '24px 44px',
-              borderRadius: '24px',
-              boxShadow: '0 30px 60px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,0.4)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              position: 'relative'
-            }}
-            initial={{ y: 20, opacity: 0, scale: 0.95 }}
-            animate={{ y: 0, opacity: 1, scale: 1 }}
-            transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-          >
-            {/* The Logo with a horizontal mask wipe reveal */}
-            <motion.div
-              style={{ overflow: 'hidden', display: 'flex', alignItems: 'center' }}
-              initial={{ width: 0 }}
-              animate={{ width: '100%' }}
-              transition={{ duration: 1.4, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            >
-              <img src={nestMainLogo} alt="NeST Digital" style={{ height: '70px', objectFit: 'contain' }} />
-            </motion.div>
-          </motion.div>
-
-          {/* Luxury Reflection Shine across the logo */}
-          <motion.div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              background: 'linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.8) 50%, transparent 70%)',
-              zIndex: 5,
-              borderRadius: '24px',
-              pointerEvents: 'none'
-            }}
-            initial={{ left: '-100%', opacity: 0 }}
-            animate={{ left: '100%', opacity: [0, 1, 0] }}
-            transition={{ duration: 1.5, delay: 1.2, ease: "easeInOut" }}
-          />
-        </div>
-
-        {/* Animated Text: Engineering Transformation */}
-        <div style={{ overflow: 'hidden', paddingTop: '10px' }}>
+        {/* Cinematic Text Reveal */}
+        <div style={{ marginTop: '40px', overflow: 'hidden' }}>
           <motion.p
             style={{
               margin: 0,
-              letterSpacing: '12px',
+              letterSpacing: '14px',
               color: '#ffffff',
               fontSize: '11px',
               fontWeight: 900,
               textTransform: 'uppercase',
-              opacity: 0.8
+              textShadow: '0 0 20px rgba(255,255,255,0.3)'
             }}
             initial={{ y: '100%', opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.8, delay: 1.4, ease: "easeOut" }}
+            transition={{ duration: 1, delay: 1.6, ease: "easeOut" }}
           >
             ENGINEERING TRANSFORMATION
           </motion.p>
         </div>
-      </div>
 
-      {/* Elegant minimalist loader bar */}
-      <div
-        style={{
-          width: '240px',
-          height: '1px',
-          background: 'rgba(255,255,255,0.08)',
-          borderRadius: '10px',
-          overflow: 'hidden',
-          margin: '40px auto 0',
-          position: 'relative'
-        }}
-      >
-        <motion.div
-          style={{
-            height: '100%',
-            background: 'linear-gradient(90deg, transparent, #c8102e, white, #c8102e, transparent)',
-            backgroundSize: '200% 100%'
-          }}
-          initial={{ left: '-100%' }}
-          animate={{ left: '100%', backgroundPosition: ['200% center', '-200% center'] }}
-          transition={{
-            left: { duration: 1.8, ease: 'easeInOut' },
-            backgroundPosition: { duration: 3, repeat: Infinity, ease: 'linear' }
-          }}
+        {/* Sci-fi scanner light effect across text */}
+        <motion.div 
+          style={{ position: 'absolute', bottom: -5, height: '1px', background: 'linear-gradient(90deg, transparent, #c8102e, white, #c8102e, transparent)', width: '100%' }}
+          initial={{ scaleX: 0, opacity: 0 }}
+          animate={{ scaleX: 1, opacity: [0, 1, 0] }}
+          transition={{ duration: 2, delay: 1.8, repeat: Infinity, repeatDelay: 1 }}
         />
       </div>
-    </div>
-  </motion.div>
-);
+    </motion.div>
+  );
+};
 
 /* -- Apple-level Scale + Blur + Fade Page Transition -- */
 const pageTransitionVariants = {
@@ -497,27 +544,29 @@ const App: React.FC = () => {
     // Elegant timing for a luxury reveal
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 2200);
+    }, 3500);
     return () => clearTimeout(timer);
   }, []);
 
   return (
     <Router>
-      <AnimatePresence mode="wait">
-        {isLoading ? (
-          <SplashScreen key="splash" />
-        ) : (
-          <motion.div 
-            key="main-app"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5 }}
-          >
-            <ScrollToTop />
-            <AnimatedRoutes />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <div style={{ background: '#010614', minHeight: '100vh', width: '100vw', overflow: 'hidden' }}>
+        <AnimatePresence>
+          {isLoading ? (
+            <SplashScreen key="splash" />
+          ) : (
+            <motion.div 
+              key="main-app"
+              initial={{ opacity: 0, scale: 0.98, filter: 'blur(10px)' }}
+              animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <ScrollToTop />
+              <AnimatedRoutes />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </Router>
   );
 };

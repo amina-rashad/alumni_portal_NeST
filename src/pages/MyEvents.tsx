@@ -4,11 +4,13 @@ import {
   ArrowLeft, Calendar, MapPin, Clock, 
   Share2, 
   Download,
-  Award
+  Award,
+  Loader2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { eventsApi, usersApi } from '../services/api';
 import { generateEventCertificate } from '../utils/CertificateGenerator';
+import CertificateProgressButton from '../components/CertificateProgressButton';
 
 
 const MyEvents: React.FC = () => {
@@ -43,18 +45,6 @@ const MyEvents: React.FC = () => {
     fetchData();
   }, []);
 
-  const handleDownloadCertificate = (event: any) => {
-    if (!userProfile) {
-      alert("User profile not loaded. Please try again.");
-      return;
-    }
-    
-    generateEventCertificate(
-      userProfile.full_name || userProfile.name || 'NeST Digital Member',
-      event.title,
-      event.date
-    );
-  };
 
   const filteredEvents = events.filter(e => {
     const eventDate = new Date(e.date);
@@ -63,37 +53,173 @@ const MyEvents: React.FC = () => {
   });
 
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto', paddingBottom: '5rem' }}>
+    <div style={{ minHeight: '100vh', background: '#F8FAFC', paddingBottom: '5rem' }}>
       
-      {/* Header Section */}
-      <div style={{ marginBottom: '3rem' }}>
+      {/* Dynamic Hero Banner */}
+      <section style={{ 
+        position: 'relative', 
+        width: '100%', 
+        height: '450px', 
+        overflow: 'hidden',
+        background: '#0F172A',
+        marginBottom: '4rem'
+      }}>
+        {/* Background Image with Parallax & Dark Overlay */}
         <motion.div 
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
+          initial={{ scale: 1.1 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 1.5, ease: "easeOut" }}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: 'url("https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=2000")',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            zIndex: 0
+          }}
         >
+          <div style={{ 
+            position: 'absolute', 
+            inset: 0, 
+            background: 'linear-gradient(to bottom, rgba(15, 23, 42, 0.4), rgba(15, 23, 42, 0.9))',
+            zIndex: 1
+          }} />
+        </motion.div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-            <div>
-              <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', marginBottom: '0.5rem' }}>
-                My <span style={{ color: '#d32f2f' }}>Events</span>
-              </h1>
+        {/* Animated Light Streaks */}
+        <div style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none' }}>
+          {[...Array(3)].map((_, i) => (
+            <motion.div
+              key={i}
+              initial={{ x: '-100%', opacity: 0 }}
+              animate={{ x: '200%', opacity: [0, 0.3, 0] }}
+              transition={{ 
+                duration: 5, 
+                delay: i * 2, 
+                repeat: Infinity, 
+                ease: "linear" 
+              }}
+              style={{
+                position: 'absolute',
+                top: `${20 + i * 25}%`,
+                width: '600px',
+                height: '1px',
+                background: 'linear-gradient(90deg, transparent, #3b82f6, transparent)',
+                transform: 'skewX(-45deg)'
+              }}
+            />
+          ))}
+        </div>
 
+        {/* Floating Particles (Simplified CSS Particles) */}
+        <div style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none' }}>
+          {[...Array(20)].map((_, i) => (
+            <motion.div
+              key={i}
+              animate={{ 
+                y: [0, -40, 0], 
+                opacity: [0.2, 0.6, 0.2],
+                scale: [1, 1.2, 1]
+              }}
+              transition={{ 
+                duration: 3 + Math.random() * 4, 
+                repeat: Infinity, 
+                delay: Math.random() * 5 
+              }}
+              style={{
+                position: 'absolute',
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                width: `${2 + Math.random() * 4}px`,
+                height: `${2 + Math.random() * 4}px`,
+                background: '#60A5FA',
+                borderRadius: '50%',
+                boxShadow: '0 0 10px #60A5FA'
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Abstract Wave Pattern (SVG) */}
+        <div style={{ position: 'absolute', bottom: -2, left: 0, width: '100%', zIndex: 1, opacity: 0.15 }}>
+          <svg viewBox="0 0 1440 320" xmlns="http://www.w3.org/2000/svg" style={{ display: 'block' }}>
+            <path fill="#3b82f6" fillOpacity="1" d="M0,192L48,197.3C96,203,192,213,288,192C384,171,480,117,576,112C672,107,768,149,864,165.3C960,181,1056,171,1152,149.3C1248,128,1344,96,1392,80L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+          </svg>
+        </div>
+
+        {/* Content Container */}
+        <div style={{ 
+          position: 'relative', 
+          zIndex: 2, 
+          maxWidth: '1100px', 
+          margin: '0 auto', 
+          height: '100%', 
+          display: 'flex', 
+          flexDirection: 'column', 
+          justifyContent: 'center',
+          padding: '0 2rem'
+        }}>
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
+            style={{ position: 'relative' }}
+          >
+            {/* Glass Background Layer for Text */}
+            <div style={{
+              position: 'absolute',
+              inset: '-2rem -3rem',
+              background: 'radial-gradient(circle at center, rgba(59, 130, 246, 0.1), transparent 70%)',
+              filter: 'blur(40px)',
+              zIndex: -1
+            }} />
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.2rem' }}>
+               <div style={{ width: '40px', height: '2px', background: '#3b82f6' }} />
+               <span style={{ color: '#60A5FA', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.25em', fontSize: '0.85rem' }}>Experience NeST</span>
             </div>
             
-            <div style={{ display: 'flex', background: '#F1F5F9', padding: '0.4rem', borderRadius: '14px', gap: '0.25rem' }}>
+            <h1 style={{ 
+              fontSize: '5.5rem', 
+              fontWeight: 900, 
+              color: '#FFFFFF', 
+              letterSpacing: '-0.05em', 
+              margin: 0,
+              lineHeight: 0.9
+            }}>
+              My <span style={{ 
+                color: '#c8102e',
+                fontStyle: 'italic',
+                fontFamily: '"Playfair Display", serif'
+              }}>Events</span>
+            </h1>
+
+            {/* Glassmorphism Tab Controls */}
+            <div style={{ 
+              marginTop: '3.5rem',
+              display: 'flex', 
+              background: 'rgba(255, 255, 255, 0.03)', 
+              backdropFilter: 'blur(20px)',
+              padding: '0.5rem', 
+              borderRadius: '24px', 
+              gap: '0.5rem',
+              width: 'fit-content',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.4)'
+            }}>
               <button 
                 onClick={() => setActiveTab('upcoming')}
                 style={{ 
-                  padding: '0.6rem 1.25rem', 
-                  borderRadius: '10px', 
+                  padding: '0.8rem 2.5rem', 
+                  borderRadius: '18px', 
                   border: 'none',
                   background: activeTab === 'upcoming' ? '#fff' : 'transparent',
-                  color: activeTab === 'upcoming' ? '#0F172A' : '#64748B',
-                  fontWeight: 700,
-                  fontSize: '0.9rem',
+                  color: activeTab === 'upcoming' ? '#0F172A' : '#fff',
+                  fontWeight: 800,
+                  fontSize: '1rem',
                   cursor: 'pointer',
-                  boxShadow: activeTab === 'upcoming' ? '0 4px 12px rgba(0,0,0,0.05)' : 'none',
-                  transition: 'all 0.2s'
+                  transition: 'all 0.4s cubic-bezier(0.23, 1, 0.32, 1)',
+                  boxShadow: activeTab === 'upcoming' ? '0 10px 20px rgba(0,0,0,0.1)' : 'none'
                 }}
               >
                 Upcoming
@@ -101,27 +227,29 @@ const MyEvents: React.FC = () => {
               <button 
                 onClick={() => setActiveTab('past')}
                 style={{ 
-                  padding: '0.6rem 1.25rem', 
-                  borderRadius: '10px', 
+                  padding: '0.8rem 2.5rem', 
+                  borderRadius: '18px', 
                   border: 'none',
                   background: activeTab === 'past' ? '#fff' : 'transparent',
-                  color: activeTab === 'past' ? '#0F172A' : '#64748B',
-                  fontWeight: 700,
-                  fontSize: '0.9rem',
+                  color: activeTab === 'past' ? '#0F172A' : '#fff',
+                  fontWeight: 800,
+                  fontSize: '1rem',
                   cursor: 'pointer',
-                  boxShadow: activeTab === 'past' ? '0 4px 12px rgba(0,0,0,0.05)' : 'none',
-                  transition: 'all 0.2s'
+                  transition: 'all 0.4s cubic-bezier(0.23, 1, 0.32, 1)',
+                  boxShadow: activeTab === 'past' ? '0 10px 20px rgba(0,0,0,0.1)' : 'none'
                 }}
               >
-                Past Events
+                Past Archive
               </button>
             </div>
-          </div>
-        </motion.div>
-      </div>
+          </motion.div>
+        </div>
+      </section>
+
+      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 2rem' }}>
 
       {/* Main Events Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '2rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
         <AnimatePresence mode="popLayout">
           {filteredEvents.map((event, index) => (
             <motion.div
@@ -136,7 +264,7 @@ const MyEvents: React.FC = () => {
               whileHover={{ y: -8, boxShadow: '0 20px 40px rgba(0,0,0,0.08)' }}
             >
               {/* Thumbnail with Overlay */}
-              <div style={{ position: 'relative', aspectRatio: '16/9' }}>
+              <div style={{ position: 'relative', height: '160px' }}>
                 <img src={event.cover_image || 'https://images.unsplash.com/photo-1540575861501-7ad05823c95b?auto=format&fit=crop&q=80&w=400'} alt={event.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 <div style={{ position: 'absolute', top: '1rem', right: '1rem' }}>
                   <div style={{ 
@@ -155,8 +283,8 @@ const MyEvents: React.FC = () => {
               </div>
 
               {/* Content */}
-              <div style={{ padding: '1.5rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#0F172A', lineHeight: 1.4 }}>{event.title}</h3>
+              <div style={{ padding: '1.25rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0F172A', lineHeight: 1.3 }}>{event.title}</h3>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', color: '#64748B', fontSize: '0.9rem' }}>
@@ -191,27 +319,42 @@ const MyEvents: React.FC = () => {
                       <Share2 size={18} /> Share Event
                     </button>
                   ) : (
-                      <button 
-                        onClick={() => handleDownloadCertificate(event)}
-                        disabled={!event.is_certificate_issued}
-                        style={{ 
-                          flex: 1, 
-                          background: event.is_certificate_issued ? '#f0fdf4' : '#F1F5F9', 
-                          color: event.is_certificate_issued ? '#166534' : '#94a3b8', 
-                          padding: '0.75rem', 
-                          borderRadius: '10px', 
-                          border: event.is_certificate_issued ? '1px solid #bbf7d0' : 'none', 
-                          fontWeight: 700, 
-                          cursor: event.is_certificate_issued ? 'pointer' : 'not-allowed', 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          justifyContent: 'center', 
-                          gap: '0.5rem' 
-                        }}
-                      >
-                        {event.is_certificate_issued ? <Award size={18} /> : <Download size={18} />}
-                        {event.is_certificate_issued ? 'Download Certificate' : 'Certificate Pending'}
-                      </button>
+                    <div style={{ flex: 1 }}>
+                      {event.is_certificate_issued ? (
+                        <CertificateProgressButton 
+                          className="w-full"
+                          onGenerate={() => {
+                            if (!userProfile) return alert("Profile loading...");
+                            generateEventCertificate(
+                              userProfile.full_name || userProfile.name || 'NeST Digital Member',
+                              event.title,
+                              event.date
+                            );
+                          }}
+                        />
+                      ) : (
+                        <button 
+                          disabled
+                          style={{ 
+                            width: '100%', 
+                            background: '#F1F5F9', 
+                            color: '#94a3b8', 
+                            padding: '0.85rem', 
+                            borderRadius: '12px', 
+                            border: 'none', 
+                            fontWeight: 800, 
+                            cursor: 'not-allowed', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center', 
+                            gap: '0.6rem'
+                          }}
+                        >
+                          <Download size={18} />
+                          Certificate Pending
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
@@ -219,6 +362,7 @@ const MyEvents: React.FC = () => {
           ))}
         </AnimatePresence>
       </div>
+    </div>
 
       <style>{`
         .luxury-card {

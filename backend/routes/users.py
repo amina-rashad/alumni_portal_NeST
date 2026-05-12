@@ -98,10 +98,19 @@ def update_profile():
     update_data["updated_at"] = datetime.now(timezone.utc)
 
     db = get_db()
-    result = db["users"].update_one(
-        {"_id": ObjectId(user_id)},
-        {"$set": update_data}
-    )
+    try:
+        result = db["users"].update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": update_data}
+        )
+    except Exception as e:
+        if "document too large" in str(e).lower():
+            return jsonify({
+                "success": False, 
+                "message": "DocumentTooLarge",
+                "error": "The profile data is too large for the database (Max 16MB). Please use smaller images."
+            }), 413
+        return jsonify({"success": False, "message": f"Database error: {str(e)}"}), 500
 
     if result.matched_count == 0:
         return jsonify({"success": False, "message": "User not found."}), 404

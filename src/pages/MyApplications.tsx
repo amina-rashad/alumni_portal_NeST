@@ -113,66 +113,57 @@ const MyApplications: React.FC = () => {
   };
 
   const getTimelineSteps = (status: ApplicationStatus) => {
-    const steps = ['Applied', 'Aptitude', 'Shortlisted', 'Interview', 'Decision'];
+    const steps = ['Applied', 'Aptitude', 'Shortlisted', 'Interview Scheduled', 'Offered'];
+    
     const statusMap: Record<ApplicationStatus, number> = {
       'Applied': 0,
       'Aptitude': 1,
       'Shortlisted': 2,
       'Interview Scheduled': 3,
       'Offered': 4,
-      'Rejected': 4,
-      'Withdrawn': -1
+      'Rejected': 3, // If rejected, point to the last successful stage (e.g. Interview)
+      'Withdrawn': 3
     };
     const activeStep = statusMap[status];
     return { steps, activeStep };
   };
 
   return (
-    <div style={{ minHeight: '100vh', padding: '2rem', background: 'transparent', color: '#1a1a1a', fontFamily: 'Montserrat, sans-serif' }}>
-      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+    <div style={{ minHeight: '100vh', background: '#f8fafc', color: '#1a1a1a', fontFamily: 'Montserrat, sans-serif' }}>
+      <div>
 
-        {/* Header */}
+        {/* Header Banner */}
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          style={{ marginBottom: '2.5rem' }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6 }}
+          style={{ 
+            background: '#1e1b4b', 
+            padding: '5rem 3.5rem', 
+            width: '100%', 
+            marginBottom: '3rem',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.1)'
+          }}
         >
-
-          <h1 style={{ fontSize: '2.8rem', marginBottom: '0.5rem', color: '#1a1a1a' }}>
-            My <span style={{ color: 'var(--primary)' }}>Applications</span>
-          </h1>
-
+          <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+            <h1 style={{ 
+              fontSize: '3.5rem', 
+              fontWeight: 800, 
+              margin: 0, 
+              fontFamily: "'Montserrat', sans-serif",
+              letterSpacing: '-0.02em',
+              lineHeight: 1.1
+            }}>
+              <span style={{ color: '#ef4444' }}>Application</span> <span style={{ color: '#ffffff' }}>Center</span>
+            </h1>
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '1.1rem', marginTop: '1rem', fontWeight: 400, fontFamily: '"Outfit", sans-serif' }}>
+              Track and manage your professional journey at NeST Digital.
+            </p>
+          </div>
         </motion.div>
 
-        {/* Stats Cards */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '1rem', marginBottom: '2.5rem' }}
-        >
-          {[
-            { label: 'Total', count: applications.length, color: '#1a1a1a', bg: '#f8f9fa' },
-            { label: 'In Progress', count: (statusCounts['Under Review'] || 0) + (statusCounts['Shortlisted'] || 0) + (statusCounts['Interview Scheduled'] || 0), color: '#1971c2', bg: '#e7f5ff' },
-            { label: 'Offered', count: statusCounts['Offered'] || 0, color: '#2b8a3e', bg: '#ebfbee' },
-            { label: 'Rejected', count: statusCounts['Rejected'] || 0, color: '#c92a2a', bg: '#fff5f5' },
-          ].map((stat) => (
-            <div
-              key={stat.label}
-              style={{
-                background: stat.bg,
-                borderRadius: '12px',
-                padding: '1.2rem 1.5rem',
-                border: '1px solid #e9ecef',
-                textAlign: 'center'
-              }}
-            >
-              <p style={{ fontSize: '2rem', fontWeight: 800, color: stat.color, margin: '0 0 0.2rem 0' }}>{stat.count}</p>
-              <p style={{ fontSize: '0.85rem', color: '#6c757d', fontWeight: 500, margin: 0 }}>{stat.label}</p>
-            </div>
-          ))}
-        </motion.div>
+        <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 2rem' }}>
+
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: '4rem' }}>
@@ -347,41 +338,65 @@ const MyApplications: React.FC = () => {
                       >
                         <div style={{ borderTop: '1px solid #e9ecef', marginTop: '1.5rem', paddingTop: '1.5rem' }}>
 
-                          {/* Progress Timeline */}
-                          <div style={{ marginBottom: '1.5rem' }}>
-                            <p style={{ fontSize: '0.82rem', fontWeight: 600, color: '#6c757d', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '1rem' }}>Application Progress</p>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0' }}>
+                          {/* Progress Timeline */}                          <div style={{ marginBottom: '3rem', padding: '0 1.5rem' }}>
+                            <p style={{ fontSize: '0.82rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '1.5rem' }}>Application Progress</p>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0', position: 'relative', height: '40px' }}>
                               {steps.map((step, i) => {
-                                const isActive = i <= activeStep;
-                                const isCurrent = i === activeStep;
-                                const isRejected = app.status === 'Rejected' && i === activeStep;
-                                const dotColor = isRejected ? '#c92a2a' : isActive ? 'var(--primary)' : '#dee2e6';
-                                const lineColor = isActive && i < activeStep ? 'var(--primary)' : '#dee2e6';
+                                
+                                // Color logic
+                                const stepStatus = steps[i];
+                                const stepConfig = STATUS_CONFIG[stepStatus as ApplicationStatus] || STATUS_CONFIG['Applied'];
+                                
+                                // Activation logic
+                                let isActive = false;
+                                if (app.status === 'Rejected') {
+                                  // If rejected, show progress up to the point of rejection (mapped in getTimelineSteps)
+                                  isActive = i <= activeStep;
+                                } else {
+                                  isActive = i <= activeStep;
+                                }
+
+                                const isCurrent = i === activeStep && app.status !== 'Rejected' && app.status !== 'Offered';
+                                const dotColor = (app.status === 'Rejected' && i === activeStep) ? '#ef4444' : isActive ? (isCurrent ? stepConfig.color : '#1e1b4b') : '#e2e8f0';
+                                const textColor = isCurrent ? stepConfig.color : isActive ? '#1e1b4b' : '#94a3b8';
+                                
+                                // Line color logic
+                                const lineColor = isActive && i < activeStep ? '#1e1b4b' : '#e2e8f0';
 
                                 return (
                                   <div key={step} style={{ display: 'flex', alignItems: 'center', flex: i < steps.length - 1 ? 1 : 'none' }}>
-                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
-                                      <div style={{
-                                        width: isCurrent ? '14px' : '10px',
-                                        height: isCurrent ? '14px' : '10px',
-                                        borderRadius: '50%',
-                                        background: dotColor,
-                                        border: isCurrent ? `3px solid ${isRejected ? '#ffa8a8' : 'rgba(200,16,46,0.2)'}` : 'none',
-                                        transition: 'all 0.3s'
-                                      }} />
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', width: '20px' }}>
+                                      <motion.div 
+                                        initial={false}
+                                        animate={{ 
+                                          scale: isCurrent ? 1.2 : 1,
+                                          backgroundColor: dotColor
+                                        }}
+                                        style={{
+                                          width: '12px',
+                                          height: '12px',
+                                          borderRadius: '50%',
+                                          zIndex: 2,
+                                          boxShadow: isCurrent ? `0 0 0 4px ${dotColor}20` : 'none'
+                                        }} 
+                                      />
                                       <span style={{
                                         position: 'absolute',
-                                        top: '22px',
-                                        fontSize: '0.7rem',
-                                        color: isActive ? '#4a4a4a' : '#adb5bd',
-                                        fontWeight: isCurrent ? 700 : 500,
-                                        whiteSpace: 'nowrap'
+                                        top: '24px',
+                                        left: '50%',
+                                        transform: 'translateX(-50%)',
+                                        fontSize: '0.75rem',
+                                        color: textColor,
+                                        fontWeight: isCurrent ? 800 : 600,
+                                        whiteSpace: 'nowrap',
+                                        textAlign: 'center',
+                                        transition: 'all 0.3s'
                                       }}>
                                         {step}
                                       </span>
                                     </div>
                                     {i < steps.length - 1 && (
-                                      <div style={{ flex: 1, height: '2px', background: lineColor, transition: 'background 0.3s' }} />
+                                      <div style={{ flex: 1, height: '2px', background: lineColor, margin: '0 -4px', zIndex: 1, transition: 'background 0.3s' }} />
                                     )}
                                   </div>
                                 );
@@ -514,6 +529,7 @@ const MyApplications: React.FC = () => {
         </AnimatePresence>
       </div>
     </div>
+  </div>
   );
 };
 

@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, MapPin, Briefcase, Clock, Building, CheckCircle2, Star, Share2, Upload, Check } from 'lucide-react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 
+import nestIcon from '../assets/nest_icon.png';
+
 // Comprehensive mock data covering the jobs from JobListings
 import { jobsApi, applicationsApi } from '../services/api';
 import StatusModal from '../components/StatusModal';
@@ -141,11 +143,6 @@ const JobDetails: React.FC = () => {
     <div style={{ minHeight: '100vh', padding: '1rem 0', background: '#f8f9fa', color: '#1a1a1a', fontFamily: 'Inter, sans-serif' }}>
       <div className="container" style={{ maxWidth: '1000px', margin: '0 auto' }}>
         
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
-          <button onClick={() => navigate('/jobs')} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', border: 'none', background: 'transparent', color: '#4a4a4a', fontWeight: 600, cursor: 'pointer' }}>
-            <ArrowLeft size={20} /> Back to Jobs
-          </button>
-        </div>
 
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -159,12 +156,11 @@ const JobDetails: React.FC = () => {
           )}
 
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1.5rem', marginBottom: '2rem' }}>
-            <div style={{ width: '80px', height: '80px', borderRadius: '12px', background: '#f8f9fa', border: '1px solid #e9ecef', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <img src="https://media.licdn.com/dms/image/C560BAQGNt2PXXs_WkQ/company-logo_200_200/0/1630656715690/nest_software_logo?e=2147483647&v=beta&t=GkMvL3fQ2zIq805g8A6iU21Nkx1bYwR7y5sL_V0zHwM" alt="NeST" style={{ width: '45px', height: '45px', objectFit: 'contain' }} />
+            <div style={{ width: '150px', height: '150px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0 }}>
+              <img src={nestIcon} alt="NeST Digital" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </div>
             <div>
-              <span style={{ color: '#c8102e', fontWeight: 700, fontSize: '0.85rem', letterSpacing: '1px', textTransform: 'uppercase' }}>{job.department}</span>
-              <h1 style={{ fontSize: '2.5rem', color: '#1a1a1a', margin: '0.5rem 0 1rem 0', fontWeight: 800 }}>{job.title}</h1>
+              <h1 style={{ fontSize: '2.5rem', color: '#1a1a1a', margin: '0 0 1rem 0', fontWeight: 800 }}>{job.title}</h1>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', color: '#6c757d', fontSize: '1rem', fontWeight: 500 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Building size={18} /> {job.company}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><MapPin size={18} /> {job.location}</div>
@@ -244,18 +240,6 @@ const JobDetails: React.FC = () => {
               </p>
             </div>
 
-            {/* Responsibilities */}
-            <div style={{ background: '#ffffff', borderRadius: '16px', padding: '2.5rem', border: '1px solid #e9ecef', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
-              <h3 style={{ fontSize: '1.5rem', color: '#1a1a1a', marginBottom: '1.2rem', fontWeight: 600 }}>Key Responsibilities</h3>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {job.responsibilities.map((req: string, i: number) => (
-                  <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', color: '#4a4a4a', lineHeight: 1.6, fontSize: '1.05rem' }}>
-                    <CheckCircle2 color="#c8102e" size={22} style={{ flexShrink: 0, marginTop: '2px' }} />
-                    <span>{req}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
 
             {/* Requirements */}
             {job.requirements && job.requirements.length > 0 && (
@@ -300,10 +284,6 @@ const JobDetails: React.FC = () => {
               <h3 style={{ fontSize: '1.3rem', color: '#1a1a1a', marginBottom: '1.5rem', fontWeight: 600 }}>Job Summary</h3>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-                <div>
-                  <p style={{ color: '#868e96', fontSize: '0.85rem', marginBottom: '0.2rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>Department</p>
-                  <p style={{ color: '#1a1a1a', fontWeight: 500, fontSize: '1.05rem' }}>{job.department}</p>
-                </div>
                 <div>
                   <p style={{ color: '#868e96', fontSize: '0.85rem', marginBottom: '0.2rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>Experience Level</p>
                   <p style={{ color: '#1a1a1a', fontWeight: 500, fontSize: '1.05rem' }}>{job.experience}</p>

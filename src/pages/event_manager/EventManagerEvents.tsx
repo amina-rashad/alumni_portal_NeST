@@ -3,11 +3,13 @@ import {
   Plus, Search, Filter, MoreVertical, 
   Calendar, MapPin, Users, Edit2, Trash2, ExternalLink,
   ArrowLeft, Clock, Upload, X, Image as ImageIcon,
-  Info, ChevronDown, ShieldCheck, AlertCircle, Video
+  Info, ChevronDown, ShieldCheck, AlertCircle, Video,
+  ChevronRight, ChevronLeft
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { eventsApi, eventManagerApi } from '../../services/api';
+import StatusModal from '../../components/StatusModal';
 
 const GlassSelect: React.FC<{
   label: string;
@@ -134,13 +136,31 @@ const EventManagerEvents: React.FC = () => {
 
   const [events, setEvents] = useState<any[]>([]);
   const [isLoadingEvents, setIsLoadingEvents] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalEvents, setTotalEvents] = useState(0);
+  const itemsPerPage = 6;
+  const [statusModal, setStatusModal] = useState({
+    show: false,
+    type: 'success' as 'success' | 'error',
+    title: '',
+    message: ''
+  });
 
-  const fetchEvents = async () => {
+  const fetchEvents = async (page: number) => {
     setIsLoadingEvents(true);
     try {
-      const res = await eventsApi.getAllEvents();
+      const res = await eventsApi.getAllEvents(page, itemsPerPage);
       if (res.success && res.data) {
-        setEvents((res.data as any).events || []);
+        const rawEvents = (res.data as any).events || [];
+        const mappedEvents = rawEvents.map((e: any) => ({
+          ...e,
+          status: e.is_active ? 'Active' : 'Draft'
+        }));
+        
+        setEvents(mappedEvents);
+        setTotalPages((res.data as any).total_pages || 1);
+        setTotalEvents((res.data as any).total_events || rawEvents.length);
       }
     } catch (err) {
       console.error('Failed to fetch events:', err);
@@ -150,8 +170,8 @@ const EventManagerEvents: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchEvents();
-  }, []);
+    fetchEvents(currentPage);
+  }, [currentPage]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -181,13 +201,24 @@ const EventManagerEvents: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const handleImageUpload = (file: File) => {
+    if (file.size > 10 * 1024 * 1024) {
+      alert("Image size should be less than 10MB");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setSelectedImage(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const file = e.dataTransfer.files[0];
-      setSelectedImage(URL.createObjectURL(file));
+      handleImageUpload(e.dataTransfer.files[0]);
     }
   };
 
@@ -213,7 +244,12 @@ const EventManagerEvents: React.FC = () => {
       }
 
       if (res.success) {
-        alert(editingEventId ? 'Event updated successfully!' : 'Event launched successfully!');
+        setStatusModal({
+          show: true,
+          type: 'success',
+          title: editingEventId ? 'Event Updated' : 'Event Launched',
+          message: editingEventId ? 'The event details have been successfully updated.' : 'Your new event has been successfully launched!'
+        });
         setIsAddingEvent(false);
         setEditingEventId(null);
         setFormData({
@@ -222,7 +258,7 @@ const EventManagerEvents: React.FC = () => {
           venue: '', audience: 'Platform Wide', mode: 'offline'
         });
         setSelectedImage(null);
-        fetchEvents();
+        fetchEvents(currentPage);
       } else {
         alert('Failed to save event: ' + res.message);
       }
@@ -238,10 +274,20 @@ const EventManagerEvents: React.FC = () => {
     try {
       const res = await eventManagerApi.deleteEvent(String(eventId));
       if (res.success) {
-        alert('Event deleted successfully!');
-        fetchEvents();
+        setStatusModal({
+          show: true,
+          type: 'success',
+          title: 'Event Deleted',
+          message: 'The event has been permanently removed from the system.'
+        });
+        fetchEvents(currentPage);
       } else {
-        alert('Failed to delete event: ' + res.message);
+        setStatusModal({
+          show: true,
+          type: 'error',
+          title: 'Deletion Failed',
+          message: res.message || 'An error occurred while deleting the event.'
+        });
       }
     } catch (err) {
       console.error('Error deleting event:', err);
@@ -277,7 +323,7 @@ const EventManagerEvents: React.FC = () => {
   };
 
   const filteredEvents = events.filter(e => {
-    const matchesTab = activeTab === 'All' || e.status === activeTab;
+    const matchesTab = activeTab === 'All' || e.status === activeTab || (activeTab === 'Past' && new Date(e.date) < new Date());
     const matchesSearch = e.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           e.category.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = activeCategory === 'All' || e.category === activeCategory;
@@ -390,7 +436,7 @@ const EventManagerEvents: React.FC = () => {
                       <div style={{ fontWeight: 700, color: '#1e293b' }}>Upload an image or drag and drop</div>
                       <div style={{ fontSize: '13px', color: '#64748b' }}>PNG, JPG up to 10MB</div>
                     </div>
-                    <input type="file" style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }} onChange={(e) => e.target.files && setSelectedImage(URL.createObjectURL(e.target.files[0]))} />
+                    <input type="file" accept="image/*" style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }} onChange={(e) => e.target.files && handleImageUpload(e.target.files[0])} />
                   </div>
                 )}
               </div>
@@ -405,12 +451,36 @@ const EventManagerEvents: React.FC = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <label style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8' }}>Event Date</label>
-                  <input type="date" name="date" value={formData.date} onChange={handleInputChange} style={glossyInputStyle} />
+                  <div style={{ position: 'relative' }}>
+                    <Calendar size={16} color={brandPrimary} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', zIndex: 2 }} />
+                    <input 
+                      type="date" 
+                      name="date" 
+                      value={formData.date} 
+                      onChange={handleInputChange} 
+                      onClick={(e) => {
+                        try { (e.target as any).showPicker(); } catch(err) {}
+                      }}
+                      style={{ ...glossyInputStyle, paddingLeft: '40px', cursor: 'pointer' } as any} 
+                    />
+                  </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <label style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8' }}>Start Time</label>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <input type="time" name="startTime" value={formData.startTime} onChange={handleInputChange} style={{ ...glossyInputStyle, flex: 1 }} />
+                  <div style={{ display: 'flex', gap: '8px', position: 'relative' }}>
+                    <div style={{ position: 'relative', flex: 1 }}>
+                      <Clock size={16} color={brandPrimary} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', zIndex: 2 }} />
+                      <input 
+                        type="time" 
+                        name="startTime" 
+                        value={formData.startTime} 
+                        onChange={handleInputChange} 
+                        onClick={(e) => {
+                          try { (e.target as any).showPicker(); } catch(err) {}
+                        }}
+                        style={{ ...glossyInputStyle, paddingLeft: '40px', cursor: 'pointer' } as any} 
+                      />
+                    </div>
                     <select 
                       name="startTimePeriod" 
                       value={formData.startTimePeriod} 
@@ -457,7 +527,7 @@ const EventManagerEvents: React.FC = () => {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', paddingBottom: '80px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#1e293b', margin: '0 0 8px 0' }}>Manage Events</h1>
@@ -717,6 +787,112 @@ const EventManagerEvents: React.FC = () => {
           ))}
         </AnimatePresence>
       </div>
+
+      {/* Pagination & Page Info Section - Pixel Perfect Match */}
+      {events.length > 0 && (
+        <div style={{ 
+          marginTop: '2rem', 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          gap: '1.25rem',
+          padding: '2rem',
+          background: 'rgba(248, 250, 252, 0.5)',
+          borderRadius: '2rem',
+          border: '1px solid #f1f5f9'
+        }}>
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            style={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center', 
+              gap: '0.5rem',
+              padding: '0.6rem 1.2rem',
+              background: '#ffffff',
+              borderRadius: '999px',
+              boxShadow: '0 10px 40px rgba(0,0,0,0.04)',
+              border: '1px solid #f1f5f9',
+            }}
+          >
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              style={{
+                width: '38px',
+                height: '38px',
+                borderRadius: '10px',
+                border: '1px solid #f1f5f9',
+                background: currentPage === 1 ? '#f8fafc' : 'white',
+                color: currentPage === 1 ? '#cbd5e1' : '#94a3b8',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: currentPage === 1 ? 'default' : 'pointer',
+                transition: 'all 0.3s'
+              }}
+            >
+              <ChevronLeft size={18} />
+            </button>
+
+            <div style={{ display: 'flex', gap: '0.25rem', margin: '0 0.5rem' }}>
+              {Array.from({ length: Math.max(totalPages, 1) }, (_, i) => i + 1).map((pageNum) => (
+                <button
+                  key={pageNum}
+                  onClick={() => setCurrentPage(pageNum)}
+                  style={{
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: currentPage === pageNum ? '#0d2046' : 'transparent',
+                    color: currentPage === pageNum ? 'white' : '#64748b',
+                    fontWeight: 800,
+                    fontSize: '0.9rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s'
+                  }}
+                >
+                  {pageNum}
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              style={{
+                width: '38px',
+                height: '38px',
+                borderRadius: '10px',
+                border: '1px solid #f1f5f9',
+                background: currentPage === totalPages ? '#f8fafc' : 'white',
+                color: currentPage === totalPages ? '#cbd5e1' : '#94a3b8',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: currentPage === totalPages ? 'default' : 'pointer',
+                transition: 'all 0.3s'
+              }}
+            >
+              <ChevronRight size={18} />
+            </button>
+          </motion.div>
+
+          <p style={{ textAlign: 'center', margin: 0, color: '#94a3b8', fontSize: '0.85rem', fontWeight: 600, letterSpacing: '0.01em' }}>
+            Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, totalEvents)} of {totalEvents} events
+          </p>
+        </div>
+      )}
+
+      <StatusModal
+        isOpen={statusModal.show}
+        onClose={() => setStatusModal(prev => ({ ...prev, show: false }))}
+        type={statusModal.type}
+        title={statusModal.title}
+        message={statusModal.message}
+      />
     </div>
   );
 };

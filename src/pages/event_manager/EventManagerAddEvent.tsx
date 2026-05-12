@@ -345,11 +345,35 @@ const EventManagerAddEvent: React.FC = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <label style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8' }}>Event Date</label>
-                <input type="date" name="date" value={formData.date} onChange={handleInputChange} style={glossyInputStyle as any} />
+                <div style={{ position: 'relative' }}>
+                  <Calendar size={16} color={brandPrimary} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', zIndex: 2 }} />
+                  <input 
+                    type="date" 
+                    name="date" 
+                    value={formData.date} 
+                    onChange={handleInputChange} 
+                    onClick={(e) => {
+                      try { (e.target as any).showPicker(); } catch(err) {}
+                    }}
+                    style={{ ...glossyInputStyle, paddingLeft: '40px', cursor: 'pointer' } as any} 
+                  />
+                </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <label style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8' }}>Start Time</label>
-                <input type="time" name="startTime" value={formData.startTime} onChange={handleInputChange} style={glossyInputStyle as any} />
+                <div style={{ position: 'relative' }}>
+                  <Clock size={16} color={brandPrimary} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', zIndex: 2 }} />
+                  <input 
+                    type="time" 
+                    name="startTime" 
+                    value={formData.startTime} 
+                    onChange={handleInputChange} 
+                    onClick={(e) => {
+                      try { (e.target as any).showPicker(); } catch(err) {}
+                    }}
+                    style={{ ...glossyInputStyle, paddingLeft: '40px', cursor: 'pointer' } as any} 
+                  />
+                </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <label style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8' }}>{formData.mode === 'Online' ? 'Meeting Link' : 'Location'}</label>
@@ -389,6 +413,7 @@ const EventManagerAddEvent: React.FC = () => {
         title={statusModal.title}
         message={statusModal.message}
       />
+
     </div>
   );
 };

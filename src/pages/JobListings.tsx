@@ -133,6 +133,27 @@ const JobListings: React.FC = () => {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const listingsRef = useRef<HTMLDivElement>(null);
   const [toast, setToast] = useState<{message: string, type: 'success' | 'info'} | null>(null);
+  
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalJobs, setTotalJobs] = useState(0);
+  const jobsPerPage = 6;
+  const [currentBannerImage, setCurrentBannerImage] = useState(0);
+  const bannerImages = [
+    "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=1200&q=80",
+    "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1200&q=80",
+    "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1200&q=80",
+    "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1200&q=80",
+    "https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=1200&q=80"
+  ];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentBannerImage((prev) => (prev + 1) % bannerImages.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
 
   const showNotification = (message: string, type: 'success' | 'info' = 'success') => {
     setToast({ message, type });
@@ -152,16 +173,30 @@ const JobListings: React.FC = () => {
     return date.toLocaleDateString();
   };
 
+  const scrollToTop = () => {
+    const scrollContainer = document.getElementById('main-content-scroll');
+    if (scrollContainer) {
+      scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   const scrollToJobs = () => {
     listingsRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  // Ensure top of page on mount
+  useEffect(() => {
+    scrollToTop();
+  }, []);
 
   useEffect(() => {
     const fetchJobs = async () => {
       try {
         setLoading(true);
-        const res = await jobsApi.getAllJobs();
-        if (res.success && res.data && (res.data as any).jobs) {
+        const res = await jobsApi.getAllJobs(currentPage, jobsPerPage);
+        if (res.success && res.data) {
           const apiJobs = (res.data as any).jobs.map((j: any) => ({
             id: j.id,
             title: j.title,
@@ -175,13 +210,13 @@ const JobListings: React.FC = () => {
             salary: j.salary,
             postedAt: timeAgo(j.createdAt),
             createdAt: j.createdAt,
-            isNew: true, // Mark all fresh from DB as new for now
+            isNew: true, 
             isUrgent: false
           }));
           
-          if (apiJobs.length > 0) {
-            setJobs(apiJobs);
-          }
+          setJobs(apiJobs);
+          setTotalPages((res.data as any).pages || 1);
+          setTotalJobs((res.data as any).total || 0);
         }
       } catch (err) {
         console.error("Failed to load jobs", err);
@@ -190,7 +225,12 @@ const JobListings: React.FC = () => {
       }
     };
     fetchJobs();
-  }, []);
+    
+    // Only scroll to jobs if not first mount (pagination)
+    if (currentPage > 1) {
+      scrollToJobs();
+    }
+  }, [currentPage]);
 
   const toggleSaveJob = (id: string) => {
     const newSaved = new Set(savedJobs);
@@ -227,92 +267,293 @@ const JobListings: React.FC = () => {
   };
 
   return (
-    <div style={{ maxWidth: '1400px', margin: '0 auto', paddingBottom: '6rem', padding: '0 2rem' }}>
+    <div style={{ width: '100%', maxWidth: '100vw', margin: '0', padding: '0', paddingBottom: '6rem' }}>
       
-      {/* Cinematic Header */}
-      <div style={{ marginTop: '3rem', marginBottom: '1.5rem', textAlign: 'left', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-
-        <motion.h1 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          style={{ fontSize: '4.2rem', fontWeight: 900, marginBottom: '2.5rem', letterSpacing: '-0.05em', lineHeight: 0.95, cursor: 'default' }}
+      {/* Cinematic Hero Banner */}
+      <div style={{
+        position: 'relative',
+        width: '100%',
+        height: '420px',
+        overflow: 'hidden',
+        marginBottom: '4rem',
+        marginTop: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#0F172A'
+      }}>
+        {/* Animated Background Image */}
+        <motion.div
+          initial={{ scale: 1.1 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 10, repeat: Infinity, repeatType: "reverse", ease: "linear" }}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 0
+          }}
         >
-          <span style={{ background: 'linear-gradient(135deg, #d32f2f 0%, #ef4444 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Careers at</span>
-          <span style={{ color: '#0F172A' }}> NeST</span>
-          <span style={{ color: '#ef4444' }}>.</span>
-        </motion.h1>
+          <img 
+            src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=1920&q=80" 
+            alt="Careers at NeST" 
+            style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }}
+          />
+        </motion.div>
+
+        {/* Gradient Overlay */}
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'linear-gradient(to bottom, rgba(15, 23, 42, 0.4) 0%, rgba(15, 23, 42, 0.8) 100%)',
+          zIndex: 1
+        }} />
+
+        {/* Hero Content */}
+        <div style={{ position: 'relative', zIndex: 2, textAlign: 'center' }}>
+          <motion.h1 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            style={{ 
+              fontSize: '5.2rem', 
+              fontWeight: 900, 
+              letterSpacing: '-0.04em', 
+              lineHeight: 1, 
+              color: '#ffffff',
+              fontFamily: "'Montserrat', sans-serif"
+            }}
+          >
+            <span style={{ color: '#ef4444' }}>Careers</span> at NeST<span style={{ color: '#ef4444' }}>.</span>
+          </motion.h1>
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            style={{ 
+              width: '80px', 
+              height: '4px', 
+              background: '#ef4444', 
+              margin: '1.5rem auto 0',
+              borderRadius: '2px'
+            }}
+          />
+        </div>
       </div>
 
-      {/* Future Ready Section - Full Width Blue Glassmorph */}
-      <motion.section
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2, duration: 0.8 }}
-        style={{
-          background: 'linear-gradient(135deg, rgba(30, 64, 175, 0.12) 0%, rgba(30, 64, 175, 0.08) 100%)',
-          backdropFilter: 'blur(40px)',
-          WebkitBackdropFilter: 'blur(40px)',
-          padding: '4rem 0',
-          width: '100vw',
-          position: 'relative',
-          left: '50%',
-          right: '50%',
-          marginLeft: '-50vw',
-          marginRight: '-50vw',
-          marginBottom: '3.5rem',
-          borderBottom: '1px solid rgba(30, 64, 175, 0.1)',
-          borderTop: '1px solid rgba(30, 64, 175, 0.1)',
-          boxShadow: '0 20px 50px rgba(30, 64, 175, 0.05)',
-          overflow: 'hidden'
-        }}
-      >
-        <div style={{ position: 'absolute', top: '-50%', left: '-20%', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%)', zIndex: 0 }} />
-        
-        <div style={{ position: 'relative', zIndex: 1, maxWidth: '1400px', margin: '0 auto', padding: '0 3.5rem' }}>
-          <h2 style={{ fontSize: '2.6rem', fontWeight: 900, color: '#0F172A', marginBottom: '3rem', letterSpacing: '-0.03em', textAlign: 'left' }}>
-            Are you ready to shape your future with confidence?
+      {/* Main Content Area */}
+      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 2rem' }}>
+        {/* Shape Our Future Video Section */}
+      <div style={{ display: 'flex', gap: '5rem', alignItems: 'center', marginBottom: '8rem', flexWrap: 'wrap', padding: '2rem 0' }}>
+        <motion.div 
+          initial={{ opacity: 0, x: -30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8 }}
+          style={{ flex: '1 1 500px' }}
+        >
+          <h2 style={{ 
+            fontSize: '3.2rem', 
+            fontWeight: 500, 
+            color: '#2D3E61', 
+            marginBottom: '1.5rem', 
+            letterSpacing: '-0.01em', 
+            lineHeight: 1.1,
+            fontFamily: '"Outfit", sans-serif'
+          }}>
+            Shape Our Future <br />
+            Together!
           </h2>
+          <p style={{ 
+            color: '#64748b', 
+            fontSize: '0.98rem', 
+            lineHeight: '1.8', 
+            fontWeight: 400, 
+            marginBottom: '2.5rem',
+            maxWidth: '600px'
+          }}>
+            At NeST Digital, we strive to create opportunities for our professionals to learn, grow, lead, and innovate. We are a company that takes pride in our people and provides an ecosystem of support, challenge, and inspiration to push the boundaries of personal and career growth.
+          </p>
+          <motion.button 
+            onClick={() => {
+              setCurrentBannerImage(1);
+              scrollToJobs();
+            }}
+            whileHover={{ scale: 1.05, opacity: 0.95 }}
+            whileTap={{ scale: 0.98 }}
+            style={{ 
+              background: 'linear-gradient(90deg, #1e1b4b 0%, #b91c1c 100%)', 
+              color: 'white', 
+              border: 'none', 
+              padding: '14px 40px', 
+              borderRadius: '100px', 
+              fontWeight: 800, 
+              fontSize: '0.9rem', 
+              cursor: 'pointer', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.8rem', 
+              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em'
+            }}
+          >
+            EXPLORE NOW <ChevronRight size={18} />
+          </motion.button>
+        </motion.div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2.5rem' }}>
-            {[
-              { title: 'Experienced professionals', img: '/experienced_pro_career.png' },
-              { title: 'Early careers', img: '/early_career_talents.png' },
-              { title: 'Contract opportunities', img: '/contract_opportunities.png' }
-            ].map((card, idx) => (
-              <motion.div
-                key={idx}
-                whileHover={{ y: -12 }}
-                style={{ cursor: 'pointer' }}
-              >
-                <div style={{ 
-                  borderRadius: '20px', 
-                  overflow: 'hidden', 
-                  aspectRatio: '16/10', 
-                  marginBottom: '1.5rem',
-                  boxShadow: '0 20px 40px rgba(0,0,0,0.12)',
-                  border: '1px solid rgba(255,255,255,0.2)'
-                }}>
-                  <img src={card.img} alt={card.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                </div>
-                <span style={{ 
-                  fontSize: '1.2rem', 
-                  fontWeight: 900, 
-                  color: '#ef4444', 
-                  textTransform: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.6rem'
-                }}>
-                  {card.title}
-                </span>
-              </motion.div>
-            ))}
-          </div>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+          style={{ 
+            flex: '1 1 600px', 
+            position: 'relative', 
+            borderRadius: '32px', 
+            overflow: 'hidden', 
+            boxShadow: '0 30px 60px rgba(0,0,0,0.12)',
+            border: '1px solid rgba(0,0,0,0.05)',
+            background: '#000'
+          }}
+        >
+          <video 
+            controls 
+            autoPlay 
+            muted 
+            loop 
+            style={{ width: '100%', display: 'block' }}
+          >
+            <source src="https://nestdigital.com/wp-content/uploads/2026/04/videoplayback.mp4" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+          
+          <div style={{ 
+            position: 'absolute', 
+            inset: 0, 
+            boxShadow: 'inset 0 0 100px rgba(0,0,0,0.1)', 
+            pointerEvents: 'none' 
+          }} />
+        </motion.div>
+          </div> {/* Close 1400px container for Shape Our Future section */}
+
+      {/* Future-proof Career Section (Diagonal Swipe + Glow + Full Width Breakout) */}
+      <div 
+        id="career-banner-section"
+        style={{ 
+          display: 'flex', 
+        width: '100vw', 
+        position: 'relative',
+        left: '50%',
+        right: '50%',
+        marginLeft: '-50vw',
+        marginRight: '-50vw',
+        minHeight: '520px', 
+        marginBottom: '6rem',
+        overflow: 'hidden',
+        background: '#1e1b4b'
+      }}>
+        {/* Left Side: Luxury Luminous Image Slider */}
+        <div style={{ flex: 1, position: 'relative', background: '#1e1b4b', overflow: 'hidden' }}>
+          <AnimatePresence>
+            <motion.div
+              key={currentBannerImage}
+              initial={{ opacity: 0, scale: 1.05, filter: 'blur(10px)' }}
+              animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, scale: 1.02, filter: 'blur(5px)' }}
+              transition={{ duration: 1.8, ease: [0.4, 0, 0.2, 1] }}
+              style={{ position: 'absolute', inset: 0 }}
+            >
+              <img 
+                src={bannerImages[currentBannerImage]} 
+                alt="Careers at NeST" 
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+              />
+              
+              {/* Luminous Glow Overlay */}
+              <div style={{ 
+                position: 'absolute', 
+                inset: 0, 
+                background: 'radial-gradient(circle at 30% 50%, rgba(255,255,255,0.15) 0%, transparent 60%)',
+                zIndex: 2 
+              }} />
+            </motion.div>
+          </AnimatePresence>
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, transparent, rgba(30, 27, 75, 0.3))', zIndex: 3 }} />
         </div>
-      </motion.section>
 
-      {/* Floating Glass Expanding Search Bar */}
-      <div ref={listingsRef} style={{ marginBottom: '2.5rem', display: 'flex', justifyContent: 'flex-start', position: 'relative' }}>
+        {/* Right Side: NeST Blue Content */}
+        <div style={{ 
+          flex: 1, 
+          background: '#1e1b4b', 
+          padding: '5rem 4rem', 
+          display: 'flex', 
+          flexDirection: 'column', 
+          justifyContent: 'center',
+          color: '#ffffff'
+        }}>
+          <motion.h2 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            style={{ 
+              fontSize: '2.8rem', 
+              fontWeight: 700, 
+              marginBottom: '1.5rem', 
+              fontFamily: "'Montserrat', sans-serif",
+              lineHeight: 1.2
+            }}
+          >
+            Future-proof your career with NeST Digital
+          </motion.h2>
+          
+          <motion.p 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.1 }}
+            style={{ 
+              fontSize: '1.1rem', 
+              lineHeight: 1.7, 
+              color: 'rgba(255, 255, 255, 0.9)', 
+              marginBottom: '2.5rem',
+              fontFamily: '"Outfit", sans-serif',
+              fontWeight: 400
+            }}
+          >
+            At NeST Digital, we believe in a future where seamless collaboration between engineering excellence and human creativity achieves extraordinary outcomes. This includes empowering NeST people to create their own exceptional career experience.
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, x: -10 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2 }}
+          >
+            <Link 
+              to="/jobs" 
+              style={{ 
+                color: '#ffffff', 
+                textDecoration: 'none', 
+                fontSize: '1.1rem', 
+                fontWeight: 700, 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '0.8rem',
+                borderBottom: '2px solid #ffffff',
+                paddingBottom: '4px',
+                width: 'fit-content',
+                transition: 'all 0.3s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.gap = '1.2rem'}
+              onMouseLeave={(e) => e.currentTarget.style.gap = '0.8rem'}
+            >
+              Explore Technology & Careers <ChevronRight size={20} />
+            </Link>
+          </motion.div>
+        </div>
+      </div>
+
+      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 2rem' }}>
+        {/* Floating Glass Expanding Search Bar */}
+        <div ref={listingsRef} style={{ marginBottom: '2.5rem', display: 'flex', justifyContent: 'flex-start', position: 'relative' }}>
         <motion.div 
           animate={{ 
             maxWidth: isSearchFocused ? '850px' : '420px',
@@ -452,7 +693,7 @@ const JobListings: React.FC = () => {
 
             return (
             <React.Fragment key={job.id}>
-              <motion.div
+            <motion.div
                 variants={{
                   hidden: { opacity: 0, y: 30 },
                   show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } }
@@ -462,144 +703,109 @@ const JobListings: React.FC = () => {
                 onClick={() => document.getElementById(`link-${job.id}`)?.click()}
                 style={{
                   background: '#0F172A',
-                  borderRadius: '24px',
-                  padding: '1.2rem',
+                  borderRadius: '28px',
+                  padding: '1.5rem',
                   position: 'relative',
                   display: 'flex',
                   flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  gap: '0.75rem',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  gap: '1rem',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
                   overflow: 'hidden',
-                  aspectRatio: '16 / 9',
-                  cursor: 'pointer'
+                  minHeight: '340px',
+                  cursor: 'pointer',
+                  boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
                 }}
               >
                 {/* Full Bleed Background Image */}
                 <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
                    <motion.img 
-                      variants={{ hover: { scale: 1.1, opacity: 0.7 } }}
+                      variants={{ hover: { scale: 1.1, opacity: 0.6 } }}
                       transition={{ duration: 1.5, ease: 'easeOut' }}
                       src={bgImage} 
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }} 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.4 }} 
                       alt="" 
                    />
-                   <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15, 23, 42, 1) 10%, rgba(15, 23, 42, 0.3) 100%)' }} />
-                   
-                   {/* Colored Accent Glow */}
-                   <motion.div 
-                      variants={{ hover: { opacity: 0.8 } }}
-                      initial={{ opacity: 0 }}
-                      transition={{ duration: 0.6 }}
-                      style={{
-                        position: 'absolute',
-                        bottom: '0',
-                        right: '0',
-                        width: '300px',
-                        height: '300px',
-                        background: 'radial-gradient(circle, rgba(211,47,47,0.15) 0%, rgba(211,47,47,0) 70%)',
-                        borderRadius: '50%',
-                        pointerEvents: 'none'
-                      }}
-                   />
+                   <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15, 23, 42, 1) 0%, rgba(15, 23, 42, 0.4) 100%)' }} />
                 </div>
 
                 {/* Top Info row */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'relative', zIndex: 1 }}>
-                  <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
-                    <span style={{ background: 'rgba(255, 255, 255, 0.1)', color: '#ffffff', padding: '8px 16px', borderRadius: '99px', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', backdropFilter: 'blur(12px)', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                      {job.department}
-                    </span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 1 }}>
+                  <div>
                     {job.isNew && (
-                      <span style={{ background: 'rgba(211, 47, 47, 0.8)', color: '#ffffff', fontSize: '0.75rem', fontWeight: 800, padding: '8px 16px', borderRadius: '99px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>New</span>
+                      <span style={{ background: 'rgba(211, 47, 47, 0.9)', color: '#ffffff', fontSize: '0.7rem', fontWeight: 800, padding: '5px 12px', borderRadius: '99px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>New</span>
                     )}
                   </div>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); toggleSaveJob(job.id); }}
-                    style={{
-                      width: '44px',
-                      height: '44px',
-                      borderRadius: '50%',
-                      background: savedJobs.has(job.id) ? '#d32f2f' : 'rgba(255,255,255,0.1)',
-                      backdropFilter: 'blur(8px)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#ffffff',
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s',
-                      boxShadow: savedJobs.has(job.id) ? '0 8px 20px rgba(211,47,47,0.4)' : 'none'
-                    }}
-                  >
-                    {savedJobs.has(job.id) ? <BookmarkCheck size={20} /> : <Bookmark size={20} />}
-                  </button>
                 </div>
 
-                <div style={{ position: 'relative', zIndex: 1, marginTop: 'auto' }}>
-                  <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.4rem', fontWeight: 900, color: '#ffffff', lineHeight: 1.2, letterSpacing: '-0.02em' }}>{job.title}</h3>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
-                    <span style={{ fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', flex: 1, paddingTop: '1rem' }}>
+                  <h3 style={{ margin: '0 0 0.6rem', fontSize: '1.2rem', fontWeight: 800, color: '#ffffff', lineHeight: 1.3, letterSpacing: '-0.01em' }}>{job.title}</h3>
+                  
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.8rem', marginBottom: '1.2rem' }}>
+                    <span style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                       <Building size={14} color="#ef4444" /> {job.company}
                     </span>
-                    <span style={{ fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <span style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                       <MapPin size={14} color="#ef4444" /> {job.location.split(',')[0]}
                     </span>
                   </div>
 
-                  {/* Skills array */}
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1.5rem' }}>
+                  {/* Skills array - Simplified Tags */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
                     {job.skills.slice(0, 3).map(skill => (
                       <span
                         key={skill}
                         style={{
-                          background: 'rgba(255,255,255,0.1)',
-                          backdropFilter: 'blur(4px)',
+                          background: 'rgba(255,255,255,0.08)',
                           color: '#ffffff',
-                          padding: '6px 14px',
-                          borderRadius: '8px',
-                          fontSize: '0.8rem',
-                          fontWeight: 600,
-                          border: '1px solid rgba(255,255,255,0.05)'
+                          padding: '4px 10px',
+                          borderRadius: '6px',
+                          fontSize: '0.75rem',
+                          fontWeight: 500,
+                          border: '1px solid rgba(255,255,255,0.1)'
                         }}
                       >
                         {skill}
                       </span>
                     ))}
                     {job.skills.length > 3 && (
-                      <span style={{ padding: '6px 10px', fontSize: '0.8rem', fontWeight: 700, color: '#94A3B8' }}>+{job.skills.length - 3}</span>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94A3B8', alignSelf: 'center' }}>+{job.skills.length - 3}</span>
                     )}
                   </div>
 
+                  {/* Flex Spacer to push footer to bottom */}
+                  <div style={{ flex: 1 }} />
+
                   {/* Footer details & Action */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem' }}>
-                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#94a3b8', fontSize: '0.85rem', fontWeight: 500 }}>
-                       <Clock size={14} /> {job.type} <span style={{ color: 'rgba(255,255,255,0.2)' }}>|</span> <span style={{ color: '#10B981', fontWeight: 700 }}>{job.salary || 'Competitive'}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1.2rem' }}>
+                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                         <span style={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: 500 }}>{job.type}</span>
+                         <span style={{ color: 'rgba(255,255,255,0.2)' }}>•</span>
+                         <span style={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '3px' }}>
+                           <Clock size={12} /> {job.postedAt}
+                         </span>
+                       </div>
+                       <span style={{ color: '#10B981', fontWeight: 700, fontSize: '0.85rem' }}>{job.salary || 'Competitive'}</span>
                      </div>
                      
-                     {/* Hidden link for full container click */}
                      <Link id={`link-${job.id}`} to={`/jobs/${job.id}`} style={{ display: 'none' }} />
 
                      <motion.button
-                       variants={{ hover: { scale: 1.05, boxShadow: '0 8px 16px rgba(211,47,47,0.3)' } }}
+                       variants={{ hover: { scale: 1.05 } }}
                        onClick={(e) => { e.stopPropagation(); handleApply(job.id, job.title); }}
                        disabled={appliedJobs.has(job.id)}
                        style={{
-                         padding: '0.6rem 1.5rem',
+                         padding: '0.6rem 1.4rem',
                          background: appliedJobs.has(job.id) ? '#10B981' : '#d32f2f',
                          color: 'white',
-                         borderRadius: '999px',
-                         fontWeight: 800,
+                         borderRadius: '12px',
+                         fontWeight: 700,
                          fontSize: '0.85rem',
                          border: 'none',
-                         display: 'flex',
-                         alignItems: 'center',
-                         gap: '6px',
                          cursor: appliedJobs.has(job.id) ? 'default' : 'pointer',
-                         transition: 'background 0.3s'
                        }}
                      >
-                       {appliedJobs.has(job.id) ? <><Check size={16} /> Applied</> : 'Apply'}
+                       {appliedJobs.has(job.id) ? 'Applied' : 'Apply Now'}
                      </motion.button>
                   </div>
                 </div>
@@ -622,6 +828,104 @@ const JobListings: React.FC = () => {
           </div>
         )}
       </motion.div>
+      
+      {/* Premium Pagination Component */}
+      {!loading && totalPages > 1 && (
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{ 
+            marginTop: '5rem', 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            gap: '1rem',
+            background: 'rgba(255, 255, 255, 0.4)',
+            backdropFilter: 'blur(10px)',
+            padding: '1.5rem',
+            borderRadius: '24px',
+            border: '1px solid rgba(0, 0, 0, 0.03)',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.02)',
+            maxWidth: 'fit-content',
+            margin: '5rem auto 0'
+          }}
+        >
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            style={{
+              width: '45px',
+              height: '45px',
+              borderRadius: '14px',
+              border: '1px solid rgba(0,0,0,0.05)',
+              background: currentPage === 1 ? 'transparent' : 'white',
+              color: currentPage === 1 ? '#CBD5E1' : '#0F172A',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: currentPage === 1 ? 'default' : 'pointer',
+              transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+              boxShadow: currentPage === 1 ? 'none' : '0 4px 12px rgba(0,0,0,0.03)'
+            }}
+          >
+            <ChevronRight size={20} style={{ transform: 'rotate(180deg)' }} />
+          </button>
+
+          <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+              <motion.button
+                key={pageNum}
+                whileHover={currentPage !== pageNum ? { y: -2 } : {}}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setCurrentPage(pageNum)}
+                style={{
+                  width: '45px',
+                  height: '45px',
+                  borderRadius: '14px',
+                  background: currentPage === pageNum ? '#0F172A' : 'white',
+                  color: currentPage === pageNum ? 'white' : '#64748B',
+                  fontWeight: 800,
+                  fontSize: '0.95rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                  boxShadow: currentPage === pageNum ? '0 10px 20px rgba(15, 23, 42, 0.2)' : '0 4px 12px rgba(0,0,0,0.03)',
+                  border: currentPage === pageNum ? 'none' : '1px solid rgba(0,0,0,0.05)'
+                }}
+              >
+                {pageNum}
+              </motion.button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            style={{
+              width: '45px',
+              height: '45px',
+              borderRadius: '14px',
+              border: '1px solid rgba(0,0,0,0.05)',
+              background: currentPage === totalPages ? 'transparent' : 'white',
+              color: currentPage === totalPages ? '#CBD5E1' : '#0F172A',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: currentPage === totalPages ? 'default' : 'pointer',
+              transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+              boxShadow: currentPage === totalPages ? 'none' : '0 4px 12px rgba(0,0,0,0.03)'
+            }}
+          >
+            <ChevronRight size={20} />
+          </button>
+        </motion.div>
+      )}
+
+      {/* Results Summary */}
+      {!loading && totalJobs > 0 && (
+        <p style={{ textAlign: 'center', marginTop: '1.5rem', color: '#94A3B8', fontSize: '0.85rem', fontWeight: 600 }}>
+          Showing {(currentPage - 1) * jobsPerPage + 1} to {Math.min(currentPage * jobsPerPage, totalJobs)} of {totalJobs} opportunities
+        </p>
+      )}
 
       {/* Global CSS for the Luxury Look */}
       <style>{`
@@ -667,6 +971,8 @@ const JobListings: React.FC = () => {
           {toast.message}
         </motion.div>
       )}
+        </div>
+      </div>
     </div>
   );
 };

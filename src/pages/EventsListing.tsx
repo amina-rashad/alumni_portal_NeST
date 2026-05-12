@@ -5,6 +5,13 @@ import { eventsApi } from '../services/api';
 import nestIcon from '../assets/nest_icon.png';
 import StatusModal from '../components/StatusModal';
 
+const dummyEvents = [
+  { id: 'd1', title: 'Annual Alumni Tech Summit', date: '2024-10-15', time: '09:00 AM PST', attendees_count: 450, location: 'Trivandrum', category: 'Conference' },
+  { id: 'd2', title: 'AI & Machine Learning Workshop', date: '2024-11-02', time: '01:00 PM PST', attendees_count: 128, location: 'Kochi', category: 'Workshop' },
+  { id: 'd3', title: 'Cloud DevOps Bootcamp', date: '2024-11-18', time: '10:00 AM PST', attendees_count: 210, location: 'Bangalore', category: 'Workshop' },
+  { id: 'd4', title: 'Startup Pitch Night', date: '2024-12-05', time: '06:00 PM PST', attendees_count: 95, location: 'Remote', category: 'Meetup' }
+];
+
 const EventsListing: React.FC = () => {
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,18 +29,30 @@ const EventsListing: React.FC = () => {
   });
 
   const [selectedCategory, setSelectedCategory] = useState('All');
+  
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalEvents, setTotalEvents] = useState(0);
+  const eventsPerPage = 5;
 
   const categories = ['All', 'Webinar', 'Meetup', 'Workshop', 'Conference'];
 
   const fetchEvents = async () => {
     try {
-      const res = await eventsApi.getAllEvents();
+      setLoading(true);
+      const res = await eventsApi.getAllEvents(currentPage, eventsPerPage);
       const data = res.data as any;
       if (res.success && data && data.events) {
         setEvents(data.events);
+        setTotalPages(data.total_pages || 1);
+        setTotalEvents(data.total_events || 0);
+      } else {
+        setEvents(dummyEvents);
       }
     } catch (err) {
       console.error('Failed to fetch events:', err);
+      setEvents(dummyEvents);
     } finally {
       setLoading(false);
     }
@@ -41,7 +60,7 @@ const EventsListing: React.FC = () => {
 
   useEffect(() => {
     fetchEvents();
-  }, []);
+  }, [currentPage]);
 
   const handleRegister = (event: any) => {
     setModalConfig({
@@ -97,10 +116,9 @@ const EventsListing: React.FC = () => {
     }
   };
 
-  const filteredEvents = (selectedCategory === 'All' 
+  const filteredEvents = selectedCategory === 'All' 
     ? events 
-    : events.filter(e => e.category === selectedCategory))
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    : events.filter(e => e.category === selectedCategory);
 
   return (
     <motion.div 
@@ -228,33 +246,32 @@ const EventsListing: React.FC = () => {
           </div>
         </div>
       </div>
-        
-        <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
-          {categories.map(cat => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              style={{ 
-                padding: '0.6rem 1.25rem', 
-                borderRadius: '1rem', 
-                fontSize: '0.875rem', 
-                fontWeight: 800, 
-                transition: 'all 0.2s',
-                whiteSpace: 'nowrap',
-                cursor: 'pointer',
-                backgroundColor: selectedCategory === cat ? 'var(--primary)' : '#ffffff',
-                color: selectedCategory === cat ? '#ffffff' : '#475569',
-                border: selectedCategory === cat ? '1px solid var(--primary)' : '1px solid #e2e8f0',
-                boxShadow: selectedCategory === cat ? '0 4px 12px rgba(200,16,46,0.2)' : 'none'
-              }}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
 
+      <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem', marginBottom: '2rem' }}>
+        {categories.map(cat => (
+          <button
+            key={cat}
+            onClick={() => setSelectedCategory(cat)}
+            style={{ 
+              padding: '0.6rem 1.25rem', 
+              borderRadius: '1rem', 
+              fontSize: '0.875rem', 
+              fontWeight: 800, 
+              transition: 'all 0.2s',
+              whiteSpace: 'nowrap',
+              cursor: 'pointer',
+              backgroundColor: selectedCategory === cat ? 'var(--primary)' : '#ffffff',
+              color: selectedCategory === cat ? '#ffffff' : '#475569',
+              border: selectedCategory === cat ? '1px solid var(--primary)' : '1px solid #e2e8f0',
+              boxShadow: selectedCategory === cat ? '0 4px 12px rgba(200,16,46,0.2)' : 'none'
+            }}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
 
-      {/* Events Grid/List */}
+      {/* Events List */}
       {loading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '5rem 0' }}>
            <div style={{ width: '40px', height: '40px', border: '3px solid #f3f3f3', borderTop: '3px solid var(--primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
@@ -262,8 +279,8 @@ const EventsListing: React.FC = () => {
       ) : filteredEvents.length > 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {filteredEvents.map((event, index) => (
-            <React.Fragment key={event.id}>
             <motion.div
+              key={event.id}
               whileHover={{ x: 10 }}
               style={{ 
                 background: '#ffffff', 
@@ -276,19 +293,11 @@ const EventsListing: React.FC = () => {
                 transition: 'all 0.3s'
               }}
             >
-              <div style={{ backgroundColor: '#0d2046', width: '180px', padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#ffffff', textAlign: 'center' }}>
-                 <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem' }}>
-                   {event.date ? new Date(event.date).toLocaleDateString('en-US', { month: 'short' }).toUpperCase() : ''}
-                 </span>
-                 <span style={{ fontSize: '2.5rem', fontWeight: 900 }}>
-                   {event.date ? new Date(event.date).getDate() : ''}
-                 </span>
-                 <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', width: '100%' }}>
-                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b' }}>{event.category}</span>
-                 </div>
+              <div style={{ width: '220px', flexShrink: 0, position: 'relative' }}>
+                 <img src={event.cover_image || "https://images.unsplash.com/photo-1540575861501-7cf05a4b125a?w=800&auto=format&fit=crop&q=60"} alt={event.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
 
-              <div style={{ padding: '2rem', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '2rem' }}>
+              <div style={{ padding: '2rem', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                  <div>
                     <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0d2046', marginBottom: '0.75rem' }}>{event.title}</h3>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', color: '#64748b', fontSize: '0.875rem', fontWeight: 600 }}>
@@ -305,8 +314,8 @@ const EventsListing: React.FC = () => {
                        {event.description || "Join us for an insightful session featuring industry veterans and networking opportunities tailored for the NeST community."}
                     </p>
                  </div>
-
-                 <div style={{ flexShrink: 0 }}>
+                 
+                 <div style={{ marginTop: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     {event.is_registered ? (
                       <div style={{ padding: '0.75rem 1.5rem', backgroundColor: '#f0fdf4', color: '#15803d', fontWeight: 800, borderRadius: '1rem', border: '1px solid #dcfce7', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                          <CheckCircle2 size={18} /> Registered
@@ -320,7 +329,7 @@ const EventsListing: React.FC = () => {
                         onClick={() => handleRegister(event)}
                         disabled={registering === event.id}
                         style={{ 
-                          padding: '1rem 1.5rem', 
+                          padding: '0.8rem 1.5rem', 
                           backgroundColor: '#0d2046', 
                           color: '#ffffff', 
                           fontWeight: 800, 
@@ -338,9 +347,22 @@ const EventsListing: React.FC = () => {
                     )}
                  </div>
               </div>
-            </motion.div>
 
-            </React.Fragment>
+              <div style={{ backgroundColor: '#0d2046', width: '160px', padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#ffffff', textAlign: 'center', flexShrink: 0 }}>
+                 <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.2rem' }}>
+                   {event.date ? new Date(event.date).toLocaleDateString('en-US', { month: 'short' }).toUpperCase() : ''}
+                 </span>
+                 <span style={{ fontSize: '2.5rem', fontWeight: 900, lineHeight: 1 }}>
+                   {event.date ? new Date(event.date).getDate() : ''}
+                 </span>
+                 <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#cbd5e1', marginTop: '0.2rem' }}>
+                   {event.date ? new Date(event.date).getFullYear() : ''}
+                 </span>
+                 <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', width: '100%' }}>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b' }}>{event.category}</span>
+                 </div>
+              </div>
+            </motion.div>
           ))}
         </div>
       ) : (
@@ -349,6 +371,103 @@ const EventsListing: React.FC = () => {
            <h3 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0d2046' }}>No events scheduled</h3>
            <p style={{ color: '#64748b' }}>Check back later for new opportunities.</p>
         </div>
+      )}
+
+      {/* Premium Pagination Component */}
+      {!loading && totalPages > 1 && (
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{ 
+            marginTop: '5rem', 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            gap: '1rem',
+            background: 'rgba(255, 255, 255, 0.4)',
+            backdropFilter: 'blur(10px)',
+            padding: '1.5rem',
+            borderRadius: '24px',
+            border: '1px solid rgba(0, 0, 0, 0.03)',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.02)',
+            maxWidth: 'fit-content',
+            margin: '5rem auto 0'
+          }}
+        >
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            style={{
+              width: '45px',
+              height: '45px',
+              borderRadius: '14px',
+              border: '1px solid rgba(0,0,0,0.05)',
+              background: currentPage === 1 ? 'transparent' : 'white',
+              color: currentPage === 1 ? '#CBD5E1' : '#0F172A',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: currentPage === 1 ? 'default' : 'pointer',
+              transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+              boxShadow: currentPage === 1 ? 'none' : '0 4px 12px rgba(0,0,0,0.03)'
+            }}
+          >
+            <ChevronRight size={20} style={{ transform: 'rotate(180deg)' }} />
+          </button>
+
+          <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+              <motion.button
+                key={pageNum}
+                whileHover={currentPage !== pageNum ? { y: -2 } : {}}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setCurrentPage(pageNum)}
+                style={{
+                  width: '45px',
+                  height: '45px',
+                  borderRadius: '14px',
+                  background: currentPage === pageNum ? '#0F172A' : 'white',
+                  color: currentPage === pageNum ? 'white' : '#64748B',
+                  fontWeight: 800,
+                  fontSize: '0.95rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                  boxShadow: currentPage === pageNum ? '0 10px 20px rgba(15, 23, 42, 0.2)' : '0 4px 12px rgba(0,0,0,0.03)',
+                  border: currentPage === pageNum ? 'none' : '1px solid rgba(0,0,0,0.05)'
+                }}
+              >
+                {pageNum}
+              </motion.button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            style={{
+              width: '45px',
+              height: '45px',
+              borderRadius: '14px',
+              border: '1px solid rgba(0,0,0,0.05)',
+              background: currentPage === totalPages ? 'transparent' : 'white',
+              color: currentPage === totalPages ? '#CBD5E1' : '#0F172A',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: currentPage === totalPages ? 'default' : 'pointer',
+              transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+              boxShadow: currentPage === totalPages ? 'none' : '0 4px 12px rgba(0,0,0,0.03)'
+            }}
+          >
+            <ChevronRight size={20} />
+          </button>
+        </motion.div>
+      )}
+
+      {!loading && totalEvents > 0 && (
+        <p style={{ textAlign: 'center', marginTop: '1.5rem', color: '#94A3B8', fontSize: '0.85rem', fontWeight: 600 }}>
+          Showing {(currentPage - 1) * eventsPerPage + 1} to {Math.min(currentPage * eventsPerPage, totalEvents)} of {totalEvents} events
+        </p>
       )}
 
       <StatusModal
@@ -368,4 +487,3 @@ const EventsListing: React.FC = () => {
 };
 
 export default EventsListing;
-

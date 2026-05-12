@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, BookOpen, Clock, Award, PlayCircle, CheckCircle2, ChevronDown, Search, Filter, BarChart3, Calendar, Star, ChevronRight } from 'lucide-react';
+import { ArrowLeft, BookOpen, Clock, Award, PlayCircle, CheckCircle2, ChevronDown, Search, Filter, BarChart3, Calendar, Star, ChevronRight, Loader2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { usersApi } from '../services/api';
+import { generateCourseCertificate } from '../utils/CertificateGenerator';
+import CertificateProgressButton from '../components/CertificateProgressButton';
 
 type CourseStatus = 'In Progress' | 'Completed' | 'Not Started';
 
@@ -136,7 +139,23 @@ const MyCourses: React.FC = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState('');
+  const [userProfile, setUserProfile] = useState<any>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await usersApi.getProfile();
+        if (res.success && res.data) {
+          setUserProfile((res.data as any).user);
+        }
+      } catch (err) {
+        console.error("Failed to fetch profile:", err);
+      }
+    };
+    fetchProfile();
+  }, []);
+
 
   const filteredCourses = MOCK_COURSES.filter(course => {
     const matchesStatus = filterStatus === 'All' || course.status === filterStatus;
@@ -551,26 +570,16 @@ const MyCourses: React.FC = () => {
                                   <BookOpen size={15} /> Review Course
                                 </button>
                                 {course.certificateAvailable && (
-                                  <button
-                                    style={{
-                                      padding: '0.6rem 1.2rem',
-                                      borderRadius: '8px',
-                                      background: 'var(--primary)',
-                                      border: '1px solid var(--primary)',
-                                      color: 'white',
-                                      fontSize: '0.88rem',
-                                      fontWeight: 600,
-                                      cursor: 'pointer',
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      gap: '0.4rem',
-                                      transition: 'all 0.2s'
+                                  <CertificateProgressButton 
+                                    onGenerate={() => {
+                                      if (!userProfile) return alert("Profile loading...");
+                                      generateCourseCertificate(
+                                        userProfile.full_name || 'NeST Member',
+                                        course.title,
+                                        course.completedDate || new Date().toLocaleDateString()
+                                      );
                                     }}
-                                    onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.9'; }}
-                                    onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
-                                  >
-                                    <Award size={15} /> Download Certificate
-                                  </button>
+                                  />
                                 )}
                               </>
                             ) : (

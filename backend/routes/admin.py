@@ -513,7 +513,8 @@ def add_course():
         "start_date": data.get("start_date", "On Demand"),
         "certification": data.get("certification", "Standard Achievement"),
         "access_level": data.get("access_level", "Open Access"),
-        "thumbnail": data.get("thumbnail", ""),
+        "thumbnail": data.get("cover_image") or data.get("thumbnail", ""),
+        "cover_image": data.get("cover_image") or data.get("thumbnail", ""),
         "video_url": data.get("videoUrl") or data.get("video_url", ""),
         "modules": data.get("modules", []),
         "required_assessments": data.get("required_assessments", [1, 2, 3, 4, 5]),
@@ -555,7 +556,7 @@ def update_course(course_id):
     db = get_db()
     
     allowed_fields = ["title", "description", "instructor", "duration", "level",
-                       "category", "thumbnail", "video_url", "modules", 
+                       "category", "thumbnail", "cover_image", "video_url", "modules", 
                        "required_assessments", "is_published", "certification", 
                        "access_level", "start_date"]
     update_data = {}

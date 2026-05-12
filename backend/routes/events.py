@@ -330,16 +330,53 @@ def remove_registration():
 @events_bp.route("/", methods=["GET"])
 @jwt_required()
 def list_events():
+    """List events with smart chronological sorting: Upcoming first, Past at bottom."""
+    page = request.args.get("page", 1, type=int)
+    limit = request.args.get("limit", 10, type=int)
+    skip = (page - 1) * limit
+
     db = get_db()
     user_id = get_jwt_identity()
-    events_cursor = db["events"].find({})
+    
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    
+    # Aggregation for smart sorting and pagination
+    pipeline = [
+        {
+            "$addFields": {
+                "is_past": {"$cond": [{"$lt": ["$date", today]}, 1, 0]}
+            }
+        },
+        # Sort by is_past (0 for upcoming, 1 for past)
+        # Then by date (upcoming: soonest first; past: oldest at bottom)
+        {"$sort": {"is_past": 1, "date": 1}},
+        {"$facet": {
+            "metadata": [{"$count": "total"}],
+            "data": [{"$skip": skip}, {"$limit": limit}]
+        }}
+    ]
+    
+    result = list(db["events"].aggregate(pipeline))
+    events_raw = result[0]["data"] if result else []
+    total_events = result[0]["metadata"][0]["total"] if result and result[0]["metadata"] else 0
+    
     events_list = []
-    for e in events_cursor:
+    for e in events_raw:
         event = _serialize_event(e)
         if "attendees" in e and any(str(a) == user_id for a in e["attendees"]):
             event["is_registered"] = True
         events_list.append(event)
-    return jsonify({"success": True, "data": {"events": events_list}}), 200
+
+    return jsonify({
+        "success": True, 
+        "data": {
+            "events": events_list,
+            "total_events": total_events, # Consistent naming for frontend
+            "total_pages": (total_events + limit - 1) // limit if limit > 0 else 1,
+            "current_page": page,
+            "items_per_page": limit
+        }
+    }), 200
 
 @events_bp.route("/my-events", methods=["GET"])
 @jwt_required()

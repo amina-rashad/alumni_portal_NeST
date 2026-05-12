@@ -115,7 +115,7 @@ const Register: React.FC = () => {
     email: '',
     password: '',
     phone: '',
-    userType: '',
+    userType: 'Industrial Student',
     course: '',
     batch: '',
   });
@@ -140,10 +140,6 @@ const Register: React.FC = () => {
     e.preventDefault();
     setError('');
 
-    if (!formData.userType) {
-      setError('Please select your user type.');
-      return;
-    }
     if (captchaInput !== captcha.code) {
       setError('Captcha code is incorrect.');
       refreshCaptcha();
@@ -288,34 +284,18 @@ const Register: React.FC = () => {
 
             <div className="row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
               <div className="input-group">
-                <label style={{ fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '8px', display: 'block' }}>User Type</label>
-                <div className="input-wrapper" style={{ position: 'relative' }}>
-                  <GraduationCap className="input-icon" size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-                  <select name="userType" value={formData.userType} onChange={handleChange} required style={{ width: '100%', padding: '12px 12px 12px 44px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc', appearance: 'none' }}>
-                    <option value="">Select Type</option>
-                    <option value="Alumni">Alumni</option>
-                    <option value="Intern">Intern</option>
-                    <option value="Trainee">Trainee</option>
-                    <option value="Industrial Student">Industrial Student</option>
-                    <option value="Event Participant">Event Participant</option>
-                  </select>
-                  <ChevronDown size={16} style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }} />
-                </div>
-              </div>
-              <div className="input-group">
                 <label style={{ fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '8px', display: 'block' }}>Course / Specialization</label>
                 <div className="input-wrapper" style={{ position: 'relative' }}>
                   <BookOpen className="input-icon" size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
                   <input type="text" name="course" placeholder="e.g. B.Tech CS" required value={formData.course} onChange={handleChange} style={{ width: '100%', padding: '12px 12px 12px 44px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc' }} />
                 </div>
               </div>
-            </div>
-
-            <div className="input-group">
-              <label style={{ fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '8px', display: 'block' }}>Batch / Year</label>
-              <div className="input-wrapper" style={{ position: 'relative' }}>
-                <Calendar className="input-icon" size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-                <input type="text" name="batch" placeholder="e.g. 2024" required value={formData.batch} onChange={handleChange} style={{ width: '100%', padding: '12px 12px 12px 44px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc' }} />
+              <div className="input-group">
+                <label style={{ fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '8px', display: 'block' }}>Batch / Year</label>
+                <div className="input-wrapper" style={{ position: 'relative' }}>
+                  <Calendar className="input-icon" size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                  <input type="text" name="batch" placeholder="e.g. 2024" required value={formData.batch} onChange={handleChange} style={{ width: '100%', padding: '12px 12px 12px 44px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc' }} />
+                </div>
               </div>
             </div>
 
