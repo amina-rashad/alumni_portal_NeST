@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import { 
   Edit3, Mail, Phone,
   Briefcase, Book, Award, 
@@ -49,10 +51,9 @@ const ResumePreview: React.FC<{ data: any }> = ({ data }) => {
   return (
     <div style={{ 
       background: 'white', 
-      padding: '3rem 3rem', 
+      padding: '2.5rem', 
       width: '100%', 
       maxWidth: '210mm', 
-      minHeight: '297mm',
       height: 'max-content',
       boxShadow: '0 8px 30px rgba(0,0,0,0.08)', 
       fontFamily: '"Montserrat", "Helvetica", Arial, sans-serif',
@@ -62,7 +63,7 @@ const ResumePreview: React.FC<{ data: any }> = ({ data }) => {
       wordBreak: 'break-word',
       margin: '0 auto',
       textAlign: 'left',
-      border: '1px solid #f1f5f9'
+      borderRadius: '8px'
     }}>
       {/* Header section */}
       <div style={{ marginBottom: '1.5rem' }}>
@@ -130,7 +131,66 @@ const ViewProfile: React.FC = () => {
   const [user, setUserData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [resumeBlobUrl, setResumeBlobUrl] = useState<string | null>(null);
+  const [showResumeModal, setShowResumeModal] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const modalTopRef = useRef<HTMLDivElement>(null);
+  const resumeRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    if (showResumeModal) {
+      const timer = setTimeout(() => {
+        if (modalTopRef.current) {
+          modalTopRef.current.scrollIntoView({ block: 'start', behavior: 'instant' });
+        }
+        if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollTop = 0;
+        }
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [showResumeModal]);
+
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const url = resumeBlobUrl || user.resume_url;
+    
+    setIsDownloading(true);
+    try {
+      if (url) {
+        // Force download for file URLs
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = user.full_name ? `${user.full_name.replace(/\s+/g, '_')}_Resume.pdf` : 'Resume.pdf';
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else if (user.resume_data && resumeRef.current) {
+        // GENERATE PDF FROM HTML
+        const canvas = await html2canvas(resumeRef.current, {
+          scale: 2, // High quality
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff'
+        });
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.save(user.full_name ? `${user.full_name.replace(/\s+/g, '_')}_Resume.pdf` : 'Resume.pdf');
+      } else {
+        alert("No resume content found to download.");
+      }
+    } catch (err) {
+      console.error('Download failed', err);
+      alert("Failed to generate PDF. Please try again or use the print option.");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
   useEffect(() => {
     if (user?.resume_url && user.resume_url.startsWith('data:')) {
       try {
@@ -588,14 +648,20 @@ const ViewProfile: React.FC = () => {
                   position: 'relative'
                 }}>
                   {/* Card Header (Matches Screenshot) */}
-                  <div style={{ 
-                    padding: '12px 20px', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'space-between',
-                    background: '#ffffff',
-                    borderBottom: '1px solid #f1f5f9'
-                  }}>
+                  <div 
+                    onClick={() => setShowResumeModal(true)}
+                    style={{ 
+                      padding: '12px 20px', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between',
+                      background: '#ffffff',
+                      borderBottom: '1px solid #f1f5f9',
+                      cursor: 'pointer'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = '#ffffff'}
+                  >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, overflow: 'hidden' }}>
                       <div style={{ 
                         width: '42px', 
@@ -626,20 +692,24 @@ const ViewProfile: React.FC = () => {
                     </div>
                     
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#64748b' }}>
-                      <Share size={18} style={{ cursor: 'pointer' }} />
-                      <MoreHorizontal size={20} style={{ cursor: 'pointer' }} />
+                      {/* Download button removed from here */}
                     </div>
                   </div>
 
-                  {/* Document Content Area (Viewed Directly) */}
-                  <div style={{ 
-                    height: '500px', 
-                    background: 'black', // Black background like the screenshot
-                    position: 'relative',
-                    overflow: 'hidden',
-                    display: 'flex',
-                    justifyContent: 'center'
-                  }}>
+                  <div 
+                    onClick={() => setShowResumeModal(true)}
+                    style={{ 
+                      height: '300px', 
+                      background: 'black', // Black background like the screenshot
+                      position: 'relative',
+                      overflow: 'hidden',
+                      display: 'flex',
+                      justifyContent: 'center',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {/* Add overlay to catch clicks over the iframe */}
+                    <div style={{ position: 'absolute', inset: 0, zIndex: 10 }} />
                     <div style={{ 
                       width: '100%', 
                       height: '100%', 
@@ -647,11 +717,11 @@ const ViewProfile: React.FC = () => {
                     }}>
                       {user.resume_data ? (
                         <div style={{ 
-                          transform: 'scale(0.65)', 
+                          transform: 'scale(0.5)', 
                           transformOrigin: 'top center',
                           width: '210mm',
                           pointerEvents: 'none',
-                          marginTop: '20px'
+                          marginTop: '15px'
                         }}>
                           <ResumePreview data={user.resume_data} />
                         </div>
@@ -728,6 +798,109 @@ const ViewProfile: React.FC = () => {
         </div>
       </div>
     </motion.div>
+
+    {/* Full Screen Resume Modal */}
+    {showResumeModal && (
+      <div style={{
+        position: 'fixed',
+        inset: 0,
+        background: '#0f172a',
+        zIndex: 9999,
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '1.5rem'
+      }}>
+        <div ref={modalTopRef} style={{ height: '1px', width: '100%' }} />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', background: 'white', padding: '8px 20px', borderRadius: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ 
+              width: '36px', 
+              height: '36px', 
+              background: '#f8fafc', 
+              borderRadius: '8px', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              color: '#ef4444',
+              border: '1px solid #e2e8f0'
+            }}>
+              <FileText size={20} />
+            </div>
+            <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#1e293b' }}>
+              {user.full_name ? `${user.full_name.replace(/\s+/g, '_')}_Resume.pdf` : 'Professional_Resume.pdf'}
+            </h4>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button 
+              onClick={handleDownload}
+              disabled={isDownloading}
+              style={{ 
+                background: '#f8fafc', 
+                color: isDownloading ? '#94a3b8' : '#1e293b', 
+                border: '1px solid #e2e8f0', 
+                borderRadius: '50%', 
+                width: '32px', 
+                height: '32px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                cursor: isDownloading ? 'wait' : 'pointer',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={(e) => { if(!isDownloading) { e.currentTarget.style.background = '#1a2652'; e.currentTarget.style.color = 'white'; e.currentTarget.style.borderColor = '#1a2652'; } }}
+              onMouseLeave={(e) => { if(!isDownloading) { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#1e293b'; e.currentTarget.style.borderColor = '#e2e8f0'; } }}
+              title={isDownloading ? "Downloading..." : "Download Resume"}
+            >
+              {isDownloading ? (
+                <div style={{ width: '16px', height: '16px', border: '2px solid #cbd5e1', borderTopColor: '#1a2652', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+              ) : (
+                <Download size={16} />
+              )}
+            </button>
+            <button 
+              onClick={() => setShowResumeModal(false)}
+              style={{ 
+                background: '#f8fafc', 
+                color: '#0f172a', 
+                border: '1px solid #e2e8f0', 
+                borderRadius: '50%', 
+                width: '32px', 
+                height: '32px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                fontWeight: 'bold',
+                fontSize: '12px'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#ef4444'; e.currentTarget.style.color = 'white'; e.currentTarget.style.borderColor = '#ef4444'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#0f172a'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+        <div style={{ flex: 1, background: 'radial-gradient(circle at center, #1e293b 0%, #0b1121 100%)', borderRadius: '16px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', boxShadow: 'inset 0 0 40px rgba(0,0,0,0.8)' }}>
+          {user.resume_data ? (
+            <div ref={scrollContainerRef} className="hide-scroll" style={{ width: '100%', height: '100%', overflowY: 'auto', padding: '1rem 0' }}>
+              <div ref={resumeRef} style={{ margin: '0 auto', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)', borderRadius: '8px', width: '95%', maxWidth: '1000px' }}>
+                <ResumePreview data={user.resume_data} />
+              </div>
+            </div>
+          ) : (
+            <div ref={scrollContainerRef} style={{ width: '100%', height: '100%', padding: '0', overflowY: 'auto' }}>
+              <iframe 
+                src={`${resumeBlobUrl || user.resume_url}#view=FitH&toolbar=0`} 
+                style={{ width: '100%', maxWidth: '1200px', margin: '0 auto', height: '100%', minHeight: '90vh', display: 'block', border: 'none', borderRadius: '8px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)' }}
+                title="Resume Full View"
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    )}
+
     </div>
   );
 };

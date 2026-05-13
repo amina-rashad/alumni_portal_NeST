@@ -232,8 +232,8 @@ export const usersApi = {
 // ── Courses API ──
 
 export const coursesApi = {
-  getAllCourses: () =>
-    apiRequest('/courses', { method: 'GET' }),
+  getAllCourses: (page: number = 1, limit: number = 6) =>
+    apiRequest(`/courses?page=${page}&limit=${limit}`, { method: 'GET' }),
 
   getCourseById: (courseId: string) =>
     apiRequest(`/courses/${courseId}`, { method: 'GET' }),
@@ -246,6 +246,9 @@ export const coursesApi = {
 
   updateCourse: (courseId: string, data: any) =>
     apiRequest(`/admin/courses/${courseId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+
+  enrollCourse: (courseId: string) =>
+    apiRequest(`/assessments/enroll/${courseId}`, { method: 'POST' }),
 
   deleteCourse: (courseId: string) =>
     apiRequest(`/admin/courses/${courseId}`, { method: 'DELETE' }),

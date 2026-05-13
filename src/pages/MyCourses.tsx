@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, BookOpen, Clock, Award, PlayCircle, CheckCircle2, ChevronDown, Search, Filter, BarChart3, Calendar, Star, ChevronRight, Loader2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { usersApi } from '../services/api';
+import { usersApi, coursesApi } from '../services/api';
 import { generateCourseCertificate } from '../utils/CertificateGenerator';
 import CertificateProgressButton from '../components/CertificateProgressButton';
 
@@ -57,67 +57,6 @@ const MOCK_COURSES: EnrolledCourse[] = [
     totalLessons: 24,
     completedLessons: 24,
     certificateAvailable: true
-  },
-  {
-    id: 'ec-3',
-    courseId: '3',
-    title: 'Data Science & Machine Learning Essentials',
-    instructor: 'Dr. Arun Menon',
-    level: 'Beginner',
-    duration: '30 Hours',
-    progress: 35,
-    status: 'In Progress',
-    enrolledDate: '2026-03-05',
-    lastAccessed: '2026-03-24',
-    totalLessons: 15,
-    completedLessons: 5,
-    nextLesson: 'Feature Engineering Techniques'
-  },
-  {
-    id: 'ec-4',
-    courseId: '4',
-    title: 'Cybersecurity Fundamentals & Ethical Hacking',
-    instructor: 'Karthik Iyer',
-    level: 'Intermediate',
-    duration: '42 Hours',
-    progress: 100,
-    status: 'Completed',
-    enrolledDate: '2025-10-15',
-    lastAccessed: '2026-01-10',
-    completedDate: '2026-01-10',
-    totalLessons: 21,
-    completedLessons: 21,
-    certificateAvailable: true
-  },
-  {
-    id: 'ec-5',
-    courseId: '5',
-    title: 'AI-Powered Product Management',
-    instructor: 'Sneha George',
-    level: 'Advanced',
-    duration: '28 Hours',
-    progress: 0,
-    status: 'Not Started',
-    enrolledDate: '2026-03-20',
-    lastAccessed: '2026-03-20',
-    totalLessons: 14,
-    completedLessons: 0,
-    nextLesson: 'Introduction to AI Product Lifecycle'
-  },
-  {
-    id: 'ec-6',
-    courseId: '6',
-    title: 'System Design & Scalable Architecture',
-    instructor: 'Dr. Vikram Das',
-    level: 'Advanced',
-    duration: '40 Hours',
-    progress: 55,
-    status: 'In Progress',
-    enrolledDate: '2026-01-15',
-    lastAccessed: '2026-03-22',
-    totalLessons: 20,
-    completedLessons: 11,
-    nextLesson: 'Distributed Caching Strategies'
   }
 ];
 
@@ -136,6 +75,8 @@ const LEVEL_COLORS: Record<string, { color: string; bg: string }> = {
 const ALL_STATUSES: CourseStatus[] = ['In Progress', 'Completed', 'Not Started'];
 
 const MyCourses: React.FC = () => {
+  const [courses, setCourses] = useState<EnrolledCourse[]>(MOCK_COURSES);
+  const [loadingCourses, setLoadingCourses] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState('');
@@ -143,34 +84,64 @@ const MyCourses: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchData = async () => {
       try {
-        const res = await usersApi.getProfile();
-        if (res.success && res.data) {
-          setUserProfile((res.data as any).user);
+        setLoadingCourses(true);
+        // Fetch Profile
+        const profileRes = await usersApi.getProfile();
+        if (profileRes.success && profileRes.data) {
+          setUserProfile((profileRes.data as any).user);
+        }
+
+        // Fetch Real Enrolled Courses
+        const coursesRes = await coursesApi.getMyCourses();
+        if (coursesRes.success && coursesRes.data && coursesRes.data.courses) {
+          const realCourses: EnrolledCourse[] = coursesRes.data.courses.map((c: any) => ({
+            id: `real-${c.id}`,
+            courseId: c.id,
+            title: c.title,
+            instructor: c.instructor || 'Lead Expert',
+            level: c.level || 'Standard',
+            duration: c.duration || 'Flexible',
+            progress: c.enrollment_info?.progress || 0,
+            status: (c.enrollment_info?.status || 'In Progress') as CourseStatus,
+            enrolledDate: c.enrollment_info?.enrolled_at || new Date().toISOString(),
+            lastAccessed: new Date().toISOString(),
+            totalLessons: c.curriculum?.length || 10,
+            completedLessons: Math.floor((c.enrollment_info?.progress || 0) / 10),
+            nextLesson: c.curriculum?.[0]?.title || 'Intro Module'
+          }));
+          
+          // Sort by enrollment date (latest first)
+          const sortedCourses = realCourses.sort((a, b) => 
+            new Date(b.enrolledDate).getTime() - new Date(a.enrolledDate).getTime()
+          );
+          
+          setCourses(sortedCourses);
         }
       } catch (err) {
-        console.error("Failed to fetch profile:", err);
+        console.error("Failed to fetch academy data:", err);
+      } finally {
+        setLoadingCourses(false);
       }
     };
-    fetchProfile();
+    fetchData();
   }, []);
 
-
-  const filteredCourses = MOCK_COURSES.filter(course => {
+  const filteredCourses = courses.filter(course => {
     const matchesStatus = filterStatus === 'All' || course.status === filterStatus;
     const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           course.instructor.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesStatus && matchesSearch;
   });
 
-  const statusCounts = MOCK_COURSES.reduce((acc, course) => {
+  const statusCounts = courses.reduce((acc, course) => {
     acc[course.status] = (acc[course.status] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
-  const totalProgress = MOCK_COURSES.length > 0
-    ? Math.round(MOCK_COURSES.reduce((sum, c) => sum + c.progress, 0) / MOCK_COURSES.length)
+  const totalProgress = courses.length > 0
+    ? Math.round(courses.reduce((sum, c) => sum + c.progress, 0) / courses.length)
     : 0;
 
   const formatDate = (dateStr: string) => {

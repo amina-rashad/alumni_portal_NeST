@@ -16,32 +16,35 @@ courses_bp = Blueprint("courses", __name__)
 @courses_bp.route("", methods=["GET"], strict_slashes=False)
 # @jwt_required()
 def get_all_courses():
-    """Fetch all courses."""
+    """Fetch all courses with pagination."""
     db = get_db()
     
-    # Sort by creation date descending if it exists
-    courses_cursor = db["courses"].find().sort("createdAt", -1)
+    page = int(request.args.get("page", 1))
+    limit = int(request.args.get("limit", 6))
+    skip = (page - 1) * limit
+    
+    total_courses = db["courses"].count_documents({})
+    total_pages = (total_courses + limit - 1) // limit
+    
+    courses_cursor = db["courses"].find().sort("createdAt", -1).skip(skip).limit(limit)
     
     courses_list = []
     for c in courses_cursor:
         c["id"] = str(c["_id"])
-        
-        # Count enrollments for this course
         enrolled_count = db["course_enrollments"].count_documents({"course_id": c["_id"]})
         c["enrolled_count"] = enrolled_count
-            
         del c["_id"]
-        
-        # Format the date nicely if present
         if "createdAt" in c and hasattr(c["createdAt"], "isoformat"):
             c["createdAt"] = c["createdAt"].isoformat()
-            
         courses_list.append(c)
 
     return jsonify({
         "success": True,
         "data": {
-            "courses": courses_list
+            "courses": courses_list,
+            "total_pages": total_pages,
+            "total_courses": total_courses,
+            "current_page": page
         }
     }), 200
 

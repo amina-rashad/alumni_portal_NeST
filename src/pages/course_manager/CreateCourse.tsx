@@ -134,12 +134,27 @@ const CM_CreateCourse: React.FC = () => {
     title: '',
     description: '',
     level: 'Beginner Friendly',
-    duration: ''
+    duration: '',
+    links: [''] // Dynamic links array
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleLinkChange = (index: number, value: string) => {
+    const newLinks = [...formData.links];
+    newLinks[index] = value;
+    setFormData(prev => ({ ...prev, links: newLinks }));
+  };
+
+  const addLinkField = () => setFormData(prev => ({ ...prev, links: [...prev.links, ''] }));
+  
+  const removeLinkField = (index: number) => {
+    if (formData.links.length === 1) return;
+    const newLinks = formData.links.filter((_, i) => i !== index);
+    setFormData(prev => ({ ...prev, links: newLinks }));
   };
 
   const setLevel = (val: string) => setFormData(prev => ({ ...prev, level: val }));
@@ -358,6 +373,49 @@ const CM_CreateCourse: React.FC = () => {
                      />
                    </div>
                 </div>
+              </div>
+            </div>
+          </section>
+          
+          {/* Section 2: Course Links */}
+          <section style={{ background: '#fff', padding: '40px', borderRadius: '32px', border: '1px solid #e2e8f0', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#1e293b', marginBottom: '32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(35, 49, 103, 0.08)', color: brandPrimary }}><BookOpen size={18} /></div> Course Links & Resources
+              </div>
+              <button 
+                onClick={addLinkField}
+                style={{ padding: '8px 16px', borderRadius: '10px', background: 'rgba(35, 49, 103, 0.05)', color: brandPrimary, border: 'none', fontWeight: 800, fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Plus size={14} /> Add Link
+              </button>
+            </h3>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {formData.links.map((link, idx) => (
+                <div key={idx} style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                  <div style={{ flex: 1, position: 'relative' }}>
+                    <input 
+                      type="text" 
+                      value={link} 
+                      onChange={(e) => handleLinkChange(idx, e.target.value)} 
+                      placeholder="e.g. https://youtube.com/lecture-v1" 
+                      style={glossyInputStyle as any} 
+                    />
+                  </div>
+                  {formData.links.length > 1 && (
+                    <button 
+                      onClick={() => removeLinkField(idx)}
+                      style={{ padding: '12px', borderRadius: '14px', background: '#fef2f2', color: '#ef4444', border: 'none', cursor: 'pointer' }}
+                    >
+                      <X size={18} />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <div style={{ padding: '16px', background: '#f8fafc', borderRadius: '16px', border: '1px solid #f1f5f9', display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <Info size={16} color="#64748b" />
+                <p style={{ margin: 0, fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Attach external resources, video lectures, or reference documents for students.</p>
               </div>
             </div>
           </section>

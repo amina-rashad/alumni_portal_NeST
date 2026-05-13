@@ -529,6 +529,7 @@ def add_course():
         "thumbnail": data.get("cover_image") or data.get("thumbnail", ""),
         "cover_image": data.get("cover_image") or data.get("thumbnail", ""),
         "video_url": data.get("videoUrl") or data.get("video_url", ""),
+        "links": data.get("links", []),
         "modules": data.get("modules", []),
         "required_assessments": data.get("required_assessments", [1, 2, 3, 4, 5]),
         "is_published": data.get("is_published", True),

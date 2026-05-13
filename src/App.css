@@ -82,7 +82,7 @@ section {
 .hero-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
 .hero-text-area { max-width: 600px; }
 .hero-badge { display: inline-block; background: rgba(200,16,46,0.2); border: 1px solid rgba(200,16,46,0.4); color: #ff6b84; padding: 6px 16px; border-radius: 50px; font-size: 13px; font-weight: 600; margin-bottom: 24px; }
-.hero-title { font-size: 48px; font-weight: 900; line-height: 1.1; letter-spacing: 1px; margin-bottom: 20px; white-space: nowrap; background: linear-gradient(120deg, #ffffff 20%, #c8102e 40%, #ff6b84 60%, #ffffff 80%); background-size: 200% auto; color: transparent; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: shine 3s linear infinite; }
+.hero-title { font-size: 48px; font-weight: 900; line-height: 1.1; letter-spacing: 1px; margin-bottom: 20px; white-space: nowrap; background: linear-gradient(120deg, #ffffff 15%, #c8102e 35%, #1e4fa0 65%, #ffffff 85%); background-size: 200% auto; color: transparent; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: shine 3s linear infinite; }
 .hero-subtitle { font-size: 16px; color: rgba(255,255,255,0.8); line-height: 1.75; margin-bottom: 40px; max-width: 520px; }
 .hero-actions { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
 

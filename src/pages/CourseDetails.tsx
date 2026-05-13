@@ -14,40 +14,33 @@ const CourseDetails: React.FC = () => {
   const navigate = useNavigate();
   const [course, setCourse] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isEnrolled, setIsEnrolled] = useState(false);
 
   useEffect(() => {
-    const fetchCourse = async () => {
+    const fetchCourseAndStatus = async () => {
       if (!id) return;
       
-      const MOCK_DATA = [
-        { id: '1', title: 'Advanced Cloud Architecture & DevOps', instructor: 'Dr. Rajesh Nair', level: 'Advanced', duration: '36 Hours', description: 'Master industry-standard cloud engineering and DevOps practices.' },
-        { id: '2', title: 'Full Stack Development with React & Node', instructor: 'Priya Sharma', level: 'Intermediate', duration: '48 Hours', description: 'Build modern, scalable web applications from scratch.' },
-        { id: '3', title: 'Data Science & Machine Learning Essentials', instructor: 'Dr. Arun Menon', level: 'Beginner', duration: '30 Hours', description: 'Begin your journey into data analysis and machine learning.' },
-        { id: '4', title: 'Cybersecurity Fundamentals & Ethical Hacking', instructor: 'Karthik Iyer', level: 'Intermediate', duration: '42 Hours', description: 'Learn to protect systems and understand ethical hacking.' },
-        { id: '5', title: 'AI-Powered Product Management', instructor: 'Sneha George', level: 'Advanced', duration: '28 Hours', description: 'Leverage AI to build and manage world-class products.' },
-        { id: '6', title: 'System Design & Scalable Architecture', instructor: 'Dr. Vikram Das', level: 'Advanced', duration: '40 Hours', description: 'Design complex, distributed systems that scale to millions.' }
-      ];
-
-      const mockMatch = MOCK_DATA.find(c => c.id === String(id));
-      if (mockMatch) {
-        setCourse(mockMatch);
-        setLoading(false);
-        return;
-      }
-
       try {
         setLoading(true);
+        // Fetch course details
         const res = await coursesApi.getCourseById(id);
         if (res.success && res.data && res.data.course) {
           setCourse(res.data.course);
         }
+
+        // Fetch user's courses to check enrollment status
+        const myCoursesRes = await coursesApi.getMyCourses();
+        if (myCoursesRes.success && myCoursesRes.data && myCoursesRes.data.courses) {
+          const enrolled = myCoursesRes.data.courses.some((c: any) => c.id === id);
+          setIsEnrolled(enrolled);
+        }
       } catch (err) {
-        console.error('Failed to fetch course details:', err);
+        console.error('Failed to fetch course details or status:', err);
       } finally {
         setLoading(false);
       }
     };
-    fetchCourse();
+    fetchCourseAndStatus();
   }, [id]);
 
   if (loading) {
@@ -86,7 +79,7 @@ const CourseDetails: React.FC = () => {
         <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(200, 16, 46, 0.15) 0%, transparent 70%)', filter: 'blur(80px)', pointerEvents: 'none' }} />
         
         <div style={{ maxWidth: '1200px', margin: '0 auto', position: 'relative', zIndex: 10 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '4rem', alignItems: 'center' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '4rem', alignItems: 'start' }}>
             <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }}>
               <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', alignItems: 'center' }}>
                 <span style={{ backgroundColor: '#1e293b', padding: '0.4rem 1rem', borderRadius: '0.6rem', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em', border: '1px solid rgba(255,255,255,0.1)' }}>{course.level || 'Beginner Friendly'}</span>
@@ -98,29 +91,64 @@ const CourseDetails: React.FC = () => {
               <h1 style={{ fontSize: '3.5rem', fontWeight: 900, marginBottom: '1.5rem', lineHeight: '1.1', letterSpacing: '-0.03em' }}>{course.title}</h1>
               <p style={{ fontSize: '1.2rem', color: '#94a3b8', lineHeight: '1.6', marginBottom: '2.5rem', maxWidth: '600px', fontWeight: 500 }}>{course.description || "Master industry-standard engineering practices and lead with expertise."}</p>
               
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                   <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Clock size={20} color="#c8102e" />
-                   </div>
-                  <div>
-                    <p style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', margin: 0, letterSpacing: '0.02em' }}>Duration</p>
-                    <p style={{ fontWeight: 800, margin: 0, fontSize: '0.95rem' }}>{course.duration || "12 Weeks"}</p>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <User size={20} color="#c8102e" />
-                   </div>
-                  <div>
-                    <p style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', margin: 0, letterSpacing: '0.02em' }}>Instructor</p>
-                    <p style={{ fontWeight: 800, margin: 0, fontSize: '0.95rem' }}>{course.instructor || "Lead NeST Expert"}</p>
-                  </div>
-                </div>
-              </div>
             </motion.div>
 
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} style={{ position: 'relative' }}>
+              {/* Enrollment & Quick Info (Moved here to free space above card) */}
+              <div style={{ marginBottom: '2.5rem' }}>
+                <button 
+                  onClick={async () => {
+                    try {
+                      if (id && !isEnrolled) {
+                        await coursesApi.enrollCourse(id);
+                        setIsEnrolled(true);
+                      }
+                      if (course.links && course.links.length > 0 && course.links[0]) {
+                        let targetLink = course.links[0];
+                        if (!targetLink.startsWith('http://') && !targetLink.startsWith('https://')) {
+                          targetLink = 'https://' + targetLink;
+                        }
+                        window.open(targetLink, '_blank');
+                      }
+                    } catch (err) {
+                      console.error('Enrollment failed:', err);
+                    }
+                  }}
+                  style={{ 
+                    padding: '1.2rem 3.5rem', borderRadius: '3rem', 
+                    background: isEnrolled ? '#10b981' : '#3b82f6', 
+                    color: 'white', border: 'none', fontWeight: 900, fontSize: '1.2rem', 
+                    cursor: 'pointer', boxShadow: isEnrolled ? '0 20px 40px rgba(16, 185, 129, 0.2)' : '0 20px 40px rgba(59, 130, 246, 0.3)',
+                    display: 'flex', alignItems: 'center', gap: '12px',
+                    transition: 'all 0.3s ease',
+                    marginBottom: '2rem'
+                  }}
+                >
+                  {isEnrolled ? 'Enrolled' : 'Enroll Now'} <ChevronRight size={24} />
+                </button>
+
+                <div style={{ display: 'flex', gap: '2.5rem', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ width: '44px', height: '44px', borderRadius: '14px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Clock size={22} color="#c8102e" />
+                    </div>
+                    <div>
+                      <p style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', margin: 0, letterSpacing: '0.1em' }}>Duration</p>
+                      <p style={{ fontWeight: 800, margin: 0, fontSize: '1rem', color: 'white' }}>{course.duration || "12 Weeks"}</p>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ width: '44px', height: '44px', borderRadius: '14px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <User size={22} color="#c8102e" />
+                    </div>
+                    <div>
+                      <p style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', margin: 0, letterSpacing: '0.1em' }}>Instructor</p>
+                      <p style={{ fontWeight: 800, margin: 0, fontSize: '1rem', color: 'white' }}>{course.instructor || "Lead NeST Expert"}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '2.5rem', padding: '1.25rem', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)' }}>
                 <div style={{ position: 'relative', borderRadius: '1.8rem', overflow: 'hidden', boxShadow: '0 30px 60px rgba(0,0,0,0.4)' }}>
                   {course.cover_image ? (
@@ -129,7 +157,17 @@ const CourseDetails: React.FC = () => {
                     <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop" alt={course.title} style={{ width: '100%', display: 'block' }} />
                   )}
                   <div 
-                    onClick={() => navigate(`/courses/${id}/play`)}
+                    onClick={() => {
+                      if (course.links && course.links.length > 0 && course.links[0]) {
+                        let targetLink = course.links[0];
+                        if (!targetLink.startsWith('http://') && !targetLink.startsWith('https://')) {
+                          targetLink = 'https://' + targetLink;
+                        }
+                        window.open(targetLink, '_blank');
+                      } else {
+                        navigate(`/courses/${id}/play`);
+                      }
+                    }}
                     style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(13,32,70,0.3)', cursor: 'pointer', transition: 'all 0.3s' }}
                   >
                     <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
@@ -138,29 +176,20 @@ const CourseDetails: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <div style={{ position: 'absolute', top: '2.5rem', right: '2.5rem', backgroundColor: '#3b82f6', color: 'white', padding: '0.6rem 1.2rem', borderRadius: '1rem', fontSize: '0.7rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', boxShadow: '0 10px 20px rgba(59, 130, 246, 0.3)' }}>
-                {course.level || 'Standard'}
-              </div>
             </motion.div>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div style={{ maxWidth: '1200px', margin: '-4rem auto 0 auto', padding: '0 2rem', display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 400px', gap: '3.5rem' }}>
-        <div>
-          <div style={{ background: 'white', padding: '3.5rem', borderRadius: '2.5rem', boxShadow: '0 20px 40px rgba(0,0,0,0.03)', border: '1px solid #f1f5f9', marginBottom: '3.5rem', position: 'relative', zIndex: 2 }}>
-            <h3 style={{ fontSize: '1.8rem', fontWeight: 900, color: '#0d2046', marginBottom: '1.5rem', letterSpacing: '-0.02em' }}>Course Intelligence</h3>
-            <p style={{ color: '#475569', lineHeight: '1.8', fontSize: '1.1rem', fontWeight: 500 }}>
-              This specialized program provides strategic insights into {course.title}. 
-              Architected by industry veterans, the curriculum bridges the gap between complex engineering theory and high-impact enterprise execution.
-            </p>
-            
+      <div style={{ maxWidth: '1000px', margin: '-4rem auto 0 auto', padding: '0 2rem' }}>
+        <div style={{ marginBottom: '3rem' }}>
+          {course.outcomes && course.outcomes.length > 0 && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '3rem', marginTop: '3rem' }}>
               <div>
                 <h4 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0d2046', marginBottom: '1.5rem' }}>Learning Outcomes</h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  {['Foundational Architectural Logic', 'Advanced System Scalability', 'NeST Digital Engineering Standards', 'High-Performance Lab Exercises'].map(item => (
+                  {course.outcomes.map((item: string) => (
                     <div key={item} style={{ display: 'flex', gap: '1rem', alignItems: 'center', color: '#1e293b', fontSize: '1rem', fontWeight: 600 }}>
                       <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <CheckCircle2 size={16} color="#c8102e" />
@@ -180,79 +209,42 @@ const CourseDetails: React.FC = () => {
                  </p>
               </div>
             </div>
-          </div>
+          )}
+        </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-             <h3 style={{ fontSize: '1.8rem', fontWeight: 900, color: '#0d2046', margin: 0, letterSpacing: '-0.02em' }}>Curriculum Schedule</h3>
-             <span style={{ color: '#64748b', fontSize: '0.9rem', fontWeight: 700 }}>4 Detailed Lessons</span>
-          </div>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            {curriculum.map((item, idx) => (
-              <motion.div 
-                key={idx} 
-                whileHover={{ x: 10, backgroundColor: '#fff' }}
-                style={{ background: '#fff', padding: '1.8rem 2.5rem', borderRadius: '1.8rem', border: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', transition: 'all 0.2s' }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-                  <span style={{ width: '48px', height: '48px', backgroundColor: '#f8fafc', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '1rem', color: '#0d2046', border: '1px solid #f1f5f9' }}>{idx + 1}</span>
-                  <div>
-                    <h5 style={{ fontWeight: 800, color: '#334155', margin: '0 0 4px 0', fontSize: '1.1rem' }}>{item.title}</h5>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                       <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Lesson {idx + 1}</span>
-                       <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#cbd5e1' }}></div>
-                       <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>{item.duration}</span>
+        {course.curriculum && course.curriculum.length > 0 && (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+               <h3 style={{ fontSize: '1.8rem', fontWeight: 900, color: '#0d2046', margin: 0, letterSpacing: '-0.02em' }}>Curriculum Schedule</h3>
+               <span style={{ color: '#64748b', fontSize: '0.9rem', fontWeight: 700 }}>{course.curriculum.length} Detailed Lessons</span>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              {course.curriculum.map((item: any, idx: number) => (
+                <motion.div 
+                  key={idx} 
+                  whileHover={{ x: 10, backgroundColor: '#fff' }}
+                  style={{ background: '#fff', padding: '1.8rem 2.5rem', borderRadius: '1.8rem', border: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', transition: 'all 0.2s' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+                    <span style={{ width: '48px', height: '48px', backgroundColor: '#f8fafc', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '1rem', color: '#0d2046', border: '1px solid #f1f5f9' }}>{idx + 1}</span>
+                    <div>
+                      <h5 style={{ fontWeight: 800, color: '#334155', margin: '0 0 4px 0', fontSize: '1.1rem' }}>{item.title}</h5>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                         <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Lesson {idx + 1}</span>
+                         <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#cbd5e1' }}></div>
+                         <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>{item.duration || '45m'}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cbd5e1' }}>
-                   <ChevronRight size={20} />
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-
-        {/* Sidebar */}
-        <div style={{ position: 'sticky', top: '2rem', alignSelf: 'start' }}>
-          <div style={{ background: 'white', padding: '3rem', borderRadius: '3rem', boxShadow: '0 30px 60px rgba(0,0,0,0.06)', border: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
-            
-            {/* Primary Action Button */}
-            <button 
-                onClick={() => navigate(`/courses/${id}/play`)}
-                style={{ width: '100%', padding: '1.25rem', borderRadius: '1.5rem', background: '#3b82f6', color: 'white', border: 'none', fontWeight: 800, fontSize: '1.1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', boxShadow: '0 15px 30px rgba(59, 130, 246, 0.25)' }}
-            >
-                Start Learning <ChevronRight size={20} />
-            </button>
-
-            {/* Instructor Section */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', padding: '1.5rem', background: '#f8fafc', borderRadius: '2rem', border: '1px solid #f1f5f9' }}>
-              <div style={{ 
-                width: '60px', height: '60px', borderRadius: '1.2rem', backgroundColor: '#3b82f6', 
-                display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', 
-                fontWeight: 900, fontSize: '1rem', flexShrink: 0, boxShadow: '0 8px 20px rgba(59, 130, 246, 0.2)' 
-              }}>
-                {course.instructor ? course.instructor.split(' ').map((n: string) => n[0]).join('') : 'NE'}
-              </div>
-              <div>
-                <p style={{ fontSize: '0.7rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', margin: 0, letterSpacing: '0.05em' }}>Expert Mentor</p>
-                <h4 style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0d2046', margin: 0 }}>{course.instructor || "Dr. Sarah Chen"}</h4>
-              </div>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cbd5e1' }}>
+                     <ChevronRight size={20} />
+                  </div>
+                </motion.div>
+              ))}
             </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', padding: '0 1rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', color: '#475569', fontSize: '1rem', fontWeight: 700 }}>
-                <Award size={24} color="#c8102e" /> Professional Certificate
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', color: '#475569', fontSize: '1rem', fontWeight: 700 }}>
-                <User size={24} color="#c8102e" /> Lifetime Access
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', color: '#475569', fontSize: '1rem', fontWeight: 700 }}>
-                <Globe size={24} color="#c8102e" /> Industry Network
-              </div>
-            </div>
-          </div>
-        </div>
+          </>
+        )}
       </div>
     </div>
   );

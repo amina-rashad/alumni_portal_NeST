@@ -962,86 +962,104 @@ const Dashboard: React.FC = () => {
               <div
                 className="hide-scroll"
                 style={{
-                  display: 'flex',
-                  gap: '2.5rem',
-                  overflowX: 'auto',
+                  width: '100%',
+                  overflow: 'hidden',
                   paddingBottom: '2rem'
                 }}
               >
-                {feedPosts.length > 0 ? feedPosts.map((post, i) => (
+                {feedPosts.length > 0 ? (
                   <motion.div
-                    key={i}
-                    whileHover={{ y: -10, transition: { duration: 0.4 } }}
-                    onClick={() => navigate('/dashboard/activity')}
+                    animate={{ x: ["0%", "-50%"] }}
+                    transition={{
+                      x: {
+                        repeat: Infinity,
+                        repeatType: "loop",
+                        duration: 40,
+                        ease: "linear",
+                      },
+                    }}
                     style={{
-                      background: '#0d2046',
-                      padding: '1.5rem',
-                      borderRadius: '40px',
-                      cursor: 'pointer',
-                      position: 'relative',
-                      minWidth: '400px',
-                      flexShrink: 0,
                       display: 'flex',
-                      flexDirection: 'column',
-                      gap: '1.5rem'
+                      gap: '2.5rem',
+                      width: 'fit-content',
                     }}
                   >
-                    {/* Top Image Container */}
-                    <div style={{ position: 'relative', borderRadius: '32px', overflow: 'hidden', height: '180px' }}>
-                      <img 
-                        src={post.image || 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80'} 
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                        alt="" 
-                      />
-                      {post.author_type === 'Admin' && (
-                        <div style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', background: '#fff', color: '#ef4444', padding: '6px 16px', borderRadius: '99px', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                          OFFICIAL
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Author Section */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                      <img
-                        src={post.author_picture || `https://ui-avatars.com/api/?name=${post.author_name}&background=random`}
-                        style={{ width: '48px', height: '48px', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.1)' }}
-                        alt=""
-                      />
-                      <div>
-                        <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#FFFFFF' }}>{post.author_name}</h4>
-                        <p style={{ margin: 0, fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>{post.author_role || 'Network Contributor'}</p>
-                      </div>
-                    </div>
-
-                    {/* Overview Section */}
-                    <div style={{ display: 'flex', gap: '1rem', flex: 1 }}>
-                      <div style={{ width: '2px', background: '#3b82f6', borderRadius: '4px' }} />
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <span style={{ fontSize: '0.65rem', fontWeight: 900, color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.1em' }}>OVERVIEW</span>
-                        <p style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '0.95rem', lineHeight: 1.5, fontWeight: 500, margin: 0, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                          {post.content}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Footer Stats */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-                      <div style={{ display: 'flex', gap: '1.5rem', color: 'rgba(255, 255, 255, 0.4)', fontSize: '0.9rem', fontWeight: 700 }}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><ThumbsUp size={16} /> {post.likes_count}</span>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><MessageSquare size={16} /> {post.comments_count}</span>
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate('/dashboard/activity');
+                    {[...feedPosts, ...feedPosts, ...feedPosts, ...feedPosts].map((post, i) => (
+                      <motion.div
+                        key={i}
+                        whileHover={{ y: -10, transition: { duration: 0.4 } }}
+                        onClick={() => navigate('/dashboard/activity')}
+                        style={{
+                          background: '#0d2046',
+                          padding: '1.5rem',
+                          borderRadius: '40px',
+                          cursor: 'pointer',
+                          position: 'relative',
+                          minWidth: '400px',
+                          flexShrink: 0,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '1.5rem'
                         }}
-                        style={{ background: 'none', border: 'none', color: '#3b82f6', fontWeight: 800, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', padding: 0 }}
                       >
-                        Read More <ChevronRight size={16} />
-                      </button>
-                    </div>
+                        {/* Top Image Container */}
+                        <div style={{ position: 'relative', borderRadius: '32px', overflow: 'hidden', height: '180px' }}>
+                          <img 
+                            src={post.image || 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80'} 
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                            alt="" 
+                          />
+                          {post.author_type === 'Admin' && (
+                            <div style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', background: '#fff', color: '#ef4444', padding: '6px 16px', borderRadius: '99px', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                              OFFICIAL
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Author Section */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                          <img
+                            src={post.author_picture || `https://ui-avatars.com/api/?name=${post.author_name}&background=random`}
+                            style={{ width: '48px', height: '48px', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.1)' }}
+                            alt=""
+                          />
+                          <div>
+                            <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#FFFFFF' }}>{post.author_name}</h4>
+                            <p style={{ margin: 0, fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>{post.author_role || 'Network Contributor'}</p>
+                          </div>
+                        </div>
+
+                        {/* Overview Section */}
+                        <div style={{ display: 'flex', gap: '1rem', flex: 1 }}>
+                          <div style={{ width: '2px', background: '#3b82f6', borderRadius: '4px' }} />
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <span style={{ fontSize: '0.65rem', fontWeight: 900, color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.1em' }}>OVERVIEW</span>
+                            <p style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '0.95rem', lineHeight: 1.5, fontWeight: 500, margin: 0, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                              {post.content}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Footer Stats */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                          <div style={{ display: 'flex', gap: '1.5rem', color: 'rgba(255, 255, 255, 0.4)', fontSize: '0.9rem', fontWeight: 700 }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><ThumbsUp size={16} /> {post.likes_count}</span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><MessageSquare size={16} /> {post.comments_count}</span>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate('/dashboard/activity');
+                            }}
+                            style={{ background: 'none', border: 'none', color: '#3b82f6', fontWeight: 800, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', padding: 0 }}
+                          >
+                            Read More <ChevronRight size={16} />
+                          </button>
+                        </div>
+                      </motion.div>
+                    ))}
                   </motion.div>
-                )) : (
+                ) : (
                   <div style={{ color: '#64748b', padding: '4rem', textAlign: 'center', width: '100%', background: '#f8fafc', borderRadius: '32px', border: '2px dashed #e2e8f0' }}>No insights shared yet. Be the first!</div>
                 )}
               </div>

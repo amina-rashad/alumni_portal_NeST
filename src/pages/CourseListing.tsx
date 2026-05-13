@@ -14,40 +14,45 @@ import weightlessVelvet from '../assets/weightless_velvet.png';
  
 const CourseListing: React.FC = () => {
   const [courses, setCourses] = useState<any[]>([]);
-  const [filteredCourses, setFilteredCourses] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCourses, setTotalCourses] = useState(0);
+  const coursesPerPage = 6;
+
   const navigate = useNavigate();
  
-  useEffect(() => {
-    const fetchCourses = async () => {
-      try {
-        setIsLoading(true);
-        const res = await coursesApi.getAllCourses();
-        if (res.success && res.data && res.data.courses) {
-          setCourses(res.data.courses);
-          setFilteredCourses(res.data.courses);
-        }
-      } catch (err) {
-        console.error('Failed to load courses:', err);
-      } finally {
-        setIsLoading(false);
+  const fetchCourses = async () => {
+    try {
+      setIsLoading(true);
+      const res = await coursesApi.getAllCourses(currentPage, coursesPerPage);
+      if (res.success && res.data && res.data.courses) {
+        setCourses(res.data.courses);
+        setTotalPages(res.data.total_pages || 1);
+        setTotalCourses(res.data.total_courses || 0);
       }
-    };
-    fetchCourses();
-  }, []);
- 
+    } catch (err) {
+      console.error('Failed to load courses:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const filtered = courses.filter(c => {
-      const matchesSearch = c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           (c.instructor && c.instructor.toLowerCase().includes(searchTerm.toLowerCase()));
-      const matchesCategory = selectedCategory === 'All' || 
-                             (c.level && c.level.toLowerCase().includes(selectedCategory.split(' ')[0].toLowerCase()));
-      return matchesSearch && matchesCategory;
-    });
-    setFilteredCourses(filtered);
-  }, [searchTerm, selectedCategory, courses]);
+    fetchCourses();
+  }, [currentPage]);
+ 
+  const filteredCourses = courses.filter(c => {
+    const matchesSearch = c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (c.instructor && c.instructor.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesCategory = selectedCategory === 'All' || 
+                           (c.level && c.level.toLowerCase().includes(selectedCategory.split(' ')[0].toLowerCase()));
+    return matchesSearch && matchesCategory;
+  });
  
   const levels = ['All', 'Beginner Friendly', 'Intermediate Professional', 'Advanced Strategic'];
  
@@ -282,7 +287,7 @@ const CourseListing: React.FC = () => {
                       boxShadow: '0 4px 12px rgba(59, 130, 246, 0.2)'
                     }}
                   >
-                    Enroll Now <ChevronRight size={14} />
+                    View Details <ChevronRight size={14} />
                   </button>
                 </div>
               </motion.div>
@@ -293,6 +298,102 @@ const CourseListing: React.FC = () => {
         </div>
       )}
  
+      {!isLoading && totalPages > 1 && (
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{ 
+            marginTop: '5rem', 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            gap: '1rem',
+            background: 'rgba(255, 255, 255, 0.4)',
+            backdropFilter: 'blur(10px)',
+            padding: '1.5rem',
+            borderRadius: '24px',
+            border: '1px solid rgba(0, 0, 0, 0.03)',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.02)',
+            maxWidth: 'fit-content',
+            margin: '5rem auto 0'
+          }}
+        >
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            style={{
+              width: '45px',
+              height: '45px',
+              borderRadius: '14px',
+              border: '1px solid rgba(0,0,0,0.05)',
+              background: currentPage === 1 ? 'transparent' : 'white',
+              color: currentPage === 1 ? '#CBD5E1' : '#0F172A',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: currentPage === 1 ? 'default' : 'pointer',
+              transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+              boxShadow: currentPage === 1 ? 'none' : '0 4px 12px rgba(0,0,0,0.03)'
+            }}
+          >
+            <ChevronRight size={20} style={{ transform: 'rotate(180deg)' }} />
+          </button>
+
+          <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+              <motion.button
+                key={pageNum}
+                whileHover={currentPage !== pageNum ? { y: -2 } : {}}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setCurrentPage(pageNum)}
+                style={{
+                  width: '45px',
+                  height: '45px',
+                  borderRadius: '14px',
+                  background: currentPage === pageNum ? '#0F172A' : 'white',
+                  color: currentPage === pageNum ? 'white' : '#64748B',
+                  fontWeight: 800,
+                  fontSize: '0.95rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                  boxShadow: currentPage === pageNum ? '0 10px 20px rgba(15, 23, 42, 0.2)' : '0 4px 12px rgba(0,0,0,0.03)',
+                  border: currentPage === pageNum ? 'none' : '1px solid rgba(0,0,0,0.05)'
+                }}
+              >
+                {pageNum}
+              </motion.button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            style={{
+              width: '45px',
+              height: '45px',
+              borderRadius: '14px',
+              border: '1px solid rgba(0,0,0,0.05)',
+              background: currentPage === totalPages ? 'transparent' : 'white',
+              color: currentPage === totalPages ? '#CBD5E1' : '#0F172A',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: currentPage === totalPages ? 'default' : 'pointer',
+              transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+              boxShadow: currentPage === totalPages ? 'none' : '0 4px 12px rgba(0,0,0,0.03)'
+            }}
+          >
+            <ChevronRight size={20} />
+          </button>
+        </motion.div>
+      )}
+
+      {!isLoading && totalCourses > 0 && (
+        <p style={{ textAlign: 'center', marginTop: '1.5rem', color: '#94A3B8', fontSize: '0.85rem', fontWeight: 600 }}>
+          Showing {(currentPage - 1) * coursesPerPage + 1} to {Math.min(currentPage * coursesPerPage, totalCourses)} of {totalCourses} courses
+        </p>
+      )}
+
       <style>{`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
