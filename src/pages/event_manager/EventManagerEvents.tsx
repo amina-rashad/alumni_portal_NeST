@@ -729,7 +729,7 @@ const EventManagerEvents: React.FC = () => {
                     <Edit2 size={16} /> Edit
                   </button>
                   <button 
-                    onClick={() => navigate(`${baseRoute}/attendees`)}
+                    onClick={() => navigate(`${baseRoute}/attendees?eventId=${event.id}&eventName=${encodeURIComponent(event.title)}`)}
                     style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#fff', color: '#1e293b', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                   >
                     <Users size={16} /> Attendees

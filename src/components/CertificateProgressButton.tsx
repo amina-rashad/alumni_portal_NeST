@@ -22,9 +22,8 @@ const CertificateProgressButton: React.FC<CertificateProgressButtonProps> = ({
     setProgress(0);
 
     // Simulate progress that matches a realistic generation/download time
-    // We use a non-linear progress for a more "premium" feel
-    const duration = 1800; // 1.8 seconds
-    const interval = 30;
+    const duration = 800; // 0.8 seconds (Faster, more responsive)
+    const interval = 20;
     const steps = duration / interval;
     let currentStep = 0;
 

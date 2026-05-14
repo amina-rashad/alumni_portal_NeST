@@ -543,9 +543,9 @@ const MyCourses: React.FC = () => {
                                 {course.certificateAvailable && (
                                   <CertificateProgressButton 
                                     onGenerate={() => {
-                                      if (!userProfile) return alert("Profile loading...");
+                                      const participantName = userProfile?.full_name || userProfile?.name || getUser()?.full_name || 'NeST Member';
                                       generateCourseCertificate(
-                                        userProfile.full_name || 'NeST Member',
+                                        participantName,
                                         course.title,
                                         course.completedDate || new Date().toLocaleDateString()
                                       );

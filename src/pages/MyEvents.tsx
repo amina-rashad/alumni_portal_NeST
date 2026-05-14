@@ -324,9 +324,11 @@ const MyEvents: React.FC = () => {
                         <CertificateProgressButton 
                           className="w-full"
                           onGenerate={() => {
-                            if (!userProfile) return alert("Profile loading...");
+                            // Robust name detection: Check profile first, then local storage, then fallback
+                            const participantName = userProfile?.full_name || userProfile?.name || getUser()?.full_name || 'NeST Digital Member';
+                            
                             generateEventCertificate(
-                              userProfile.full_name || userProfile.name || 'NeST Digital Member',
+                              participantName,
                               event.title,
                               event.date
                             );

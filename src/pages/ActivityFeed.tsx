@@ -66,9 +66,10 @@ const ActivityFeed: React.FC = () => {
   const navigate = useNavigate();
   const user = getUser() as any;
 
-  // Security Check: Only Admin/Super Admin can access this page now
+  // Security Check: Allow Admins, Super Admins, and Managers
   useEffect(() => {
-    if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) {
+    const allowedRoles = ['admin', 'super_admin', 'event_manager', 'course_manager'];
+    if (!user || !allowedRoles.includes(user.role)) {
       navigate('/dashboard');
     }
   }, [user, navigate]);
@@ -133,109 +134,41 @@ const ActivityFeed: React.FC = () => {
     return `${days}d ago`;
   };
 
-  if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) return null;
+  const allowedRoles = ['admin', 'super_admin', 'event_manager', 'course_manager'];
+  if (!user || !allowedRoles.includes(user.role)) return null;
 
   return (
     <div className="font-sans" style={{ 
       backgroundColor: '#f6f9fc', 
-      backgroundImage: `
-        radial-gradient(at 0% 0%, rgba(211, 47, 47, 0.03) 0px, transparent 50%),
-        radial-gradient(at 100% 0%, rgba(15, 23, 42, 0.03) 0px, transparent 50%)
-      `,
       minHeight: '100vh', 
-      padding: '0 1.5rem 2rem',
+      padding: '2rem 1.5rem',
       fontFamily: '"Montserrat", sans-serif' 
     }}>
       
       <style>{`
         .insight-card {
-          background: rgba(255, 255, 255, 0.85);
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
+          background: #fff;
           border-radius: 20px;
-          border: 1px solid rgba(255, 255, 255, 0.5);
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
-          transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           overflow: hidden;
-          margin-bottom: 1.25rem;
+          margin-bottom: 1.5rem;
         }
         .insight-card:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 15px 35px rgba(0, 0, 0, 0.07);
-          border-color: rgba(220, 38, 38, 0.2);
-        }
-        .video-banner {
-          background-image: url('${alumniStoriesBg}');
-          background-size: cover;
-          background-position: center;
-          padding: 6rem 0;
-          margin-bottom: 2.5rem;
-          position: relative;
-          overflow: hidden;
-          width: 100vw;
-          left: 50%;
-          right: 50%;
-          margin-left: -50vw;
-          margin-right: -50vw;
-          box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
-          border-bottom: 1px solid rgba(255,255,255,0.1);
-          color: white;
-        }
-        .video-banner::before {
-          content: "";
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(to right, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.6) 30%, transparent 100%);
-          z-index: 1;
-        }
-        .banner-noise {
-          position: absolute;
-          inset: 0;
-          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-          opacity: 0.12;
-          pointer-events: none;
-          mix-blend-mode: overlay;
-          z-index: 1;
+          transform: translateY(-2px);
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
         .spin { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
 
-      <div style={{ maxWidth: '1150px', margin: '0 auto' }}>
+      <div style={{ maxWidth: '850px', margin: '0 auto' }}>
         
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1 }}
-          className="video-banner"
-          style={{ position: 'relative' }}
-        >
-          <video 
-            autoPlay 
-            muted 
-            loop 
-            playsInline 
-            style={{
-              position: 'absolute',
-              inset: 0,
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              zIndex: 0,
-              filter: 'brightness(0.55) contrast(1.1)'
-            }}
-          >
-            <source src="https://assets.mixkit.co/videos/preview/mixkit-city-traffic-at-night-seen-from-above-3453-large.mp4" type="video/mp4" />
-          </video>
-
-          <div className="banner-noise" style={{ zIndex: 3 }} />
-          <div style={{ maxWidth: '1150px', margin: '0 auto', padding: '0 2rem', position: 'relative', zIndex: 10 }}>
-            <h1 style={{ margin: 0, fontSize: '3.5rem', fontWeight: 950, color: '#fff', letterSpacing: '-0.04em', lineHeight: 1.1, marginBottom: '1.25rem', textShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>Career Timelines</h1>
-            <p style={{ margin: 0, color: 'rgba(255,255,255,0.8)', fontSize: '1.2rem', fontWeight: 500, maxWidth: '550px', lineHeight: 1.4, letterSpacing: '-0.01em' }}>
-              Chronicles of engineering leadership and professional breakthroughs from our global community.
-            </p>
-          </div>
-        </motion.div>
+        <div style={{ marginBottom: '40px' }}>
+            <h1 style={{ margin: 0, fontSize: '2.5rem', fontWeight: 900, color: '#1e293b', letterSpacing: '-0.04em', lineHeight: 1.2 }}>Career Timelines</h1>
+            <p style={{ margin: '8px 0 0 0', color: '#64748b', fontSize: '1.1rem', fontWeight: 500 }}>Global professional insights and community updates.</p>
+        </div>
 
         {/* Exclusive Admin Post Creator */}
         <motion.div 
@@ -308,9 +241,8 @@ const ActivityFeed: React.FC = () => {
           </div>
         </motion.div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 420px', gap: '1.5rem' }}>
-          
-          <motion.div variants={pageVariants} initial="hidden" animate="visible" style={{ alignSelf: 'start' }}>
+        <div style={{ maxWidth: '850px', margin: '0 auto' }}>
+          <motion.div variants={pageVariants} initial="hidden" animate="visible">
             {loading ? (
               <div style={{ textAlign: 'center', padding: '4rem', color: '#94a3b8' }}>
                 <Loader2 size={32} className="spin" style={{ margin: '0 auto 1rem' }} />
@@ -412,131 +344,6 @@ const ActivityFeed: React.FC = () => {
               ))
             )}
           </motion.div>
-
-          <aside style={{ 
-             display: 'flex',
-             flexDirection: 'column',
-             gap: '1.5rem',
-             height: '100%'
-          }}>
-             {/* Card 1: Scrolls with the page */}
-             <motion.div 
-                initial={{ opacity: 0, y: 20 }} 
-                animate={{ opacity: 1, y: 0 }} 
-                transition={{ delay: 0.25 }} 
-                className="insight-card" 
-                style={{ 
-                  height: '280px', 
-                  position: 'relative', 
-                  overflow: 'hidden',
-                  padding: 0,
-                  margin: 0,
-                  flexShrink: 0
-                }}
-             >
-                <video 
-                  autoPlay 
-                  muted 
-                  loop 
-                  playsInline 
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    filter: 'brightness(0.9) contrast(1.1)'
-                  }}
-                >
-                  <source src="https://nestdigital.com/wp-content/uploads/2026/03/Nest-HP-Video.mp4" type="video/mp4" />
-                </video>
-                <div style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  padding: '1.5rem',
-                  background: 'linear-gradient(to top, rgba(15, 23, 42, 0.9) 0%, transparent 100%)',
-                  color: 'white',
-                  zIndex: 2
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                    <div style={{ width: '8px', height: '8px', background: '#DC2626', borderRadius: '50%' }} />
-                    <span style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.9 }}>Digital Transformation</span>
-                  </div>
-                  <h4 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, letterSpacing: '-0.02em' }}>Inside NeST Digital</h4>
-                </div>
-             </motion.div>
-
-             {/* Card 2: Sticks once reached */}
-             <motion.div 
-                initial={{ opacity: 0, y: 20 }} 
-                animate={{ opacity: 1, y: 0 }} 
-                transition={{ delay: 0.3 }} 
-                className="insight-card custom-scrollbar" 
-                style={{ 
-                  padding: '2rem', 
-                  margin: 0,
-                  position: 'sticky',
-                  top: '24px',
-                  zIndex: 10,
-                  minHeight: 'calc(100vh - 100px)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  overflowY: 'auto'
-                }}
-             >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                   <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                     <TrendingUp size={20} color="#DC2626" /> Trending Now
-                   </h4>
-                   <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 2 }} style={{ width: '8px', height: '8px', background: '#10B981', borderRadius: '50%' }} />
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
-                   {trendingTopics.map((item, i) => (
-                      <div key={i}>
-                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.4rem' }}>
-                            <span style={{ fontWeight: 700, color: '#1e293b' }}>#{item.topic.replace(' ', '')}</span>
-                            <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#10B981', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: '6px' }}>{item.growth}</span>
-                         </div>
-                         <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748B', fontWeight: 500 }}>{item.interactions} professional interactions</p>
-                      </div>
-                   ))}
-                </div>
-
-                {/* Community Highlights Section */}
-                <div style={{ marginTop: '2.5rem', paddingTop: '2.5rem', borderTop: '1px solid rgba(0,0,0,0.1)' }}>
-                   <h4 style={{ margin: '0 0 1.5rem', fontSize: '1.1rem', fontWeight: 800, color: '#0F172A' }}>Community Highlights</h4>
-                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                      <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
-                         <div style={{ width: '48px', height: '48px', background: 'rgba(59, 130, 246, 0.1)', color: '#3B82F6', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            <Users size={22} />
-                         </div>
-                         <div>
-                            <div style={{ fontSize: '1rem', fontWeight: 800, color: '#1e293b', lineHeight: 1.2 }}>124 New Alumni</div>
-                            <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Joined this month</div>
-                         </div>
-                      </div>
-                      <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
-                         <div style={{ width: '48px', height: '48px', background: 'rgba(16, 185, 129, 0.1)', color: '#10B981', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            <Award size={22} />
-                          </div>
-                          <div>
-                             <div style={{ fontSize: '1rem', fontWeight: 800, color: '#1e293b', lineHeight: 1.2 }}>45 Certifications</div>
-                             <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Awarded last week</div>
-                          </div>
-                       </div>
-                       <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
-                          <div style={{ width: '48px', height: '48px', background: 'rgba(220, 38, 38, 0.1)', color: '#DC2626', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                             <Calendar size={22} />
-                          </div>
-                          <div>
-                             <div style={{ fontSize: '1rem', fontWeight: 800, color: '#1e293b', lineHeight: 1.2 }}>Annual Meetup</div>
-                             <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>June 15, 2026</div>
-                          </div>
-                       </div>
-                    </div>
-                 </div>
-             </motion.div>
-          </aside>
         </div>
       </div>
     </div>

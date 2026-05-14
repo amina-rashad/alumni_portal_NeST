@@ -9,6 +9,7 @@ import { jsPDF } from 'jspdf';
 import { eventManagerApi } from '../../services/api';
 import { toast } from 'react-hot-toast';
 import StatusModal from '../../components/StatusModal';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 interface Attendee {
   id: string;
@@ -25,9 +26,18 @@ interface Attendee {
   status: 'Registered' | 'Attended' | 'Not Attended';
   type: string;
   is_certificate_issued: boolean;
+  author_status?: string;
+  author_picture?: string;
+  author_name?: string;
 }
 
 const EventManagerAttendees: React.FC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const queryParams = new URLSearchParams(location.search);
+  const eventIdParam = queryParams.get('eventId');
+  const eventNameParam = queryParams.get('eventName');
+
   const [attendees, setAttendees] = useState<Attendee[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -45,7 +55,6 @@ const EventManagerAttendees: React.FC = () => {
   const [emailSubject, setEmailSubject] = useState('');
   const [emailMessage, setEmailMessage] = useState('');
   
-  // Modal State
   const [modalConfig, setModalConfig] = useState({
     isOpen: false,
     type: 'success' as 'success' | 'error' | 'info' | 'warning',
@@ -56,7 +65,6 @@ const EventManagerAttendees: React.FC = () => {
     onConfirm: undefined as (() => void) | undefined
   });
   
-  // Selection State
   const [selectedAttendeeIds, setSelectedAttendeeIds] = useState<Set<string>>(new Set());
   
   const menuRef = useRef<HTMLDivElement>(null);
@@ -68,13 +76,23 @@ const EventManagerAttendees: React.FC = () => {
     try {
       const res = await eventManagerApi.getAttendees();
       if (res.success && res.data) {
-        const data = res.data.attendees || [];
+        let data = res.data.attendees || [];
+        
+        // Filter by eventId if provided in URL
+        if (eventIdParam) {
+           data = data.filter((a: any) => String(a.eventId) === String(eventIdParam));
+        }
+
         setAttendees(data);
         
-        // Calculate stats
         const total = data.length;
-        const attended = data.filter((a: Attendee) => a.status === 'Attended').length;
-        const upcoming = data.filter((a: Attendee) => new Date(a.date) > new Date()).length;
+        const attended = data.filter((a: any) => a.status === 'Attended').length;
+        const upcoming = data.filter((a: any) => {
+          if (!a.date) return false;
+          try {
+            return new Date(a.date) > new Date();
+          } catch(e) { return false; }
+        }).length;
         
         setStats({
           total,
@@ -85,6 +103,7 @@ const EventManagerAttendees: React.FC = () => {
       }
     } catch (err) {
       console.error("Failed to fetch attendees:", err);
+      toast.error("Failed to sync participant records.");
     } finally {
       setIsLoading(false);
     }
@@ -102,13 +121,13 @@ const EventManagerAttendees: React.FC = () => {
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [location.search]);
 
   const filteredAttendees = attendees.filter((attendee) => {
     const matchesSearch = 
-      attendee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      attendee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      attendee.event.toLowerCase().includes(searchTerm.toLowerCase());
+      (attendee.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (attendee.email || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (attendee.event || "").toLowerCase().includes(searchTerm.toLowerCase());
       
     const matchesStatus = statusFilter === 'All' || attendee.status === statusFilter;
     const matchesMode = modeFilter === 'All' || attendee.mode === modeFilter;
@@ -236,6 +255,112 @@ const EventManagerAttendees: React.FC = () => {
       }
     } catch (error) {
       toast.error("Failed to issue certificate");
+    }
+  };
+
+  const handleBulkIssueCertificates = () => {
+    const selectedCount = selectedAttendeeIds.size;
+    if (selectedCount === 0) return;
+
+    const selectedAttendees = attendees.filter(a => selectedAttendeeIds.has(a.id));
+    const eligibleCount = selectedAttendees.filter(a => a.status === 'Attended' && !a.is_certificate_issued).length;
+
+    if (eligibleCount === 0) {
+      toast.error("No eligible participants selected. (Must have 'Attended' status and no existing certificate)");
+      return;
+    }
+
+    setModalConfig({
+      isOpen: true,
+      type: 'info',
+      title: 'Bulk Issue Certificates',
+      message: `Are you sure you want to issue certificates to ${eligibleCount} eligible participants?`,
+      confirmText: 'Issue All',
+      showConfirmOnly: false,
+      onConfirm: () => confirmBulkIssueCertificates()
+    });
+  };
+
+  const confirmBulkIssueCertificates = async () => {
+    setModalConfig(prev => ({ ...prev, isOpen: false }));
+    setIsLoading(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    const selectedAttendees = attendees.filter(a => 
+      selectedAttendeeIds.has(a.id) && 
+      a.status === 'Attended' && 
+      !a.is_certificate_issued
+    );
+
+    try {
+      await Promise.all(selectedAttendees.map(async (attendee) => {
+        try {
+          const res = await eventManagerApi.issueCertificate(attendee.eventId, attendee.userId);
+          if (res.success) successCount++;
+          else failCount++;
+        } catch (err) {
+          failCount++;
+        }
+      }));
+
+      if (successCount > 0) {
+        toast.success(`Successfully issued ${successCount} certificates.`);
+      }
+      if (failCount > 0) {
+        toast.error(`Failed to issue ${failCount} certificates.`);
+      }
+
+      setSelectedAttendeeIds(new Set());
+      fetchAttendees();
+    } catch (error) {
+      toast.error("An error occurred during bulk issuance.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleBulkMarkAttendance = async () => {
+    const selectedCount = selectedAttendeeIds.size;
+    if (selectedCount === 0) return;
+
+    const eligibleAttendees = attendees.filter(a => 
+      selectedAttendeeIds.has(a.id) && a.status !== 'Attended'
+    );
+    
+    if (eligibleAttendees.length === 0) {
+      toast.error("Selected participants are already marked as Attended.");
+      return;
+    }
+
+    setIsLoading(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    try {
+      await Promise.all(eligibleAttendees.map(async (attendee) => {
+        try {
+          const res = await eventManagerApi.toggleAttendance(attendee.eventId, attendee.userId);
+          if (res.success) successCount++;
+          else failCount++;
+        } catch (err) {
+          failCount++;
+        }
+      }));
+
+      if (successCount > 0) {
+        toast.success(`Successfully marked ${successCount} as Attended.`);
+      }
+      if (failCount > 0) {
+        toast.error(`Failed to update ${failCount} records.`);
+      }
+
+      setSelectedAttendeeIds(new Set());
+      fetchAttendees();
+    } catch (error) {
+      toast.error("An error occurred during bulk update.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -380,7 +505,29 @@ const EventManagerAttendees: React.FC = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#1e293b', margin: 0, fontFamily: "'Montserrat', sans-serif" }}>Registration & Attendance</h1>
-          <p style={{ color: '#64748b', marginTop: '4px' }}>Track registered participants, manage check-ins, and communicate with attendees across all your events.</p>
+          {eventNameParam ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '8px' }}>
+              <span style={{ 
+                background: '#eff6ff', 
+                color: '#233167', 
+                padding: '4px 12px', 
+                borderRadius: '8px', 
+                fontSize: '14px', 
+                fontWeight: 700,
+                border: '1px solid #dbeafe'
+              }}>
+                Viewing Attendees for: {decodeURIComponent(eventNameParam)}
+              </span>
+              <button 
+                onClick={() => navigate(location.pathname)}
+                style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '13px', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
+              >
+                Clear Filter
+              </button>
+            </div>
+          ) : (
+            <p style={{ color: '#64748b', marginTop: '4px' }}>Track registered participants, manage check-ins, and communicate with attendees across all your events.</p>
+          )}
         </div>
         <button 
           onClick={handleExportPDF}
@@ -549,6 +696,44 @@ const EventManagerAttendees: React.FC = () => {
                 </div>
                 
                 <div style={{ display: 'flex', gap: '12px' }}>
+                  <button 
+                    onClick={handleBulkMarkAttendance}
+                    style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '8px', 
+                      padding: '8px 16px', 
+                      borderRadius: '10px', 
+                      border: '1px solid #dbeafe', 
+                      background: '#fff', 
+                      color: '#3b82f6', 
+                      fontWeight: 700, 
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <UserCheck size={16} /> Mark as Attended
+                  </button>
+                  <button 
+                    onClick={handleBulkIssueCertificates}
+                    style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '8px', 
+                      padding: '8px 16px', 
+                      borderRadius: '10px', 
+                      border: '1px solid #dcfce7', 
+                      background: '#fff', 
+                      color: '#16a34a', 
+                      fontWeight: 700, 
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <CheckCircle size={16} /> Issue Certificates
+                  </button>
                   <button 
                     onClick={handleBulkRemove}
                     style={{ 
