@@ -4,7 +4,7 @@ import {
   Mail, Phone,
   Briefcase, Award, 
   Linkedin, Github, Twitter, Globe,
-  CheckCircle2, Building, GraduationCap, FileText, Download, ArrowLeft
+  CheckCircle2, Building, GraduationCap, FileText, Download, ArrowLeft, Loader2
 } from 'lucide-react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { usersApi } from '../services/api';
@@ -16,6 +16,22 @@ const PublicProfile: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [user, setUserData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownload = (url: string) => {
+    setIsDownloading(true);
+    // Simulate/Trigger download
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = user.full_name ? `${user.full_name.replace(/\s+/g, '_')}_Resume` : 'Resume';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    setTimeout(() => {
+      setIsDownloading(false);
+    }, 2000);
+  };
 
   useEffect(() => {
     const fetchPublicProfile = async () => {
@@ -106,7 +122,9 @@ const PublicProfile: React.FC = () => {
               borderRadius: '30px', 
               background: '#ffffff', 
               padding: '6px',
-              boxShadow: '0 12px 24px rgba(0,0,0,0.1)'
+              boxShadow: '0 12px 24px rgba(0,0,0,0.1)',
+              position: 'relative',
+              border: user.status === 'open_to_work' ? '4px solid #16a34a' : user.status === 'hiring' ? '4px solid #0284c7' : 'none'
             }}>
               <div style={{ 
                 width: '100%', 
@@ -125,30 +143,49 @@ const PublicProfile: React.FC = () => {
                   <img src={user.profile_picture} alt={user.full_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : initials}
               </div>
+              {user.status === 'open_to_work' && (
+                <div style={{
+                  position: 'absolute',
+                  bottom: '5px',
+                  right: '5px',
+                  background: '#16a34a',
+                  color: 'white',
+                  padding: '4px 8px',
+                  borderRadius: '12px',
+                  fontSize: '10px',
+                  fontWeight: 900,
+                  textTransform: 'uppercase',
+                  border: '2px solid white',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                  whiteSpace: 'nowrap'
+                }}>
+                  Open To Work
+                </div>
+              )}
+              {user.status === 'hiring' && (
+                <div style={{
+                  position: 'absolute',
+                  bottom: '5px',
+                  right: '5px',
+                  background: '#0284c7',
+                  color: 'white',
+                  padding: '4px 8px',
+                  borderRadius: '12px',
+                  fontSize: '10px',
+                  fontWeight: 900,
+                  textTransform: 'uppercase',
+                  border: '2px solid white',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                  whiteSpace: 'nowrap'
+                }}>
+                  Hiring
+                </div>
+              )}
             </div>
             
             <div style={{ paddingBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                 <h1 style={{ margin: 0, fontSize: '32px', fontWeight: 800, color: '#1e293b', letterSpacing: '-0.02em' }}>{user.full_name}</h1>
-                {user.status && user.status !== 'none' && (
-                  <span style={{ 
-                    padding: '6px 14px', 
-                    borderRadius: '20px', 
-                    fontSize: '13px', 
-                    fontWeight: 800, 
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.02em',
-                    background: user.status === 'open_to_work' ? '#f0fdf4' : '#f0f9ff',
-                    color: user.status === 'open_to_work' ? '#16a34a' : '#0284c7',
-                    border: `1px solid ${user.status === 'open_to_work' ? '#bbf7d0' : '#bae6fd'}`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}>
-                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: user.status === 'open_to_work' ? '#16a34a' : '#0284c7' }}></span>
-                    {user.status === 'open_to_work' ? '#OpenToWork' : '#Hiring'}
-                  </span>
-                )}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px', color: '#64748b', fontSize: '15px', fontWeight: 500 }}>
                  <span><Building size={16} style={{ verticalAlign: 'middle', marginRight: '4px' }} /> {user.specialization || 'Professional'}</span>
@@ -275,9 +312,28 @@ const PublicProfile: React.FC = () => {
           {user.resume_url && (
             <section style={{ background: 'white', padding: '28px', borderRadius: '24px', border: '1px solid #f1f5f9', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
               <h3 style={{ margin: '0 0 20px', fontSize: '17px', fontWeight: 800, color: '#1e293b' }}>Professional Resume</h3>
-              <a href={user.resume_url} download={`${user.full_name.replace(/\s+/g, '_')}_Resume`} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '12px', background: '#1a2652', color: 'white', borderRadius: '12px', textDecoration: 'none', fontWeight: 700, fontSize: '14px' }}>
-                <Download size={18} /> Download CV
-              </a>
+              <button 
+                onClick={() => handleDownload(user.resume_url)}
+                disabled={isDownloading}
+                style={{ 
+                  width: '100%', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  gap: '10px', 
+                  padding: '12px', 
+                  background: isDownloading ? '#f1f5f9' : '#1a2652', 
+                  color: isDownloading ? '#1a2652' : 'white', 
+                  borderRadius: '12px', 
+                  border: isDownloading ? '1px solid #1a2652' : 'none',
+                  textDecoration: 'none', 
+                  fontWeight: 700, 
+                  fontSize: '14px',
+                  cursor: isDownloading ? 'wait' : 'pointer'
+                }}>
+                {isDownloading ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />} 
+                {isDownloading ? 'Downloading...' : 'Download CV'}
+              </button>
             </section>
           )}
         </div>

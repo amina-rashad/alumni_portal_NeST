@@ -37,6 +37,7 @@ def _serialize_application(app_doc: dict, db=None) -> dict:
                 result["job_title"] = job.get("title", "")
                 result["job_company"] = job.get("company", "")
                 result["job_location"] = job.get("location", "")
+                result["job_is_active"] = job.get("is_active", True)
         except:
             pass
 

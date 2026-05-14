@@ -125,23 +125,44 @@ const AdminUsers: React.FC = () => {
                   </td>
                   <td style={{ padding: '16px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ 
-                        width: '40px', 
-                        height: '40px', 
-                        borderRadius: '50%', 
-                        background: '#3b82f6', 
-                        color: '#fff', 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center',
-                        fontSize: '16px',
-                        fontWeight: 600
-                      }}>
-                        {user.full_name?.charAt(0) || 'U'}
+                      <div style={{ position: 'relative' }}>
+                        <div style={{ 
+                          padding: '2.5px', 
+                          borderRadius: '50%', 
+                          background: (user.status === 'open_to_work' || (!user.status && user.user_type === 'Intern'))
+                            ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' 
+                            : user.status === 'hiring' 
+                              ? 'linear-gradient(135deg, #3b82f6 0%, #0284c7 100%)' 
+                              : 'transparent',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          <div style={{ 
+                            width: '40px', 
+                            height: '40px', 
+                            borderRadius: '50%', 
+                            background: '#3b82f6', 
+                            color: '#fff', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center',
+                            fontSize: '16px',
+                            fontWeight: 800,
+                            border: '2px solid #fff'
+                          }}>
+                            {user.full_name?.charAt(0) || 'U'}
+                          </div>
+                        </div>
                       </div>
                       <div>
-                        <div style={{ fontSize: '14px', fontWeight: 600, color: '#1e293b' }}>{user.full_name}</div>
-                        <div style={{ fontSize: '13px', color: '#94a3b8' }}>{user.email}</div>
+                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {user.full_name}
+                          {(user.status === 'open_to_work' || (!user.status && user.user_type === 'Intern')) && (
+                            <span style={{ fontSize: '9px', color: '#16a34a', fontWeight: 900, background: '#dcfce7', padding: '2px 8px', borderRadius: '4px', letterSpacing: '0.3px' }}>OPEN TO WORK</span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 500 }}>{user.email}</div>
                       </div>
                     </div>
                   </td>

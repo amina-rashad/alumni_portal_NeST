@@ -206,7 +206,8 @@ def list_users():
         "specialization": 1,
         "bio": 1,
         "profile_picture": 1,
-        "skills": 1
+        "skills": 1,
+        "status": 1
     }
     
     users_cursor = db["users"].find(query, projection)

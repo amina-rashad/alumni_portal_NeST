@@ -19,6 +19,7 @@ interface Application {
   lastUpdated: string;
   interviewDate?: string;
   notes?: string;
+  isJobActive?: boolean;
 }
 
 const STATUS_CONFIG: Record<ApplicationStatus, { color: string; bg: string; border: string; icon: React.ReactNode }> = {
@@ -75,7 +76,8 @@ const MyApplications: React.FC = () => {
             status: STATUS_MAP[app.status] || 'Applied',
             lastUpdated: app.updated_at || app.applied_at,
             interviewDate: app.interviewDate,
-            notes: app.notes || (app.cover_letter ? `Cover Letter: ${app.cover_letter}` : undefined)
+            notes: app.notes || (app.cover_letter ? `Cover Letter: ${app.cover_letter}` : undefined),
+            isJobActive: app.job_is_active ?? true
           }));
           setApplications(apiApps);
         }
@@ -313,6 +315,25 @@ const MyApplications: React.FC = () => {
                         {config.icon}
                         {app.status}
                       </div>
+
+                      {!app.isJobActive && (
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.4rem',
+                          padding: '0.45rem 1rem',
+                          borderRadius: '20px',
+                          background: '#f1f5f9',
+                          border: '1px solid #e2e8f0',
+                          color: '#64748b',
+                          fontWeight: 700,
+                          fontSize: '0.82rem',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px'
+                        }}>
+                          Closed
+                        </div>
+                      )}
 
                       {/* Expand Toggle */}
                       <motion.div

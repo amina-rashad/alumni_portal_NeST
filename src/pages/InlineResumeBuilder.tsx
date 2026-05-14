@@ -260,8 +260,9 @@ const InlineResumeBuilder: React.FC<InlineResumeBuilderProps> = ({ onAttach, onC
             {isAILoading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />} 
             {isAILoading ? 'AI Working...' : 'Enhance with AI'}
           </button>
-          <button type="button" disabled={isGeneratingDownload} onClick={handleDownload} style={{ padding: '0.6rem 1rem', background: '#ffffff', border: '1px solid #ced4da', borderRadius: '8px', fontSize: '0.9rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', color: '#4a4a4a' }}>
-            {isGeneratingDownload ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />} Download PDF
+          <button type="button" disabled={isGeneratingDownload} onClick={handleDownload} style={{ padding: '0.6rem 1rem', background: '#ffffff', border: '1px solid #ced4da', borderRadius: '8px', fontSize: '0.9rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: isGeneratingDownload ? 'wait' : 'pointer', color: '#4a4a4a' }}>
+            {isGeneratingDownload ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />} 
+            {isGeneratingDownload ? 'Downloading...' : 'Download PDF'}
           </button>
           {initialData && (
             <button 

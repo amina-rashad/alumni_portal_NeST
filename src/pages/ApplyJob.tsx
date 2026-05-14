@@ -69,7 +69,21 @@ const ApplyJob: React.FC = () => {
 
       const res = await jobsApi.getJobById(id);
       if (res.success && res.data && (res.data as any).job) {
-        setJob((res.data as any).job);
+        const apiJob = (res.data as any).job;
+        setJob(apiJob);
+        
+        // If job is inactive, notify and redirect
+        if (apiJob.is_active === false) {
+          setModalConfig({
+            isOpen: true,
+            type: 'warning',
+            title: 'Job Closed',
+            message: 'This position is no longer accepting applications.',
+            confirmText: 'Back to Listings',
+            showConfirmOnly: true,
+            onConfirm: () => navigate('/jobs')
+          });
+        }
       } else {
         setJob(JOB_CONTEXT['1']);
       }

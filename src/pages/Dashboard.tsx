@@ -6,7 +6,7 @@ import {
   Clock, MessageSquare, ThumbsUp, Share2,
   Award, ChevronRight, ChevronLeft,
   MoreHorizontal, FileText, ArrowRight,
-  BrainCircuit, BookOpen, Heart, ShieldCheck, Sparkles, X, Play
+  BrainCircuit, BookOpen, Heart, ShieldCheck, Sparkles, X, Play, CheckCircle2
 } from 'lucide-react';
 import { getUser, coursesApi, jobsApi, eventsApi, type AuthUser, studentAPI, socialApi } from '../services/api';
 import { useNavigate } from 'react-router-dom';
@@ -118,6 +118,7 @@ const Dashboard: React.FC = () => {
   const [courses, setCourses] = useState<any[]>([]);
   const [jobs, setJobs] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
+  const [certificates, setCertificates] = useState<any[]>([]);
   const [likedPosts, setLikedPosts] = useState<Set<number>>(new Set());
   const [isHovered, setIsHovered] = useState(false);
   const navigate = useNavigate();
@@ -193,7 +194,7 @@ const Dashboard: React.FC = () => {
                 ...e,
                 date: displayDate,
                 color: colors[idx % colors.length],
-                attendees_count: e.attendees?.length || 0,
+                attendees_count: e.attendees_count || 0,
                 location: e.location || 'Remote',
                 category: e.category || 'Event'
               };
@@ -206,6 +207,14 @@ const Dashboard: React.FC = () => {
         if (insightRes.success) setInsights(insightRes.data);
         if (pathwayRes.success) setPathways(pathwayRes.data);
         if (queryRes.success) setQueries(queryRes.data);
+
+        // Mock certificates for IV Students
+        if (currentUser && (currentUser.user_type === 'Industrial Student' || currentUser.user_type === 'Intern')) {
+          setCertificates([
+            { id: 'cert1', title: 'Industrial Visit Excellence', date: 'Oct 2025', issuer: 'NeST Academy', color: '#EF4444' },
+            { id: 'cert2', title: 'Foundation of System Design', date: 'Dec 2025', issuer: 'NeST Engineering', color: '#3B82F6' }
+          ]);
+        }
       } catch (err) {
         console.error("Dashboard data load error", err);
         setEvents([]);
@@ -604,10 +613,6 @@ const Dashboard: React.FC = () => {
                             <div style={{ fontSize: '18px', fontWeight: 900, color: '#0F172A', lineHeight: 1.1 }}>{event.date?.split(' ')[1] || ''}</div>
                           </div>
 
-                          {/* Network Tag */}
-                          <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', padding: '6px 12px', borderRadius: '10px', fontSize: '10px', fontWeight: 800, color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            Network Only
-                          </div>
                         </div>
 
                         {/* Content */}
@@ -620,36 +625,45 @@ const Dashboard: React.FC = () => {
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                               <Clock size={14} color="#94a3b8" /> {event.time || 'TBD'}
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <Users size={14} color="#94a3b8" /> {event.attendees_count || 0}+ Joined
-                            </div>
                           </div>
 
                           <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div style={{ display: 'flex' }}>
-                              {[1, 2, 3].map(n => <img key={n} src={`https://i.pravatar.cc/150?img=${n + 20}`} style={{ width: '28px', height: '28px', borderRadius: '50%', border: '2px solid #ffffff', marginLeft: n !== 1 ? '-10px' : 0 }} alt="u" />)}
-                              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#F1F5F9', border: '2px solid #ffffff', marginLeft: '-10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', fontWeight: 800, color: '#3B82F6' }}>+12</div>
-                            </div>
-
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigate('/events');
-                              }}
-                              style={{ 
+                            {event.is_registered ? (
+                              <div style={{ 
                                 padding: '8px 18px', 
                                 borderRadius: '12px', 
-                                background: '#ef4444', 
-                                border: 'none', 
+                                background: '#10b981', 
                                 color: '#fff', 
                                 fontWeight: 800, 
                                 fontSize: '0.85rem',
-                                cursor: 'pointer',
-                                boxShadow: '0 4px 14px rgba(239, 68, 68, 0.3)'
-                              }}
-                            >
-                              Secure Spot
-                            </button>
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.2)'
+                              }}>
+                                <CheckCircle2 size={16} /> Registered
+                              </div>
+                            ) : (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate('/events');
+                                }}
+                                style={{ 
+                                  padding: '8px 18px', 
+                                  borderRadius: '12px', 
+                                  background: '#ef4444', 
+                                  border: 'none', 
+                                  color: '#fff', 
+                                  fontWeight: 800, 
+                                  fontSize: '0.85rem',
+                                  cursor: 'pointer',
+                                  boxShadow: '0 4px 14px rgba(239, 68, 68, 0.3)'
+                                }}
+                              >
+                                Secure Spot
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1264,6 +1278,69 @@ const Dashboard: React.FC = () => {
               ))}
             </div>
           </motion.section>
+
+          {/* 4. MY CERTIFICATES (ONLY FOR IV STUDENTS) */}
+          {(user?.user_type === 'Industrial Student' || user?.user_type === 'Intern') && (
+            <motion.section
+              variants={sectionVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-10%" }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '10px', borderRadius: '14px', display: 'flex' }}>
+                    <Award size={22} color="#10b981" />
+                  </div>
+                  <h2 style={{ 
+                    margin: 0, 
+                    fontSize: '2rem', 
+                    fontWeight: 400, 
+                    color: '#0F172A', 
+                    letterSpacing: '0.02em',
+                    fontFamily: '"Outfit", "Inter", sans-serif' 
+                  }}>
+                    My Certificates
+                  </h2>
+                </div>
+                <button onClick={() => navigate('/iv-certificates')} className="btn-premium" style={{ border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#0F172A', fontWeight: 700, padding: '10px 24px', borderRadius: '999px', fontSize: '0.95rem' }}>
+                  View All
+                </button>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem' }}>
+                {certificates.map((cert, i) => (
+                  <motion.div
+                    key={cert.id}
+                    variants={itemVariants}
+                    whileHover={{ y: -5 }}
+                    style={{
+                      background: '#fff',
+                      borderRadius: '24px',
+                      padding: '1.5rem',
+                      border: '1px solid #e2e8f0',
+                      boxShadow: '0 4px 6px rgba(0,0,0,0.02)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '1rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <div style={{ width: '50px', height: '50px', borderRadius: '12px', background: `${cert.color}15`, color: cert.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Award size={28} />
+                    </div>
+                    <div>
+                      <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0F172A' }}>{cert.title}</h4>
+                      <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#64748B', fontWeight: 600 }}>Issued: {cert.date} • {cert.issuer}</p>
+                    </div>
+                    <button onClick={() => navigate('/iv-certificates')} style={{ marginTop: '0.5rem', width: '100%', padding: '10px', borderRadius: '10px', background: '#f8fafc', border: '1px solid #e2e8f0', color: '#0F172A', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}>
+                      Download Certificate
+                    </button>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.section>
+          )}
 
 
 

@@ -23,9 +23,17 @@ def recruiter_required(fn):
     def wrapper(*args, **kwargs):
         user_id = get_jwt_identity()
         db = get_db()
-        user = db["users"].find_one({"_id": ObjectId(user_id)})
+        try:
+            user = db["users"].find_one({"_id": ObjectId(user_id)})
+        except:
+            print(f"DEBUG: Invalid user_id format: {user_id}")
+            return jsonify({"success": False, "message": "Invalid user identification."}), 401
+            
         if not user or user.get("role") not in ["job_recruiter", "recruiter", "admin", "super_admin"]:
+            print(f"DEBUG: Access Denied for user {user_id}. Role: {user.get('role') if user else 'None'}")
             return jsonify({"success": False, "message": "Recruiter privileges required."}), 403
+            
+        print(f"DEBUG: Access Granted for user {user.get('full_name')} ({user_id})")
         return fn(*args, **kwargs)
     return wrapper
 
@@ -96,6 +104,7 @@ def get_my_jobs():
     jobs_cursor = db["jobs"].find(job_filter).sort("createdAt", -1)
     
     jobs_list = []
+    print(f"DEBUG: get_my_jobs found {db['jobs'].count_documents(job_filter)} jobs total")
     for j in jobs_cursor:
         j["id"] = str(j["_id"])
         del j["_id"]
@@ -175,6 +184,65 @@ def add_job():
         "data": {"id": str(result.inserted_id)}
     }), 201
 
+@recruiter_bp.route("/jobs/<job_id>", methods=["GET", "PATCH"])
+@jwt_required()
+@recruiter_required
+def manage_job(job_id):
+    """Fetch or update a job listing."""
+    db = get_db()
+    
+    try:
+        oid = ObjectId(job_id)
+    except:
+        return jsonify({"success": False, "message": "Invalid job ID."}), 400
+        
+    job = db["jobs"].find_one({"_id": oid})
+    if not job:
+        return jsonify({"success": False, "message": "Job not found."}), 404
+        
+    # Since the user has passed @recruiter_required, they have full access to manage any job
+    # This allows the recruiting team to collaborate on listings.
+    
+    if request.method == "GET":
+        job["id"] = str(job["_id"])
+        del job["_id"]
+        if "createdAt" in job and hasattr(job["createdAt"], "isoformat"):
+            job["createdAt"] = job["createdAt"].isoformat()
+        return jsonify({"success": True, "data": {"job": job}}), 200
+
+    # PATCH logic
+    data = request.get_json()
+    update_fields = {}
+    for field in ["title", "company", "location", "salary", "type", "description", "requirements", "skills_required", "experience_level", "is_active"]:
+        if field in data:
+            update_fields[field] = data[field]
+            
+    db["jobs"].update_one({"_id": oid}, {"$set": update_fields})
+    return jsonify({"success": True, "message": "Job updated successfully."}), 200
+
+@recruiter_bp.route("/jobs/<job_id>", methods=["DELETE"])
+@jwt_required()
+@recruiter_required
+def delete_job(job_id):
+    """Delete a job listing."""
+    db = get_db()
+    try:
+        oid = ObjectId(job_id)
+    except:
+        return jsonify({"success": False, "message": "Invalid job ID."}), 400
+        
+    # Check ownership or admin
+    job = db["jobs"].find_one({"_id": oid})
+    if not job:
+        return jsonify({"success": False, "message": "Job not found."}), 404
+        
+    # Authorized recruiters/admins can delete any job listing
+    db["jobs"].delete_one({"_id": oid})
+    # Also delete applications for this job
+    db["applications"].delete_many({"job_id": oid})
+    
+    return jsonify({"success": True, "message": "Job deleted successfully."}), 200
+
 # ── Application Management ──
 
 @recruiter_bp.route("/applications", methods=["GET"])
@@ -221,9 +289,11 @@ def get_job_applications():
                 app_data["applicant_name"] = user.get("full_name", "")
                 app_data["applicant_email"] = user.get("email", "")
                 app_data["applicant_id"] = str(user["_id"])
+                app_data["applicant_picture"] = user.get("profile_picture")
                 # Include full resume info for download
                 app_data["resume_url"] = a.get("resume_url") or user.get("resume_url", "")
                 app_data["resume_data"] = user.get("resume_data")
+                app_data["applicant_status"] = user.get("status", "none")
         except:
             pass
         

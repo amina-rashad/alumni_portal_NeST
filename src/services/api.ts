@@ -542,6 +542,12 @@ export const recruiterApi = {
   addJob: (data: any) => 
     apiRequest('/recruiter/jobs', { method: 'POST', body: JSON.stringify(data) }),
 
+  getJobById: (jobId: string) => 
+    apiRequest<{ job: any }>(`/recruiter/jobs/${jobId}`, { method: 'GET' }),
+
+  updateJob: (jobId: string, data: any) => 
+    apiRequest(`/recruiter/jobs/${jobId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+
   getStats: () => 
     apiRequest<{ stats: any }>('/recruiter/stats', { method: 'GET' }),
 

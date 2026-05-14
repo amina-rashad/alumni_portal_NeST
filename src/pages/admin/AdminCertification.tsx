@@ -128,6 +128,38 @@ const AdminCertification: React.FC = () => {
               </tbody>
             </table>
           </div>
+        ) : activeTab === 'iv' ? (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>
+                  <th style={{ padding: '16px', color: '#64748b', fontSize: '13px' }}>Student Name</th>
+                  <th style={{ padding: '16px', color: '#64748b', fontSize: '13px' }}>Institution</th>
+                  <th style={{ padding: '16px', color: '#64748b', fontSize: '13px' }}>Batch</th>
+                  <th style={{ padding: '16px', color: '#64748b', fontSize: '13px' }}>Visit Date</th>
+                  <th style={{ padding: '16px', color: '#64748b', fontSize: '13px', textAlign: 'right' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ivStudents.map((s) => (
+                  <tr key={s.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ padding: '16px', fontWeight: 700, color: '#1e293b' }}>{s.name}</td>
+                    <td style={{ padding: '16px', color: '#475569' }}>{s.college}</td>
+                    <td style={{ padding: '16px', color: '#475569' }}>{s.batch}</td>
+                    <td style={{ padding: '16px', color: '#475569' }}>{s.date}</td>
+                    <td style={{ padding: '16px', textAlign: 'right' }}>
+                      <button 
+                        onClick={() => alert(`Certificate Issued to ${s.name}`)}
+                        style={{ background: '#1e293b', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                      >
+                        <FileCheck size={14} /> Issue Certificate
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         ) : (
           <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
             Static content for {activeTab.toUpperCase()}

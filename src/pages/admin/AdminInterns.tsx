@@ -218,16 +218,37 @@ const AdminInterns: React.FC = () => {
                   <tr key={intern.id} style={{ borderBottom: idx === filteredInterns.length - 1 ? 'none' : '1px solid #f8fafc', transition: '0.2s' }}>
                     <td style={{ padding: '20px 24px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                        <div style={{ 
-                          width: '44px', height: '44px', borderRadius: '16px', 
-                          background: `linear-gradient(135deg, ${nestNavy} 0%, #2a3b7d 100%)`, 
-                          color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: '15px', fontWeight: 800, boxShadow: '0 4px 10px rgba(26, 38, 82, 0.15)'
-                        }}>
-                          {intern.full_name?.charAt(0) || 'I'}
+                        <div style={{ position: 'relative' }}>
+                          <div style={{ 
+                            padding: '2.5px', 
+                            borderRadius: '50%', 
+                            background: (intern.status === 'open_to_work' || !intern.status)
+                              ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' 
+                              : intern.status === 'hiring' 
+                                ? 'linear-gradient(135deg, #3b82f6 0%, #0284c7 100%)' 
+                                : 'transparent',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}>
+                            <div style={{ 
+                              width: '44px', height: '44px', borderRadius: '16px', 
+                              background: `linear-gradient(135deg, ${nestNavy} 0%, #2a3b7d 100%)`, 
+                              color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontSize: '15px', fontWeight: 800, boxShadow: '0 4px 10px rgba(26, 38, 82, 0.15)',
+                              border: '2px solid #fff'
+                            }}>
+                              {intern.full_name?.charAt(0) || 'I'}
+                            </div>
+                          </div>
                         </div>
                         <div>
-                          <div style={{ fontSize: '15px', fontWeight: 700, color: '#1e293b' }}>{intern.full_name}</div>
+                          <div style={{ fontSize: '15px', fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            {intern.full_name}
+                            {(intern.status === 'open_to_work' || !intern.status) && (
+                              <span style={{ fontSize: '9px', color: '#16a34a', fontWeight: 900, background: '#dcfce7', padding: '2px 8px', borderRadius: '4px', letterSpacing: '0.3px' }}>OPEN TO WORK</span>
+                            )}
+                          </div>
                           <div style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 500 }}>{intern.email}</div>
                         </div>
                       </div>

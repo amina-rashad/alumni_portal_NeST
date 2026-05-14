@@ -351,7 +351,9 @@ const ViewProfile: React.FC = () => {
               borderRadius: '50%', 
               background: '#ffffff', 
               padding: '6px',
-              boxShadow: '0 12px 32px rgba(0,0,0,0.08)'
+              boxShadow: '0 12px 32px rgba(0,0,0,0.08)',
+              position: 'relative',
+              border: user.status === 'open_to_work' ? '4px solid #16a34a' : 'none'
             }}>
               <div style={{ 
                 width: '100%', 
@@ -370,31 +372,30 @@ const ViewProfile: React.FC = () => {
                   <img src={user.profile_picture} alt={user.full_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : initials}
               </div>
+              {user.status === 'open_to_work' && (
+                <div style={{
+                  position: 'absolute',
+                  bottom: '5px',
+                  right: '5px',
+                  background: '#16a34a',
+                  color: 'white',
+                  padding: '4px 8px',
+                  borderRadius: '12px',
+                  fontSize: '10px',
+                  fontWeight: 900,
+                  textTransform: 'uppercase',
+                  border: '2px solid white',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                  whiteSpace: 'nowrap'
+                }}>
+                  Open To Work
+                </div>
+              )}
             </div>
             
             <div style={{ paddingBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                 <h1 style={{ margin: 0, fontSize: '32px', fontWeight: 800, color: '#1e293b', letterSpacing: '-0.02em' }}>{user.full_name}</h1>
-                {user.status && user.status !== 'none' && (
-                  <span style={{ 
-                    padding: '6px 14px', 
-                    borderRadius: '20px', 
-                    fontSize: '13px', 
-                    fontWeight: 800, 
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.02em',
-                    background: user.status === 'open_to_work' ? '#f0fdf4' : '#f0f9ff',
-                    color: user.status === 'open_to_work' ? '#16a34a' : '#0284c7',
-                    border: `1px solid ${user.status === 'open_to_work' ? '#bbf7d0' : '#bae6fd'}`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-                  }}>
-                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: user.status === 'open_to_work' ? '#16a34a' : '#0284c7' }}></span>
-                    {user.status === 'open_to_work' ? '#OpenToWork' : '#Hiring'}
-                  </span>
-                )}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px', color: '#64748b', fontSize: '15px', fontWeight: 500 }}>
                  <span><Building size={16} style={{ verticalAlign: 'middle', marginRight: '4px' }} /> {user.specialization || 'Professional'}</span>
@@ -835,26 +836,39 @@ const ViewProfile: React.FC = () => {
               onClick={handleDownload}
               disabled={isDownloading}
               style={{ 
-                background: '#f8fafc', 
-                color: isDownloading ? '#94a3b8' : '#1e293b', 
+                background: isDownloading ? '#f1f5f9' : '#f8fafc', 
+                color: isDownloading ? '#c8102e' : '#1e293b', 
                 border: '1px solid #e2e8f0', 
-                borderRadius: '50%', 
-                width: '32px', 
-                height: '32px', 
+                borderRadius: '12px', 
+                padding: '0 16px',
+                height: '36px', 
                 display: 'flex', 
                 alignItems: 'center', 
                 justifyContent: 'center', 
+                gap: '8px',
                 cursor: isDownloading ? 'wait' : 'pointer',
-                transition: 'all 0.2s'
+                transition: 'all 0.2s',
+                fontWeight: 700,
+                fontSize: '13px'
               }}
               onMouseEnter={(e) => { if(!isDownloading) { e.currentTarget.style.background = '#1a2652'; e.currentTarget.style.color = 'white'; e.currentTarget.style.borderColor = '#1a2652'; } }}
               onMouseLeave={(e) => { if(!isDownloading) { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#1e293b'; e.currentTarget.style.borderColor = '#e2e8f0'; } }}
               title={isDownloading ? "Downloading..." : "Download Resume"}
             >
               {isDownloading ? (
-                <div style={{ width: '16px', height: '16px', border: '2px solid #cbd5e1', borderTopColor: '#1a2652', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                <>
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                    style={{ width: '16px', height: '16px', border: '2px solid #e2e8f0', borderTopColor: '#c8102e', borderRadius: '50%' }}
+                  />
+                  <span>Downloading...</span>
+                </>
               ) : (
-                <Download size={16} />
+                <>
+                  <Download size={16} />
+                  <span>Download CV</span>
+                </>
               )}
             </button>
             <button 

@@ -15,40 +15,7 @@ interface NavItem { name: string; path: string; icon: React.ReactNode }
 interface NavGroup { section: string; icon: React.ReactNode; items: NavItem[] }
 
 /* ─────────────────────────── data ─────────────────────────── */
-const menuGroups: NavGroup[] = [
-  {
-    section: 'Insights', icon: <Home size={17} />,
-    items: [
-      { name: 'Insights Overview', path: '/dashboard',          icon: <Home size={15} /> },
-      { name: 'Career Timelines', path: '/dashboard/activity', icon: <Activity size={15} /> },
-    ]
-  },
-  {
-    section: 'Jobs', icon: <Briefcase size={17} />,
-    items: [
-      { name: 'Job Listings',      path: '/jobs',              icon: <Briefcase size={15} /> },
-      { name: 'My Applications',   path: '/jobs/applications', icon: <Briefcase size={15} /> },
-      { name: 'Recommended Jobs',  path: '/jobs/recommended',  icon: <Briefcase size={15} /> },
-    ]
-  },
-  {
-    section: 'Learning', icon: <BookOpen size={17} />,
-    items: [
-      { name: 'Courses',    path: '/courses',           icon: <BookOpen size={15} /> },
-      { name: 'My Courses', path: '/courses/my-courses',icon: <BookOpen size={15} /> },
-      { name: 'Quizzes',   path: '/assessments/quiz',      icon: <Edit3 size={15} /> },
-      { name: 'Performance Analysis', path: '/assessments/analytics', icon: <Activity size={15} /> },
-
-    ]
-  },
-  {
-    section: 'Events', icon: <Calendar size={17} />,
-    items: [
-      { name: 'Events Listing', path: '/events',           icon: <Calendar size={15} /> },
-      { name: 'My Events',      path: '/events/my-events', icon: <Calendar size={15} /> },
-    ]
-  },
-];
+// (Removed static menuGroups)
 
 /* ─────────────────────────── Dropdown ─────────────────────────── */
 interface DropdownProps {
@@ -279,6 +246,49 @@ const MainLayout: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [user, setUserData] = useState<AuthUser | null>(null);
+
+  const menuGroups: NavGroup[] = [
+    {
+      section: 'Insights', icon: <Home size={17} />,
+      items: [
+        { name: 'Insights Overview', path: '/dashboard',          icon: <Home size={15} /> },
+        { name: 'Career Timelines', path: '/dashboard/activity', icon: <Activity size={15} /> },
+      ]
+    },
+    {
+      section: 'Jobs', icon: <Briefcase size={17} />,
+      items: [
+        { name: 'Job Listings',      path: '/jobs',              icon: <Briefcase size={15} /> },
+        { name: 'My Applications',   path: '/jobs/applications', icon: <Briefcase size={15} /> },
+        { name: 'Recommended Jobs',  path: '/jobs/recommended',  icon: <Briefcase size={15} /> },
+      ]
+    },
+    {
+      section: 'Learning', icon: <BookOpen size={17} />,
+      items: [
+        { name: 'Courses',    path: '/courses',           icon: <BookOpen size={15} /> },
+        { name: 'My Courses', path: '/courses/my-courses',icon: <BookOpen size={15} /> },
+        { name: 'Quizzes',   path: '/assessments/quiz',      icon: <Edit3 size={15} /> },
+        { name: 'Performance Analysis', path: '/assessments/analytics', icon: <Activity size={15} /> },
+      ]
+    },
+    ...(user?.user_type === 'Industrial Student' || user?.user_type === 'Intern' ? [
+      {
+        section: 'Certificates', icon: <Award size={17} />,
+        items: [
+          { name: 'My Certificates', path: '/iv-certificates', icon: <Award size={15} /> },
+        ]
+      }
+    ] : []),
+    {
+      section: 'Events', icon: <Calendar size={17} />,
+      items: [
+        { name: 'Events Listing', path: '/events',           icon: <Calendar size={15} /> },
+        { name: 'My Events',      path: '/events/my-events', icon: <Calendar size={15} /> },
+      ]
+    },
+  ];
+
   const [openGroup, setOpenGroup] = useState<NavGroup | null>(null);
   const [dropdownRect, setDropdownRect] = useState<DOMRect | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -309,7 +319,7 @@ const MainLayout: React.FC = () => {
   useEffect(() => {
     const currentUser = getUser() as unknown as AuthUser;
     if (currentUser) setUserData(currentUser);
-  }, []);
+  }, [location.pathname]);
 
   // Close everything on path change
   useEffect(() => {
@@ -492,32 +502,46 @@ const MainLayout: React.FC = () => {
               onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
               onMouseLeave={e => { if(!profileDropdownOpen) e.currentTarget.style.background = 'transparent' }}
             >
-              {user?.profile_picture ? (
-                <img src={user.profile_picture} alt={user.full_name} style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #f1f5f9' }} />
-              ) : (
-                <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg, #c8102e 0%, #9b0a22 100%)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '15px', border: '2px solid #fee2e2' }}>
-                  {initials}
+              <div style={{ position: 'relative' }}>
+                <div style={{ 
+                  padding: '3px', 
+                  borderRadius: '50%', 
+                  background: (user?.status === 'open_to_work' || (!user?.status && user?.user_type === 'Intern'))
+                    ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' 
+                    : user?.status === 'hiring' 
+                      ? 'linear-gradient(135deg, #3b82f6 0%, #0284c7 100%)' 
+                      : 'transparent',
+                  boxShadow: (user?.status === 'open_to_work' || (!user?.status && user?.user_type === 'Intern'))
+                    ? '0 0 12px rgba(34, 197, 94, 0.5)' 
+                    : user?.status === 'hiring'
+                      ? '0 0 12px rgba(59, 130, 246, 0.5)'
+                      : 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                }}>
+                  {user?.profile_picture ? (
+                    <img src={user.profile_picture} alt={user.full_name} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #fff' }} />
+                  ) : (
+                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #c8102e 0%, #9b0a22 100%)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '13px', border: '2px solid #fff' }}>
+                      {initials}
+                    </div>
+                  )}
                 </div>
-              )}
+
+              </div>
               <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1, userSelect: 'none' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>{user?.full_name || 'Guest'}</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ fontSize: '11px', color: '#94a3b8' }}>{user?.user_type || 'User'}</span>
-                  {user?.status === 'open_to_work' && (
-                    <span style={{ 
-                      fontSize: '9px', 
-                      background: '#ebfbee', 
-                      color: '#2b8a3e', 
-                      padding: '2px 6px', 
-                      borderRadius: '10px', 
-                      fontWeight: 700,
-                      border: '1px solid #d3f9d8',
-                      letterSpacing: '0.2px'
-                    }}>
-                      OPEN TO WORK
-                    </span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                  <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 500 }}>{user?.user_type || 'User'}</span>
+                  {(user?.status === 'open_to_work' || (!user?.status && user?.user_type === 'Intern')) && (
+                    <span style={{ fontSize: '10px', color: '#16a34a', fontWeight: 800, letterSpacing: '0.3px', textTransform: 'uppercase' }}>Open to Work</span>
+                  )}
+                  {user?.status === 'hiring' && (
+                    <span style={{ fontSize: '10px', color: '#0284c7', fontWeight: 800, letterSpacing: '0.3px', textTransform: 'uppercase' }}>Hiring</span>
                   )}
                 </div>
               </div>
