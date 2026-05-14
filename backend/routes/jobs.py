@@ -20,10 +20,9 @@ def get_all_jobs():
     skip = (page - 1) * limit
 
     db = get_db()
-    total_jobs = db["jobs"].count_documents({})
-    
-    # Sort by creation date descending if it exists
-    jobs_cursor = db["jobs"].find().sort("createdAt", -1).skip(skip).limit(limit)
+    # Only return active jobs
+    jobs_cursor = db["jobs"].find({"is_active": {"$ne": False}}).sort("createdAt", -1).skip(skip).limit(limit)
+    total_jobs = db["jobs"].count_documents({"is_active": {"$ne": False}})
     
     jobs_list = []
     for j in jobs_cursor:

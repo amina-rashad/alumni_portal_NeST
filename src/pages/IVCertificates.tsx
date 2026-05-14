@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Award, Download, Calendar, ShieldCheck, Loader2, ArrowLeft } from 'lucide-react';
+import { Award, Download, Calendar, ShieldCheck, Loader2, ArrowLeft, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { getUser } from '../services/api';
-import { generateIVCertificate } from '../utils/CertificateGenerator';
+import { getUser, usersApi } from '../services/api';
+import { generateIVCertificate, getIVCertificatePDF } from '../utils/CertificateGenerator';
 
 const IVCertificates: React.FC = () => {
   const navigate = useNavigate();
@@ -15,37 +15,24 @@ const IVCertificates: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const currentUser = getUser();
-        if (!currentUser) {
+        const storedUser = getUser();
+        if (!storedUser) {
           navigate('/login');
           return;
         }
+        setUserData(storedUser);
 
-        // Security: Only Industrial Students or Interns can access this page
-        if (currentUser.user_type !== 'Industrial Student' && currentUser.user_type !== 'Intern') {
-          navigate('/dashboard');
-          return;
+        // Fetch IV certificates from the global repository based on Name/Email matching
+        const res = await usersApi.getMyIVCertificates();
+        if (res.success && res.data?.certificates) {
+          setMyCertificates(res.data.certificates);
+        } else {
+          // Fallback to profile certificates if the new endpoint fails or returns nothing
+          const userCerts = (storedUser as any).certificates || [];
+          const matches = userCerts.filter((c: any) => c.type === 'iv');
+          setMyCertificates(matches);
         }
 
-        setUserData(currentUser);
-        
-        // Find all matching certificates
-        const allData = JSON.parse(localStorage.getItem('full_issued_iv_certificates') || '[]');
-        const cleanEmail = (e: any) => String(e || '').toLowerCase().trim();
-        const cleanName = (n: any) => String(n || '').toLowerCase().trim();
-        
-        const userEmail = cleanEmail(currentUser.email);
-        const userName = cleanName(currentUser.full_name);
-        
-        const matches = allData.filter((s: any) => {
-          const studentEmail = cleanEmail(s.email);
-          const studentName = cleanName(s.name);
-          if (studentEmail && studentEmail === userEmail) return true;
-          if (!studentEmail && studentName === userName) return true;
-          return false;
-        });
-
-        setMyCertificates(matches);
         await new Promise(resolve => setTimeout(resolve, 800));
       } catch (err) {
         console.error(err);
@@ -57,11 +44,32 @@ const IVCertificates: React.FC = () => {
   }, [navigate]);
 
   const handleDownload = async (cert: any) => {
-    setIsDownloading(cert.name + cert.date); // Use unique key for loading state
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    generateIVCertificate(cert.name, cert.batch || '2024', cert.date);
+    setIsDownloading(cert.id || cert.date); 
+    await new Promise(resolve => setTimeout(resolve, 800));
+    generateIVCertificate(cert.student_name || user?.full_name || 'Student', cert.batch || '2024', cert.date);
     setIsDownloading(null);
+  };
+
+  const handleView = (cert: any) => {
+    const doc = getIVCertificatePDF(cert.student_name || user?.full_name || 'Student', cert.batch || '2024', cert.date);
+    const blobUrl = doc.output('bloburl');
+    window.open(blobUrl, '_blank');
+  };
+
+  const refreshData = async () => {
+    setLoading(true);
+    try {
+      const res = await usersApi.getProfile();
+      if (res.success && res.data?.user) {
+        setUserData(res.data.user);
+        const matches = (res.data.user.certificates || []).filter((c: any) => c.type === 'iv');
+        setMyCertificates(matches);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) {
@@ -76,14 +84,8 @@ const IVCertificates: React.FC = () => {
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem' }}>
       {/* Header Section */}
       <div style={{ marginBottom: '3rem' }}>
-        <button 
-          onClick={() => navigate('/dashboard')}
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', marginBottom: '1.5rem', fontWeight: 600, fontSize: '14px' }}
-        >
-          <ArrowLeft size={18} /> Back to Dashboard
-        </button>
-        
         <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: '#0f172a', margin: 0, fontFamily: "'Outfit', sans-serif" }}>
+
           Industrial Visit <span style={{ color: '#c8102e' }}>Certifications</span>
         </h1>
         <p style={{ color: '#64748b', fontSize: '1.1rem', marginTop: '0.5rem' }}>
@@ -145,33 +147,53 @@ const IVCertificates: React.FC = () => {
                   </div>
                 </div>
 
-                <button
-                  onClick={() => handleDownload(cert)}
-                  disabled={isDownloading === (cert.name + cert.date)}
-                  style={{
-                    marginTop: '8px',
-                    width: '100%',
-                    padding: '12px',
-                    borderRadius: '12px',
-                    background: '#c8102e',
-                    color: '#ffffff',
-                    fontSize: '14px',
-                    fontWeight: 700,
-                    border: 'none',
-                    cursor: isDownloading === (cert.name + cert.date) ? 'wait' : 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    transition: 'all 0.2s ease'
-                  }}
-                >
-                  {isDownloading === (cert.name + cert.date) ? (
-                    <><Loader2 className="animate-spin" size={18} /> Processing...</>
-                  ) : (
-                    <><Download size={18} /> Download PDF</>
-                  )}
-                </button>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '8px' }}>
+                  <button
+                    onClick={() => handleView(cert)}
+                    style={{
+                      padding: '12px',
+                      borderRadius: '12px',
+                      background: 'rgba(26, 38, 82, 0.05)',
+                      color: '#1a2652',
+                      fontSize: '14px',
+                      fontWeight: 700,
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <Eye size={18} /> View
+                  </button>
+                  <button
+                    onClick={() => handleDownload(cert)}
+                    disabled={isDownloading === (cert.id || cert.date)}
+                    style={{
+                      padding: '12px',
+                      borderRadius: '12px',
+                      background: '#c8102e',
+                      color: '#ffffff',
+                      fontSize: '14px',
+                      fontWeight: 700,
+                      border: 'none',
+                      cursor: isDownloading === (cert.id || cert.date) ? 'wait' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    {isDownloading === (cert.id || cert.date) ? (
+                      <Loader2 className="animate-spin" size={18} />
+                    ) : (
+                      <><Download size={18} /> PDF</>
+                    )}
+                  </button>
+                </div>
               </div>
             </motion.div>
           ))}
@@ -186,9 +208,27 @@ const IVCertificates: React.FC = () => {
             <Award size={40} />
           </div>
           <h2 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#1e293b', marginBottom: '1rem' }}>No Certificates Yet</h2>
-          <p style={{ color: '#64748b', fontSize: '1.1rem', lineHeight: 1.6, margin: 0 }}>
+          <p style={{ color: '#64748b', fontSize: '1.1rem', lineHeight: 1.6, marginBottom: '2rem' }}>
             Your Industrial Visit certificates will appear here once they are issued by the administration.
           </p>
+          <button 
+            onClick={refreshData}
+            style={{ 
+              padding: '12px 32px', 
+              borderRadius: '12px', 
+              background: '#1a2652', 
+              color: '#fff', 
+              fontWeight: 700, 
+              border: 'none', 
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              margin: '0 auto'
+            }}
+          >
+            <Loader2 size={18} className={loading ? "animate-spin" : ""} /> Check for Updates
+          </button>
         </motion.div>
       )}
     </div>

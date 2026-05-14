@@ -177,7 +177,11 @@ def login():
         }), 401
 
     # Verify password
-    if not bcrypt.checkpw(password.encode("utf-8"), user["password"]):
+    stored_password = user["password"]
+    if isinstance(stored_password, str):
+        stored_password = stored_password.encode("utf-8")
+
+    if not bcrypt.checkpw(password.encode("utf-8"), stored_password):
         return jsonify({
             "success": False,
             "message": "Invalid email or password."

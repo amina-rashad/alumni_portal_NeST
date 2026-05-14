@@ -234,24 +234,49 @@ def review_assessment(attempt_id):
         
     # If approved and it's not the final stage, we could potentially prep the next stage
     if action == "Approved":
-        next_stage = str(int(stage) + 1)
-        # Check if next stage exists in our protocol (e.g., up to 5)
-        if int(next_stage) <= 5:
+        course = db["courses"].find_one({"_id": attempt["course_id"]})
+        required = course.get("required_assessments", [1, 2, 3, 4, 5]) if course else [1, 2, 3, 4, 5]
+        
+        next_stages = [s for s in required if s > int(stage)]
+        
+        if next_stages:
+            next_stage = str(min(next_stages))
             db["assessment_attempts"].update_one(
                 {"_id": ObjectId(attempt_id)},
-                {"$set": {f"stages.{next_stage}.status": "unlocked"}}
+                {"$set": {
+                    f"stages.{next_stage}.status": "not_started",
+                    "current_stage": int(next_stage)
+                }}
+            )
+        else:
+            # ALL STAGES COMPLETED
+            db["assessment_attempts"].update_one(
+                {"_id": ObjectId(attempt_id)},
+                {"$set": {"is_completed": True, "completed_at": datetime.now(timezone.utc)}}
+            )
+            # Update enrollment
+            db["course_enrollments"].update_one(
+                {"user_id": attempt["user_id"], "course_id": attempt["course_id"]},
+                {"$set": {
+                    "status": "Completed", 
+                    "completed_at": datetime.now(timezone.utc),
+                    "progress": 100
+                }}
             )
             
     # Notify student
-    attempt = db["assessment_attempts"].find_one({"_id": ObjectId(attempt_id)})
     if attempt:
         course = db["courses"].find_one({"_id": attempt["course_id"]})
+        msg = f"Your submission for '{course['title']}' stage {stage} was {action.lower()}."
+        if action == "Approved" and not [s for s in required if s > int(stage)]:
+             msg = f"Congratulations! You've completed the assessment for '{course['title']}'. Your certificate is now available."
+             
         create_notification(
             db,
             attempt["user_id"],
             "system",
-            "Assessment Reviewed",
-            f"Your submission for '{course['title']}' stage {stage} was {action.lower()}.",
+            "Assessment Reviewed" if action != "Approved" or [s for s in required if s > int(stage)] else "Course Completed! 🎓",
+            msg,
             f"/assessment/{str(attempt['course_id'])}"
         )
         

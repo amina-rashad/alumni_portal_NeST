@@ -4,9 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowLeft, CheckCircle2, AlertCircle, 
   Clock, Send, Code, Video, Link as LinkIcon, 
-  ChevronRight, Lock, BookOpen, Star, RefreshCcw
+  ChevronRight, Lock, BookOpen, Star, RefreshCcw, Award
 } from 'lucide-react';
-import { assessmentsApi, coursesApi } from '../services/api';
+import { assessmentsApi, coursesApi, usersApi } from '../services/api';
+import { generateCourseCertificate } from '../utils/CertificateGenerator';
 
 const AssessmentCenter: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -23,18 +24,21 @@ const AssessmentCenter: React.FC = () => {
   const [debugExplanation, setDebugExplanation] = useState('');
   const [projectUrl, setProjectUrl] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
+  const [userProfile, setUserProfile] = useState<any>(null);
 
   const fetchData = async () => {
     if (!id) return;
     setLoading(true);
     try {
-      const [courseRes, assessRes] = await Promise.all([
+      const [courseRes, assessRes, profileRes] = await Promise.all([
         coursesApi.getCourseById(id),
-        assessmentsApi.getAssessmentStatus(id)
+        assessmentsApi.getAssessmentStatus(id),
+        usersApi.getProfile()
       ]);
       
       if (courseRes.success) setCourse((courseRes.data as any).course);
       if (assessRes.success) setAttempt((assessRes.data as any).attempt);
+      if (profileRes.success) setUserProfile((profileRes.data as any).user);
       
     } catch (err) {
       console.error('Error fetching assessment data:', err);
@@ -59,14 +63,10 @@ const AssessmentCenter: React.FC = () => {
     try {
       const res = await assessmentsApi.submitStage(id, stage, payload);
       if (res.success) {
-        alert(res.message);
         fetchData(); // Refresh status
-      } else {
-        alert(res.message || 'Submission failed.');
       }
     } catch (err) {
       console.error('Submission error:', err);
-      alert('An error occurred.');
     } finally {
       setSubmitting(false);
     }
@@ -192,7 +192,7 @@ const AssessmentCenter: React.FC = () => {
                     placeholder="Type your strategic response here..."
                     value={scenarioText}
                     onChange={(e) => setScenarioText(e.target.value)}
-                    style={{ width: '100%', minHeight: '300px', padding: '1.5rem', border: 'none', outline: 'none', fontSize: '1.05rem', lineHeight: 1.6 }}
+                    style={{ width: '100%', minHeight: '300px', padding: '1.5rem', border: 'none', outline: 'none', fontSize: '1.05rem', lineHeight: 1.6, color: '#000000' }}
                  />
                  <div style={{ padding: '1.5rem', textAlign: 'right', backgroundColor: '#f9fafb' }}>
                     <button 
@@ -229,14 +229,14 @@ const AssessmentCenter: React.FC = () => {
                         value={debugCode}
                         onChange={(e) => setDebugCode(e.target.value)}
                         placeholder="// Paste fixed code here..."
-                        style={{ width: '100%', height: '140px', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '0.75rem', padding: '1rem', fontFamily: 'monospace' }}
+                        style={{ width: '100%', height: '140px', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '0.75rem', padding: '1rem', fontFamily: 'monospace', color: '#000000' }}
                     />
                     <p style={{ fontWeight: 700, margin: '1.5rem 0 0.5rem 0' }}>Explanation</p>
                     <textarea 
                         value={debugExplanation}
                         onChange={(e) => setDebugExplanation(e.target.value)}
                         placeholder="Explain why the fix works..."
-                        style={{ width: '100%', height: '80px', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '0.75rem', padding: '1rem' }}
+                        style={{ width: '100%', height: '80px', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '0.75rem', padding: '1rem', color: '#000000' }}
                     />
                     <button 
                         disabled={!debugCode || submitting}
@@ -267,7 +267,7 @@ const AssessmentCenter: React.FC = () => {
                     value={projectUrl}
                     onChange={(e) => setProjectUrl(e.target.value)}
                     placeholder="https://github.com/username/project"
-                    style={{ width: '100%', padding: '1.25rem', borderRadius: '0.75rem', border: '2px solid #e2e8f0', marginBottom: '2rem', fontSize: '1rem', outline: 'none' }}
+                    style={{ width: '100%', padding: '1.25rem', borderRadius: '0.75rem', border: '2px solid #e2e8f0', marginBottom: '2rem', fontSize: '1rem', outline: 'none', color: '#000000' }}
                 />
                 <button 
                     disabled={!projectUrl.includes('github.com') || submitting}
@@ -297,7 +297,7 @@ const AssessmentCenter: React.FC = () => {
                     value={videoUrl}
                     onChange={(e) => setVideoUrl(e.target.value)}
                     placeholder="YouTube, Vimeo, or Drive Link"
-                    style={{ width: '100%', padding: '1.25rem', borderRadius: '0.75rem', border: '2px solid #e2e8f0', marginBottom: '2rem', fontSize: '1rem', outline: 'none' }}
+                    style={{ width: '100%', padding: '1.25rem', borderRadius: '0.75rem', border: '2px solid #e2e8f0', marginBottom: '2rem', fontSize: '1rem', outline: 'none', color: '#000000' }}
                 />
                 <button 
                     disabled={!videoUrl || submitting}
@@ -320,9 +320,6 @@ const AssessmentCenter: React.FC = () => {
         
         {/* Navigation & Header */}
         <div style={{ marginBottom: '3rem' }}>
-          <Link to="/courses/my-courses" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', color: '#64748b', marginBottom: '1rem', fontSize: '0.9rem', fontWeight: 700, textDecoration: 'none' }}>
-            <ArrowLeft size={16} /> Back to My Courses
-          </Link>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
             <div>
               <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: '#0d2046', margin: 0 }}>
@@ -330,7 +327,34 @@ const AssessmentCenter: React.FC = () => {
               </h1>
               <p style={{ color: '#475569', fontSize: '1.1rem', marginTop: '0.5rem' }}>{course?.title || 'Loading Course...'}</p>
             </div>
-            <div style={{ textAlign: 'right' }}>
+            <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '1rem' }}>
+               {attempt?.is_completed && (
+                  <button 
+                    onClick={() => {
+                      if (!userProfile) return alert("Profile loading...");
+                      generateCourseCertificate(
+                        userProfile.full_name || 'NeST Member',
+                        course?.title || 'Course',
+                        new Date().toLocaleDateString()
+                      );
+                    }}
+                    style={{ 
+                      background: '#d32f2f', 
+                      color: 'white', 
+                      padding: '0.75rem 1.5rem', 
+                      borderRadius: '0.75rem', 
+                      border: 'none', 
+                      fontWeight: 800, 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '0.6rem',
+                      cursor: 'pointer',
+                      boxShadow: '0 10px 20px rgba(211,47,47,0.2)'
+                    }}
+                  >
+                    <Award size={18} /> Download Certificate
+                  </button>
+               )}
                <div style={{ backgroundColor: '#ffffff', padding: '0.5rem 1.5rem', borderRadius: '2rem', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
                   <Star size={16} fill="#F59E0B" color="#F59E0B" />
                   <span style={{ fontWeight: 800, color: '#0f172a' }}>Stage {activeStage} of {(attempt.required_assessments || [1, 2, 3, 4, 5]).length}</span>

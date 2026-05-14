@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { getUser, studentAPI, setTokens } from './services/api';
+import { Toaster } from 'react-hot-toast';
 
 // Splash & Styles
 import './App.css';
@@ -106,6 +107,9 @@ import SuperAdminDashboard from './pages/admin/SuperAdminDashboard';
 import AdminRoleManager from './pages/admin/AdminRoleManager';
 import AdminAddManager from './pages/admin/AdminAddManager';
 import IssueIVCertificates from './pages/admin/IssueIVCertificates';
+import AdminBulkAddUsers from './pages/admin/AdminBulkAddUsers';
+import AdminUserView from './pages/admin/AdminUserView';
+import AdminBulkUploadHistory from './pages/admin/AdminBulkUploadHistory';
 
 // Event Manager Pages
 import EventManagerLayout from './pages/event_manager/EventManagerLayout';
@@ -468,6 +472,9 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="add-manager" element={<PageTransition><AdminAddManager /></PageTransition>} />
           <Route path="users" element={<PageTransition><AdminUsers /></PageTransition>} />
           <Route path="users/add" element={<PageTransition><AdminAddUser /></PageTransition>} />
+          <Route path="users/view/:id" element={<PageTransition><AdminUserView /></PageTransition>} />
+          <Route path="users/bulk" element={<PageTransition><AdminBulkAddUsers /></PageTransition>} />
+          <Route path="users/bulk-history" element={<PageTransition><AdminBulkUploadHistory /></PageTransition>} />
           <Route path="users/edit/:id" element={<PageTransition><AdminEditUser /></PageTransition>} />
           <Route path="interns" element={<PageTransition><AdminInterns /></PageTransition>} />
           <Route path="interns/add" element={<PageTransition><AdminAddIntern /></PageTransition>} />
@@ -478,6 +485,7 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="applications" element={<PageTransition><Applications /></PageTransition>} />
           <Route path="reports" element={<PageTransition><Reports /></PageTransition>} />
           <Route path="events" element={<PageTransition><EventManagerEvents /></PageTransition>} />
+          <Route path="activity" element={<PageTransition><ActivityFeed /></PageTransition>} />
           <Route path="settings" element={<PageTransition><Settings /></PageTransition>} />
         </Route>
 
@@ -566,6 +574,7 @@ const App: React.FC = () => {
               transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
             >
               <ScrollToTop />
+              <Toaster position="top-right" />
               <AnimatedRoutes />
             </motion.div>
           )}

@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Search, Plus, 
-  Eye, Edit2, MoreHorizontal, UserPlus
+  Eye, Edit2, MoreHorizontal, UserPlus, FileSpreadsheet, Trash2, RefreshCw
 } from 'lucide-react';
 import { adminApi } from '../../services/api';
+import toast from 'react-hot-toast';
 
 const AdminUsers: React.FC = () => {
   const navigate = useNavigate();
@@ -35,14 +36,45 @@ const AdminUsers: React.FC = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#1e293b', margin: 0 }}>User Governance</h1>
-          <p style={{ color: '#64748b', fontSize: '15px', marginTop: '4px' }}>Manage user access, roles, and platform permissions.</p>
+          <p style={{ color: '#64748b', fontSize: '15px', marginTop: '4px' }}>
+            Managing <span style={{ color: '#1a2652', fontWeight: 700 }}>{users.length} total users</span> across the platform.
+          </p>
         </div>
-        <button 
-          onClick={() => navigate('/admin/users/add')}
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', background: nestNavy, color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(26, 38, 82, 0.2)' }}
-        >
-          <UserPlus size={18} /> Add User
-        </button>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button 
+            onClick={async () => {
+              setIsLoading(true);
+              const res = await adminApi.getAllUsers();
+              if (res.success && res.data) setUsers(res.data.users);
+              setIsLoading(false);
+              toast.success('User list updated');
+            }}
+            style={{ 
+              display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', 
+              background: '#fff', color: '#64748b', border: '1px solid #e2e8f0', 
+              borderRadius: '12px', fontWeight: 700, cursor: 'pointer'
+            }}
+            title="Refresh List"
+          >
+            <RefreshCw size={18} className={isLoading ? "animate-spin" : ""} />
+          </button>
+          <button 
+            onClick={() => navigate('/admin/users/bulk')}
+            style={{ 
+              display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', 
+              background: '#f1f5f9', color: '#1a2652', border: '1px solid #e2e8f0', 
+              borderRadius: '12px', fontWeight: 700, cursor: 'pointer', transition: '0.2s'
+            }}
+          >
+            <FileSpreadsheet size={18} /> Bulk Onboarding
+          </button>
+          <button 
+            onClick={() => navigate('/admin/users/add')}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', background: nestNavy, color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(26, 38, 82, 0.2)' }}
+          >
+            <UserPlus size={18} /> Add User
+          </button>
+        </div>
       </div>
 
       {/* Toolbar: Search and Filter */}
@@ -78,25 +110,7 @@ const AdminUsers: React.FC = () => {
           </div>
         </div>
         
-        <Link to="/admin/users/add" style={{ textDecoration: 'none' }}>
-          <button style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '8px', 
-            background: '#3b82f6', 
-            color: '#fff', 
-            border: 'none', 
-            padding: '10px 20px', 
-            borderRadius: '12px', 
-            fontSize: '14px', 
-            fontWeight: 600, 
-            cursor: 'pointer',
-            boxShadow: '0 2px 10px rgba(59, 130, 246, 0.2)'
-          }}>
-            <Plus size={18} />
-            Add User
-          </button>
-        </Link>
+        {/* Filter button or other controls could go here */}
       </div>
 
       {/* Data Table */}
@@ -156,8 +170,11 @@ const AdminUsers: React.FC = () => {
                         </div>
                       </div>
                       <div>
-                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
                           {user.full_name}
+                          <span style={{ fontSize: '10px', color: '#64748b', background: '#f1f5f9', padding: '2px 8px', borderRadius: '4px', fontWeight: 700, textTransform: 'uppercase' }}>
+                            {user.user_type || 'Alumni'}
+                          </span>
                           {(user.status === 'open_to_work' || (!user.status && user.user_type === 'Intern')) && (
                             <span style={{ fontSize: '9px', color: '#16a34a', fontWeight: 900, background: '#dcfce7', padding: '2px 8px', borderRadius: '4px', letterSpacing: '0.3px' }}>OPEN TO WORK</span>
                           )}
@@ -195,9 +212,41 @@ const AdminUsers: React.FC = () => {
                   </td>
                   <td style={{ padding: '16px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }} title="View"><Eye size={18} /></button>
-                      <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }} title="Edit"><Edit2 size={18} /></button>
-                      <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }} title="More"><MoreHorizontal size={18} /></button>
+                      <button 
+                        onClick={() => navigate(`/admin/users/view/${user.id}`)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', transition: '0.2s' }} 
+                        title="View Detailed Profile"
+                      >
+                        <Eye size={18} />
+                      </button>
+                      <button 
+                        onClick={() => navigate(`/admin/users/edit/${user.id}`)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', transition: '0.2s' }} 
+                        title="Edit User"
+                      >
+                        <Edit2 size={18} />
+                      </button>
+                      <button 
+                        onClick={async () => {
+                          if (window.confirm(`Are you sure you want to delete ${user.full_name}? This action cannot be undone.`)) {
+                            try {
+                              const res = await adminApi.deleteUser(user.id);
+                              if (res.success) {
+                                setUsers(prev => prev.filter(u => u.id !== user.id));
+                                toast.success('User deleted successfully');
+                              } else {
+                                toast.error(res.message || 'Failed to delete user');
+                              }
+                            } catch (err) {
+                              toast.error('Error deleting user');
+                            }
+                          }
+                        }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', transition: '0.2s' }} 
+                        title="Delete User"
+                      >
+                        <Trash2 size={18} />
+                      </button>
                     </div>
                   </td>
                 </tr>

@@ -58,6 +58,8 @@ const RecommendedJobs: React.FC = () => {
   const [appliedJobs, setAppliedJobs] = useState<Set<string>>(new Set());
   const [sortBy, setSortBy] = useState<'match' | 'recent'>('match');
   const [isUpdatingSkills, setIsUpdatingSkills] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const JOBS_PER_PAGE = 5;
 
   const fetchData = async () => {
     try {
@@ -85,7 +87,8 @@ const RecommendedJobs: React.FC = () => {
       const appsRes = await applicationsApi.getMyApplications();
       
       if (jobsRes.success && jobsRes.data) {
-        const allJobs = Array.isArray(jobsRes.data) ? jobsRes.data : (jobsRes.data as any).jobs || [];
+        const allJobsRaw = Array.isArray(jobsRes.data) ? jobsRes.data : (jobsRes.data as any).jobs || [];
+        const allJobs = allJobsRaw.filter((j: any) => j.is_active !== false);
         const myApps = appsRes.success && appsRes.data ? (appsRes.data as any).applications || [] : [];
         const appliedIds = new Set<string>(myApps.map((a: any) => String(a.job_id)));
         setAppliedJobs(appliedIds);
@@ -111,20 +114,23 @@ const RecommendedJobs: React.FC = () => {
           // - Experience match (heuristic, up to 15 points)
           // - Category/Title match (heuristic, up to 15 points)
           
-          let skillScore = normalizedJobSkills.length > 0 
-            ? (matched.length / normalizedJobSkills.length) * 70
-            : 35; // Neutral baseline
+          let skillScore = 0;
+          if (normalizedJobSkills.length > 0 && skills.length > 0) {
+            skillScore = (matched.length / normalizedJobSkills.length) * 80;
+          }
           
           let titleScore = 0;
-          const lowerTitle = job.title.toLowerCase();
-          if (skills.some(s => lowerTitle.includes(s.toLowerCase()))) titleScore = 15;
+          if (skills.length > 0) {
+            const lowerTitle = job.title.toLowerCase();
+            if (skills.some(s => lowerTitle.includes(s.toLowerCase()))) titleScore = 20;
+          }
 
-          let score = Math.round(skillScore + titleScore + 15); // +15 baseline
+          let score = Math.round(skillScore + titleScore);
           
           // Boost for excellent matches
           if (matched.length > 0 && matched.length === normalizedJobSkills.length) score += 5;
           
-          score = Math.max(45, Math.min(99, score));
+          score = Math.max(0, Math.min(100, score));
 
           return {
             id: job.id || job._id,
@@ -140,9 +146,11 @@ const RecommendedJobs: React.FC = () => {
             matchedSkills: matched,
             missingSkills: missing,
             matchScore: score,
-            matchReason: matched.length > 0 
-              ? `Matches your expertise in ${matched.slice(0, 2).join(' & ')}`
-              : 'Potential fit based on your background',
+            matchReason: skills.length === 0 
+              ? 'Complete your profile to get personalized matches'
+              : matched.length > 0 
+                ? `Matches your expertise in ${matched.slice(0, 2).join(' & ')}`
+                : 'Limited skill overlap detected',
             salary: job.salary_range,
             urgent: job.is_urgent || false
           };
@@ -160,6 +168,10 @@ const RecommendedJobs: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [sortBy, userSkills]);
 
 
   const toggleSaveJob = (e: React.MouseEvent, id: string) => {
@@ -193,11 +205,13 @@ const RecommendedJobs: React.FC = () => {
   const sortedJobs = [...jobs].sort((a, b) => {
     if (sortBy === 'match') return b.matchScore - a.matchScore;
     if (sortBy === 'recent') {
-      // Crude sorting by id/timestamp since postedAt is a string now
       return b.id.localeCompare(a.id);
     }
     return 0;
   });
+
+  const totalPages = Math.ceil(sortedJobs.length / JOBS_PER_PAGE);
+  const paginatedJobs = sortedJobs.slice((currentPage - 1) * JOBS_PER_PAGE, currentPage * JOBS_PER_PAGE);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -414,9 +428,9 @@ const RecommendedJobs: React.FC = () => {
             </motion.div>
             <p style={{ marginTop: '1rem', color: '#64748B' }}>Analyzing your profile and matching jobs...</p>
           </div>
-        ) : sortedJobs.length > 0 ? (
+        ) : paginatedJobs.length > 0 ? (
           <motion.div variants={containerVariants} initial="hidden" animate="visible">
-            {sortedJobs.map((job) => {
+            {paginatedJobs.map((job) => {
               const matchColor = getMatchColor(job.matchScore);
               const matchLabel = getMatchLabel(job.matchScore);
 
@@ -637,7 +651,98 @@ const RecommendedJobs: React.FC = () => {
           </div>
         )}
 
+        {/* Premium Pagination */}
+        {!loading && totalPages > 1 && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            style={{ 
+              marginTop: '5rem', 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center', 
+              gap: '1rem',
+              padding: '1.5rem',
+              borderRadius: '24px',
+              maxWidth: 'fit-content',
+              margin: '5rem auto 0'
+            }}
+          >
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              style={{
+                width: '45px',
+                height: '45px',
+                borderRadius: '14px',
+                border: '1px solid rgba(0,0,0,0.05)',
+                background: currentPage === 1 ? 'transparent' : 'white',
+                color: currentPage === 1 ? '#CBD5E1' : '#0F172A',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: currentPage === 1 ? 'default' : 'pointer',
+                transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                boxShadow: currentPage === 1 ? 'none' : '0 4px 12px rgba(0,0,0,0.03)'
+              }}
+            >
+              <ChevronRight size={20} style={{ transform: 'rotate(180deg)' }} />
+            </button>
 
+            <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                <motion.button
+                  key={pageNum}
+                  whileHover={currentPage !== pageNum ? { y: -2 } : {}}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setCurrentPage(pageNum)}
+                  style={{
+                    width: '45px',
+                    height: '45px',
+                    borderRadius: '14px',
+                    background: currentPage === pageNum ? '#0F172A' : 'white',
+                    color: currentPage === pageNum ? 'white' : '#64748B',
+                    fontWeight: 800,
+                    fontSize: '0.95rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                    boxShadow: currentPage === pageNum ? '0 10px 20px rgba(15, 23, 42, 0.2)' : '0 4px 12px rgba(0,0,0,0.03)',
+                    border: currentPage === pageNum ? 'none' : '1px solid rgba(0,0,0,0.05)'
+                  }}
+                >
+                  {pageNum}
+                </motion.button>
+              ))}
+            </div>
+
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              style={{
+                width: '45px',
+                height: '45px',
+                borderRadius: '14px',
+                border: '1px solid rgba(0,0,0,0.05)',
+                background: currentPage === totalPages ? 'transparent' : 'white',
+                color: currentPage === totalPages ? '#CBD5E1' : '#0F172A',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: currentPage === totalPages ? 'default' : 'pointer',
+                transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                boxShadow: currentPage === totalPages ? 'none' : '0 4px 12px rgba(0,0,0,0.03)'
+              }}
+            >
+              <ChevronRight size={20} />
+            </button>
+          </motion.div>
+        )}
+
+        {!loading && sortedJobs.length > 0 && (
+          <p style={{ textAlign: 'center', marginTop: '1.5rem', color: '#94A3B8', fontSize: '0.85rem', fontWeight: 600 }}>
+            Showing {(currentPage - 1) * JOBS_PER_PAGE + 1} to {Math.min(currentPage * JOBS_PER_PAGE, sortedJobs.length)} of {sortedJobs.length} recommendations
+          </p>
+        )}
       </div>
     </div>
   );

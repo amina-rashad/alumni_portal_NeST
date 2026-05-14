@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, type Variants } from 'framer-motion';
 import { 
   Clock, CheckCircle2,
@@ -62,6 +63,15 @@ const ActivityFeed: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [tick, setTick] = useState(0);
+  const navigate = useNavigate();
+  const user = getUser() as any;
+
+  // Security Check: Only Admin/Super Admin can access this page now
+  useEffect(() => {
+    if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
 
   const fetchFeed = async () => {
     try {
@@ -108,7 +118,6 @@ const ActivityFeed: React.FC = () => {
   const timeAgo = (dateStr: string) => {
     if (!dateStr) return 'Just now';
     
-    // Ensure the date string is treated as UTC if it lacks timezone info
     let normalizedDate = dateStr;
     if (!dateStr.endsWith('Z') && !dateStr.includes('+') && !dateStr.includes('-')) {
       normalizedDate += 'Z';
@@ -123,6 +132,8 @@ const ActivityFeed: React.FC = () => {
     const days = Math.floor(hrs / 24);
     return `${days}d ago`;
   };
+
+  if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) return null;
 
   return (
     <div className="font-sans" style={{ 
@@ -199,7 +210,6 @@ const ActivityFeed: React.FC = () => {
           className="video-banner"
           style={{ position: 'relative' }}
         >
-          {/* Background Video */}
           <video 
             autoPlay 
             muted 
@@ -227,52 +237,76 @@ const ActivityFeed: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* Quick Post Box - Hidden for regular users */}
-        {getUser()?.role !== 'user' && (
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="insight-card"
-            style={{ padding: '1.25rem 1.75rem', marginBottom: '2.5rem', display: 'flex', alignItems: 'center', gap: '1.25rem' }}
-          >
-            <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#F1F5F9', border: '2px solid #fff', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#0F172A', overflow: 'hidden' }}>
-              {(getUser() as any)?.profile_picture ? (
-                <img src={(getUser() as any).profile_picture} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+        {/* Exclusive Admin Post Creator */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="insight-card"
+          style={{ 
+            padding: '24px 32px', 
+            marginBottom: '40px', 
+            background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+            border: '2px solid rgba(220, 38, 38, 0.1)',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.08)'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
+            <div style={{ background: '#DC2626', color: 'white', padding: '6px 14px', borderRadius: '8px', fontSize: '11px', fontWeight: 900, letterSpacing: '1px' }}>ADMIN POST</div>
+            <div style={{ height: '1px', flex: 1, background: 'rgba(0,0,0,0.05)' }} />
+          </div>
+          
+          <div style={{ display: 'flex', gap: '20px' }}>
+            <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#0F172A', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', border: '2.5px solid #fff' }}>
+              {user?.profile_picture ? (
+                <img src={user.profile_picture} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
               ) : (
-                (getUser() as any)?.full_name?.charAt(0) || 'U'
+                user?.full_name?.charAt(0) || 'A'
               )}
             </div>
-            <button 
-              onClick={() => window.location.href = '/social/post/create'}
-              style={{ 
-                flex: 1, 
-                background: '#F8FAFC', 
-                border: '1px solid #E2E8F0', 
-                borderRadius: '99px', 
-                padding: '12px 24px', 
-                textAlign: 'left', 
-                color: '#94A3B8', 
-                fontSize: '1rem', 
-                fontWeight: 500, 
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-              onMouseOver={(e) => (e.currentTarget.style.borderColor = '#DC2626')}
-              onMouseOut={(e) => (e.currentTarget.style.borderColor = '#E2E8F0')}
-            >
-              What's on your mind, {(getUser() as any)?.full_name?.split(' ')[0] || 'Alumnus'}?
-            </button>
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
-               <button onClick={() => window.location.href = '/social/post/create'} style={{ background: 'rgba(16, 185, 129, 0.08)', color: '#10B981', border: 'none', padding: '10px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, fontSize: '0.85rem' }}>
-                  <ImageIcon size={18} /> Photo
-               </button>
-               <button onClick={() => window.location.href = '/social/post/create'} style={{ background: 'rgba(59, 130, 246, 0.08)', color: '#3B82F6', border: 'none', padding: '10px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, fontSize: '0.85rem' }}>
-                  <TrendingUp size={18} /> Video
-               </button>
+            <div style={{ flex: 1 }}>
+              <h4 style={{ margin: '0 0 6px 0', fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>Broadcast Community Update</h4>
+              <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#64748b', fontWeight: 500 }}>Share news, events, or milestones with the alumni network.</p>
+              
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button 
+                  onClick={() => window.location.href = '/social/post/create'}
+                  style={{ 
+                    flex: 1, 
+                    background: '#fff', 
+                    border: '1.5px solid #E2E8F0', 
+                    borderRadius: '14px', 
+                    padding: '14px 20px', 
+                    textAlign: 'left', 
+                    color: '#94A3B8', 
+                    fontSize: '14px', 
+                    fontWeight: 600, 
+                    cursor: 'pointer',
+                    transition: 'all 0.25s',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.borderColor = '#DC2626';
+                    e.currentTarget.style.background = '#fffafa';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.borderColor = '#E2E8F0';
+                    e.currentTarget.style.background = '#fff';
+                  }}
+                >
+                  Post a career milestone or community update...
+                </button>
+                
+                <button 
+                  onClick={() => window.location.href = '/social/post/create'}
+                  style={{ background: '#1e293b', color: '#fff', border: 'none', padding: '0 24px', borderRadius: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px' }}
+                >
+                  <MessageSquare size={18} /> Create Post
+                </button>
+              </div>
             </div>
-          </motion.div>
-        )}
+          </div>
+        </motion.div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 420px', gap: '1.5rem' }}>
           
