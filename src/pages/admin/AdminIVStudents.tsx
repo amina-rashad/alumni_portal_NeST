@@ -52,12 +52,21 @@ const AdminIVStudents: React.FC = () => {
     }
   };
 
+  const [dbIssuedCertificates, setDbIssuedCertificates] = useState<any[]>([]);
+
   const fetchVisits = async () => {
     setIsLoading(true);
-    const res = await adminApi.getVisits();
-    if (res.success && res.data) {
-      setVisits(res.data.visits);
-      setFilteredVisits(res.data.visits);
+    const [visitRes, certRes] = await Promise.all([
+      adminApi.getVisits(),
+      adminApi.getIssuedIVCertificates()
+    ]);
+
+    if (visitRes.success && visitRes.data) {
+      setVisits(visitRes.data.visits);
+      setFilteredVisits(visitRes.data.visits);
+    }
+    if (certRes.success && certRes.data) {
+      setDbIssuedCertificates(certRes.data.certificates);
     }
     setIsLoading(false);
   };
@@ -126,7 +135,7 @@ const AdminIVStudents: React.FC = () => {
   };
 
   const handleViewIssued = (collegeName: string) => {
-    const allIssued = JSON.parse(localStorage.getItem('full_issued_iv_certificates') || '[]');
+    const allIssued = dbIssuedCertificates;
     const collegeIssued = allIssued.filter((s: any) => 
       s.college.toLowerCase() === collegeName.toLowerCase()
     );
@@ -206,7 +215,7 @@ const AdminIVStudents: React.FC = () => {
               </thead>
               <tbody>
                 {(() => {
-                  const allIssued = JSON.parse(localStorage.getItem('full_issued_iv_certificates') || '[]');
+                  const allIssued = dbIssuedCertificates;
                   if (allIssued.length === 0) {
                     return <tr><td colSpan={5} style={{ padding: '80px', textAlign: 'center', color: '#64748b' }}>No certificates issued yet.</td></tr>;
                   }

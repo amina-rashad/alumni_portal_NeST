@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { School, GraduationCap, FileCheck, Search, Filter, Users, ChevronDown, Download, CheckCircle2, XCircle } from 'lucide-react';
+import { School, GraduationCap, FileCheck, Search, Filter, Users, ChevronDown, Download, CheckCircle2, XCircle, Award } from 'lucide-react';
 import { adminApi } from '../../services/api';
+import toast from 'react-hot-toast';
 
 const AdminCertification: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'iv' | 'intern' | 'alumni' | 'assessments'>('iv');
@@ -15,39 +16,67 @@ const AdminCertification: React.FC = () => {
   const [collegeFilter, setCollegeFilter] = useState('All');
   const [batchFilter, setBatchFilter] = useState('All');
 
-  // Hardcoded Data for static tabs
-  const ivStudents = [
-    { id: 1, name: 'Rahul Sharma', college: 'CET Trivandrum', course: 'B.Tech CS', batch: '2024-2026', date: '2024-03-15' },
-    { id: 2, name: 'Anjali Desai', college: 'Model Engineering College', course: 'MCA', batch: '2024-2026', date: '2024-03-15' },
-  ];
+  const [ivStudents, setIvStudents] = useState<any[]>([]);
+  const [interns, setInterns] = useState<any[]>([]);
+  const [alumni, setAlumni] = useState<any[]>([]);
+  const [issuedCertificates, setIssuedCertificates] = useState<any[]>([]);
 
-  const interns = [
-    { id: 1, name: 'Arun Kumar', college: 'NSS College Palakkad', position: 'Frontend Developer Intern', duration: '3 Months' },
-  ];
-
-  const alumni = [
-    { id: 1, name: 'Rohit Thomas', position: 'Software Engineer', joinDate: '2023-01-10', endDate: '2024-01-15' },
-  ];
-
-  const fetchAssessments = async () => {
+  const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await adminApi.getPendingAssessments();
-      if (res.success && res.data) {
-        setPendingAssessments((res.data as any).pending_assessments);
+      if (activeTab === 'assessments') {
+        const res = await adminApi.getPendingAssessments();
+        if (res.success && res.data) {
+          setPendingAssessments((res.data as any).pending_assessments);
+        }
+      } else if (activeTab === 'iv') {
+        const [userRes, certRes] = await Promise.all([
+          adminApi.getAllUsers({ type: 'Industrial Student' }),
+          adminApi.getIssuedIVCertificates()
+        ]);
+        if (userRes.success) setIvStudents(userRes.data.users);
+        if (certRes.success) setIssuedCertificates(certRes.data.certificates);
+      } else if (activeTab === 'intern') {
+        const res = await adminApi.getAllUsers({ type: 'Intern' });
+        if (res.success) setInterns(res.data.users);
+      } else if (activeTab === 'alumni') {
+        const res = await adminApi.getAllUsers({ type: 'Alumni' });
+        if (res.success) setAlumni(res.data.users);
       }
     } catch (err) {
-      console.error('Failed to fetch assessments:', err);
+      console.error('Failed to fetch data:', err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (activeTab === 'assessments') {
-      fetchAssessments();
-    }
+    fetchData();
   }, [activeTab]);
+
+  const handleIssueIV = async (s: any) => {
+    if (!s.email) {
+      toast.error('Student email missing');
+      return;
+    }
+    const student = {
+      name: s.full_name,
+      email: s.email,
+      college: s.college || 'Saintgits College',
+      batch: s.batch || '2024-2026',
+      date: new Date().toISOString().split('T')[0]
+    };
+    
+    try {
+      const res = await adminApi.bulkIssueIVCertificates([student]);
+      if (res.success) {
+        alert(`Certificate issued to ${s.full_name}`);
+        fetchData();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const handleReview = async (attemptId: string, stage: number, action: 'approve' | 'reject') => {
     const feedback = prompt('Enter feedback (optional):') || '';
@@ -60,7 +89,7 @@ const AdminCertification: React.FC = () => {
       });
       if (res.success) {
         alert(res.message);
-        fetchAssessments();
+        fetchData();
       }
     } catch (err) {
       console.error('Review failed:', err);
@@ -136,33 +165,100 @@ const AdminCertification: React.FC = () => {
                   <th style={{ padding: '16px', color: '#64748b', fontSize: '13px' }}>Student Name</th>
                   <th style={{ padding: '16px', color: '#64748b', fontSize: '13px' }}>Institution</th>
                   <th style={{ padding: '16px', color: '#64748b', fontSize: '13px' }}>Batch</th>
-                  <th style={{ padding: '16px', color: '#64748b', fontSize: '13px' }}>Visit Date</th>
+                  <th style={{ padding: '16px', color: '#64748b', fontSize: '13px' }}>Cert Status</th>
                   <th style={{ padding: '16px', color: '#64748b', fontSize: '13px', textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {ivStudents.map((s) => (
+                {ivStudents.length > 0 ? ivStudents.map((s) => {
+                  const cert = issuedCertificates.find(c => c.email === s.email);
+                  return (
+                    <tr key={s.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '16px', fontWeight: 700, color: '#1e293b' }}>{s.full_name}</td>
+                      <td style={{ padding: '16px', color: '#475569' }}>{s.college || 'N/A'}</td>
+                      <td style={{ padding: '16px', color: '#475569' }}>{s.batch || 'N/A'}</td>
+                      <td style={{ padding: '16px' }}>
+                        {cert ? (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#16a34a', fontSize: '12px', fontWeight: 600 }}>
+                            <CheckCircle2 size={14} /> Issued
+                          </span>
+                        ) : (
+                          <span style={{ color: '#94a3b8', fontSize: '12px' }}>Pending</span>
+                        )}
+                      </td>
+                      <td style={{ padding: '16px', textAlign: 'right' }}>
+                        <button 
+                          onClick={() => handleIssueIV(s)}
+                          style={{ background: cert ? '#f1f5f9' : '#1e293b', color: cert ? '#64748b' : '#fff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                        >
+                          <FileCheck size={14} /> {cert ? 'Re-issue' : 'Issue Certificate'}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                }) : (
+                  <tr><td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>No industrial students found.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        ) : activeTab === 'intern' ? (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>
+                  <th style={{ padding: '16px', color: '#475569', fontSize: '13px', fontWeight: 700 }}>Intern Name</th>
+                  <th style={{ padding: '16px', color: '#475569', fontSize: '13px', fontWeight: 700 }}>Position</th>
+                  <th style={{ padding: '16px', color: '#475569', fontSize: '13px', fontWeight: 700 }}>Department</th>
+                  <th style={{ padding: '16px', color: '#475569', fontSize: '13px', fontWeight: 700 }}>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {interns.length > 0 ? interns.map((s) => (
                   <tr key={s.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '16px', fontWeight: 700, color: '#1e293b' }}>{s.name}</td>
-                    <td style={{ padding: '16px', color: '#475569' }}>{s.college}</td>
-                    <td style={{ padding: '16px', color: '#475569' }}>{s.batch}</td>
-                    <td style={{ padding: '16px', color: '#475569' }}>{s.date}</td>
-                    <td style={{ padding: '16px', textAlign: 'right' }}>
-                      <button 
-                        onClick={() => alert(`Certificate Issued to ${s.name}`)}
-                        style={{ background: '#1e293b', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                      >
-                        <FileCheck size={14} /> Issue Certificate
-                      </button>
+                    <td style={{ padding: '16px', fontWeight: 700, color: '#1e293b' }}>{s.full_name}</td>
+                    <td style={{ padding: '16px', color: '#1e293b' }}>{s.position || 'Intern'}</td>
+                    <td style={{ padding: '16px', color: '#1e293b' }}>{s.department || 'General'}</td>
+                    <td style={{ padding: '16px' }}>
+                      <button style={{ background: '#1e293b', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: 700, cursor: 'pointer' }}>Generate Cert</button>
                     </td>
                   </tr>
-                ))}
+                )) : (
+                  <tr><td colSpan={4} style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>No interns found.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        ) : activeTab === 'alumni' ? (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>
+                  <th style={{ padding: '16px', color: '#475569', fontSize: '13px', fontWeight: 700 }}>Alumni Name</th>
+                  <th style={{ padding: '16px', color: '#475569', fontSize: '13px', fontWeight: 700 }}>Last Position</th>
+                  <th style={{ padding: '16px', color: '#475569', fontSize: '13px', fontWeight: 700 }}>Relieving Date</th>
+                  <th style={{ padding: '16px', color: '#475569', fontSize: '13px', fontWeight: 700 }}>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {alumni.length > 0 ? alumni.map((s) => (
+                  <tr key={s.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ padding: '16px', fontWeight: 700, color: '#1e293b' }}>{s.full_name}</td>
+                    <td style={{ padding: '16px', color: '#1e293b' }}>{s.position || 'Ex-Employee'}</td>
+                    <td style={{ padding: '16px', color: '#1e293b' }}>{s.relieving_date || 'N/A'}</td>
+                    <td style={{ padding: '16px' }}>
+                      <button style={{ background: '#1e293b', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: 700, cursor: 'pointer' }}>Generate Work Exp</button>
+                    </td>
+                  </tr>
+                )) : (
+                  <tr><td colSpan={4} style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>No alumni found.</td></tr>
+                )}
               </tbody>
             </table>
           </div>
         ) : (
           <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
-            Static content for {activeTab.toUpperCase()}
+            Unexpected state.
           </div>
         )}
       </div>

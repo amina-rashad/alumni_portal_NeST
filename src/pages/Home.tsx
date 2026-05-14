@@ -157,7 +157,6 @@ const Home: React.FC = () => {
               ))}
             </ul>
             <Link to="/login" className="btn-navy">LOGIN</Link>
-            <Link to="/register" className="btn-red">REGISTER</Link>
           </nav>
           <button className="mobile-menu-toggle" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
             {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
@@ -181,7 +180,6 @@ const Home: React.FC = () => {
                 </li>
               ))}
               <li><Link to="/login" className="btn-navy mobile-btn">LOGIN</Link></li>
-              <li><Link to="/register" className="btn-red mobile-btn">REGISTER</Link></li>
             </ul>
           </motion.div>
         )}
@@ -224,9 +222,9 @@ const Home: React.FC = () => {
               trainees, and event participants — and identify the best candidates for your next opportunity.
             </p>
             <div className="hero-actions">
-              <Link to="/register" className="btn-hero-primary">
-                JOIN THE PORTAL
-              </Link>
+              <a href="#about" className="btn-hero-primary">
+                LEARN MORE
+              </a>
               <motion.a href="#features" className="btn-hero-ghost" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <div className="play-icon-container">
                   <Play size={18} fill="currentColor" />
@@ -322,7 +320,7 @@ const Home: React.FC = () => {
               <li><CheckCircle size={20} className="text-primary" /> Direct connection to industry experts</li>
               <li><CheckCircle size={20} className="text-primary" /> Early access to job openings</li>
             </ul>
-            <Link to="/register" className="btn-red inline-btn">Explore Opportunities <ArrowRight size={18} /></Link>
+            <a href="#features" className="btn-red inline-btn">Explore Features <ArrowRight size={18} /></a>
           </motion.div>
         </div>
       </section>
@@ -743,7 +741,7 @@ const Home: React.FC = () => {
               visible: { opacity: 1, scale: 1, transition: { duration: 0.5, ease: "backOut" } }
             }}
           >
-            <Link to="/register" className="btn-hero-primary">Get Started Now</Link>
+            <Link to="/login" className="btn-hero-primary">Get Started Now</Link>
             <a href="#contact" className="btn-hero-ghost-dark">Contact Support</a>
           </motion.div>
         </motion.div>

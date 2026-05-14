@@ -167,7 +167,6 @@ const Login: React.FC = () => {
               ))}
             </ul>
             <Link to="/login" className="btn-navy">LOGIN</Link>
-            <Link to="/register" className="btn-red">REGISTER</Link>
           </nav>
           <button className="mobile-menu-toggle" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
             {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
@@ -268,7 +267,7 @@ const Login: React.FC = () => {
             </button>
           </div>
 
-          <p className="auth-footer" style={{ textAlign: 'center', marginTop: '24px', width: '100%' }}>New to the portal? <Link to="/register">Create an account</Link></p>
+          <p className="auth-footer" style={{ textAlign: 'center', marginTop: '24px', width: '100%' }}>Secure Access Only</p>
         </div>
 
         <div className="auth-image-side">

@@ -252,7 +252,6 @@ const MainLayout: React.FC = () => {
       section: 'Insights', icon: <Home size={17} />,
       items: [
         { name: 'Insights Overview', path: '/dashboard',          icon: <Home size={15} /> },
-        { name: 'Career Timelines', path: '/dashboard/activity', icon: <Activity size={15} /> },
       ]
     },
     {
@@ -272,7 +271,7 @@ const MainLayout: React.FC = () => {
         { name: 'Performance Analysis', path: '/assessments/analytics', icon: <Activity size={15} /> },
       ]
     },
-    ...(user?.user_type === 'Industrial Student' || user?.user_type === 'Intern' ? [
+    ...(user?.user_type?.toLowerCase() === 'industrial student' || user?.user_type?.toLowerCase() === 'intern' ? [
       {
         section: 'Certificates', icon: <Award size={17} />,
         items: [

@@ -104,6 +104,16 @@ const IssueIVCertificates: React.FC = () => {
       const zipContent = await zip.generateAsync({ type: "blob" });
       saveAs(zipContent, `IV_Certificates_Batch_${new Date().getTime()}.zip`);
 
+      // ── PERSIST TO DATABASE ──
+      const res = await adminApi.bulkIssueIVCertificates(students);
+      
+      if (res.success) {
+        toast.success(`Successfully issued certificates to ${res.data?.issued_count} registered students!`);
+      } else {
+        toast.error(res.message || 'Failed to sync with database');
+      }
+
+      // Keep legacy localStorage for audit/history
       const issuedList = JSON.parse(localStorage.getItem('full_issued_iv_certificates') || '[]');
       const newList = [...issuedList, ...students.map(s => ({
         ...s,

@@ -246,7 +246,7 @@ def get_all_users():
 @jwt_required()
 @admin_required
 def get_user_details(user_id):
-    """Get full details of a specific user for admin editing."""
+    """Get full details of a specific user for admin view/edit."""
     db = get_db()
     try:
         user = db["users"].find_one({"_id": ObjectId(user_id)})
@@ -256,8 +256,7 @@ def get_user_details(user_id):
     if not user:
         return jsonify({"success": False, "message": "User not found."}), 404
         
-    user["id"] = str(user["_id"])
-    del user["_id"]
+    user["id"] = str(user.pop("_id"))
     if "password" in user:
         del user["password"]
     
@@ -266,9 +265,32 @@ def get_user_details(user_id):
         if field in user and hasattr(user[field], "isoformat"):
             user[field] = user[field].isoformat()
             
+    # Include administrative stats
+    user["application_count"] = db["applications"].count_documents({"user_id": ObjectId(user_id)})
+            
     return jsonify({
         "success": True,
         "data": {"user": user}
+    }), 200
+
+@admin_bp.route("/users/bulk-history", methods=["GET"])
+@jwt_required()
+@admin_required
+def get_bulk_upload_history():
+    """List recent bulk upload operations."""
+    db = get_db()
+    history_cursor = db["bulk_upload_history"].find().sort("timestamp", -1).limit(20)
+    
+    history_list = []
+    for h in history_cursor:
+        h["id"] = str(h.pop("_id"))
+        if "timestamp" in h and hasattr(h["timestamp"], "isoformat"):
+            h["timestamp"] = h["timestamp"].isoformat()
+        history_list.append(h)
+        
+    return jsonify({
+        "success": True,
+        "data": {"history": history_list}
     }), 200
 
 @admin_bp.route("/users", methods=["POST"])
@@ -284,7 +306,7 @@ def create_user():
     if db["users"].find_one({"email": data["email"].strip().lower()}):
         return jsonify({"success": False, "message": "Email already exists."}), 409
         
-    hashed_pw = bcrypt.hashpw(data["password"].encode("utf-8"), bcrypt.gensalt())
+    hashed_pw = bcrypt.hashpw(data["password"].encode("utf-8"), bcrypt.gensalt()).decode('utf-8')
     now = datetime.now(timezone.utc)
     
     user_doc = {
@@ -314,6 +336,87 @@ def create_user():
         "data": {"id": str(result.inserted_id)}
     }), 201
 
+@admin_bp.route("/users/bulk-add", methods=["POST"])
+@jwt_required()
+@admin_required
+def bulk_add_users():
+    """Bulk create users from an admin-provided list."""
+    data = request.get_json()
+    if not data or "users" not in data or not isinstance(data["users"], list):
+        return jsonify({"success": False, "message": "List of users required."}), 400
+        
+    db = get_db()
+    input_users = data["users"]
+    added_count = 0
+    skipped_count = 0
+    errors = []
+    
+    now = datetime.now(timezone.utc)
+    # Default password for bulk created users
+    default_pw_str = "Welcome@NeST2024"
+    default_hashed_pw = bcrypt.hashpw(default_pw_str.encode("utf-8"), bcrypt.gensalt())
+    
+    for idx, u in enumerate(input_users):
+        email = u.get("email", "").strip().lower()
+        if not email:
+            errors.append(f"Row {idx+1}: Missing email.")
+            skipped_count += 1
+            continue
+            
+        if db["users"].find_one({"email": email}):
+            skipped_count += 1
+            continue
+            
+        try:
+            # Individual hash for better security and ensuring string storage
+            user_hashed_pw = bcrypt.hashpw(default_pw_str.encode("utf-8"), bcrypt.gensalt()).decode('utf-8')
+            
+            user_doc = {
+                "full_name": u.get("full_name", "User"),
+                "email": email,
+                "password": user_hashed_pw,
+                "phone": u.get("phone", ""),
+                "user_type": u.get("user_type", "Alumni"),
+                "batch": u.get("batch", "N/A"),
+                "specialization": u.get("specialization", "N/A"),
+                "role": u.get("role", "user"),
+                "is_active": True,
+                "is_email_verified": True,
+                "profile_picture": None,
+                "bio": u.get("bio"),
+                "linkedin_url": u.get("linkedin_url"),
+                "skills": u.get("skills", []),
+                "created_at": now,
+                "updated_at": now,
+                "last_login": None,
+            }
+            db["users"].insert_one(user_doc)
+            added_count += 1
+        except Exception as e:
+            errors.append(f"Row {idx+1} ({email}): {str(e)}")
+            skipped_count += 1
+
+    # Log to History Collection as requested ("store details in database too")
+    db["bulk_upload_history"].insert_one({
+        "admin_id": ObjectId(get_jwt_identity()),
+        "timestamp": now,
+        "filename": data.get("filename", "unknown_import.xlsx"),
+        "added_count": added_count,
+        "skipped_count": skipped_count,
+        "total_attempted": len(input_users),
+        "errors": errors
+    })
+            
+    return jsonify({
+        "success": True,
+        "message": f"Successfully added {added_count} users. Skipped/Failed {skipped_count}.",
+        "data": {
+            "added_count": added_count,
+            "skipped_count": skipped_count,
+            "errors": errors
+        }
+    }), 201
+
 @admin_bp.route("/users/<user_id>", methods=["PATCH"])
 @jwt_required()
 @admin_required
@@ -322,11 +425,14 @@ def update_user_status(user_id):
     data = request.get_json()
     db = get_db()
     
-    allowed_fields = ["is_active", "role", "full_name", "phone", "user_type", "batch", "specialization"]
+    allowed_fields = ["is_active", "role", "full_name", "phone", "user_type", "batch", "specialization", "password"]
     update_data = {}
     for field in allowed_fields:
         if field in data:
-            update_data[field] = data[field]
+            if field == "password" and data[field]:
+                update_data["password"] = bcrypt.hashpw(data[field].encode("utf-8"), bcrypt.gensalt()).decode('utf-8')
+            else:
+                update_data[field] = data[field]
         
     if not update_data:
         return jsonify({"success": False, "message": "Nothing to update."}), 400
@@ -1000,3 +1106,116 @@ def review_assessment(attempt_id):
         return jsonify({"success": True, "message": f"Stage {stage} rejected with feedback."}), 200
         
     return jsonify({"success": False, "message": "Invalid action."}), 400
+
+# ── Bulk IV Certification ──
+
+@admin_bp.route("/iv/bulk-issue", methods=["POST"])
+@jwt_required()
+@admin_required
+def bulk_issue_iv_certificates():
+    """
+    Bulk issue IV certificates to students.
+    Payload: { "students": [{ "name", "email", "college", "date", "batch" }, ...] }
+    """
+    data = request.get_json()
+    if not data or "students" not in data:
+        return jsonify({"success": False, "message": "Students list is required."}), 400
+    
+    db = get_db()
+    students = data["students"]
+    issued_count = 0
+    now = datetime.now(timezone.utc)
+    
+    for s in students:
+        email = s.get("email", "").strip().lower()
+        if not email:
+            continue
+            
+        cert_doc = {
+            "id": f"iv_{ObjectId()}",
+            "type": "iv",
+            "title": "Industrial Visit Excellence",
+            "student_name": s.get("name", "Student"),
+            "date": s.get("date", "N/A"),
+            "issuer": "NeST Academy",
+            "college": s.get("college", "N/A"),
+            "batch": s.get("batch", "N/A"),
+            "color": "#EF4444",
+            "issued_at": now.isoformat()
+        }
+        
+        # Always save to a global issued_iv_certificates collection for name/email lookup
+        db["issued_iv_certificates"].update_one(
+            {"email": email, "date": s.get("date")},
+            {"$set": {
+                "name": s.get("name", "").strip(),
+                "email": email,
+                "college": s.get("college", "N/A"),
+                "date": s.get("date", "N/A"),
+                "batch": s.get("batch", "N/A"),
+                "issued_at": now
+            }},
+            upsert=True
+        )
+
+        # Try to find user by email and update/push to their certificates array
+        user_record = db["users"].find_one({"email": email})
+        if user_record:
+            # Check if an IV cert for this date already exists to overwrite
+            user_certs = user_record.get("certificates", [])
+            found = False
+            for c in user_certs:
+                if c.get("type") == "iv" and c.get("date") == s.get("date"):
+                    c.update(cert_doc) # Overwrite existing
+                    found = True
+                    break
+            
+            if found:
+                db["users"].update_one({"_id": user_record["_id"]}, {"$set": {"certificates": user_certs}})
+            else:
+                db["users"].update_one({"_id": user_record["_id"]}, {"$push": {"certificates": cert_doc}})
+            # Notify user
+            try:
+                create_notification(
+                    db,
+                    user_id=user["_id"],
+                    type_str="system",
+                    title="IV Certificate Issued!",
+                    message=f"Your certificate for the industrial visit is now available on your profile.",
+                    link="/profile"
+                )
+            except:
+                pass
+            issued_count += 1
+        else:
+            # If user not found, we already saved it to issued_iv_certificates
+            # so they can claim it later or view by name/email match
+            print(f"User not found for email: {email} - Saved to global repository")
+            
+    return jsonify({
+        "success": True,
+        "message": f"Successfully issued certificates to {issued_count} registered students.",
+        "data": {"issued_count": issued_count}
+    }), 200
+
+@admin_bp.route("/iv/issued-certificates", methods=["GET"])
+@jwt_required()
+def get_issued_iv_certificates():
+    """Fetch all issued certificates from the global repository."""
+    db = get_db()
+    certs_cursor = db["issued_iv_certificates"].find().sort("issued_at", -1)
+    certs_list = []
+    for c in certs_cursor:
+        certs_list.append({
+            "id": str(c["_id"]),
+            "name": c.get("name"),
+            "email": c.get("email"),
+            "college": c.get("college"),
+            "date": c.get("date"),
+            "batch": c.get("batch"),
+            "issuedAt": c.get("issued_at").isoformat() if hasattr(c.get("issued_at"), "isoformat") else str(c.get("issued_at"))
+        })
+    return jsonify({
+        "success": True,
+        "data": {"certificates": certs_list}
+    }), 200

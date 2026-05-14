@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { 
@@ -9,8 +9,14 @@ import {
   CheckCircle2, Building, Info, Share2, GraduationCap, FileText, Download, ExternalLink, MoreHorizontal, Eye, Share
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
-import { usersApi, getUser } from '../services/api';
+import { usersApi, getUser, eventsApi, coursesApi } from '../services/api';
 import profileBanner from '../assets/profile_banner_modern.png';
+import { 
+  generateEventCertificate, 
+  generateCourseCertificate, 
+  generateIVCertificate,
+  generateJobCertificate
+} from '../utils/CertificateGenerator';
 
 // --- RESUME PREVIEW COMPONENT (Mirrored from Builder) ---
 const ResumePreview: React.FC<{ data: any }> = ({ data }) => {
@@ -129,6 +135,7 @@ const ViewProfile: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [user, setUserData] = useState<any>(null);
+  const [certificates, setCertificates] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [resumeBlobUrl, setResumeBlobUrl] = useState<string | null>(null);
   const [showResumeModal, setShowResumeModal] = useState(false);
@@ -229,13 +236,6 @@ const ViewProfile: React.FC = () => {
         if (res.success && data && data.user) {
           const apiUser = data.user;
           setUserData(apiUser);
-          
-          // Optionally sync local storage if it's stale
-          const localUser = getUser() as any;
-          if (localUser && (localUser.id === apiUser.id)) {
-            // Keep local tokens but update profile info
-            // setUser({ ...localUser, ...apiUser }); 
-          }
         } else {
           const localUser = getUser();
           if (localUser) {
@@ -247,8 +247,8 @@ const ViewProfile: React.FC = () => {
               batch: '2023',
               email: 'melbin@google.com',
               phone: '+91 98765 43210',
-              bio: 'Passionate software engineer with expertise in building scalable web applications. Always eager to learn new technologies and contribute to meaningful projects.',
-              skills: ['React', 'TypeScript', 'Node.js', 'PostgreSQL', 'Tailwind CSS', 'Framer Motion'],
+              bio: 'Passionate software engineer with expertise in building scalable web applications.',
+              skills: ['React', 'TypeScript', 'Node.js'],
               status: 'open_to_work',
               profile_picture: null
             });
@@ -259,23 +259,65 @@ const ViewProfile: React.FC = () => {
         const localUser = getUser();
         if (localUser) {
           setUserData(localUser);
-        } else {
-          setUserData({
-            full_name: 'Melbin',
-            specialization: 'Software Engineer',
-            batch: '2023',
-            email: 'melbin@google.com',
-            bio: 'No professional bio provided yet. Add a bio to tell others about your journey, interests, and expertise.',
-            skills: ['React', 'TypeScript', 'Cloud Computing'],
-            status: 'none',
-            profile_picture: null
-          });
         }
       } finally {
         setLoading(false);
       }
     };
+
+    const fetchAllCertificates = async () => {
+      try {
+        const [eventRes, courseRes] = await Promise.all([
+          eventsApi.getMyEvents(),
+          coursesApi.getMyCourses()
+        ]);
+
+        const certs: any[] = [];
+
+        // 1. Courses
+        if (courseRes.success && courseRes.data && courseRes.data.courses) {
+          const completedCourses = courseRes.data.courses.filter((c: any) => 
+            c.enrollment_info?.progress === 100 || c.assessment_info?.is_completed === true
+          );
+          
+          completedCourses.forEach((c: any) => {
+            certs.push({
+              id: `course_${c.id}`,
+              type: 'course',
+              title: c.title,
+              name: c.title,
+              date: c.enrollment_info?.completed_at ? new Date(c.enrollment_info.completed_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'Recently',
+              issuer: 'NeST Academy',
+              color: '#3B82F6'
+            });
+          });
+        }
+
+        // 2. Events
+        if (eventRes.success && eventRes.data && eventRes.data.events) {
+          const issuedEvents = eventRes.data.events.filter((e: any) => e.is_certificate_issued === true);
+          
+          issuedEvents.forEach((e: any) => {
+            certs.push({
+              id: `event_${e.id}`,
+              type: 'event',
+              title: e.title,
+              name: e.title,
+              date: e.date,
+              issuer: 'NeST Alumni Association',
+              color: '#10B981'
+            });
+          });
+        }
+
+        setCertificates(certs);
+      } catch (err) {
+        console.error('Error fetching all certificates:', err);
+      }
+    };
+
     fetchProfile();
+    fetchAllCertificates();
   }, []);
 
   useEffect(() => {
@@ -503,137 +545,134 @@ const ViewProfile: React.FC = () => {
             </div>
           </section>
 
-          {/* Certificates Section (NeST Blue Branding) */}
-          <section style={{ background: 'rgba(26, 38, 82, 0.95)', backdropFilter: 'blur(24px)', padding: '32px', borderRadius: '24px', border: '1px solid rgba(26, 38, 82, 0.5)', boxShadow: '0 12px 40px rgba(0,0,0,0.15)' }}>
-            <h3 style={{ margin: '0 0 24px', fontSize: '19px', fontWeight: 800, color: 'white', display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <Award size={22} color="white" /> Certificates & Accreditations
-            </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
-              {user?.certificates && user.certificates.length > 0 ? (
-                user.certificates.map((cert: any) => (
-                  <div key={cert.id} style={{ display: 'flex', flexDirection: 'column' }}>
-                    {/* File Card Layout (Ultra-Sleek & Sexy) */}
-                    <div 
-                      onClick={() => {
-                        if (cert.url) {
-                          const newWindow = window.open();
-                          if (newWindow) {
-                            newWindow.document.write(`<iframe src="${cert.url}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
-                          }
-                        }
-                      }}
-                      style={{ 
-                        borderRadius: '12px', 
-                        overflow: 'hidden', 
-                        background: 'white', 
-                        border: '1.5px solid #c8102e', 
-                        display: 'flex',
-                        flexDirection: 'column',
-                        boxShadow: '0 4px 20px rgba(200, 16, 46, 0.15), 0 0 10px rgba(0,0,0,0.05)',
-                        transition: '0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-                        cursor: 'pointer'
-                      }}
-                      onMouseEnter={e => {
-                        e.currentTarget.style.transform = 'translateY(-4px) scale(1.02)';
-                        e.currentTarget.style.boxShadow = '0 12px 30px rgba(200, 16, 46, 0.3)';
-                      }}
-                      onMouseLeave={e => {
-                        e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                        e.currentTarget.style.boxShadow = '0 4px 20px rgba(200, 16, 46, 0.15)';
-                      }}
-                    >
-                      {/* Slim Glassmorphic Header */}
-                      <div style={{ 
-                        padding: '8px 12px', 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'space-between',
-                        borderBottom: '1px solid rgba(241, 245, 249, 0.8)',
-                        background: 'rgba(255, 255, 255, 0.95)',
-                        backdropFilter: 'blur(8px)'
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, overflow: 'hidden' }}>
-                          <div style={{ color: '#c8102e' }}>
-                            <FileText size={16} />
-                          </div>
-                          <span style={{ 
-                            fontSize: '12px', 
-                            fontWeight: 800, 
-                            color: '#1e293b',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            letterSpacing: '0.2px'
-                          }}>
-                            {cert.name}.pdf
-                          </span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748b' }}>
-                          <ExternalLink size={14} />
-                        </div>
-                      </div>
+          {/* Certificates Section */}
+          {(certificates.length > 0 || (user?.certificates && user.certificates.length > 0)) && (
+            <section style={{ background: 'rgba(255, 255, 255, 0.7)', backdropFilter: 'blur(24px)', padding: '32px', borderRadius: '24px', border: '1px solid rgba(255, 255, 255, 0.6)', boxShadow: '0 10px 40px -10px rgba(0,0,0,0.08)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '10px', borderRadius: '14px', display: 'flex' }}>
+                    <Award size={22} color="#10b981" />
+                  </div>
+                  <h2 style={{ 
+                    margin: 0, 
+                    fontSize: '19px', 
+                    fontWeight: 800, 
+                    color: '#0F172A', 
+                    letterSpacing: '0.02em'
+                  }}>
+                    My Certificates
+                  </h2>
+                </div>
+              </div>
 
-                      {/* Micro-Preview Area */}
-                      <div style={{ 
-                        height: '140px', 
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+                {[...certificates, ...(user?.certificates || [])].map((cert, i) => (
+                  <motion.div
+                    key={cert.id || i}
+                    whileHover={{ y: -5 }}
+                    style={{
+                      background: '#fff',
+                      borderRadius: '24px',
+                      padding: '1.5rem',
+                      border: '1px solid #e2e8f0',
+                      boxShadow: '0 4px 6px rgba(0,0,0,0.02)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '1rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <div style={{ 
+                      width: '50px', 
+                      height: '50px', 
+                      borderRadius: '12px', 
+                      background: cert.type === 'iv' ? '#fee2e2' : 
+                                  cert.type === 'course' ? '#e0f2fe' : 
+                                  cert.type === 'event' ? '#dcfce7' : 
+                                  cert.type === 'job' ? '#f3e8ff' : '#f1f5f9', 
+                      color: cert.type === 'iv' ? '#ef4444' : 
+                             cert.type === 'course' ? '#3b82f6' : 
+                             cert.type === 'event' ? '#22c55e' : 
+                             cert.type === 'job' ? '#a855f7' : '#64748b', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center' 
+                    }}>
+                      <Award size={28} />
+                    </div>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                        <span style={{ 
+                          fontSize: '10px', 
+                          fontWeight: 800, 
+                          padding: '2px 8px', 
+                          borderRadius: '6px',
+                          textTransform: 'uppercase',
+                          background: cert.type === 'iv' ? '#fee2e2' : 
+                                      cert.type === 'course' ? '#e0f2fe' : 
+                                      cert.type === 'event' ? '#dcfce7' : 
+                                      cert.type === 'job' ? '#f3e8ff' : '#f1f5f9',
+                          color: cert.type === 'iv' ? '#ef4444' : 
+                                 cert.type === 'course' ? '#3b82f6' : 
+                                 cert.type === 'event' ? '#22c55e' : 
+                                 cert.type === 'job' ? '#a855f7' : '#64748b',
+                        }}>
+                          {cert.type || 'Award'}
+                        </span>
+                      </div>
+                      <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#0F172A', lineHeight: 1.3 }}>{cert.title || cert.name}</h4>
+                      <p style={{ margin: '6px 0 0', fontSize: '0.8rem', color: '#64748B', fontWeight: 600 }}>Issued: {cert.date} • {cert.issuer || 'NeST Academy'}</p>
+                    </div>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const participantName = user.full_name || 'Alumnus';
+                        
+                        if (cert.type === 'uploaded' && cert.url) {
+                          window.open(cert.url, '_blank');
+                        } else if (cert.type === 'iv') {
+                          generateIVCertificate(participantName, cert.batch || '2024', cert.date);
+                        } else if (cert.type === 'course') {
+                          generateCourseCertificate(participantName, cert.title || cert.name, cert.date);
+                        } else if (cert.type === 'event') {
+                          generateEventCertificate(participantName, cert.title || cert.name, cert.date);
+                        } else if (cert.type === 'job') {
+                          generateJobCertificate(participantName, cert.title || cert.name, cert.issuer || 'NeST Digital', cert.date);
+                        } else if (cert.url) {
+                          window.open(cert.url, '_blank');
+                        } else {
+                          // Fallback to IV page if unknown but likely IV
+                          navigate('/iv-certificates');
+                        }
+                      }} 
+                      style={{ 
+                        marginTop: 'auto', 
                         width: '100%', 
+                        padding: '12px', 
+                        borderRadius: '12px', 
                         background: '#f8fafc', 
-                        position: 'relative',
-                        overflow: 'hidden', 
+                        border: '1px solid #e2e8f0', 
+                        color: '#0F172A', 
+                        fontSize: '0.85rem', 
+                        fontWeight: 700, 
+                        cursor: 'pointer', 
+                        transition: 'all 0.2s',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center'
-                      }}>
-                        {cert.url && cert.url !== '#' ? (
-                          cert.url.startsWith('data:application/pdf') || cert.url.endsWith('.pdf') ? (
-                            <div style={{ width: '130%', height: '140%', overflow: 'hidden', position: 'relative', marginTop: '-5%', marginRight: '-15%' }}>
-                              <iframe 
-                                src={`${cert.url}#toolbar=0&navpanes=0&scrollbar=0`} 
-                                style={{ 
-                                  width: '100%', 
-                                  height: '100%', 
-                                  border: 'none', 
-                                  pointerEvents: 'none'
-                                }}
-                                scrolling="no"
-                                title="Certificate Preview"
-                              />
-                            </div>
-                          ) : (
-                            <img 
-                              src={cert.url} 
-                              alt="Certificate Thumbnail" 
-                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                            />
-                          )
-                        ) : (
-                          <Award size={32} color="#e2e8f0" />
-                        )}
-                        
-                        {/* Minimalist Floating Action Button */}
-                        <div style={{ 
-                          position: 'absolute', bottom: '8px', right: '8px',
-                          padding: '6px 12px', background: 'rgba(26, 38, 82, 0.98)', color: 'white', 
-                          borderRadius: '15px', fontSize: '10px', fontWeight: 800,
-                          display: 'flex', alignItems: 'center', gap: '4px',
-                          boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
-                          zIndex: 10,
-                          border: '1px solid rgba(255,255,255,0.1)'
-                        }}>
-                          <Eye size={12} /> View
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div style={{ textAlign: 'center', padding: '20px', gridColumn: '1 / -1' }}>
-                  <Award size={48} color="#e2e8f0" style={{ marginBottom: '12px' }} />
-                  <p style={{ margin: 0, color: '#94a3b8', fontStyle: 'italic', fontSize: '15px' }}>No certificates added yet.</p>
-                </div>
-              )}
-            </div>
-          </section>
+                        justifyContent: 'center',
+                        gap: '8px'
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#1a2652'; e.currentTarget.style.color = 'white'; e.currentTarget.style.borderColor = '#1a2652'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#0F172A'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
+                    >
+                      <Download size={16} />
+                      Download PDF
+                    </button>
+                  </motion.div>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Resume Section */}
           {(user.resume_url || user.is_resume_created) && (
@@ -801,119 +840,122 @@ const ViewProfile: React.FC = () => {
     </motion.div>
 
     {/* Full Screen Resume Modal */}
-    {showResumeModal && (
-      <div style={{
-        position: 'fixed',
-        inset: 0,
-        background: '#0f172a',
-        zIndex: 9999,
-        display: 'flex',
-        flexDirection: 'column',
-        padding: '1.5rem'
-      }}>
-        <div ref={modalTopRef} style={{ height: '1px', width: '100%' }} />
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', background: 'white', padding: '8px 20px', borderRadius: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ 
-              width: '36px', 
-              height: '36px', 
-              background: '#f8fafc', 
-              borderRadius: '8px', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              color: '#ef4444',
-              border: '1px solid #e2e8f0'
-            }}>
-              <FileText size={20} />
-            </div>
-            <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#1e293b' }}>
-              {user.full_name ? `${user.full_name.replace(/\s+/g, '_')}_Resume.pdf` : 'Professional_Resume.pdf'}
-            </h4>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <button 
-              onClick={handleDownload}
-              disabled={isDownloading}
-              style={{ 
-                background: isDownloading ? '#f1f5f9' : '#f8fafc', 
-                color: isDownloading ? '#c8102e' : '#1e293b', 
-                border: '1px solid #e2e8f0', 
-                borderRadius: '12px', 
-                padding: '0 16px',
+    <AnimatePresence>
+      {showResumeModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: '#0f172a',
+          zIndex: 9999,
+          display: 'flex',
+          flexDirection: 'column',
+          padding: '1.5rem'
+        }}>
+          {/* ... modal content ... */}
+          <div ref={modalTopRef} style={{ height: '1px', width: '100%' }} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', background: 'white', padding: '8px 20px', borderRadius: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ 
+                width: '36px', 
                 height: '36px', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                gap: '8px',
-                cursor: isDownloading ? 'wait' : 'pointer',
-                transition: 'all 0.2s',
-                fontWeight: 700,
-                fontSize: '13px'
-              }}
-              onMouseEnter={(e) => { if(!isDownloading) { e.currentTarget.style.background = '#1a2652'; e.currentTarget.style.color = 'white'; e.currentTarget.style.borderColor = '#1a2652'; } }}
-              onMouseLeave={(e) => { if(!isDownloading) { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#1e293b'; e.currentTarget.style.borderColor = '#e2e8f0'; } }}
-              title={isDownloading ? "Downloading..." : "Download Resume"}
-            >
-              {isDownloading ? (
-                <>
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-                    style={{ width: '16px', height: '16px', border: '2px solid #e2e8f0', borderTopColor: '#c8102e', borderRadius: '50%' }}
-                  />
-                  <span>Downloading...</span>
-                </>
-              ) : (
-                <>
-                  <Download size={16} />
-                  <span>Download CV</span>
-                </>
-              )}
-            </button>
-            <button 
-              onClick={() => setShowResumeModal(false)}
-              style={{ 
                 background: '#f8fafc', 
-                color: '#0f172a', 
-                border: '1px solid #e2e8f0', 
-                borderRadius: '50%', 
-                width: '32px', 
-                height: '32px', 
+                borderRadius: '8px', 
                 display: 'flex', 
                 alignItems: 'center', 
                 justifyContent: 'center', 
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                fontWeight: 'bold',
-                fontSize: '12px'
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#ef4444'; e.currentTarget.style.color = 'white'; e.currentTarget.style.borderColor = '#ef4444'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#0f172a'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
-            >
-              ✕
-            </button>
+                color: '#ef4444',
+                border: '1px solid #e2e8f0'
+              }}>
+                <FileText size={20} />
+              </div>
+              <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#1e293b' }}>
+                {user.full_name ? `${user.full_name.replace(/\s+/g, '_')}_Resume.pdf` : 'Professional_Resume.pdf'}
+              </h4>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <button 
+                onClick={handleDownload}
+                disabled={isDownloading}
+                style={{ 
+                  background: isDownloading ? '#f1f5f9' : '#f8fafc', 
+                  color: isDownloading ? '#c8102e' : '#1e293b', 
+                  border: '1px solid #e2e8f0', 
+                  borderRadius: '12px', 
+                  padding: '0 16px',
+                  height: '36px', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  gap: '8px',
+                  cursor: isDownloading ? 'wait' : 'pointer',
+                  transition: 'all 0.2s',
+                  fontWeight: 700,
+                  fontSize: '13px'
+                }}
+                onMouseEnter={(e) => { if(!isDownloading) { e.currentTarget.style.background = '#1a2652'; e.currentTarget.style.color = 'white'; e.currentTarget.style.borderColor = '#1a2652'; } }}
+                onMouseLeave={(e) => { if(!isDownloading) { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#1e293b'; e.currentTarget.style.borderColor = '#e2e8f0'; } }}
+                title={isDownloading ? "Downloading..." : "Download Resume"}
+              >
+                {isDownloading ? (
+                  <>
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                      style={{ width: '16px', height: '16px', border: '2px solid #e2e8f0', borderTopColor: '#c8102e', borderRadius: '50%' }}
+                    />
+                    <span>Downloading...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download size={16} />
+                    <span>Download CV</span>
+                  </>
+                )}
+              </button>
+              <button 
+                onClick={() => setShowResumeModal(false)}
+                style={{ 
+                  background: '#f8fafc', 
+                  color: '#0f172a', 
+                  border: '1px solid #e2e8f0', 
+                  borderRadius: '50%', 
+                  width: '32px', 
+                  height: '32px', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  fontWeight: 'bold',
+                  fontSize: '12px'
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = '#ef4444'; e.currentTarget.style.color = 'white'; e.currentTarget.style.borderColor = '#ef4444'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#0f172a'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+          <div style={{ flex: 1, background: 'radial-gradient(circle at center, #1e293b 0%, #0b1121 100%)', borderRadius: '16px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', boxShadow: 'inset 0 0 40px rgba(0,0,0,0.8)' }}>
+            {user.resume_data ? (
+              <div ref={scrollContainerRef} className="hide-scroll" style={{ width: '100%', height: '100%', overflowY: 'auto', padding: '1rem 0' }}>
+                <div ref={resumeRef} style={{ margin: '0 auto', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)', borderRadius: '8px', width: '95%', maxWidth: '1000px' }}>
+                  <ResumePreview data={user.resume_data} />
+                </div>
+              </div>
+            ) : (
+              <div ref={scrollContainerRef} style={{ width: '100%', height: '100%', padding: '0', overflowY: 'auto' }}>
+                <iframe 
+                  src={`${resumeBlobUrl || user.resume_url}#view=FitH&toolbar=0`} 
+                  style={{ width: '100%', maxWidth: '1200px', margin: '0 auto', height: '100%', minHeight: '90vh', display: 'block', border: 'none', borderRadius: '8px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)' }}
+                  title="Resume Full View"
+                />
+              </div>
+            )}
           </div>
         </div>
-        <div style={{ flex: 1, background: 'radial-gradient(circle at center, #1e293b 0%, #0b1121 100%)', borderRadius: '16px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', boxShadow: 'inset 0 0 40px rgba(0,0,0,0.8)' }}>
-          {user.resume_data ? (
-            <div ref={scrollContainerRef} className="hide-scroll" style={{ width: '100%', height: '100%', overflowY: 'auto', padding: '1rem 0' }}>
-              <div ref={resumeRef} style={{ margin: '0 auto', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)', borderRadius: '8px', width: '95%', maxWidth: '1000px' }}>
-                <ResumePreview data={user.resume_data} />
-              </div>
-            </div>
-          ) : (
-            <div ref={scrollContainerRef} style={{ width: '100%', height: '100%', padding: '0', overflowY: 'auto' }}>
-              <iframe 
-                src={`${resumeBlobUrl || user.resume_url}#view=FitH&toolbar=0`} 
-                style={{ width: '100%', maxWidth: '1200px', margin: '0 auto', height: '100%', minHeight: '90vh', display: 'block', border: 'none', borderRadius: '8px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)' }}
-                title="Resume Full View"
-              />
-            </div>
-          )}
-        </div>
-      </div>
-    )}
+      )}
+    </AnimatePresence>
 
     </div>
   );

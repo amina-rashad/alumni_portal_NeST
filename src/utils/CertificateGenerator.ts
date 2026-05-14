@@ -245,3 +245,61 @@ export const getIVCertificatePDF = (participantName: string, batch: string, date
 };
 
 
+export const generateJobCertificate = (participantName: string, role: string, company: string, date: string) => {
+  try {
+    const doc = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const centerX = pageWidth / 2;
+
+    // ── 1. BACKGROUND ──
+    try {
+      doc.addImage(CERTIFICATE_BG, 'PNG', 0, 0, pageWidth, pageHeight);
+    } catch (e) {
+      doc.setFillColor(255, 255, 255);
+      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+    }
+
+    // ── 2. LOGO ──
+    try {
+      doc.addImage(NEST_OVAL_LOGO, 'PNG', 25, 20, 35, 21);
+    } catch (e) {}
+
+    // ── 3. HEADER ──
+    doc.setTextColor(26, 38, 82);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(40);
+    doc.text("CERTIFICATE", centerX, 65, { align: 'center' });
+    
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100, 100, 100);
+    doc.text("OF PROFESSIONAL EXCELLENCE", centerX, 75, { align: 'center' });
+
+    // ── 4. BODY CONTENT ──
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.setTextColor(80, 80, 80);
+    doc.text("THIS CERTIFICATE IS PROUDLY PRESENTED TO", centerX, 100, { align: 'center' });
+
+    doc.setTextColor(0, 0, 0);
+    doc.setFont("times", "italic");
+    doc.setFontSize(60);
+    doc.text(participantName, centerX, 125, { align: 'center' });
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(12);
+    doc.setTextColor(60, 60, 60);
+    const description = `IN RECOGNITION OF OUTSTANDING PERFORMANCE AND SUCCESSFUL COMPLETION OF THE ROLE AS\n${role.toUpperCase()}\nAT ${company.toUpperCase()} COMPLETED ON ${date.toUpperCase()}`;
+    doc.text(description, centerX, 145, { align: 'center', maxWidth: 160 });
+
+    doc.save(`${participantName.replace(/\s+/g, '_')}_Job_Certificate.pdf`);
+  } catch (err) {
+    console.error(err);
+  }
+};

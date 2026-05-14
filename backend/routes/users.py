@@ -221,3 +221,47 @@ def list_users():
         "success": True,
         "data": {"users": users_list}
     }), 200
+
+# ── Get IV Certificates from Global Repository ──
+
+@users_bp.route("/me/iv-certificates", methods=["GET"])
+@jwt_required()
+def get_my_iv_certificates():
+    """Fetch IV certificates from the global issued_iv_certificates collection matching name/email."""
+    user_id = get_jwt_identity()
+    db = get_db()
+    
+    user = db["users"].find_one({"_id": ObjectId(user_id)})
+    if not user:
+        return jsonify({"success": False, "message": "User not found."}), 404
+        
+    email = user.get("email", "").lower().strip()
+    name = user.get("full_name", "").lower().strip()
+    
+    # Query matching either email OR name (fuzzy match for name)
+    query = {
+        "$or": [
+            {"email": email},
+            {"name": {"$regex": f"^{name}$", "$options": "i"}}
+        ]
+    }
+    
+    certs_cursor = db["issued_iv_certificates"].find(query).sort("issued_at", -1)
+    certs_list = []
+    for c in certs_cursor:
+        certs_list.append({
+            "id": str(c["_id"]),
+            "type": "iv",
+            "title": "Industrial Visit Excellence",
+            "student_name": c.get("name"),
+            "email": c.get("email"),
+            "college": c.get("college"),
+            "date": c.get("date"),
+            "batch": c.get("batch"),
+            "issued_at": c.get("issued_at").isoformat() if hasattr(c.get("issued_at"), "isoformat") else str(c.get("issued_at"))
+        })
+        
+    return jsonify({
+        "success": True,
+        "data": {"certificates": certs_list}
+    }), 200

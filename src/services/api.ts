@@ -208,6 +208,9 @@ export const usersApi = {
   getProfile: () =>
     apiRequest('/users/me', { method: 'GET' }),
 
+  getMyIVCertificates: () =>
+    apiRequest<{ certificates: any[] }>('/users/me/iv-certificates', { method: 'GET' }),
+
   updateProfile: (data: Record<string, unknown>) =>
     apiRequest('/users/me', {
       method: 'PATCH',
@@ -388,9 +391,9 @@ export const socialApi = {
 export const assessmentsApi = {
   getQuizzes: () => apiRequest('/assessments/quizzes'),
   getAnalytics: () => apiRequest('/assessments/analytics'),
-  getAssessmentStatus: (id: string) => apiRequest(`/assessments/${id}/status`),
+  getAssessmentStatus: (id: string) => apiRequest(`/assessments/status/${id}`),
   submitStage: (id: string, stage: number, payload: any) => 
-    apiRequest(`/assessments/${id}/stage/${stage}`, { method: 'POST', body: JSON.stringify(payload) }),
+    apiRequest(`/assessments/submit/${id}/${stage}`, { method: 'POST', body: JSON.stringify(payload) }),
 };
 
 // ── Notifications API ──
@@ -474,6 +477,9 @@ export const adminApi = {
   createUser: (data: any) => 
     apiRequest('/admin/users', { method: 'POST', body: JSON.stringify(data) }),
 
+  bulkAddUsers: (users: any[]) =>
+    apiRequest('/admin/users/bulk-add', { method: 'POST', body: JSON.stringify({ users }) }),
+
   updateUser: (userId: string, data: any) => 
     apiRequest(`/admin/users/${userId}`, { method: 'PATCH', body: JSON.stringify(data) }),
 
@@ -521,6 +527,20 @@ export const adminApi = {
 
   getAuditLogs: () =>
     apiRequest<{ logs: any[] }>('/admin/audit-logs'),
+
+  bulkIssueIVCertificates: (students: any[]) =>
+    apiRequest('/admin/iv/bulk-issue', { method: 'POST', body: JSON.stringify({ students }) }),
+
+  getIssuedIVCertificates: () => apiRequest('/admin/iv/issued-certificates', { method: 'GET' }),
+  
+  bulkAddUsers: (payload: { users: any[], filename?: string }) =>
+    apiRequest('/admin/users/bulk-add', { method: 'POST', body: JSON.stringify(payload) }),
+
+  getBulkUploadHistory: () =>
+    apiRequest<{ history: any[] }>('/admin/users/bulk-history', { method: 'GET' }),
+
+  updateUser: (userId: string, data: any) =>
+    apiRequest(`/admin/users/${userId}`, { method: 'PATCH', body: JSON.stringify(data) }),
 };
 
 export const recruiterApi = {
