@@ -1,21 +1,27 @@
 import React from 'react';
 import { 
   BarChart3, PieChart, TrendingUp, Download, 
-  Calendar, FileText, ArrowUpRight
+  Calendar, FileText, ArrowUpRight, Loader2
 } from 'lucide-react';
 
 const EventManagerReports: React.FC = () => {
   const brandPrimary = '#233167';
+  const [downloadingFile, setDownloadingFile] = React.useState<string | null>(null);
 
   const handleDownload = (filename: string) => {
+    setDownloadingFile(filename);
     // Generate a valid minimal blank PDF Data URI for mock downloading
     const pdfDataUri = 'data:application/pdf;base64,JVBERi0xLjQKJcOkw7zDtsOfCjIgMCBvYmoKPDwvTGVuZ3RoIDMgMCBSL0ZpbHRlci9GbGF0ZURlY29kZT4+CnN0cmVhbQp4nDPQM1Qo5ypUMFAwALJMLU31jBQsTAyN9MwUTI2MDPUslEBCxkC2qZGRhZm5rYmhmZWRoameiZqZuamZuZmppQUAUlMMgQplbmRzdHJlYW0KZW5kb2JqCgozIDAgb2JqCjY5CmVuZG9iagoKNCAwIG9iago8PC9UeXBlL1BhZ2UvTWVkaWFCb3ggWzAgMCA1OTUuMjggODQxLjg5XS9SZXNvdXJjZXM8PC9Gb250PDwvRjEgNSAwIFI+Pj4+L0NvbnRlbnRzIDIgMCBSL1BhcmVudCAxIDAgUj4+CmVuZG9iagoKNSAwIG9iago8PC9UeXBlL0ZvbnQvU3VidHlwZS9UeXBlMS9CYXNlRm9udC9IZWx2ZXRpY2E+PgplbmRvYmoKCjEgMCBvYmoKPDwvVHlwZS9QYWdlcy9LaWRzWzQgMCBSXS9Db3VudCAXPj4KZW5kb2JqCgo2IDAgb2JqCjw8L1R5cGUvQ2F0YWxvZy9QYWdlcyAxIDAgUj4+CmVuZG9iagoKNyAwIG9iago8PC9DcmVhdG9yKERTKS9Qcm9kdWNlcihkc19wZGYpL01vZERhdGUoRDoyMDIzMTEwNzE1MzUwMFopL0NyZWF0aW9uRGF0ZShEOjIwMjMxMTA3MTUzNTAwWik+PgplbmRvYmoKCnhyZWYKMCA4CjAwMDAwMDAwMDAgNjU1MzUgZiAKMDAwMDAwMDI1MCAwMDAwMCBuIAowMDAwMDAwMDE1IDAwMDAwIG4gCjAwMDAwMDAxMzEgMDAwMDAgbiAKMDAwMDAwMDE1MCAwMDAwMCBuIAowMDAwMDAwMjQ5IDAwMDAwIG4gCjAwMDAwMDAzMTEgMDAwMDAgbiAKMDAwMDAwMDM1NiAwMDAwMCBuIAp0cmFpbGVyCjw8L1NpemUgOC9Sb290IDYgMCBSL0luZm8gNyAwIFIvSUQgWzw0ODk3RUFERkQwRkJFNTA3QTM1NDA0MDg0MTA1QUE2Nz4gPDQ4OTdFQURGRDBGQkU1MDdBMzU0MDQwODQxMDVBQTY3Pl0+PgpzdGFydHhyZWYKNTAwCiUlRU9GCg==';
-    const link = document.createElement('a');
-    link.href = pdfDataUri;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    
+    setTimeout(() => {
+      const link = document.createElement('a');
+      link.href = pdfDataUri;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setDownloadingFile(null);
+    }, 2000);
   };
 
   return (
@@ -67,8 +73,12 @@ const EventManagerReports: React.FC = () => {
               </div>
               <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1e293b' }}>Attendee Distribution</h3>
             </div>
-            <button onClick={() => handleDownload('Attendee_Distribution_Report.pdf')} style={{ background: 'none', border: 'none', color: brandPrimary, fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
-              Download PDF <Download size={16} />
+            <button 
+              onClick={() => handleDownload('Attendee_Distribution_Report.pdf')} 
+              disabled={downloadingFile === 'Attendee_Distribution_Report.pdf'}
+              style={{ background: 'none', border: 'none', color: brandPrimary, fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px', cursor: downloadingFile === 'Attendee_Distribution_Report.pdf' ? 'wait' : 'pointer', opacity: downloadingFile === 'Attendee_Distribution_Report.pdf' ? 0.7 : 1 }}>
+              {downloadingFile === 'Attendee_Distribution_Report.pdf' ? 'Downloading...' : 'Download PDF'} 
+              {downloadingFile === 'Attendee_Distribution_Report.pdf' ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
             </button>
           </div>
 
@@ -113,12 +123,14 @@ const EventManagerReports: React.FC = () => {
                 </select>
              </div>
              <div style={{ width: '1px', height: '24px', background: '#e2e8f0' }} />
-             <button 
-               onClick={() => handleDownload('Custom_Report.pdf')}
-               style={{ background: brandPrimary, color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(35, 49, 103, 0.15)' }}
-             >
-               <Download size={14} /> Export Custom
-             </button>
+              <button 
+                onClick={() => handleDownload('Custom_Report.pdf')}
+                disabled={downloadingFile === 'Custom_Report.pdf'}
+                style={{ background: brandPrimary, color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, cursor: downloadingFile === 'Custom_Report.pdf' ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(35, 49, 103, 0.15)', opacity: downloadingFile === 'Custom_Report.pdf' ? 0.7 : 1 }}
+              >
+                {downloadingFile === 'Custom_Report.pdf' ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />} 
+                {downloadingFile === 'Custom_Report.pdf' ? 'Downloading...' : 'Export Custom'}
+              </button>
           </div>
         </div>
 
@@ -137,8 +149,15 @@ const EventManagerReports: React.FC = () => {
                   <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 500 }}>Generated on {file.date} • {file.size}</div>
                </div>
             </div>
-            <button onClick={() => handleDownload(`${file.name.replace(/\s+/g, '_')}.pdf`)} style={{ padding: '10px 20px', borderRadius: '12px', background: '#f8fafc', border: '1px solid #e2e8f0', color: '#475569', fontSize: '13px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = brandPrimary; e.currentTarget.style.color = brandPrimary; }} onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.color = '#475569'; }}>
-               <Download size={14} /> Download
+            <button 
+              onClick={() => handleDownload(`${file.name.replace(/\s+/g, '_')}.pdf`)} 
+              disabled={downloadingFile === `${file.name.replace(/\s+/g, '_')}.pdf`}
+              style={{ padding: '10px 20px', borderRadius: '12px', background: '#f8fafc', border: '1px solid #e2e8f0', color: '#475569', fontSize: '13px', fontWeight: 700, cursor: downloadingFile === `${file.name.replace(/\s+/g, '_')}.pdf` ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', opacity: downloadingFile === `${file.name.replace(/\s+/g, '_')}.pdf` ? 0.7 : 1 }} 
+              onMouseEnter={e => { if (downloadingFile !== `${file.name.replace(/\s+/g, '_')}.pdf`) { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = brandPrimary; e.currentTarget.style.color = brandPrimary; } }} 
+              onMouseLeave={e => { if (downloadingFile !== `${file.name.replace(/\s+/g, '_')}.pdf`) { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.color = '#475569'; } }}
+            >
+               {downloadingFile === `${file.name.replace(/\s+/g, '_')}.pdf` ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />} 
+               {downloadingFile === `${file.name.replace(/\s+/g, '_')}.pdf` ? 'Downloading...' : 'Download'}
             </button>
           </div>
         ))}

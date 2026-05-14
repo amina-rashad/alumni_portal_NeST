@@ -2,16 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   BarChart3, TrendingUp, Users, Briefcase, CheckCircle2, 
-  ArrowUpRight, Download, Filter, Target, Zap
+  ArrowUpRight, Download, Filter, Target, Zap, Loader2
 } from 'lucide-react';
 import { recruiterApi } from '../../services/api';
 
 const RecruiterReports: React.FC = () => {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
 
   const nestNavy = '#1a2652';
   const nestRed = '#c8102e';
+
+  const handleExport = () => {
+    setIsExporting(true);
+    setTimeout(() => {
+      setIsExporting(false);
+    }, 2000);
+  };
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -71,12 +79,17 @@ const RecruiterReports: React.FC = () => {
             }}>
                 <Filter size={16} /> Filter Date
             </button>
-            <button style={{ 
-                display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', 
-                background: '#fff', border: 'none', borderRadius: '12px', color: nestNavy, 
-                fontWeight: 800, fontSize: '14px', cursor: 'pointer', boxShadow: '0 10px 20px rgba(0,0,0,0.1)' 
-            }}>
-                <Download size={16} /> Export Report
+            <button 
+                onClick={handleExport}
+                disabled={isExporting}
+                style={{ 
+                    display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', 
+                    background: '#fff', border: 'none', borderRadius: '12px', color: nestNavy, 
+                    fontWeight: 800, fontSize: '14px', cursor: isExporting ? 'wait' : 'pointer', boxShadow: '0 10px 20px rgba(0,0,0,0.1)',
+                    opacity: isExporting ? 0.8 : 1
+                }}>
+                {isExporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                {isExporting ? 'Downloading...' : 'Export Report'}
             </button>
         </div>
       </header>

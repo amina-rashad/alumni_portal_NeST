@@ -14,6 +14,7 @@ interface Post {
   author_name: string;
   author_type: string;
   author_picture?: string;
+  author_status?: string;
   content: string;
   image_url?: string;
   video_url?: string;
@@ -292,14 +293,7 @@ const ActivityFeed: React.FC = () => {
                 <motion.div key={post.id} variants={itemVariants} className="insight-card">
                   {/* ... post content ... */}
                   <div style={{ padding: '1.75rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                      <div style={{ 
-                        background: post.author_type === 'Admin' ? 'rgba(220, 38, 38, 0.08)' : 'rgba(15, 23, 42, 0.04)', 
-                        color: post.author_type === 'Admin' ? '#DC2626' : '#1e293b', 
-                        padding: '4px 12px', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em' 
-                      }}>
-                        {post.author_type || 'Update'}
-                      </div>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '1rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#94A3B8', fontSize: '0.75rem', fontWeight: 600 }}>
                         <Clock size={12} /> {timeAgo(post.created_at)}
                       </div>
@@ -323,18 +317,30 @@ const ActivityFeed: React.FC = () => {
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '1.25rem', borderTop: '1px solid rgba(0,0,0,0.03)' }}>
                       <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                        <div style={{ position: 'relative' }}>
+                        <div style={{ 
+                          position: 'relative', 
+                          padding: '2px', 
+                          borderRadius: '50%', 
+                          border: post.author_status === 'open_to_work' ? '2px solid #16a34a' : post.author_status === 'hiring' ? '2px solid #0284c7' : 'none',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
                           <img 
                             src={post.author_picture || `https://ui-avatars.com/api/?name=${post.author_name}&background=random`} 
-                            style={{ width: '44px', height: '44px', borderRadius: '50%', border: '2px solid white', boxShadow: '0 4px 10px rgba(0,0,0,0.05)' }} 
+                            style={{ width: '40px', height: '40px', borderRadius: '50%', border: '1.5px solid white', boxShadow: '0 4px 10px rgba(0,0,0,0.05)' }} 
                           />
-                          <div style={{ position: 'absolute', bottom: 0, right: 0 }}>
-                            {verifiedBadge(10)}
+                          <div style={{ position: 'absolute', bottom: -2, right: -2 }}>
+                            {post.author_status === 'open_to_work' ? (
+                               <div style={{ backgroundColor: '#16a34a', color: 'white', fontSize: '7px', fontWeight: 900, padding: '1px 4px', borderRadius: '4px', border: '1px solid #fff', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>OPEN</div>
+                            ) : post.author_status === 'hiring' ? (
+                               <div style={{ backgroundColor: '#0284c7', color: 'white', fontSize: '7px', fontWeight: 900, padding: '1px 4px', borderRadius: '4px', border: '1px solid #fff', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>HIRE</div>
+                            ) : verifiedBadge(8)}
                           </div>
                         </div>
                         <div>
                           <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 800, color: '#0F172A' }}>{post.author_name}</h4>
-                          <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748B', fontWeight: 600 }}>{post.author_type}</p>
+
                         </div>
                       </div>
 

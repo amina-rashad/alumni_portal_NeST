@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   Award, Search, Mail, Download, CheckCircle, Clock, 
   User, BookOpen, Send, MoreVertical, Filter, 
-  ChevronDown, ExternalLink, ShieldCheck, ArrowUpRight
+  ChevronDown, ExternalLink, ShieldCheck, ArrowUpRight, Loader2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -116,6 +116,7 @@ const CM_Certificates: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState('All Records');
   const [isLoading, setIsLoading] = useState(true);
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
   const loadCertificates = async () => {
     try {
@@ -151,6 +152,7 @@ const CM_Certificates: React.FC = () => {
   });
 
   const handleAction = async (id: string, action: 'Generated' | 'Sent') => {
+    setProcessingId(id);
     const loadingToast = toast.loading(`${action === 'Generated' ? 'Generating' : 'Sending'} certificate...`);
     try {
       const res = await courseManagerAPI.updateCertificateStatus(id, action);
@@ -162,6 +164,8 @@ const CM_Certificates: React.FC = () => {
       }
     } catch (err: any) {
       toast.error(err.message || `Failed to process certificate.`, { id: loadingToast });
+    } finally {
+      setProcessingId(null);
     }
   };
 
@@ -285,17 +289,21 @@ const CM_Certificates: React.FC = () => {
                       {record.status === 'Pending Generation' && (
                         <button 
                           onClick={() => handleAction(record.id, 'Generated')}
-                          style={{ padding: '10px 16px', borderRadius: '12px', background: brandPrimary, color: '#fff', border: 'none', fontWeight: 700, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+                          disabled={processingId === record.id}
+                          style={{ padding: '10px 16px', borderRadius: '12px', background: brandPrimary, color: '#fff', border: 'none', fontWeight: 700, fontSize: '13px', cursor: processingId === record.id ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: '8px', opacity: processingId === record.id ? 0.7 : 1 }}
                         >
-                          <Download size={14} /> Generate
+                          {processingId === record.id ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />} 
+                          {processingId === record.id ? 'Generating...' : 'Generate'}
                         </button>
                       )}
                       {record.status === 'Generated' && (
                         <button 
                           onClick={() => handleAction(record.id, 'Sent')}
-                          style={{ padding: '10px 16px', borderRadius: '12px', background: '#10b981', color: '#fff', border: 'none', fontWeight: 700, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+                          disabled={processingId === record.id}
+                          style={{ padding: '10px 16px', borderRadius: '12px', background: '#10b981', color: '#fff', border: 'none', fontWeight: 700, fontSize: '13px', cursor: processingId === record.id ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: '8px', opacity: processingId === record.id ? 0.7 : 1 }}
                         >
-                          <Send size={14} /> Dispatch
+                          {processingId === record.id ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />} 
+                          {processingId === record.id ? 'Sending...' : 'Dispatch'}
                         </button>
                       )}
                       {record.status === 'Sent' && (

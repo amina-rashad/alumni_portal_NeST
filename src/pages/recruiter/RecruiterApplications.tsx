@@ -7,6 +7,8 @@ import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import JSZip from 'jszip';
 
+import { useLocation } from 'react-router-dom';
+
 const smoothSpring = { type: 'spring' as const, stiffness: 100, damping: 20, mass: 1 };
 
 const containerVariants: Variants = {
@@ -23,6 +25,7 @@ const itemVariants: Variants = {
 };
 
 const RecruiterApplications: React.FC = () => {
+  const location = useLocation();
   const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
@@ -51,8 +54,13 @@ const RecruiterApplications: React.FC = () => {
   const nestRed = '#c8102e';
 
   useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const jobParam = queryParams.get('job');
+    if (jobParam) {
+      setFilter(jobParam);
+    }
     fetchApplications();
-  }, []);
+  }, [location.search]);
 
   const fetchApplications = async () => {
     setLoading(true);
@@ -359,13 +367,36 @@ const RecruiterApplications: React.FC = () => {
                 >
                   <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
                     <div style={{ 
-                        width: '56px', height: '56px', background: 'linear-gradient(135deg, #f8fafc, #f1f5f9)', 
-                        borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: nestNavy, border: '2px solid #fff', boxShadow: '0 4px 10px rgba(0,0,0,0.05)'
+                      position: 'relative',
+                      padding: '3px',
+                      borderRadius: '16px',
+                      background: (app.applicant_status === 'open_to_work' || !app.applicant_status)
+                        ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' 
+                        : app.applicant_status === 'hiring' 
+                          ? 'linear-gradient(135deg, #3b82f6 0%, #0284c7 100%)' 
+                          : 'transparent',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
                     }}>
-                      <User size={28} />
+                      <div style={{ 
+                          width: '56px', height: '56px', background: 'linear-gradient(135deg, #f8fafc, #f1f5f9)', 
+                          borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: nestNavy, border: '2px solid #fff', overflow: 'hidden'
+                      }}>
+                        {app.applicant_picture ? (
+                          <img src={app.applicant_picture} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          <User size={28} />
+                        )}
+                      </div>
                     </div>
                     <div>
-                      <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#111827', margin: '0 0 4px 0' }}>{app.applicant_name}</h3>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                        <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#111827', margin: 0 }}>{app.applicant_name}</h3>
+                        {(app.applicant_status === 'open_to_work' || !app.applicant_status) && (
+                          <span style={{ fontSize: '9px', color: '#16a34a', fontWeight: 900, background: '#dcfce7', padding: '2px 8px', borderRadius: '4px', letterSpacing: '0.3px' }}>OPEN TO WORK</span>
+                        )}
+                      </div>
                       <p style={{ fontSize: '13px', color: '#64748b', margin: 0, display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 500 }}>
                         <Mail size={12} color={nestRed} /> {app.applicant_email}
                       </p>

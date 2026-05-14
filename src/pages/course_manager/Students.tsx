@@ -215,14 +215,35 @@ const CM_Students: React.FC = () => {
                 <tr key={student.id} style={{ borderBottom: '1px solid #f1f5f9' }} className="hover-row">
                   <td style={{ padding: '20px 24px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ 
-                        width: '40px', height: '40px', borderRadius: '12px', background: 'linear-gradient(135deg, #c8102e 0%, #9b0a22 100%)', 
-                        color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '14px' 
-                      }}>
-                        {student.name.charAt(0)}
+                      <div style={{ position: 'relative' }}>
+                        <div style={{ 
+                          padding: '2px', 
+                          borderRadius: '14px', 
+                          background: (student.status === 'open_to_work' || (!student.status && student.role !== 'admin'))
+                            ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' 
+                            : student.status === 'hiring' 
+                              ? 'linear-gradient(135deg, #3b82f6 0%, #0284c7 100%)' 
+                              : 'transparent',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          <div style={{ 
+                            width: '40px', height: '40px', borderRadius: '12px', background: 'linear-gradient(135deg, #c8102e 0%, #9b0a22 100%)', 
+                            color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '14px',
+                            border: '2px solid #fff'
+                          }}>
+                            {student.name.charAt(0)}
+                          </div>
+                        </div>
                       </div>
                       <div>
-                        <div style={{ fontSize: '15px', fontWeight: 800, color: '#1e293b' }}>{student.name}</div>
+                        <div style={{ fontSize: '15px', fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          {student.name}
+                          {(student.status === 'open_to_work' || (!student.status && student.role !== 'admin')) && (
+                            <span style={{ fontSize: '9px', color: '#16a34a', fontWeight: 900, background: '#dcfce7', padding: '2px 8px', borderRadius: '4px', letterSpacing: '0.3px' }}>OPEN TO WORK</span>
+                          )}
+                        </div>
                         <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 500 }}>{student.email}</div>
                       </div>
                     </div>

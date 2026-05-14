@@ -6,7 +6,7 @@ import {
   List, MessageSquare, FileText, Settings, 
   Maximize, Volume2, CheckCircle2, Lock, 
   ChevronRight, ChevronDown, Download, Star,
-  Info, Clock, Award
+  Info, Clock, Award, Loader2
 } from 'lucide-react';
 import { coursesApi } from '../services/api';
 
@@ -20,6 +20,14 @@ const CoursePlayer: React.FC = () => {
   const [currentLessonIdx, setCurrentLessonIdx] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [downloadingResource, setDownloadingResource] = useState<string | null>(null);
+
+  const handleDownloadResource = (resourceName: string) => {
+    setDownloadingResource(resourceName);
+    setTimeout(() => {
+      setDownloadingResource(null);
+    }, 2000);
+  };
 
   useEffect(() => {
     const fetchCourse = async () => {

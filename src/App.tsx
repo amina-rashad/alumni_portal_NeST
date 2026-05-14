@@ -56,6 +56,7 @@ import CourseDetails from './pages/CourseDetails';
 import CoursePlayer from './pages/CoursePlayer';
 import MyCourses from './pages/MyCourses';
 import CourseCompletion from './pages/CourseCompletion';
+import IVCertificates from './pages/IVCertificates';
 
 // Assessment Pages
 import Quiz from './pages/Quiz';
@@ -104,6 +105,7 @@ import AdminCertification from './pages/admin/AdminCertification';
 import SuperAdminDashboard from './pages/admin/SuperAdminDashboard';
 import AdminRoleManager from './pages/admin/AdminRoleManager';
 import AdminAddManager from './pages/admin/AdminAddManager';
+import IssueIVCertificates from './pages/admin/IssueIVCertificates';
 
 // Event Manager Pages
 import EventManagerLayout from './pages/event_manager/EventManagerLayout';
@@ -121,6 +123,7 @@ import RecruiterLayout from './pages/recruiter/RecruiterLayout';
 import RecruiterDashboard from './pages/recruiter/RecruiterDashboard';
 import RecruiterJobs from './pages/recruiter/RecruiterJobs';
 import RecruiterPostJob from './pages/recruiter/RecruiterPostJob';
+import RecruiterEditJob from './pages/recruiter/RecruiterEditJob';
 import RecruiterApplications from './pages/recruiter/RecruiterApplications';
 import RecruiterReports from './pages/recruiter/RecruiterReports';
 import RecruiterSettings from './pages/recruiter/RecruiterSettings';
@@ -432,6 +435,7 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="/courses" element={<PageTransition><CourseListing /></PageTransition>} />
           <Route path="/courses/:id" element={<PageTransition><CourseDetails /></PageTransition>} />
           <Route path="/courses/my-courses" element={<PageTransition><MyCourses /></PageTransition>} />
+          <Route path="/iv-certificates" element={<PageTransition><IVCertificates /></PageTransition>} />
           <Route path="/assessment/:id" element={<PageTransition><AssessmentCenter /></PageTransition>} />
           <Route path="/courses/:id/completion" element={<PageTransition><CourseCompletion /></PageTransition>} />
           <Route path="/assessments/quiz" element={<PageTransition><Quiz /></PageTransition>} />
@@ -469,6 +473,7 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="interns/add" element={<PageTransition><AdminAddIntern /></PageTransition>} />
           <Route path="iv-students" element={<PageTransition><AdminIVStudents /></PageTransition>} />
           <Route path="iv-students/add" element={<PageTransition><AdminAddVisit /></PageTransition>} />
+          <Route path="iv-students/issue" element={<PageTransition><IssueIVCertificates /></PageTransition>} />
           <Route path="certification" element={<PageTransition><AdminCertification /></PageTransition>} />
           <Route path="applications" element={<PageTransition><Applications /></PageTransition>} />
           <Route path="reports" element={<PageTransition><Reports /></PageTransition>} />
@@ -499,6 +504,7 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="dashboard" element={<PageTransition><RecruiterDashboard /></PageTransition>} />
           <Route path="jobs" element={<PageTransition><RecruiterJobs /></PageTransition>} />
           <Route path="jobs/post" element={<PageTransition><RecruiterPostJob /></PageTransition>} />
+          <Route path="jobs/edit/:id" element={<PageTransition><RecruiterEditJob /></PageTransition>} />
           <Route path="post" element={<PageTransition><RecruiterPosts /></PageTransition>} />
           <Route path="community-feed" element={<PageTransition><ActivityFeed /></PageTransition>} />
 

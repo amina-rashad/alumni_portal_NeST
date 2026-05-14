@@ -37,6 +37,7 @@ const JobDetails: React.FC = () => {
         const res = await jobsApi.getJobById(id);
         if (res.success && res.data) {
           const apiJob = (res.data as any).job;
+
           setJob({
             id: apiJob.id,
             title: apiJob.title || 'Untitled Position',
@@ -55,7 +56,8 @@ const JobDetails: React.FC = () => {
             ],
             requirements: apiJob.requirements || [],
             skills: apiJob.skills_required || [],
-            urgent: apiJob.is_urgent
+            urgent: apiJob.is_urgent,
+            is_active: apiJob.is_active ?? true
           });
         }
       } catch (err) {
@@ -178,12 +180,13 @@ const JobDetails: React.FC = () => {
                 </div>
               )}
             </div>
+            
             <button 
               onClick={handleApply}
-              disabled={isApplied}
+              disabled={isApplied || job.is_active === false}
               style={{
-                background: isApplied ? '#e3fbee' : '#c8102e',
-                color: isApplied ? '#2b8a3e' : 'white',
+                background: job.is_active === false ? '#64748b' : (isApplied ? '#e3fbee' : '#c8102e'),
+                color: job.is_active === false ? 'white' : (isApplied ? '#2b8a3e' : 'white'),
                 padding: '1rem 3rem',
                 borderRadius: '8px',
                 fontSize: '1.1rem',
@@ -191,18 +194,22 @@ const JobDetails: React.FC = () => {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.5rem',
-                cursor: isApplied ? 'default' : 'pointer',
-                border: isApplied ? '1px solid #b2f2bb' : 'none'
+                cursor: (isApplied || job.is_active === false) ? 'default' : 'pointer',
+                border: isApplied ? '1px solid #b2f2bb' : (job.is_active === false ? '1px solid #64748b' : 'none')
               }}
             >
-              {isApplied ? (
-                <>
-                  <Check size={18} /> {application?.status === 'Applied' ? 'Already Applied' : application?.status}
-                </>
+              {job.is_active === false ? (
+                <>Closed</>
               ) : (
-                <>
-                  Apply Now <Upload size={18} />
-                </>
+                isApplied ? (
+                  <>
+                    <Check size={18} /> {application?.status === 'Applied' ? 'Already Applied' : application?.status}
+                  </>
+                ) : (
+                  <>
+                    Apply Now <Upload size={18} />
+                  </>
+                )
               )}
             </button>
           </div>

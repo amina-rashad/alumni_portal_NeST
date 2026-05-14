@@ -40,6 +40,7 @@ def _serialize_post(post: dict, db=None, current_user_id=None) -> dict:
                 result["author_name"] = author.get("full_name", "")
                 result["author_type"] = author.get("user_type", "")
                 result["author_picture"] = author.get("profile_picture")
+                result["author_status"] = author.get("status", "none")
         except:
             pass
 

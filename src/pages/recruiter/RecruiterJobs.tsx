@@ -294,26 +294,32 @@ const RecruiterJobs: React.FC = () => {
                   </div>
                   
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '10px' }}>
-                    <button style={{ 
-                        padding: '12px', borderRadius: '12px', border: 'none', background: nestNavy, 
-                        color: '#fff', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '13px',
-                        boxShadow: '0 4px 12px rgba(26, 38, 82, 0.15)'
-                    }}>
-                      <Users size={16} /> Manage Candidates
-                    </button>
+                    <Link to={`/recruiter/applications?job=${encodeURIComponent(job.title)}`} style={{ textDecoration: 'none' }}>
+                      <button style={{ 
+                          width: '100%',
+                          padding: '12px', borderRadius: '12px', border: 'none', background: nestNavy, 
+                          color: '#fff', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '13px',
+                          boxShadow: '0 4px 12px rgba(26, 38, 82, 0.15)'
+                      }}>
+                        <Users size={16} /> Manage Candidates
+                      </button>
+                    </Link>
                     
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '10px' }}>
-                        <button style={{ 
-                            padding: '12px', borderRadius: '12px', 
-                            background: 'rgba(26, 38, 82, 0.08)',
-                            backdropFilter: 'blur(10px)',
-                            border: '1px solid rgba(26, 38, 82, 0.2)',
-                            color: nestNavy, fontWeight: 800, cursor: 'pointer', 
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '13px',
-                            transition: 'all 0.2s'
-                        }}>
-                          <Edit size={16} /> Edit Listing
-                        </button>
+                        <Link to={`/recruiter/jobs/edit/${job.id}`} style={{ textDecoration: 'none', flex: 1 }}>
+                          <button style={{ 
+                              width: '100%',
+                              padding: '12px', borderRadius: '12px', 
+                              background: 'rgba(26, 38, 82, 0.08)',
+                              backdropFilter: 'blur(10px)',
+                              border: '1px solid rgba(26, 38, 82, 0.2)',
+                              color: nestNavy, fontWeight: 800, cursor: 'pointer', 
+                              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '13px',
+                              transition: 'all 0.2s'
+                          }}>
+                            <Edit size={16} /> Edit Listing
+                          </button>
+                        </Link>
                         <button 
                             onClick={() => handleDelete(job.id)}
                             style={{ 

@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { 
   ClipboardList, Search, FileText, CheckCircle2, XCircle, 
   Clock, ArrowUpRight, UserPlus, X, Mail, Phone, Calendar as CalendarIcon, MapPin, 
-  Download, Filter, ChevronRight
+  Download, Filter, ChevronRight, Loader2
 } from 'lucide-react';
 
 const registrationsData = [
@@ -81,14 +81,14 @@ const EventManagerRegistrations: React.FC = () => {
               onClick={handleExport}
               disabled={isExporting}
               style={{ 
-                padding: '12px 20px', borderRadius: '14px', border: '1px solid #e2e8f0', background: '#fff', fontWeight: 700, color: '#475569', fontSize: '14px', cursor: 'pointer',
+                padding: '12px 20px', borderRadius: '14px', border: '1px solid #e2e8f0', background: '#fff', fontWeight: 700, color: '#475569', fontSize: '14px', cursor: isExporting ? 'wait' : 'pointer',
                 display: 'flex', alignItems: 'center', gap: '10px', transition: 'all 0.2s', opacity: isExporting ? 0.7 : 1
               }}
               onMouseEnter={e => !isExporting && (e.currentTarget.style.background = '#f8fafc')}
               onMouseLeave={e => !isExporting && (e.currentTarget.style.background = '#fff')}
             >
-              {isExporting ? <div className="spinner"></div> : <Download size={18} />}
-              {isExporting ? 'Generating...' : 'Generate Report'}
+              {isExporting ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+              {isExporting ? 'Downloading...' : 'Generate Report'}
             </button>
           </div>
         </div>

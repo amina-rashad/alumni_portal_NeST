@@ -670,17 +670,35 @@ const EventManagerAttendees: React.FC = () => {
                   </td>
                   <td style={{ padding: '20px 24px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: `${brandPrimary}10`, color: brandPrimary, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-                        {attendee.name.charAt(0)}
+                      <div style={{ position: 'relative' }}>
+                        <div style={{ 
+                          padding: '2.5px', 
+                          borderRadius: '50%', 
+                          background: (attendee.type === 'Intern' || attendee.status === 'open_to_work')
+                            ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' 
+                            : 'transparent',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: `${brandPrimary}10`, color: brandPrimary, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', border: '2px solid #fff' }}>
+                            {attendee.name.charAt(0)}
+                          </div>
+                        </div>
                       </div>
                       <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <div style={{ fontWeight: 700, color: '#1e293b' }}>{attendee.name}</div>
+                          <div style={{ fontWeight: 800, color: '#1e293b' }}>{attendee.name}</div>
+                          {(attendee.type === 'Intern' || attendee.status === 'open_to_work') && (
+                            <span style={{ fontSize: '8px', fontWeight: 900, padding: '2px 6px', borderRadius: '4px', background: '#dcfce7', color: '#16a34a', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                              OPEN TO WORK
+                            </span>
+                          )}
                           <span style={{ fontSize: '10px', fontWeight: 800, padding: '2px 6px', borderRadius: '6px', background: attendee.type === 'Alumni' ? '#eff6ff' : '#ecfdf5', color: attendee.type === 'Alumni' ? '#3b82f6' : '#10b981', textTransform: 'uppercase' }}>
                             {attendee.type}
                           </span>
                         </div>
-                        <div style={{ fontSize: '12px', color: '#64748b' }}>{attendee.email}</div>
+                        <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 500 }}>{attendee.email}</div>
                       </div>
                     </div>
                   </td>

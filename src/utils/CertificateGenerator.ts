@@ -139,3 +139,109 @@ export const generateCourseCertificate = (participantName: string, courseName: s
     alert("Generation failed: " + (err instanceof Error ? err.message : "Unknown error"));
   }
 };
+
+const drawGeometricDesign = (doc: jsPDF, pageWidth: number, pageHeight: number) => {
+  // Navy Shape (Bottom Right)
+  doc.setFillColor(26, 38, 82); // Navy
+  doc.triangle(pageWidth, pageHeight, pageWidth - 60, pageHeight, pageWidth, pageHeight - 120, 'F');
+  
+  // Red Shape (Middle Right)
+  doc.setFillColor(200, 16, 46); // Red
+  doc.triangle(pageWidth, 80, pageWidth - 40, 140, pageWidth, 200, 'F');
+  
+  // Navy Accent (Top Right)
+  doc.setFillColor(26, 38, 82); // Navy
+  doc.triangle(pageWidth, 0, pageWidth - 30, 0, pageWidth, 60, 'F');
+  
+  // Subtle Background Pattern (Optional - simple dots or lines)
+  doc.setDrawColor(240, 240, 240);
+  for(let i = 0; i < pageWidth; i += 10) {
+    doc.line(i, 0, i, 5);
+  }
+};
+
+const createIVPDF = (participantName: string, batch: string, date: string) => {
+  const doc = new jsPDF({
+    orientation: 'landscape',
+    unit: 'mm',
+    format: 'a4'
+  });
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const centerX = pageWidth / 2;
+
+  // 1. BACKGROUND (Clean White with Geometry)
+  doc.setFillColor(255, 255, 255);
+  doc.rect(0, 0, pageWidth, pageHeight, 'F');
+  
+  drawGeometricDesign(doc, pageWidth, pageHeight);
+
+  // 2. LOGO (Top Left)
+  try {
+    doc.addImage(NEST_OVAL_LOGO, 'PNG', 20, 15, 30, 18);
+  } catch (e) {
+    console.error("Logo Error:", e);
+  }
+
+  // 3. HEADER
+  doc.setTextColor(26, 38, 82); // Navy
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(42);
+  doc.text("Certificate", 40, 65);
+  
+  doc.setFontSize(18);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(100, 100, 100);
+  doc.text("OF INDUSTRIAL VISIT", 40, 75);
+
+  // 4. BODY
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.setTextColor(80, 80, 80);
+  doc.text("PROUDLY PRESENTED TO:", 40, 105);
+
+  // Name
+  doc.setTextColor(26, 38, 82);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(48);
+  doc.text(participantName.toUpperCase(), 40, 125);
+  
+  // Underline
+  doc.setDrawColor(26, 38, 82);
+  doc.setLineWidth(1);
+  doc.line(40, 130, 180, 130);
+
+  // Description
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(14);
+  doc.setTextColor(60, 60, 60);
+  const desc = `This is to certify that the above mentioned student of Batch ${batch} has successfully completed the Industrial Visit Program at NeST Digital Tech Park on ${date}.`;
+  const lines = doc.splitTextToSize(desc, 140);
+  doc.text(lines, 40, 145);
+
+  // Seal / Badge (Optional simulation)
+  doc.setDrawColor(218, 165, 32); // Gold
+  doc.setLineWidth(0.5);
+  doc.circle(pageWidth - 60, 150, 15, 'S');
+  doc.setFontSize(8);
+  doc.text("OFFICIAL\nSEAL", pageWidth - 60, 149, { align: 'center' });
+
+  return doc;
+};
+
+export const generateIVCertificate = (participantName: string, batch: string, date: string) => {
+  try {
+    const doc = createIVPDF(participantName, batch, date);
+    doc.save(`${participantName.replace(/\s+/g, '_')}_IV_Certificate.pdf`);
+  } catch (err) {
+    console.error(err);
+    alert("Generation failed");
+  }
+};
+
+export const getIVCertificatePDF = (participantName: string, batch: string, date: string) => {
+  return createIVPDF(participantName, batch, date);
+};
+
+

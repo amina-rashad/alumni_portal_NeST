@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
   CalendarDays, Users, Building, GraduationCap, Plus, ChevronDown,
-  Download, Edit2, Trash2, Search, Filter, RefreshCw
+  Download, Edit2, Trash2, Search, Filter, RefreshCw, Award, Eye, X, FolderDown, Loader2
 } from 'lucide-react';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 import { adminApi } from '../../services/api';
+import { getIVCertificatePDF } from '../../utils/CertificateGenerator';
+import toast from 'react-hot-toast';
 
 const AdminIVStudents: React.FC = () => {
   const navigate = useNavigate();
@@ -16,9 +21,36 @@ const AdminIVStudents: React.FC = () => {
   const [collegeFilter, setCollegeFilter] = useState('All');
   const [specFilter, setSpecFilter] = useState('All');
   const [showFilters, setShowFilters] = useState(false);
+  const [isDownloadingZip, setIsDownloadingZip] = useState<string | null>(null);
+  
+  const [selectedCollege, setSelectedCollege] = useState<string | null>(null);
+  const [issuedStudents, setIssuedStudents] = useState<any[]>([]);
 
   const nestNavy = '#1a2652';
   const nestRed = '#c8102e';
+
+  const handleDownloadCollegeZip = async (college: string, students: any[]) => {
+    setIsDownloadingZip(college);
+    try {
+      const zip = new JSZip();
+      const folder = zip.folder(`${college.replace(/\s+/g, '_')}_Certificates`);
+      
+      students.forEach(s => {
+        const doc = getIVCertificatePDF(s.name, s.batch || '2024', s.date);
+        const pdfBlob = doc.output('blob');
+        folder?.file(`${s.name.replace(/\s+/g, '_')}_IV_Certificate.pdf`, pdfBlob);
+      });
+
+      const content = await zip.generateAsync({ type: 'blob' });
+      saveAs(content, `${college.replace(/\s+/g, '_')}_Full_Certification.zip`);
+      toast.success(`Downloaded ${students.length} certificates for ${college}`);
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to generate ZIP');
+    } finally {
+      setIsDownloadingZip(null);
+    }
+  };
 
   const fetchVisits = async () => {
     setIsLoading(true);
@@ -70,6 +102,38 @@ const AdminIVStudents: React.FC = () => {
     }
   };
 
+  const handlePreview = (s: any) => {
+    const doc = getIVCertificatePDF(s.name, s.batch || '2024', s.date);
+    const blob = doc.output('blob');
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+  };
+
+  const [editingCollege, setEditingCollege] = useState<string | null>(null);
+  const [tempDate, setTempDate] = useState('');
+
+  const handleBulkUpdateDate = (college: string) => {
+    const allIssued = JSON.parse(localStorage.getItem('full_issued_iv_certificates') || '[]');
+    const updated = allIssued.map((s: any) => {
+      if (s.college.toUpperCase() === college.toUpperCase()) {
+        return { ...s, date: tempDate };
+      }
+      return s;
+    });
+    localStorage.setItem('full_issued_iv_certificates', JSON.stringify(updated));
+    setEditingCollege(null);
+    toast.success(`Updated visit date for all students in ${college}`);
+  };
+
+  const handleViewIssued = (collegeName: string) => {
+    const allIssued = JSON.parse(localStorage.getItem('full_issued_iv_certificates') || '[]');
+    const collegeIssued = allIssued.filter((s: any) => 
+      s.college.toLowerCase() === collegeName.toLowerCase()
+    );
+    setIssuedStudents(collegeIssued);
+    setSelectedCollege(collegeName);
+  };
+
   const resetAll = () => {
     setSearchQuery('');
     setBatchFilter('All');
@@ -84,7 +148,7 @@ const AdminIVStudents: React.FC = () => {
   const activeFiltersCount = (batchFilter !== 'All' ? 1 : 0) + (collegeFilter !== 'All' ? 1 : 0) + (specFilter !== 'All' ? 1 : 0);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', minHeight: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', minHeight: '100%', position: 'relative' }}>
       {/* Header Section */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
@@ -92,7 +156,7 @@ const AdminIVStudents: React.FC = () => {
           <p style={{ color: '#64748b', fontSize: '15px', marginTop: '6px', fontWeight: 500 }}>Management and scheduling of institutional Industrial Visits.</p>
         </div>
         <button
-          onClick={() => navigate('/admin/iv-students/add')}
+          onClick={() => navigate('/admin/iv-students/issue')}
           style={{
             display: 'flex', alignItems: 'center', gap: '8px',
             background: nestNavy, color: '#fff', border: 'none',
@@ -101,165 +165,230 @@ const AdminIVStudents: React.FC = () => {
             boxShadow: '0 4px 12px rgba(26, 38, 82, 0.15)'
           }}
         >
-          <Plus size={18} /> Schedule New Visit
+          <Award size={18} /> Issue Certificate
         </button>
       </div>
 
-      {/* Stats and Search Overlay */}
-      <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: '#fff', padding: '12px 24px', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
-          <div style={{ background: 'rgba(200, 16, 46, 0.05)', color: nestRed, padding: '10px', borderRadius: '12px' }}>
-            <CalendarDays size={20} />
-          </div>
+      {/* Certification History Section */}
+      <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <div>
-            <div style={{ fontSize: '18px', fontWeight: 800, color: '#1e293b' }}>{visits.length}</div>
-            <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase' }}>Total Visits</div>
+            <h2 style={{ fontSize: '24px', fontWeight: 800, color: nestNavy, margin: 0 }}>Certification History</h2>
+            <p style={{ color: '#64748b', fontSize: '14px', marginTop: '4px' }}>History of bulk certificates issued to various colleges.</p>
+          </div>
+          <div style={{ position: 'relative', width: '300px' }}>
+             <Search size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+             <input
+               type="text"
+               placeholder="Search by college name..."
+               value={searchQuery}
+               onChange={(e) => setSearchQuery(e.target.value)}
+               style={{
+                 width: '100%', padding: '12px 16px 12px 44px', borderRadius: '14px',
+                 border: '1px solid #e2e8f0', outline: 'none', fontSize: '14px',
+                 background: '#fff', color: '#1e293b', fontWeight: 600
+               }}
+             />
           </div>
         </div>
 
-        <div style={{ flex: 1, position: 'relative' }}>
-          <Search size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-          <input
-            type="text"
-            placeholder="Search college, department, coordinator..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{
-              width: '100%', padding: '14px 44px 14px 48px', borderRadius: '16px',
-              border: '1px solid #e2e8f0', outline: 'none', fontSize: '14px',
-              background: '#fff', color: '#1e293b', fontWeight: 600,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.01)'
-            }}
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex' }}
-            >
-              <Trash2 size={16} />
-            </button>
-          )}
-        </div>
+        <div style={{ background: '#fff', borderRadius: '24px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ background: '#f8fafc' }}>
+                  <th style={{ padding: '16px 24px', fontSize: '12px', color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase' }}>Issued Date</th>
+                  <th style={{ padding: '16px 24px', fontSize: '12px', color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase' }}>College Name</th>
+                  <th style={{ padding: '16px 24px', fontSize: '12px', color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase' }}>Visit Date</th>
+                  <th style={{ padding: '16px 24px', fontSize: '12px', color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase' }}>Students</th>
+                  <th style={{ padding: '16px 24px', fontSize: '12px', color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase', textAlign: 'right' }}>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(() => {
+                  const allIssued = JSON.parse(localStorage.getItem('full_issued_iv_certificates') || '[]');
+                  if (allIssued.length === 0) {
+                    return <tr><td colSpan={5} style={{ padding: '80px', textAlign: 'center', color: '#64748b' }}>No certificates issued yet.</td></tr>;
+                  }
 
-        <div style={{ position: 'relative' }}>
-          <button
-            onClick={() => setShowFilters(!showFilters)}
+                  // Group by College ONLY
+                  const groups: any = {};
+                  allIssued.forEach((s: any) => {
+                    const key = s.college.toUpperCase();
+                    if (!groups[key]) {
+                      groups[key] = {
+                        college: s.college,
+                        lastIssuedAt: s.issuedAt || new Date().toISOString(),
+                        count: 0,
+                        students: []
+                      };
+                    }
+                    groups[key].count++;
+                    groups[key].students.push(s);
+                    // Keep track of the most recent issuance date
+                    if (new Date(s.issuedAt).getTime() > new Date(groups[key].lastIssuedAt).getTime()) {
+                      groups[key].lastIssuedAt = s.issuedAt;
+                    }
+                  });
+
+                  let result = Object.values(groups);
+                  if (searchQuery) {
+                    result = result.filter((g: any) => g.college.toLowerCase().includes(searchQuery.toLowerCase()));
+                  }
+
+                  return result.sort((a: any, b: any) => new Date(b.lastIssuedAt).getTime() - new Date(a.lastIssuedAt).getTime()).map((group: any, idx) => (
+                    <tr key={idx} style={{ borderBottom: '1px solid #f8fafc' }}>
+                      <td style={{ padding: '20px 24px', fontSize: '14px', color: '#1e293b', fontWeight: 600 }}>
+                        {new Date(group.lastIssuedAt).toLocaleDateString()}
+                      </td>
+                      <td style={{ padding: '20px 24px', fontSize: '15px', fontWeight: 800, color: nestNavy }}>{group.college}</td>
+                      <td style={{ padding: '20px 24px', fontSize: '14px', color: '#64748b', fontWeight: 600 }}>
+                        {editingCollege === group.college ? (
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <input 
+                              type="date" 
+                              value={tempDate} 
+                              onChange={(e) => setTempDate(e.target.value)}
+                              style={{ padding: '6px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+                            />
+                            <button 
+                              onClick={() => handleBulkUpdateDate(group.college)}
+                              style={{ background: '#22c55e', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
+                            >Save</button>
+                            <button 
+                              onClick={() => setEditingCollege(null)}
+                              style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
+                            >Cancel</button>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span>Multiple Batches</span>
+                            <button 
+                              onClick={() => {
+                                setEditingCollege(group.college);
+                                setTempDate(group.students[0]?.date || '');
+                              }}
+                              style={{ background: 'none', border: 'none', color: '#6366f1', fontSize: '12px', fontWeight: 700, cursor: 'pointer', padding: 0 }}
+                            >Edit</button>
+                          </div>
+                        )}
+                      </td>
+
+                      <td style={{ padding: '20px 24px' }}>
+                        <span style={{ padding: '6px 12px', borderRadius: '10px', background: 'rgba(26, 38, 82, 0.05)', color: nestNavy, fontSize: '13px', fontWeight: 700 }}>
+                          {group.count} Total Certificates
+                        </span>
+                      </td>
+                      <td style={{ padding: '20px 24px', textAlign: 'right' }}>
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                          <button 
+                            onClick={() => handleDownloadCollegeZip(group.college, group.students)}
+                            disabled={isDownloadingZip === group.college}
+                            style={{ 
+                              background: '#f8fafc', color: nestNavy, border: '1px solid #e2e8f0', 
+                              padding: '10px 16px', borderRadius: '12px', fontSize: '13px', 
+                              fontWeight: 700, cursor: isDownloadingZip === group.college ? 'wait' : 'pointer',
+                              display: 'flex', alignItems: 'center', gap: '8px'
+                            }}
+                          >
+                            {isDownloadingZip === group.college ? <Loader2 size={16} className="animate-spin" /> : <FolderDown size={16} />}
+                            Download ZIP
+                          </button>
+                          <button 
+                            onClick={() => handleViewIssued(group.college)}
+                            style={{ background: nestNavy, color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '12px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}
+                          >
+                            View College
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ));
+                })()}
+
+
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+
+
+      {/* Issued Certificates Modal */}
+      {selectedCollege && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+          padding: '2rem'
+        }}>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
             style={{
-              display: 'flex', alignItems: 'center', gap: '8px',
-              background: showFilters ? nestNavy : '#fff',
-              color: showFilters ? '#fff' : '#475569',
-              border: '1px solid #e2e8f0',
-              padding: '14px 20px', borderRadius: '16px',
-              fontSize: '14px', fontWeight: 700, cursor: 'pointer'
+              background: '#fff', width: '100%', maxWidth: '900px',
+              borderRadius: '24px', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
             }}
           >
-            <Filter size={18} /> Filters {activeFiltersCount > 0 && `(${activeFiltersCount})`}
-          </button>
-
-          {showFilters && (
-            <div className="glass-morphism" style={{
-              position: 'absolute', top: 'calc(100% + 12px)', right: 0,
-              width: '280px', padding: '24px', borderRadius: '24px',
-              zIndex: 100, border: '1px solid rgba(255,255,255,0.4)',
-              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)'
-            }}>
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 800, color: '#475569', display: 'block', marginBottom: '8px', textTransform: 'uppercase' }}>Batch / Year</label>
-                <select value={batchFilter} onChange={(e) => setBatchFilter(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: '12px', border: '1px solid #e2e8f0', outline: 'none', cursor: 'pointer', fontSize: '13px' }}>
-                  <option value="All">All Batches</option>
-                  {batches.map(v => <option key={v} value={v}>{v}</option>)}
-                </select>
+            <div style={{ padding: '24px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#1a2652' }}>College Certification Directory</h3>
+                <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '14px' }}>{selectedCollege}</p>
               </div>
-
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 800, color: '#475569', display: 'block', marginBottom: '8px', textTransform: 'uppercase' }}>Institution</label>
-                <select value={collegeFilter} onChange={(e) => setCollegeFilter(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: '12px', border: '1px solid #e2e8f0', outline: 'none', cursor: 'pointer', fontSize: '13px' }}>
-                  <option value="All">All Colleges</option>
-                  {colleges.map(v => <option key={v} value={v}>{v}</option>)}
-                </select>
-              </div>
-
-              <div style={{ marginBottom: '24px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 800, color: '#475569', display: 'block', marginBottom: '8px', textTransform: 'uppercase' }}>Specialization</label>
-                <select value={specFilter} onChange={(e) => setSpecFilter(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: '12px', border: '1px solid #e2e8f0', outline: 'none', cursor: 'pointer', fontSize: '13px' }}>
-                  <option value="All">All Departments</option>
-                  {specializations.map(v => <option key={v} value={v}>{v}</option>)}
-                </select>
-              </div>
-
-              <button
-                onClick={resetAll}
-                style={{ width: '100%', background: '#fff1f2', border: `1px solid #fecdd3`, color: nestRed, padding: '12px', borderRadius: '12px', fontSize: '13px', fontWeight: 800, cursor: 'pointer', transition: '0.2s' }}
-              >
-                Reset All Filters
+              <button onClick={() => setSelectedCollege(null)} style={{ background: '#f1f5f9', border: 'none', color: '#64748b', padding: '8px', borderRadius: '50%', cursor: 'pointer' }}>
+                <X size={20} />
               </button>
             </div>
-          )}
-        </div>
-      </div>
+            
+            <div style={{ padding: '24px', maxHeight: '65vh', overflowY: 'auto' }}>
+              {issuedStudents.length > 0 ? (
+                <div style={{ display: 'grid', gap: '16px' }}>
+                  {issuedStudents.map((s, i) => {
+                    return (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px', background: '#f8fafc', borderRadius: '20px', border: '1px solid #e2e8f0' }}>
 
-      {/* Main Table Container */}
-      <div style={{ background: '#fff', borderRadius: '24px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontSize: '14px', color: '#64748b', fontWeight: 600 }}>Displaying {filteredVisits.length} visits</div>
-          <button onClick={fetchVisits} style={{ background: 'none', border: 'none', color: nestNavy, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 700 }}>
-            <RefreshCw size={14} className={isLoading ? 'spin' : ''} /> Refresh
-          </button>
-        </div>
-
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-            <thead>
-              <tr style={{ background: '#f8fafc' }}>
-                <th style={{ padding: '16px 24px', fontSize: '12px', color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Visit Date</th>
-                <th style={{ padding: '16px 24px', fontSize: '12px', color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>College / Specialization</th>
-                <th style={{ padding: '16px 24px', fontSize: '12px', color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Batch</th>
-                <th style={{ padding: '16px 24px', fontSize: '12px', color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Students</th>
-                <th style={{ padding: '16px 24px', fontSize: '12px', color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Coordinator</th>
-                <th style={{ padding: '16px 24px', fontSize: '12px', color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
-                <tr><td colSpan={6} style={{ padding: '80px', textAlign: 'center', color: nestNavy, fontWeight: 700 }}>Loading industrial visits...</td></tr>
-              ) : filteredVisits.length === 0 ? (
-                <tr><td colSpan={6} style={{ padding: '80px', textAlign: 'center', color: '#64748b' }}>No visit records found.</td></tr>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                          <div style={{ width: '48px', height: '48px', background: '#fff', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: nestRed, border: '1px solid #e2e8f0' }}>
+                            <Award size={24} />
+                          </div>
+                          <div>
+                            <div style={{ fontWeight: 800, color: '#1e293b', fontSize: '16px' }}>{s.name}</div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                              <span style={{ fontSize: '13px', color: '#64748b' }}>Visit Date:</span>
+                              <span style={{ fontSize: '13px', color: '#0f172a', fontWeight: 700 }}>{s.date}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <button 
+                          style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#fff', border: '1px solid #e2e8f0', padding: '10px 20px', borderRadius: '12px', fontSize: '14px', fontWeight: 700, color: nestNavy, cursor: 'pointer' }}
+                          onClick={() => handlePreview(s)}
+                        >
+                          <Eye size={16} /> Preview
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
               ) : (
-                filteredVisits.map((visit, idx) => (
-                  <tr key={visit.id} style={{ borderBottom: idx === filteredVisits.length - 1 ? 'none' : '1px solid #f8fafc', transition: '0.2s' }}>
-                    <td style={{ padding: '20px 24px' }}>
-                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#1e293b' }}>{visit.date}</div>
-                      <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 500 }}>{visit.time || 'TBD'}</div>
-                    </td>
-                    <td style={{ padding: '20px 24px' }}>
-                      <div style={{ fontSize: '15px', fontWeight: 800, color: '#1e293b' }}>{visit.college}</div>
-                      <div style={{ fontSize: '13px', color: '#64748b', fontWeight: 600 }}>{visit.branch || visit.specialization}</div>
-                    </td>
-                    <td style={{ padding: '20px 24px' }}>
-                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#334155' }}>Year {visit.batch || '—'}</div>
-                    </td>
-                    <td style={{ padding: '20px 24px' }}>
-                      <div style={{ display: 'inline-flex', padding: '6px 12px', borderRadius: '10px', background: 'rgba(26, 38, 82, 0.05)', color: nestNavy, fontSize: '13px', fontWeight: 700 }}>
-                        {visit.students_count} Students
-                      </div>
-                    </td>
-                    <td style={{ padding: '20px 24px' }}>
-                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#1e293b' }}>{visit.coordinator_name}</div>
-                      <div style={{ fontSize: '12px', color: '#94a3b8' }}>{visit.coordinator_email}</div>
-                    </td>
-                    <td style={{ padding: '20px 24px', textAlign: 'right' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
-                        <button style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '10px', borderRadius: '10px', color: '#64748b', cursor: 'pointer' }}><Edit2 size={16} /></button>
-                        <button onClick={() => handleDelete(visit.id, visit.college)} style={{ background: '#fff1f2', border: '1px solid #fecdd3', padding: '10px', borderRadius: '10px', color: '#e11d48', cursor: 'pointer' }}><Trash2 size={16} /></button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                <div style={{ textAlign: 'center', padding: '40px' }}>
+                  <div style={{ width: '64px', height: '64px', background: '#f8fafc', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', color: '#cbd5e1' }}>
+                    <Users size={32} />
+                  </div>
+                  <p style={{ color: '#64748b', fontWeight: 500 }}>No certificates have been issued for this college yet.</p>
+                </div>
               )}
-            </tbody>
-          </table>
+            </div>
+            
+            <div style={{ padding: '24px', borderTop: '1px solid #f1f5f9', background: '#f8fafc', textAlign: 'right' }}>
+              <button onClick={() => setSelectedCollege(null)} style={{ background: nestNavy, color: '#fff', border: 'none', padding: '12px 32px', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}>
+                Done
+              </button>
+            </div>
+          </motion.div>
         </div>
-      </div>
+      )}
+
 
       <style>{`
         .spin { animation: spin 1s linear infinite; }

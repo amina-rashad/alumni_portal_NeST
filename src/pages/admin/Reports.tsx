@@ -11,7 +11,15 @@ import { adminApi } from '../../services/api';
 const Reports: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'Weekly' | 'Monthly' | 'Yearly'>('Monthly');
   const [stats, setStats] = useState<any>(null);
+  const [isExporting, setIsExporting] = useState(false);
   const nestNavy = '#1a2652';
+
+  const handleExport = () => {
+    setIsExporting(true);
+    setTimeout(() => {
+      setIsExporting(false);
+    }, 2000);
+  };
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -64,8 +72,26 @@ const Reports: React.FC = () => {
               </button>
             ))}
           </div>
-          <button style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', background: nestNavy, border: 'none', borderRadius: '12px', color: '#fff', fontWeight: 800, fontSize: '13px', cursor: 'pointer', boxShadow: '0 8px 16px rgba(26, 38, 82, 0.2)' }}>
-            <Download size={16} /> Export Executive Summary
+          <button 
+            onClick={handleExport}
+            disabled={isExporting}
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '8px', 
+              padding: '12px 24px', 
+              background: nestNavy, 
+              border: 'none', 
+              borderRadius: '12px', 
+              color: '#fff', 
+              fontWeight: 800, 
+              fontSize: '13px', 
+              cursor: isExporting ? 'wait' : 'pointer', 
+              boxShadow: '0 8px 16px rgba(26, 38, 82, 0.2)',
+              opacity: isExporting ? 0.8 : 1
+            }}>
+            {isExporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+            {isExporting ? 'Downloading...' : 'Export Executive Summary'}
           </button>
         </div>
       </div>

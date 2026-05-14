@@ -10,7 +10,7 @@ import {
   Users, Star, Wifi, Target
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { jobsApi } from '../services/api';
+import { jobsApi, applicationsApi, isAuthenticated } from '../services/api';
 
 interface Job {
   id: string;
@@ -29,6 +29,7 @@ interface Job {
   matchScore?: number;
   requirements?: string[];
   createdAt?: string;
+  is_active?: boolean;
 }
 
 const MOCK_JOBS: Job[] = [
@@ -210,6 +211,7 @@ const JobListings: React.FC = () => {
             salary: j.salary,
             postedAt: timeAgo(j.createdAt),
             createdAt: j.createdAt,
+            is_active: j.is_active ?? true,
             isNew: true, 
             isUrgent: false
           }));
@@ -225,6 +227,21 @@ const JobListings: React.FC = () => {
       }
     };
     fetchJobs();
+
+    const fetchAppliedJobs = async () => {
+      if (!isAuthenticated()) return;
+      try {
+        const res = await applicationsApi.getMyApplications();
+        if (res.success && res.data && (res.data as any).applications) {
+          const apps = (res.data as any).applications;
+          const appliedIds = new Set<string>(apps.map((app: any) => app.job_id));
+          setAppliedJobs(appliedIds);
+        }
+      } catch (err) {
+        console.error("Failed to fetch applied jobs", err);
+      }
+    };
+    fetchAppliedJobs();
     
     // Only scroll to jobs if not first mount (pagination)
     if (currentPage > 1) {
@@ -239,11 +256,21 @@ const JobListings: React.FC = () => {
     setSavedJobs(newSaved);
   };
 
-  const handleApply = (id: string, title: string) => {
-    const newApplied = new Set(appliedJobs);
-    newApplied.add(id);
-    setAppliedJobs(newApplied);
-    showNotification(`Successfully applied for ${title}!`);
+  const handleApply = async (id: string, title: string) => {
+    try {
+      const res = await applicationsApi.applyForJob({ job_id: id });
+      if (res.success) {
+        const newApplied = new Set(appliedJobs);
+        newApplied.add(id);
+        setAppliedJobs(newApplied);
+        showNotification(`Successfully applied for ${title}!`);
+      } else {
+        showNotification(res.message || "Failed to apply", 'info');
+      }
+    } catch (err) {
+      console.error("Application error", err);
+      showNotification("Failed to submit application", 'info');
+    }
   };
 
   const filteredJobs = jobs.filter(job => {
@@ -790,23 +817,28 @@ const JobListings: React.FC = () => {
                      
                      <Link id={`link-${job.id}`} to={`/jobs/${job.id}`} style={{ display: 'none' }} />
 
-                     <motion.button
-                       variants={{ hover: { scale: 1.05 } }}
-                       onClick={(e) => { e.stopPropagation(); handleApply(job.id, job.title); }}
-                       disabled={appliedJobs.has(job.id)}
-                       style={{
-                         padding: '0.6rem 1.4rem',
-                         background: appliedJobs.has(job.id) ? '#10B981' : '#d32f2f',
-                         color: 'white',
-                         borderRadius: '12px',
-                         fontWeight: 700,
-                         fontSize: '0.85rem',
-                         border: 'none',
-                         cursor: appliedJobs.has(job.id) ? 'default' : 'pointer',
-                       }}
-                     >
-                       {appliedJobs.has(job.id) ? 'Applied' : 'Apply Now'}
-                     </motion.button>
+                      <motion.button
+                        variants={{ hover: { scale: job.is_active && !appliedJobs.has(job.id) ? 1.05 : 1 } }}
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          if (job.is_active && !appliedJobs.has(job.id)) {
+                            handleApply(job.id, job.title); 
+                          }
+                        }}
+                        disabled={appliedJobs.has(job.id) || job.is_active === false}
+                        style={{
+                          padding: '0.6rem 1.4rem',
+                          background: job.is_active === false ? '#64748b' : (appliedJobs.has(job.id) ? '#10B981' : '#d32f2f'),
+                          color: 'white',
+                          borderRadius: '12px',
+                          fontWeight: 700,
+                          fontSize: '0.85rem',
+                          border: 'none',
+                          cursor: (appliedJobs.has(job.id) || job.is_active === false) ? 'default' : 'pointer',
+                        }}
+                      >
+                        {job.is_active === false ? 'Closed' : (appliedJobs.has(job.id) ? 'Applied' : 'Apply Now')}
+                      </motion.button>
                   </div>
                 </div>
               </motion.div>

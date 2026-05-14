@@ -9,7 +9,8 @@ import {
   ArrowRight,
   ChevronRight,
   User,
-  BookOpen
+  BookOpen,
+  Loader2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import {
@@ -49,6 +50,12 @@ interface AttendanceRecord {
 
 const Attendance: React.FC = () => {
   const [selectedCourse, setSelectedCourse] = useState('Full Stack Development');
+  const [isExporting, setIsExporting] = useState(false);
+  
+  const handleExport = () => {
+    setIsExporting(true);
+    setTimeout(() => setIsExporting(false), 2000);
+  };
   
   const courses = [
     'Full Stack Development',
@@ -103,9 +110,12 @@ const Attendance: React.FC = () => {
           <p className="text-slate-500 font-medium mt-1">Course-wise student engagement and login duration analytics.</p>
         </div>
         <div className="flex gap-4">
-          <button className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-50 transition-all shadow-sm">
-            <Download size={18} />
-            Export Report
+          <button 
+            onClick={handleExport}
+            disabled={isExporting}
+            className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-50 transition-all shadow-sm disabled:opacity-70 disabled:cursor-wait">
+            {isExporting ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+            {isExporting ? 'Downloading...' : 'Export Report'}
           </button>
         </div>
       </div>
