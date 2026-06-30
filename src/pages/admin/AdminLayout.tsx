@@ -1,14 +1,16 @@
+/* eslint-disable */
 import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, Users, GraduationCap, School, Briefcase,
   FileText, BarChart3, Settings, LogOut, Bell, Menu, X, ChevronDown, BookOpen, Calendar, Award, Shield, UserPlus,
-  Activity
+  Activity, Check, Trash2, Clock, Megaphone
 } from 'lucide-react';
 import nestMainLogo from '../../assets/nest_logo.png';
-import { getUser, authApi, type AuthUser } from '../../services/api';
+import { getUser, authApi, notificationsApi, type AuthUser } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
+import UserAvatar from '../../components/UserAvatar';
 
 const AdminLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -16,13 +18,86 @@ const AdminLayout: React.FC = () => {
   const navigate = useNavigate();
 
   const [adminUser, setAdminUser] = useState<AuthUser | null>(null);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await notificationsApi.getNotifications();
+      if (res.success && res.data) {
+        setNotifications(res.data.notifications || []);
+        setUnreadCount(res.data.unread_count || 0);
+      }
+    } catch (err) {
+      console.error("Failed to fetch notifications:", err);
+    }
+  };
 
   useEffect(() => {
     const currentUser = getUser() as unknown as AuthUser;
     if (currentUser) {
       setAdminUser(currentUser);
+      fetchNotifications();
     }
   }, [location.pathname]);
+
+  useEffect(() => {
+    // Poll notifications every 60 seconds
+    const interval = setInterval(fetchNotifications, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleMarkAsRead = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    try {
+      await notificationsApi.markAsRead(id);
+      fetchNotifications();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await notificationsApi.markAllAsRead();
+      fetchNotifications();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteNotification = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    try {
+      await notificationsApi.deleteNotification(id);
+      fetchNotifications();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const formatTime = (iso: string) => {
+    if (!iso) return 'Just now';
+    const date = new Date(iso);
+    const now = new Date();
+    const diffMins = Math.floor((now.getTime() - date.getTime()) / 60000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 30) return `${diffDays}d ago`;
+    
+    const diffMonths = Math.floor(diffDays / 30);
+    if (diffMonths < 12) return `${diffMonths}mo ago`;
+    
+    const diffYears = Math.floor(diffDays / 365);
+    return `${diffYears}y ago`;
+  };
 
   const handleLogout = () => {
     authApi.logout();
@@ -45,13 +120,15 @@ const AdminLayout: React.FC = () => {
     { name: 'Super Admin', path: '/admin/super-dashboard', icon: <Shield size={20} />, roles: ['super_admin'] },
     { name: 'User Management', path: '/admin/users', icon: <Users size={20} />, roles: ['super_admin', 'admin'] },
     { name: 'Add New Manager', path: '/admin/add-manager', icon: <UserPlus size={20} />, roles: ['super_admin', 'admin'] },
+    { name: 'Active Managers', path: '/admin/view-managers', icon: <Users size={20} />, roles: ['super_admin', 'admin'] },
     { name: 'Intern Management', path: '/admin/interns', icon: <GraduationCap size={20} />, roles: ['super_admin', 'admin'] },
     { name: 'IV Students', path: '/admin/iv-students', icon: <School size={20} />, roles: ['super_admin', 'admin'] },
     { name: 'Certification', path: '/admin/certification', icon: <Award size={20} />, roles: ['super_admin', 'admin'] },
     { name: 'Job Management', path: '/recruiter/dashboard', icon: <Briefcase size={20} />, roles: ['super_admin', 'admin', 'job_recruiter'] },
     { name: 'Applications', path: '/recruiter/applications', icon: <FileText size={20} />, roles: ['super_admin', 'admin', 'job_recruiter'] },
-    { name: 'Community Feed', path: '/admin/activity', icon: <Activity size={20} />, roles: ['super_admin', 'admin'] },
-    { name: 'Event Management', path: '/admin/events', icon: <Calendar size={20} />, roles: ['super_admin', 'admin', 'event_manager'] },
+    { name: 'Career Timelines', path: '/admin/activity', icon: <Activity size={20} />, roles: ['super_admin', 'admin'] },
+    { name: 'Broadcast Post', path: '/admin/posts', icon: <Megaphone size={20} />, roles: ['super_admin', 'admin'] },
+    { name: 'Event Management', path: '/event-manager/dashboard', icon: <Calendar size={20} />, roles: ['super_admin', 'admin', 'event_manager'] },
     { name: 'Course Management', path: '/course-manager/dashboard', icon: <BookOpen size={20} />, roles: ['super_admin', 'admin', 'course_manager'] },
     { name: 'System Roles', path: '/admin/roles', icon: <Shield size={20} />, roles: ['super_admin'] },
     { name: 'Settings', path: '/admin/settings', icon: <Settings size={20} />, roles: ['super_admin', 'admin'] },
@@ -226,27 +303,119 @@ const AdminLayout: React.FC = () => {
       </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '28px' }}>
-            <div style={{ position: 'relative', cursor: 'pointer', display: 'flex', padding: '8px', borderRadius: '10px', transition: 'background 0.2s' }} className="hover-highlight">
-              <Bell size={22} color="#64748b" />
-              <span style={{ position: 'absolute', top: '8px', right: '8px', background: '#ef4444', height: '10px', width: '10px', borderRadius: '50%', border: '2px solid #fff' }}></span>
+            {/* Notifications Dropdown */}
+            <div style={{ position: 'relative' }}>
+              <div 
+                style={{ position: 'relative', cursor: 'pointer', display: 'flex', padding: '8px', borderRadius: '10px', transition: 'background 0.2s', background: isNotificationsOpen ? '#f1f5f9' : 'transparent' }} 
+                className="hover-highlight"
+                onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+              >
+                <Bell size={22} color="#64748b" />
+                {unreadCount > 0 && (
+                  <span style={{ position: 'absolute', top: '6px', right: '8px', background: '#ef4444', height: '10px', width: '10px', borderRadius: '50%', border: '2px solid #fff' }}></span>
+                )}
+              </div>
+
+              {/* Dropdown Panel */}
+              {isNotificationsOpen && (
+                <>
+                  <div 
+                    style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 95 }}
+                    onClick={() => setIsNotificationsOpen(false)}
+                  />
+                  <div style={{
+                    position: 'absolute', top: 'calc(100% + 10px)', right: '-20px', width: '380px',
+                    background: '#fff', borderRadius: '16px', boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
+                    border: '1px solid #e2e8f0', zIndex: 100, overflow: 'hidden', display: 'flex', flexDirection: 'column',
+                    maxHeight: '480px'
+                  }}>
+                    <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
+                      <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#1e293b' }}>Notifications</h3>
+                      {unreadCount > 0 && (
+                        <button 
+                          onClick={handleMarkAllAsRead}
+                          style={{ background: 'none', border: 'none', color: nestNavy, fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
+                        >
+                          Mark all as read
+                        </button>
+                      )}
+                    </div>
+                    
+                    <div style={{ flex: 1, overflowY: 'auto' }}>
+                      {notifications.length === 0 ? (
+                        <div style={{ padding: '32px', textAlign: 'center', color: '#94a3b8' }}>
+                          <Bell size={32} style={{ margin: '0 auto 12px', opacity: 0.2 }} />
+                          <div style={{ fontSize: '14px', fontWeight: 500 }}>No notifications yet</div>
+                          <div style={{ fontSize: '12px', marginTop: '4px' }}>You're all caught up!</div>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          {notifications.map((notif: any) => (
+                            <div 
+                              key={notif.id || notif._id} 
+                              style={{ 
+                                padding: '16px 20px', 
+                                borderBottom: '1px solid #f1f5f9',
+                                background: notif.is_read ? '#fff' : '#f0f9ff',
+                                display: 'flex',
+                                gap: '12px',
+                                transition: 'background 0.2s',
+                                position: 'relative'
+                              }}
+                            >
+                              <div style={{ 
+                                width: '40px', height: '40px', borderRadius: '10px', flexShrink: 0,
+                                background: notif.type === 'job' ? '#eef2ff' : notif.type === 'event' ? '#fff1f2' : notif.type === 'social' ? '#f0fdf4' : '#eff6ff',
+                                color: notif.type === 'job' ? '#6366f1' : notif.type === 'event' ? '#f43f5e' : notif.type === 'social' ? '#22c55e' : '#3b82f6',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center'
+                              }}>
+                                {notif.type === 'job' ? <Briefcase size={18} /> : notif.type === 'event' ? <Calendar size={18} /> : notif.type === 'social' ? <Users size={18} /> : <Bell size={18} />}
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                  <h4 style={{ margin: '0 0 4px', fontSize: '14px', fontWeight: 700, color: '#1e293b' }}>{notif.title}</h4>
+                                  <div style={{ display: 'flex', gap: '8px' }}>
+                                    {!notif.is_read && (
+                                      <button 
+                                        onClick={(e) => handleMarkAsRead(e, notif.id || notif._id)}
+                                        title="Mark as read"
+                                        style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '2px', display: 'flex' }}
+                                      ><Check size={14} /></button>
+                                    )}
+                                    <button 
+                                      onClick={(e) => handleDeleteNotification(e, notif.id || notif._id)}
+                                      title="Delete"
+                                      style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '2px', display: 'flex', opacity: 0.5 }}
+                                    ><Trash2 size={14} /></button>
+                                  </div>
+                                </div>
+                                <p style={{ margin: '0 0 8px', fontSize: '13px', color: '#475569', lineHeight: 1.5 }}>{notif.message}</p>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>
+                                  <Clock size={12} /> {formatTime(notif.created_at)}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', padding: '4px', borderRadius: '12px' }}>
-              <div style={{ position: 'relative' }}>
-                {adminUser?.profile_picture ? (
-                  <img src={adminUser.profile_picture} alt={adminUser.full_name} style={{ width: '42px', height: '42px', borderRadius: '12px', objectFit: 'cover' }} />
-                ) : (
-                  <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: nestNavy, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '16px' }}>
-                    {adminUser ? adminUser.full_name.substring(0, 2).toUpperCase() : 'AD'}
-                  </div>
-                )}
-                <div style={{ position: 'absolute', bottom: '-2px', right: '-2px', width: '12px', height: '12px', background: '#22c55e', borderRadius: '50%', border: '2px solid #fff' }}></div>
-              </div>
+              <UserAvatar
+                src={adminUser?.profile_picture}
+                name={adminUser?.full_name}
+                status={(adminUser as any)?.status}
+                size={42}
+                bgColor={nestNavy}
+              />
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ fontSize: '14px', fontWeight: 700, color: '#1e293b' }}>{adminUser ? adminUser.full_name : 'Administrator'}</span>
                 <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 500 }}>{getRoleLabel(adminUser?.role)}</span>
               </div>
-              <ChevronDown size={14} color="#64748b" />
             </div>
           </div>
         </header>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Download,
+  Download, Loader2,
   TrendingUp, ArrowUpRight, ArrowDownRight,
   Shield, 
   Activity, PieChart, Sparkles

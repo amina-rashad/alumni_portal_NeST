@@ -4,7 +4,7 @@ import {
   Phone, AlignLeft, ShieldCheck, CheckCircle2, 
   FileText, UploadCloud, Edit3, X, Upload, Camera, Briefcase, Award, GraduationCap, Check
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { usersApi, setUser, getUser, type AuthUser } from '../services/api';
 import { AnimatePresence, motion } from 'framer-motion';
 import InlineResumeBuilder from './InlineResumeBuilder';
@@ -71,6 +71,13 @@ const compressImage = (base64: string, maxWidth = 1000, quality = 0.7): Promise<
 
 const EditProfile: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const profilePath = location.pathname.startsWith('/event-manager')
+    ? '/event-manager/profile'
+    : location.pathname.startsWith('/recruiter')
+    ? '/recruiter/profile'
+    : '/profile';
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
@@ -249,7 +256,7 @@ const EditProfile: React.FC = () => {
           setUser({ ...currentUser, ...updatedUser });
         }
         
-        setTimeout(() => navigate('/profile'), 1500);
+        setTimeout(() => navigate(profilePath), 1500);
       } else if (res.message === 'DocumentTooLarge') {
         setMessage({ type: 'error', text: 'Profile data is too large. Please reduce image sizes.' });
       } else {
@@ -308,7 +315,7 @@ const EditProfile: React.FC = () => {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <button 
-            onClick={() => navigate('/profile')}
+            onClick={() => navigate(profilePath)}
             style={{ 
               background: '#f1f5f9', 
               border: 'none', 

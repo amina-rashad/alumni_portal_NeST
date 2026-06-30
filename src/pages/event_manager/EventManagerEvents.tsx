@@ -101,6 +101,35 @@ const GlassSelect: React.FC<{
   );
 };
 
+const isEventOver = (dateStr: string, timeStr?: string) => {
+  if (!dateStr) return false;
+  try {
+    let timePart = timeStr || "00:00";
+    timePart = timePart.trim();
+    const match = timePart.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+    let hours = 0;
+    let minutes = 0;
+    if (match) {
+      hours = parseInt(match[1]);
+      minutes = parseInt(match[2]);
+      const ampm = match[3];
+      if (ampm) {
+        if (ampm.toUpperCase() === 'PM' && hours < 12) {
+          hours += 12;
+        } else if (ampm.toUpperCase() === 'AM' && hours === 12) {
+          hours = 0;
+        }
+      }
+    }
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const eventDate = new Date(year, month - 1, day, hours, minutes);
+    return eventDate < new Date();
+  } catch (e) {
+    const todayStr = new Date().toISOString().split('T')[0];
+    return dateStr < todayStr;
+  }
+};
+
 const EventManagerEvents: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -153,10 +182,16 @@ const EventManagerEvents: React.FC = () => {
       const res = await eventsApi.getAllEvents(page, itemsPerPage);
       if (res.success && res.data) {
         const rawEvents = (res.data as any).events || [];
-        const mappedEvents = rawEvents.map((e: any) => ({
-          ...e,
-          status: e.is_active ? 'Active' : 'Draft'
-        }));
+        const mappedEvents = rawEvents.map((e: any) => {
+          let status = 'Draft';
+          if (e.is_active) {
+            status = isEventOver(e.date, e.time) ? 'Past' : 'Active';
+          }
+          return {
+            ...e,
+            status
+          };
+        });
         
         setEvents(mappedEvents);
         setTotalPages((res.data as any).total_pages || 1);
@@ -459,7 +494,7 @@ const EventManagerEvents: React.FC = () => {
                       value={formData.date} 
                       onChange={handleInputChange} 
                       onClick={(e) => {
-                        try { (e.target as any).showPicker(); } catch(err) {}
+                        try { (e.target as any).showPicker(); } catch(err) { /* ignore */ }
                       }}
                       style={{ ...glossyInputStyle, paddingLeft: '40px', cursor: 'pointer' } as any} 
                     />
@@ -476,7 +511,7 @@ const EventManagerEvents: React.FC = () => {
                         value={formData.startTime} 
                         onChange={handleInputChange} 
                         onClick={(e) => {
-                          try { (e.target as any).showPicker(); } catch(err) {}
+                          try { (e.target as any).showPicker(); } catch(err) { /* ignore */ }
                         }}
                         style={{ ...glossyInputStyle, paddingLeft: '40px', cursor: 'pointer' } as any} 
                       />

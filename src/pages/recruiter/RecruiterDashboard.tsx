@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, type Variants } from 'framer-motion';
 import {
   Briefcase, FileText, UserCheck, Clock, TrendingUp, Users, UserPlus,
-  ChevronRight, BarChart3, Filter, MoreHorizontal, CheckCircle2, AlertCircle
+  ChevronRight, BarChart3, Filter, MoreHorizontal, CheckCircle2, AlertCircle, Activity
 } from 'lucide-react';
 import { recruiterApi, getUser, type AuthUser } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
@@ -247,6 +247,13 @@ const RecruiterDashboard: React.FC = () => {
             <div className="noise-overlay" style={{ opacity: 0.1 }} />
             <h3 style={{ margin: '0 0 20px 0', fontSize: '1.2rem', fontWeight: 700 }}>Recruiter Tools</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <button
+                onClick={() => navigate('/recruiter/community-feed')}
+                className="btn-premium"
+                style={{ width: '100%', padding: '14px', borderRadius: '14px', background: 'rgba(255,255,255,1)', border: '1px solid rgba(255,255,255,0.2)', color: '#1a2652', fontSize: '14px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '10px' }}
+              >
+                <Activity size={18} color="#DC2626" /> Career Timelines
+              </button>
               <button
                 onClick={() => navigate('/recruiter/jobs/post')}
                 className="btn-premium"

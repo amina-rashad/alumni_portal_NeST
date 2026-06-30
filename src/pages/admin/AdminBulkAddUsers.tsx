@@ -94,7 +94,7 @@ const AdminBulkAddUsers: React.FC = () => {
           skipped: res.data.skipped_count || 0 
         });
         setIsSuccess(true);
-        toast.success(res.message);
+        toast.success(res.message || 'Users added successfully');
       } else {
         toast.error(res.message || 'Failed to add users');
       }

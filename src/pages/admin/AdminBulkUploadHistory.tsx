@@ -18,7 +18,7 @@ const AdminBulkUploadHistory: React.FC = () => {
       try {
         const res = await adminApi.getBulkUploadHistory();
         if (res.success) {
-          setHistory(res.data.history);
+          setHistory(res.data?.history || []);
         }
       } catch (err) {
         toast.error('Failed to load upload history');

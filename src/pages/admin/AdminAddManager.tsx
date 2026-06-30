@@ -15,7 +15,6 @@ const AdminAddManager: React.FC = () => {
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
-    password: '',
     role: 'job_recruiter',
     phone: '',
     emp_id: ''
@@ -33,11 +32,15 @@ const AdminAddManager: React.FC = () => {
     setIsLoading(true);
     setError('');
 
+    // Auto-generate a secure random password to satisfy backend validation
+    // since the portal uses passwordless OTP login.
+    const randomPassword = Math.random().toString(36).slice(-8) + 'A1!';
+
     try {
       const res = await adminApi.createUser({
         full_name: formData.full_name,
         email: formData.email,
-        password: formData.password,
+        password: randomPassword,
         role: formData.role,
         user_type: 'Staff',
         phone: formData.phone,
@@ -275,13 +278,7 @@ const AdminAddManager: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="form-input-container">
-                      <label style={{ fontSize: '12px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Access Key (Temp Password)</label>
-                      <div style={{ position: 'relative' }}>
-                        <input required type="text" placeholder="Set initial security key" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="luxury-input" />
-                        <Lock className="input-icon" size={20} />
-                      </div>
-                    </div>
+
                   </div>
 
                   <div style={{ marginTop: '60px', display: 'flex', alignItems: 'center', gap: '24px' }}>
@@ -311,7 +308,6 @@ const AdminAddManager: React.FC = () => {
   );
 };
 
-// Internal icon for alerts
 const AlertCircle: React.FC<{ size: number }> = ({ size }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />

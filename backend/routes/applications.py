@@ -38,8 +38,8 @@ def _serialize_application(app_doc: dict, db=None) -> dict:
                 result["job_company"] = job.get("company", "")
                 result["job_location"] = job.get("location", "")
                 result["job_is_active"] = job.get("is_active", True)
-        except:
-            pass
+        except Exception as e:
+            print(f"Error extracting image: {e}")
 
     # Optionally populate user details
     if db is not None and app_doc.get("user_id"):
@@ -48,8 +48,8 @@ def _serialize_application(app_doc: dict, db=None) -> dict:
             if user:
                 result["applicant_name"] = user.get("full_name", "")
                 result["applicant_email"] = user.get("email", "")
-        except:
-            pass
+        except Exception as e:
+            print(f"Error parsing resume_data: {e}")
 
     return result
 
@@ -74,7 +74,8 @@ def apply_for_job():
         # Verify job exists
         try:
             job = db["jobs"].find_one({"_id": ObjectId(data["job_id"])})
-        except:
+        except Exception as e:
+            print(f"Invalid job ID format: {e}")
             return jsonify({"success": False, "message": "Invalid job ID format."}), 400
 
         if not job:
@@ -161,7 +162,7 @@ def get_application(application_id):
 
     try:
         app_doc = db["applications"].find_one({"_id": ObjectId(application_id)})
-    except:
+    except Exception:
         return jsonify({"success": False, "message": "Invalid application ID."}), 400
 
     if not app_doc:
@@ -190,7 +191,7 @@ def withdraw_application(application_id):
 
     try:
         app_doc = db["applications"].find_one({"_id": ObjectId(application_id)})
-    except:
+    except Exception:
         return jsonify({"success": False, "message": "Invalid application ID."}), 400
 
     if not app_doc:

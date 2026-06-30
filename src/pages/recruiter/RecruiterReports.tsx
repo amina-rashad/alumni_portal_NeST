@@ -28,13 +28,16 @@ const RecruiterReports: React.FC = () => {
         if (res.success && res.data) {
           setStats(res.data.stats);
         } else {
-            // Dummy data for visual presentation if API fails or is empty
+            // Dummy fallback data if API returns empty
             setStats({
-                total_jobs: 12,
-                total_applications: 48,
-                shortlisted: 18,
-                hired: 5,
-                pending: 25
+                total_jobs: 0,
+                total_applications: 0,
+                shortlisted: 0,
+                hired: 0,
+                pending: 0,
+                reviewed: 0,
+                weekly_trends: [0, 0, 0, 0, 0, 0, 0],
+                best_day: 'Tuesdays'
             });
         }
       } catch (err) {
@@ -47,11 +50,14 @@ const RecruiterReports: React.FC = () => {
   }, []);
 
   const reportCards = [
-    { label: 'Active Openings', value: stats?.total_jobs || 0, trend: '+2 this month', icon: <Briefcase size={20} />, color: '#3b82f6' },
-    { label: 'Total Applicants', value: stats?.total_applications || 0, trend: '+15% vs last week', icon: <Users size={20} />, color: '#8b5cf6' },
-    { label: 'Shortlisted', value: stats?.shortlisted || 0, trend: 'High quality ratio', icon: <CheckCircle2 size={20} />, color: '#10b981' },
-    { label: 'Hiring Velocity', value: '14 days', trend: 'Efficient', icon: <Zap size={20} />, color: nestRed },
+    { label: 'Active Openings', value: stats?.total_jobs || 0, trend: 'Live openings', icon: <Briefcase size={20} />, color: '#3b82f6' },
+    { label: 'Total Applicants', value: stats?.total_applications || 0, trend: 'Total submitted', icon: <Users size={20} />, color: '#8b5cf6' },
+    { label: 'Shortlisted', value: stats?.shortlisted || 0, trend: 'Shortlisted pool', icon: <CheckCircle2 size={20} />, color: '#10b981' },
+    { label: 'Pending Review', value: stats?.pending || 0, trend: 'Needs action', icon: <Zap size={20} />, color: nestRed },
   ];
+
+  const weeklyTrends = stats?.weekly_trends || [0, 0, 0, 0, 0, 0, 0];
+  const maxTrend = Math.max(...weeklyTrends, 1);
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', fontFamily: "'Inter', sans-serif" }}>
@@ -62,7 +68,7 @@ const RecruiterReports: React.FC = () => {
         marginBottom: '40px', background: 'linear-gradient(135deg, #1a2652 0%, #0d1430 100%)', 
         padding: '32px 40px', borderRadius: '24px', color: '#fff', boxShadow: '0 20px 40px rgba(13, 20, 48, 0.2)'
       }}>
-        <div>
+         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px', opacity: 0.8 }}>
             <BarChart3 size={18} color="#fff" />
             <span style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Performance Analytics</span>
@@ -70,28 +76,7 @@ const RecruiterReports: React.FC = () => {
           <h1 style={{ fontSize: '32px', fontWeight: 900, margin: 0, letterSpacing: '-0.02em' }}>Hiring Insights</h1>
           <p style={{ margin: '8px 0 0 0', opacity: 0.7, fontSize: '15px' }}>Track your recruitment pipeline and candidate engagement metrics.</p>
         </div>
-        
-        <div style={{ display: 'flex', gap: '12px' }}>
-            <button style={{ 
-                display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', 
-                background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', 
-                borderRadius: '12px', color: '#fff', fontWeight: 600, fontSize: '14px', cursor: 'pointer', backdropFilter: 'blur(10px)' 
-            }}>
-                <Filter size={16} /> Filter Date
-            </button>
-            <button 
-                onClick={handleExport}
-                disabled={isExporting}
-                style={{ 
-                    display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', 
-                    background: '#fff', border: 'none', borderRadius: '12px', color: nestNavy, 
-                    fontWeight: 800, fontSize: '14px', cursor: isExporting ? 'wait' : 'pointer', boxShadow: '0 10px 20px rgba(0,0,0,0.1)',
-                    opacity: isExporting ? 0.8 : 1
-                }}>
-                {isExporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-                {isExporting ? 'Downloading...' : 'Export Report'}
-            </button>
-        </div>
+
       </header>
 
       {/* Main Stats Grid */}
@@ -112,7 +97,7 @@ const RecruiterReports: React.FC = () => {
                 {card.icon}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 700, color: '#10b981' }}>
-                 <ArrowUpRight size={14} /> {card.trend.split(' ')[0]}
+                 <ArrowUpRight size={14} /> Active
               </div>
             </div>
             <div style={{ fontSize: '13px', fontWeight: 600, color: '#64748b', marginBottom: '4px' }}>{card.label}</div>
@@ -122,7 +107,7 @@ const RecruiterReports: React.FC = () => {
         ))}
       </div>
 
-      {/* Charts Section Placeholder */}
+      {/* Charts Section */}
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '32px' }}>
           <div style={{ background: '#fff', padding: '32px', borderRadius: '32px', border: '1px solid #e2e8f0' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
@@ -134,16 +119,20 @@ const RecruiterReports: React.FC = () => {
               </div>
               
               <div style={{ height: '300px', width: '100%', position: 'relative', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', padding: '0 20px' }}>
-                  {/* Decorative chart lines */}
-                  {[40, 70, 45, 90, 65, 80, 100].map((h, i) => (
-                      <motion.div 
-                        key={i}
-                        initial={{ height: 0 }}
-                        animate={{ height: `${h}%` }}
-                        transition={{ duration: 1, delay: i * 0.1 }}
-                        style={{ width: '32px', background: `linear-gradient(to top, ${nestNavy}, ${nestNavy}cc)`, borderRadius: '8px 8px 4px 4px' }}
-                      />
-                  ))}
+                  {weeklyTrends.map((val: number, i: number) => {
+                      const pct = maxTrend > 0 && val > 0 ? (val / maxTrend) * 80 + 10 : 5;
+                      return (
+                          <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', zIndex: 2, height: '100%', justifyContent: 'flex-end' }}>
+                              <span style={{ fontSize: '11px', fontWeight: 800, color: nestNavy }}>{val}</span>
+                              <motion.div 
+                                initial={{ height: 0 }}
+                                animate={{ height: `${pct}%` }}
+                                transition={{ duration: 1, delay: i * 0.05 }}
+                                style={{ width: '32px', height: `${pct}%`, background: `linear-gradient(to top, ${nestNavy}, ${nestNavy}cc)`, borderRadius: '8px 8px 4px 4px' }}
+                              />
+                          </div>
+                      );
+                  })}
                   {/* Grid Lines */}
                   <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', pointerEvents: 'none', opacity: 0.05 }}>
                       {[1,2,3,4].map(l => <div key={l} style={{ borderTop: '1px solid #000', width: '100%' }} />)}
@@ -159,26 +148,29 @@ const RecruiterReports: React.FC = () => {
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                   {[
-                      { label: 'Q2 Hiring Goal', current: 5, target: 12, color: nestRed },
-                      { label: 'Pipeline Quality', current: 18, target: 20, color: '#10b981' },
-                      { label: 'Time to Fill', current: 14, target: 20, color: '#3b82f6' }
-                  ].map((target, idx) => (
+                      { label: 'Hiring Goal', current: stats?.hired || 0, target: stats?.total_jobs || 1, color: nestRed, unit: 'jobs completed' },
+                      { label: 'Pipeline Quality', current: stats?.shortlisted || 0, target: stats?.total_applications || 1, color: '#10b981', unit: 'shortlisted' },
+                      { label: 'Review Progress', current: stats?.reviewed || 0, target: stats?.total_applications || 1, color: '#3b82f6', unit: 'processed' }
+                  ].map((target, idx) => {
+                      const percentage = target.target > 0 ? Math.round((target.current / target.target) * 100) : 0;
+                      return (
                       <div key={idx}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '8px' }}>
                               <span style={{ fontWeight: 700, color: '#334155' }}>{target.label}</span>
-                              <span style={{ fontWeight: 800, color: nestNavy }}>{Math.round((target.current / target.target) * 100)}%</span>
+                              <span style={{ fontWeight: 800, color: nestNavy }}>{percentage}%</span>
                           </div>
                           <div style={{ height: '8px', background: '#f1f5f9', borderRadius: '10px', overflow: 'hidden' }}>
                               <motion.div 
                                 initial={{ width: 0 }}
-                                animate={{ width: `${(target.current / target.target) * 100}%` }}
+                                animate={{ width: `${percentage}%` }}
                                 transition={{ duration: 1.5, ease: "easeOut" }}
                                 style={{ height: '100%', background: target.color, borderRadius: '10px' }}
                               />
                           </div>
-                          <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '6px', fontWeight: 600 }}>{target.current} of {target.target} completed</div>
+                          <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '6px', fontWeight: 600 }}>{target.current} of {target.target} {target.unit}</div>
                       </div>
-                  ))}
+                  );
+                  })}
               </div>
 
               <div style={{ marginTop: 'auto', padding: '20px', background: 'rgba(26, 38, 82, 0.03)', borderRadius: '20px', border: '1px solid rgba(26, 38, 82, 0.05)' }}>
@@ -186,7 +178,7 @@ const RecruiterReports: React.FC = () => {
                       <Target size={14} /> Quick Insight
                   </div>
                   <p style={{ margin: 0, fontSize: '12px', color: '#64748b', lineHeight: 1.5 }}>
-                      Candidate response rates are 12% higher on Tuesdays. Consider posting new roles early in the week.
+                      Candidate response rates and submissions are highest on {stats?.best_day || 'Tuesdays'}. Consider posting new roles early in the week.
                   </p>
               </div>
           </div>

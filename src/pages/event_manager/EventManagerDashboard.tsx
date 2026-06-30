@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Calendar, Users, MousePointer2, TrendingUp, 
-  BarChart3, Clock, MapPin, ChevronRight, FileText
+  BarChart3, Clock, MapPin, ChevronRight, FileText, Activity
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { eventManagerApi } from '../../services/api';
@@ -47,6 +47,35 @@ const StatCard: React.FC<{
   </motion.div>
 );
 
+const isEventOver = (dateStr: string, timeStr?: string) => {
+  if (!dateStr) return false;
+  try {
+    let timePart = timeStr || "00:00";
+    timePart = timePart.trim();
+    const match = timePart.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+    let hours = 0;
+    let minutes = 0;
+    if (match) {
+      hours = parseInt(match[1]);
+      minutes = parseInt(match[2]);
+      const ampm = match[3];
+      if (ampm) {
+        if (ampm.toUpperCase() === 'PM' && hours < 12) {
+          hours += 12;
+        } else if (ampm.toUpperCase() === 'AM' && hours === 12) {
+          hours = 0;
+        }
+      }
+    }
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const eventDate = new Date(year, month - 1, day, hours, minutes);
+    return eventDate < new Date();
+  } catch (e) {
+    const todayStr = new Date().toISOString().split('T')[0];
+    return dateStr < todayStr;
+  }
+};
+
 const EventManagerDashboard: React.FC = () => {
   const navigate = useNavigate();
   const brandPrimary = '#233167';
@@ -71,7 +100,17 @@ const EventManagerDashboard: React.FC = () => {
         }
 
         if (eventsRes.success && eventsRes.data) {
-          const sortedEvents = (eventsRes.data.events || []).sort((a: any, b: any) => 
+          const rawEvents = eventsRes.data.events || [];
+          const mappedEvents = rawEvents.map((e: any) => {
+            let status = e.status || 'Active';
+            if (e.status === 'Active' && isEventOver(e.date, e.time)) {
+              status = 'Past';
+            }
+            return { ...e, status };
+          });
+          // Filter out past events so only actual upcoming ones are shown in this list!
+          const upcomingOnly = mappedEvents.filter((e: any) => e.status === 'Active');
+          const sortedEvents = upcomingOnly.sort((a: any, b: any) => 
             new Date(a.date).getTime() - new Date(b.date).getTime()
           );
           setUpcomingEvents(sortedEvents);
@@ -97,6 +136,26 @@ const EventManagerDashboard: React.FC = () => {
           <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#1e293b', margin: '0 0 8px 0' }}>Event Governance Portal</h1>
           <p style={{ margin: 0, color: '#64748b', fontWeight: 500 }}>Global event oversight and participant engagement analytics.</p>
         </div>
+        <button 
+          onClick={() => navigate('/event-manager/community-feed')}
+          style={{
+            padding: '12px 24px',
+            borderRadius: '14px',
+            background: '#fff',
+            color: '#1e293b',
+            border: '1px solid #e2e8f0',
+            fontWeight: 700,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            transition: 'all 0.3s ease'
+          }}
+          onMouseOver={(e) => { e.currentTarget.style.borderColor = brandPrimary; }}
+          onMouseOut={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; }}
+        >
+          <Activity size={18} color="#DC2626" /> Career Timelines
+        </button>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px' }}>

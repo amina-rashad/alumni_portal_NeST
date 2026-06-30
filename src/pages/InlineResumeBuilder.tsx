@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React, { useState, useRef, useEffect } from 'react';
 import { Download, CheckCheck, Loader2, AlertCircle, Sparkles, RefreshCw, Check, Paperclip } from 'lucide-react';
 import html2canvas from 'html2canvas';

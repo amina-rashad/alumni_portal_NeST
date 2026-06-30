@@ -13,14 +13,28 @@ from app import get_db
 notifications_bp = Blueprint("notifications", __name__)
 
 
-def _serialize_notification(n: dict) -> dict:
+def _serialize_notification(n: dict, db=None, current_user_role=None) -> dict:
+    link = n.get("link")
+    if link and current_user_role:
+        if current_user_role == "event_manager":
+            if link in ("/community", "/dashboard/activity", "/feed", "/community-feed"):
+                link = "/event-manager/community-feed"
+            elif link == "/events":
+                link = "/event-manager/events"
+        elif current_user_role == "recruiter":
+            if link in ("/community", "/dashboard/activity", "/feed", "/community-feed"):
+                link = "/recruiter/community-feed"
+        else:
+            if link == "/community":
+                link = "/dashboard/activity"
+
     return {
         "id": str(n["_id"]),
         "type": n.get("type", "info"),  # info | job | event | social | system
         "title": n.get("title", ""),
         "message": n.get("message", ""),
         "is_read": n.get("is_read", False),
-        "link": n.get("link"),  # optional deep link e.g. /jobs/123
+        "link": link,
         "created_at": n.get("created_at").isoformat() if n.get("created_at") else None,
     }
 
@@ -33,6 +47,15 @@ def get_notifications():
     """Get all notifications for the current user."""
     user_id = get_jwt_identity()
     db = get_db()
+    
+    # Query current user's role
+    user_role = None
+    try:
+        user = db["users"].find_one({"_id": ObjectId(user_id)})
+        if user:
+            user_role = user.get("role")
+    except Exception:
+        pass
 
     page = int(request.args.get("page", 1))
     per_page = int(request.args.get("per_page", 30))
@@ -42,7 +65,7 @@ def get_notifications():
         {"user_id": ObjectId(user_id)}
     ).sort("created_at", -1).skip(skip).limit(per_page)
 
-    notifs_list = [_serialize_notification(n) for n in notifs_cursor]
+    notifs_list = [_serialize_notification(n, db, user_role) for n in notifs_cursor]
 
     # Count unread
     unread_count = db["notifications"].count_documents({
@@ -146,12 +169,33 @@ def delete_all_notifications():
 
 def create_notification(db, user_id, type_str, title, message, link=None):
     """Helper function to create a notification (called from other routes)."""
+    # Dynamic path mapping based on user role to ensure managers stay inside their panels!
+    mapped_link = link
+    if link:
+        try:
+            target_user = db["users"].find_one({"_id": ObjectId(user_id) if isinstance(user_id, str) else user_id})
+            if target_user:
+                role = target_user.get("role")
+                if role == "event_manager":
+                    if link in ("/community", "/dashboard/activity", "/feed", "/community-feed"):
+                        mapped_link = "/event-manager/community-feed"
+                    elif link == "/events":
+                        mapped_link = "/event-manager/events"
+                elif role == "recruiter":
+                    if link in ("/community", "/dashboard/activity", "/feed", "/community-feed"):
+                        mapped_link = "/recruiter/community-feed"
+                else:
+                    if link == "/community":
+                        mapped_link = "/dashboard/activity"
+        except Exception as err:
+            print(f"Error mapping notification link: {err}")
+
     doc = {
         "user_id": ObjectId(user_id) if isinstance(user_id, str) else user_id,
         "type": type_str,
         "title": title,
         "message": message,
-        "link": link,
+        "link": mapped_link,
         "is_read": False,
         "created_at": datetime.now(timezone.utc),
     }

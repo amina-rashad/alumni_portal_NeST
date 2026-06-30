@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Award, Download, Calendar, ShieldCheck, Loader2, ArrowLeft, Eye } from 'lucide-react';
@@ -5,10 +6,103 @@ import { useNavigate } from 'react-router-dom';
 import { getUser, usersApi } from '../services/api';
 import { generateIVCertificate, getIVCertificatePDF } from '../utils/CertificateGenerator';
 
+const AIWave: React.FC = () => {
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const mouse = React.useRef({ x: 0, y: 0 });
+
+  React.useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      const rect = canvasRef.current?.getBoundingClientRect();
+      if (rect) {
+        mouse.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      }
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  React.useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let animationFrameId: number;
+    let width = canvas.width = canvas.offsetWidth;
+    let height = canvas.height = canvas.offsetHeight;
+
+    const points: { x: number; y: number; ox: number; oy: number }[] = [];
+    const spacing = 35;
+    const rows = Math.ceil(height / spacing) + 1;
+    const cols = Math.ceil(width / spacing) + 1;
+
+    for (let i = 0; i < rows; i++) {
+      for (let j = 0; j < cols; j++) {
+        points.push({
+          x: j * spacing,
+          y: i * spacing,
+          ox: j * spacing,
+          oy: i * spacing
+        });
+      }
+    }
+
+    const render = (time: number) => {
+      ctx.clearRect(0, 0, width, height);
+      
+      points.forEach((p, idx) => {
+        const dx = mouse.current.x - p.x;
+        const dy = mouse.current.y - p.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const force = Math.max(0, (150 - dist) / 150);
+        
+        // Liquid distortion logic
+        const angle = Math.atan2(dy, dx);
+        p.x = p.ox - Math.cos(angle) * force * 40 + Math.sin(time * 0.002 + p.oy * 0.01) * 3;
+        p.y = p.oy - Math.sin(angle) * force * 40 + Math.cos(time * 0.002 + p.ox * 0.01) * 3;
+
+        // Draw Dot
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 1.2, 0, Math.PI * 2);
+        ctx.fillStyle = idx % 3 === 0 ? 'rgba(200, 16, 46, 0.25)' : 'rgba(26, 38, 82, 0.25)';
+        ctx.fill();
+
+        // Draw Lines (optimized with glow)
+        if (idx % cols < cols - 1) { // Connect to right
+          const right = points[idx + 1];
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(right.x, right.y);
+          ctx.strokeStyle = `rgba(26, 38, 82, ${0.1 * (1 - force)})`;
+          ctx.shadowBlur = 5 * force;
+          ctx.shadowColor = 'rgba(59, 130, 246, 0.5)';
+          ctx.stroke();
+          ctx.shadowBlur = 0; // Reset for performance
+        }
+        if (idx < points.length - cols) { // Connect to bottom
+          const bottom = points[idx + cols];
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(bottom.x, bottom.y);
+          ctx.strokeStyle = `rgba(26, 38, 82, ${0.1 * (1 - force)})`;
+          ctx.stroke();
+        }
+      });
+
+      animationFrameId = requestAnimationFrame(render);
+    };
+
+    render(0);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, []);
+
+  return <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.8 }} />;
+};
+
 const IVCertificates: React.FC = () => {
   const navigate = useNavigate();
   const [user, setUserData] = useState<any>(null);
-  const [isDownloading, setIsDownloading] = useState(false);
+  const [isDownloading, setIsDownloading] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [myCertificates, setMyCertificates] = useState<any[]>([]);
 
@@ -81,17 +175,232 @@ const IVCertificates: React.FC = () => {
   }
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem' }}>
-      {/* Header Section */}
-      <div style={{ marginBottom: '3rem' }}>
-        <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: '#0f172a', margin: 0, fontFamily: "'Outfit', sans-serif" }}>
+    <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 0 3rem 0' }}>
+      {/* ── CINEMATIC LUXURY HERO SECTION ── */}
+      <section style={{ 
+        position: 'relative', 
+        width: '100%', 
+        height: '420px', 
+        background: '#ffffff',
+        borderRadius: '0 0 40px 40px',
+        overflow: 'hidden',
+        marginBottom: '4rem',
+        display: 'flex',
+        alignItems: 'center',
+        boxShadow: '0 20px 50px rgba(0,0,0,0.04)'
+      }}>
+        {/* Dynamic AI Mesh Wave Component */}
+        <AIWave />
 
-          Industrial Visit <span style={{ color: '#c8102e' }}>Certifications</span>
-        </h1>
-        <p style={{ color: '#64748b', fontSize: '1.1rem', marginTop: '0.5rem' }}>
-          Official recognition of your professional exposure at NeST Digital.
-        </p>
-      </div>
+        {/* Animated Mesh Background (Existing) */}
+        <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
+          {/* Soft Navy Gradient */}
+          <div style={{ 
+            position: 'absolute', 
+            top: '-20%', 
+            right: '-10%', 
+            width: '60%', 
+            height: '140%', 
+            background: 'radial-gradient(circle, rgba(26, 38, 82, 0.04) 0%, transparent 70%)',
+            transform: 'rotate(-15deg)',
+            filter: 'blur(60px)'
+          }} />
+          
+          {/* Crimson Red Glow */}
+          <div style={{ 
+            position: 'absolute', 
+            bottom: '-10%', 
+            left: '-5%', 
+            width: '40%', 
+            height: '80%', 
+            background: 'radial-gradient(circle, rgba(200, 16, 46, 0.03) 0%, transparent 70%)',
+            filter: 'blur(50px)'
+          }} />
+
+          {/* Holographic Accents */}
+          <motion.div 
+            animate={{ 
+              opacity: [0.3, 0.6, 0.3],
+              scale: [1, 1.1, 1]
+            }}
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+            style={{ 
+              position: 'absolute', 
+              top: '15%', 
+              left: '25%', 
+              width: '300px', 
+              height: '300px', 
+              background: 'radial-gradient(circle, rgba(59, 130, 246, 0.05) 0%, transparent 70%)',
+              filter: 'blur(40px)'
+            }} 
+          />
+
+          {/* Certificate-inspired Line Art Pattern */}
+          <div style={{ 
+            position: 'absolute', 
+            inset: 0, 
+            opacity: 0.03,
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0L30 60M0 30L60 30' stroke='%231a2652' stroke-width='0.5' fill='none'/%3E%3Ccircle cx='30' cy='30' r='15' stroke='%23c8102e' stroke-width='0.5' fill='none'/%3E%3C/svg%3E")`,
+            backgroundSize: '120px 120px'
+          }} />
+        </div>
+
+        {/* Floating Particles */}
+        <div style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none' }}>
+          {[...Array(12)].map((_, i) => (
+            <motion.div
+              key={i}
+              animate={{ 
+                y: [0, -30, 0],
+                x: [0, Math.random() * 20 - 10, 0],
+                opacity: [0, 0.4, 0]
+              }}
+              transition={{ 
+                duration: 4 + Math.random() * 4, 
+                repeat: Infinity, 
+                delay: Math.random() * 5 
+              }}
+              style={{
+                position: 'absolute',
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                width: '4px',
+                height: '4px',
+                background: i % 2 === 0 ? '#1a2652' : '#c8102e',
+                borderRadius: '50%',
+                filter: 'blur(1px)'
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Content */}
+        <div style={{ position: 'relative', zIndex: 2, padding: '0 5rem', width: '100%' }}>
+          <div style={{ maxWidth: '800px' }}>
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+            >
+
+              <h1 style={{ 
+                fontSize: '4.8rem', 
+                fontWeight: 900, 
+                color: '#0f172a', 
+                margin: 0, 
+                letterSpacing: '-0.04em',
+                lineHeight: 1,
+                fontFamily: "'Outfit', sans-serif"
+              }}>
+                Industrial Visit <br />
+                <span style={{ 
+                  position: 'relative',
+                  display: 'inline-block',
+                  background: 'linear-gradient(135deg, #c8102e 0%, #1a2652 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  paddingRight: '10px'
+                }}>
+                  Certifications
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: '100%' }}
+                    transition={{ delay: 0.5, duration: 1 }}
+                    style={{ 
+                      position: 'absolute', 
+                      bottom: '8px', 
+                      left: 0, 
+                      height: '6px', 
+                      background: 'rgba(200, 16, 46, 0.1)', 
+                      zIndex: -1,
+                      borderRadius: '4px'
+                    }} 
+                  />
+                </span>
+              </h1>
+
+              <p style={{ 
+                color: '#64748b', 
+                fontSize: '1.25rem', 
+                marginTop: '1.5rem', 
+                fontWeight: 500,
+                maxWidth: '600px',
+                lineHeight: 1.6
+              }}>
+                Official recognition of your professional exposure and technical mastery acquired through high-impact industrial engagements at <span style={{ color: '#1a2652', fontWeight: 700 }}>NeST Digital</span>.
+              </p>
+            </motion.div>
+          </div>
+        </div>
+
+        {/* High-Definition Industrial Visual Integrated into Banner */}
+        <motion.div 
+          initial={{ opacity: 0, x: 100 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
+          style={{ 
+            position: 'absolute', 
+            right: 0, 
+            top: 0,
+            bottom: 0,
+            width: '55%', 
+            zIndex: 1,
+            overflow: 'hidden'
+          }}
+        >
+          <div style={{
+            width: '100%',
+            height: '100%',
+            position: 'relative'
+          }}>
+            <img 
+              src="/images/hero/iv_hero.png" 
+              alt="Industrial Excellence" 
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=1200";
+              }}
+              style={{ 
+                width: '100%', 
+                height: '100%', 
+                objectFit: 'cover',
+                filter: 'contrast(1.05) brightness(1.05)'
+              }} 
+            />
+            
+            {/* Smooth Edge Fade to Left */}
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'linear-gradient(to right, #ffffff 0%, rgba(255,255,255,0.9) 10%, transparent 40%)',
+              zIndex: 2
+            }} />
+
+            {/* Bottom Accent Glow */}
+            <div style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: '40%',
+              background: 'linear-gradient(to top, rgba(26, 38, 82, 0.1), transparent)',
+              zIndex: 2
+            }} />
+
+            {/* Scanline Effect */}
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.05) 50%)',
+              backgroundSize: '100% 4px',
+              pointerEvents: 'none',
+              zIndex: 3,
+              opacity: 0.3
+            }} />
+          </div>
+        </motion.div>
+      </section>
+
+      <div style={{ padding: '0 5rem' }}>
 
       {myCertificates.length > 0 ? (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '24px' }}>
@@ -231,6 +540,7 @@ const IVCertificates: React.FC = () => {
           </button>
         </motion.div>
       )}
+      </div>
     </div>
   );
 };

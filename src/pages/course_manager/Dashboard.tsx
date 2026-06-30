@@ -82,6 +82,26 @@ const CM_Dashboard: React.FC = () => {
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
           <button 
+            onClick={() => navigate('/course-manager/community-feed')}
+            style={{
+              padding: '12px 24px',
+              borderRadius: '14px',
+              background: '#fff',
+              color: '#1e293b',
+              border: '1px solid #e2e8f0',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseOver={(e) => { e.currentTarget.style.borderColor = brandPrimary; }}
+            onMouseOut={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; }}
+          >
+            <Activity size={18} color="#DC2626" /> Career Timelines
+          </button>
+          <button 
             onClick={() => navigate('/course-manager/courses/create')}
             style={{
               padding: '12px 24px',

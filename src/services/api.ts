@@ -45,6 +45,8 @@ export interface ApiResponse<T = any> {
   success: boolean;
   message?: string;
   data?: T;
+  requires_otp?: boolean;
+  email?: string;
 }
 
 // ── HTTP Client ──
@@ -61,7 +63,7 @@ async function apiRequest<T = any>(
 
   if (options.body && typeof options.body === 'string') {
     const size = (options.body.length / (1024 * 1024)).toFixed(2);
-    console.log(`[API] Sending payload of size: ${size}MB to ${endpoint}`);
+
   }
 
   const token = getAccessToken();
@@ -270,8 +272,8 @@ export const jobsApi = {
 // ── Events API ──
 
 export const eventsApi = {
-  getAllEvents: (page: number = 1, limit: number = 5) =>
-    apiRequest(`/events?page=${page}&limit=${limit}`, { method: 'GET' }),
+  getAllEvents: (page: number = 1, limit: number = 5, upcomingOnly: boolean = false) =>
+    apiRequest(`/events?page=${page}&limit=${limit}&upcoming_only=${upcomingOnly}`, { method: 'GET' }),
 
   getEventById: (eventId: string) =>
     apiRequest(`/events/${eventId}`, { method: 'GET' }),
@@ -324,6 +326,18 @@ export const eventManagerApi = {
       method: 'POST', 
       body: JSON.stringify({ event_id: eventId, user_id: userId }) 
     }),
+
+  broadcastMail: (data: { recipients: string[]; subject: string; body: string; event_name?: string }) =>
+    apiRequest('/events/manager/broadcast-mail', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  aiDraftEmail: (data: { context?: string; event_name?: string; tone?: string; purpose?: string }) =>
+    apiRequest<{ subject: string; body: string; note?: string }>('/events/manager/ai-draft-email', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 };
 
 // ── Networking API ──
@@ -374,7 +388,7 @@ export const socialApi = {
   getMyPosts: () =>
     apiRequest<{ posts: any[] }>('/social/my-posts', { method: 'GET' }),
 
-  createPost: (data: { content: string; image_url?: string }) =>
+  createPost: (data: { content: string; image_url?: string; video_url?: string }) =>
     apiRequest('/social/posts', { method: 'POST', body: JSON.stringify(data) }),
 
   likePost: (postId: string) =>
@@ -385,6 +399,9 @@ export const socialApi = {
 
   deletePost: (postId: string) =>
     apiRequest(`/social/posts/${postId}`, { method: 'DELETE' }),
+
+  updatePost: (postId: string, data: { content: string; image_url?: string; video_url?: string }) =>
+    apiRequest(`/social/posts/${postId}`, { method: 'PATCH', body: JSON.stringify(data) }),
 };
 
 // ── Assessments API ──
@@ -457,7 +474,14 @@ export const adminApi = {
         applications: number,
         total_managers: number,
         total_events: number,
-        distribution: { [key: string]: number }
+        distribution: { [key: string]: number },
+        monthly_growth: number[],
+        trends: {
+          users: string,
+          jobs: string,
+          applications: string,
+          events: string
+        }
       } 
     }>('/admin/stats'),
 
@@ -476,12 +500,6 @@ export const adminApi = {
 
   createUser: (data: any) => 
     apiRequest('/admin/users', { method: 'POST', body: JSON.stringify(data) }),
-
-  bulkAddUsers: (users: any[]) =>
-    apiRequest('/admin/users/bulk-add', { method: 'POST', body: JSON.stringify({ users }) }),
-
-  updateUser: (userId: string, data: any) => 
-    apiRequest(`/admin/users/${userId}`, { method: 'PATCH', body: JSON.stringify(data) }),
 
   getInterns: () => 
     apiRequest<{ users: any[] }>('/admin/users?type=Intern'),
@@ -514,10 +532,13 @@ export const adminApi = {
     apiRequest('/admin/assessments/pending'),
 
   reviewAssessment: (id: string, data: any) =>
-    apiRequest(`/admin/assessments/${id}/review`, { method: 'POST', body: JSON.stringify(data) }),
+    apiRequest(`/admin/assessments/${id}/review`, { method: 'PATCH', body: JSON.stringify(data) }),
 
   deleteUser: (userId: string) =>
     apiRequest(`/admin/users/${userId}`, { method: 'DELETE' }),
+
+  bulkDeleteUsers: (userIds: string[]) =>
+    apiRequest('/admin/users/bulk-delete', { method: 'POST', body: JSON.stringify({ user_ids: userIds }) }),
 
   getUserById: (userId: string) =>
     apiRequest(`/admin/users/${userId}`, { method: 'GET' }),
@@ -541,6 +562,20 @@ export const adminApi = {
 
   updateUser: (userId: string, data: any) =>
     apiRequest(`/admin/users/${userId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+
+  // Certificate overview (all roles in one call)
+  getCertificatesOverview: () =>
+    apiRequest<{ iv: any[], intern: any[], alumni: any[], course: any[], stats: any }>('/admin/certificates/overview'),
+
+  // Issue cert actions
+  issueInternCertificate: (userId: string) =>
+    apiRequest(`/admin/certificates/intern/${userId}/issue`, { method: 'POST' }),
+
+  issueAlumniCertificate: (userId: string, data?: { title?: string; position?: string }) =>
+    apiRequest(`/admin/certificates/alumni/${userId}/issue`, { method: 'POST', body: JSON.stringify(data || {}) }),
+
+  generateCourseCertificate: (enrollmentId: string) =>
+    apiRequest(`/admin/certificates/course/${enrollmentId}/generate`, { method: 'POST' }),
 };
 
 export const recruiterApi = {
@@ -577,11 +612,12 @@ export const recruiterApi = {
   getTalentFilters: () =>
     apiRequest<{ specializations: string[], courses: string[], skills: string[] }>('/recruiter/talent-filters'),
 
-  searchTalents: (params: { skill?: string, course?: string, specialization?: string }) => {
+  searchTalents: (params: { skill?: string, course?: string, specialization?: string, job_id?: string }) => {
     const query = new URLSearchParams();
     if (params.skill) query.append('skill', params.skill);
     if (params.course) query.append('course', params.course);
     if (params.specialization) query.append('specialization', params.specialization);
+    if (params.job_id) query.append('job_id', params.job_id);
     return apiRequest<{ talents: any[] }>(`/recruiter/talents?${query.toString()}`);
   },
 

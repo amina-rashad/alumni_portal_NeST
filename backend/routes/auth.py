@@ -202,6 +202,105 @@ def login():
         {"$set": {"last_login": datetime.now(timezone.utc)}}
     )
 
+    return jsonify({
+        "success": True,
+        "requires_otp": True,
+        "email": email,
+        "message": "A verification code has been sent to your email."
+    }), 200
+
+
+# ── Send OTP ──
+
+@auth_bp.route("/send-otp", methods=["POST"])
+def send_otp():
+    """
+    Generate and send a mock OTP for login.
+    Expects JSON body with: email.
+    """
+    data = request.get_json(silent=True)
+    if not data or not data.get("email"):
+        return jsonify({"success": False, "message": "Email is required."}), 400
+
+    email = data["email"].strip().lower()
+    
+    db = get_db()
+    users = db["users"]
+    user = users.find_one({"email": email})
+    
+    if not user:
+        return jsonify({
+            "success": False,
+            "message": "No account found with this email address."
+        }), 404
+
+    # Check if active
+    if not user.get("is_active", True):
+        return jsonify({
+            "success": False,
+            "message": "Your account has been deactivated. Please contact support."
+        }), 403
+
+    # For demo, mock code is "123456"
+    return jsonify({
+        "success": True,
+        "message": "A verification code has been sent to your email."
+    }), 200
+
+
+# ── Verify OTP & Login ──
+
+@auth_bp.route("/login-otp", methods=["POST"])
+def login_otp():
+    """
+    Verify OTP and log the user in.
+    Expects JSON body with: email, otp.
+    """
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({"success": False, "message": "Request body is required."}), 400
+
+    email = data.get("email", "").strip().lower()
+    otp = data.get("otp", "").strip()
+
+    if not email or not otp:
+        return jsonify({
+            "success": False,
+            "message": "Email and verification code are required."
+        }), 400
+
+    db = get_db()
+    users = db["users"]
+
+    user = users.find_one({"email": email})
+    if not user:
+        return jsonify({
+            "success": False,
+            "message": "User not found."
+        }), 404
+
+    # Verify mock OTP (for demo, "123456")
+    if otp != "123456":
+        return jsonify({
+            "success": False,
+            "message": "Invalid verification code. Please try again."
+        }), 401
+
+    # Check if account is active
+    if not user.get("is_active", True):
+        return jsonify({
+            "success": False,
+            "message": "Your account has been deactivated. Please contact support."
+        }), 403
+
+    user_id = str(user["_id"])
+
+    # Update last login timestamp
+    users.update_one(
+        {"_id": user["_id"]},
+        {"$set": {"last_login": datetime.now(timezone.utc)}}
+    )
+
     # Generate tokens
     access_token = create_access_token(identity=user_id)
     refresh_token = create_refresh_token(identity=user_id)

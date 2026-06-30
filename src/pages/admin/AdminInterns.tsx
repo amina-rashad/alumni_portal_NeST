@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -5,6 +6,7 @@ import {
   Edit2, Trash2, MoreVertical, Search, Filter, X, Check, RefreshCw
 } from 'lucide-react';
 import { adminApi } from '../../services/api';
+import UserAvatar from '../../components/UserAvatar';
 
 const AdminInterns: React.FC = () => {
   const navigate = useNavigate();
@@ -218,30 +220,13 @@ const AdminInterns: React.FC = () => {
                   <tr key={intern.id} style={{ borderBottom: idx === filteredInterns.length - 1 ? 'none' : '1px solid #f8fafc', transition: '0.2s' }}>
                     <td style={{ padding: '20px 24px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                        <div style={{ position: 'relative' }}>
-                          <div style={{ 
-                            padding: '2.5px', 
-                            borderRadius: '50%', 
-                            background: (intern.status === 'open_to_work' || !intern.status)
-                              ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' 
-                              : intern.status === 'hiring' 
-                                ? 'linear-gradient(135deg, #3b82f6 0%, #0284c7 100%)' 
-                                : 'transparent',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                          }}>
-                            <div style={{ 
-                              width: '44px', height: '44px', borderRadius: '16px', 
-                              background: `linear-gradient(135deg, ${nestNavy} 0%, #2a3b7d 100%)`, 
-                              color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              fontSize: '15px', fontWeight: 800, boxShadow: '0 4px 10px rgba(26, 38, 82, 0.15)',
-                              border: '2px solid #fff'
-                            }}>
-                              {intern.full_name?.charAt(0) || 'I'}
-                            </div>
-                          </div>
-                        </div>
+                        <UserAvatar
+                          src={intern.profile_picture}
+                          name={intern.full_name}
+                          status={intern.status || 'open_to_work'}
+                          size={44}
+                          bgColor={nestNavy}
+                        />
                         <div>
                           <div style={{ fontSize: '15px', fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
                             {intern.full_name}

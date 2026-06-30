@@ -41,7 +41,7 @@ const EventsListing: React.FC = () => {
   const fetchEvents = async () => {
     try {
       setLoading(true);
-      const res = await eventsApi.getAllEvents(currentPage, eventsPerPage);
+      const res = await eventsApi.getAllEvents(currentPage, eventsPerPage, true);
       const data = res.data as any;
       if (res.success && data && data.events) {
         setEvents(data.events);

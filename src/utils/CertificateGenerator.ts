@@ -265,10 +265,6 @@ export const generateJobCertificate = (participantName: string, role: string, co
       doc.rect(0, 0, pageWidth, pageHeight, 'F');
     }
 
-    // ── 2. LOGO ──
-    try {
-      doc.addImage(NEST_OVAL_LOGO, 'PNG', 25, 20, 35, 21);
-    } catch (e) {}
 
     // ── 3. HEADER ──
     doc.setTextColor(26, 38, 82);

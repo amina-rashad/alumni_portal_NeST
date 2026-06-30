@@ -10,6 +10,8 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from functools import wraps
 from app import get_db
+from utils.mailer import broadcast_email
+import os, json
 
 events_bp = Blueprint("events", __name__)
 
@@ -67,7 +69,7 @@ def get_all_attendees():
         for uid_str in all_user_ids:
             try:
                 object_ids.append(ObjectId(uid_str))
-            except:
+            except Exception:
                 pass
         
         # Use $or to handle both potential string and ObjectId formats in the users collection
@@ -79,7 +81,8 @@ def get_all_attendees():
             users_map[str(u["_id"])] = {
                 "name": u.get("full_name", "Unknown"),
                 "email": u.get("email", ""),
-                "type": u.get("user_type", "Alumni")
+                "type": u.get("user_type", "Alumni"),
+                "status": u.get("status", "none")
             }
             
     attendees_list = []
@@ -91,7 +94,7 @@ def get_all_attendees():
             
         for uid in attendees:
             uid_str = str(uid)
-            u_info = users_map.get(uid_str, {"name": "Anonymous User", "email": "N/A", "type": "N/A"})
+            u_info = users_map.get(uid_str, {"name": "Anonymous User", "email": "N/A", "type": "N/A", "status": "none"})
             
             is_attended = uid_str in [str(x) for x in attended_by]
             issued_certificates = e.get("issued_certificates", [])
@@ -111,6 +114,7 @@ def get_all_attendees():
                 "city": e.get("location", ""),
                 "status": "Attended" if is_attended else "Registered", 
                 "type": u_info["type"],
+                "author_status": u_info.get("status", "none"),
                 "is_certificate_issued": is_certificate_issued
             })
             idx += 1
@@ -158,6 +162,34 @@ def get_event_manager_stats():
         }
     }), 200
 
+def is_event_past(date_str, time_str=""):
+    if not date_str:
+        return False
+    try:
+        now = datetime.now(timezone.utc)
+        hours = 0
+        minutes = 0
+        if time_str:
+            time_part = time_str.strip()
+            import re
+            match = re.match(r"(\d+):(\d+)\s*(AM|PM)?", time_part, re.IGNORECASE)
+            if match:
+                hours = int(match.group(1))
+                minutes = int(match.group(2))
+                ampm = match.group(3)
+                if ampm:
+                    if ampm.upper() == "PM" and hours < 12:
+                        hours += 12
+                    elif ampm.upper() == "AM" and hours == 12:
+                        hours = 0
+        year, month, day = map(int, date_str.split("-"))
+        event_dt = datetime(year, month, day, hours, minutes, tzinfo=timezone.utc)
+        return event_dt < now
+    except Exception as err:
+        print(f"Error parsing event date/time: {err}")
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        return date_str < today
+
 @events_bp.route("/manager/upcoming", methods=["GET"])
 @jwt_required()
 @manager_or_admin_required
@@ -165,11 +197,18 @@ def get_upcoming_events():
     """Get the next few upcoming events for the dashboard feed."""
     db = get_db()
     
-    # Sort by date (assuming ISO format YYYY-MM-DD)
-    events_cursor = db["events"].find({"is_active": {"$ne": False}}).sort("date", 1).limit(5)
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    
+    # Query only active events scheduled for today or in the future
+    events_cursor = db["events"].find({
+        "is_active": {"$ne": False},
+        "date": {"$gte": today}
+    }).sort("date", 1).limit(5)
     
     upcoming = []
     for e in events_cursor:
+        is_past = is_event_past(e.get("date", ""), e.get("time", ""))
+        status = "Past" if is_past else ("Active" if e.get("is_active", True) else "Draft")
         upcoming.append({
             "id": str(e["_id"]),
             "title": e.get("title", "Untitled Event"),
@@ -177,7 +216,7 @@ def get_upcoming_events():
             "time": e.get("time", "TBD"),
             "location": e.get("location", "TBD"),
             "registrations": len(e.get("attendees", [])),
-            "status": "Active" if e.get("is_active", True) else "Draft"
+            "status": status
         })
         
     return jsonify({
@@ -199,7 +238,7 @@ def toggle_attendance():
     try:
         eid = ObjectId(event_id)
         uid = ObjectId(user_id)
-    except:
+    except Exception:
         return jsonify({"success": False, "message": "Invalid ID format."}), 400
         
     event = db["events"].find_one({"_id": eid})
@@ -238,7 +277,7 @@ def issue_certificate():
     try:
         eid = ObjectId(event_id)
         uid = ObjectId(user_id)
-    except:
+    except Exception:
         return jsonify({"success": False, "message": "Invalid ID format."}), 400
         
     event = db["events"].find_one({"_id": eid})
@@ -310,7 +349,7 @@ def remove_registration():
     try:
         eid = ObjectId(event_id)
         uid = ObjectId(user_id)
-    except:
+    except Exception:
         return jsonify({"success": False, "message": "Invalid ID format."}), 400
         
     # Pull from both attendees and attended_by lists
@@ -334,6 +373,7 @@ def list_events():
     page = request.args.get("page", 1, type=int)
     limit = request.args.get("limit", 10, type=int)
     skip = (page - 1) * limit
+    upcoming_only = request.args.get("upcoming_only", "false").lower() == "true"
 
     db = get_db()
     user_id = get_jwt_identity()
@@ -341,20 +381,18 @@ def list_events():
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     
     # Aggregation for smart sorting and pagination
-    pipeline = [
-        {
-            "$addFields": {
-                "is_past": {"$cond": [{"$lt": ["$date", today]}, 1, 0]}
-            }
-        },
-        # Sort by is_past (0 for upcoming, 1 for past)
-        # Then by date (upcoming: soonest first; past: oldest at bottom)
-        {"$sort": {"is_past": 1, "date": 1}},
+    pipeline = []
+    if upcoming_only:
+        pipeline.append({"$match": {"date": {"$gte": today}}})
+        
+    pipeline.extend([
+        # Sort strictly by date ascending
+        {"$sort": {"date": 1}},
         {"$facet": {
             "metadata": [{"$count": "total"}],
             "data": [{"$skip": skip}, {"$limit": limit}]
         }}
-    ]
+    ])
     
     result = list(db["events"].aggregate(pipeline))
     events_raw = result[0]["data"] if result else []
@@ -383,7 +421,12 @@ def list_events():
 def get_my_events():
     db = get_db()
     user_id = get_jwt_identity()
-    events_cursor = db["events"].find({"attendees": ObjectId(user_id)})
+    events_cursor = db["events"].find({
+        "$or": [
+            {"attendees": ObjectId(user_id)},
+            {"attendees": user_id}
+        ]
+    }).sort("date", 1)
     events_list = []
     for e in events_cursor:
         event = _serialize_event(e)
@@ -399,7 +442,7 @@ def get_event(event_id):
     user_id = get_jwt_identity()
     try:
         e = db["events"].find_one({"_id": ObjectId(event_id)})
-    except:
+    except Exception:
         return jsonify({"success": False, "message": "Invalid event ID."}), 400
     if not e:
         return jsonify({"success": False, "message": "Event not found."}), 404
@@ -416,14 +459,15 @@ def register_for_event(event_id):
     try:
         oid = ObjectId(event_id)
         u_oid = ObjectId(user_id)
-    except:
+    except Exception:
         return jsonify({"success": False, "message": "Invalid ID format."}), 400
     event = db["events"].find_one({"_id": oid})
     if not event:
         return jsonify({"success": False, "message": "Event not found."}), 404
     max_attendees = event.get("max_attendees", 0)
     current_attendees = event.get("attendees", [])
-    if u_oid in current_attendees:
+    current_attendees_strs = [str(a) for a in current_attendees]
+    if user_id in current_attendees_strs:
         return jsonify({"success": False, "message": "You are already registered for this event."}), 400
     if max_attendees > 0 and len(current_attendees) >= max_attendees:
         return jsonify({"success": False, "message": "This event has reached its maximum capacity."}), 400
@@ -516,7 +560,7 @@ def update_event(event_id):
     
     try:
         eid = ObjectId(event_id)
-    except:
+    except Exception:
         return jsonify({"success": False, "message": "Invalid event ID format."}), 400
 
     allowed_fields = [
@@ -557,7 +601,7 @@ def delete_event(event_id):
     
     try:
         eid = ObjectId(event_id)
-    except:
+    except Exception:
         return jsonify({"success": False, "message": "Invalid event ID format."}), 400
 
     result = db["events"].delete_one({"_id": eid})
@@ -568,4 +612,112 @@ def delete_event(event_id):
     return jsonify({
         "success": True,
         "message": "Event deleted successfully!"
+    }), 200
+# ── Gemini AI Email Draft ──
+
+@events_bp.route("/manager/ai-draft-email", methods=["POST"])
+@jwt_required()
+@manager_or_admin_required
+def ai_draft_email():
+    """Use Gemini AI to draft an event email for selected attendees."""
+    data = request.get_json() or {}
+    context = data.get("context", "")
+    event_name = data.get("event_name", "the event")
+    tone = data.get("tone", "professional")
+    purpose = data.get("purpose", "general update")
+
+    gemini_api_key = os.getenv("GEMINI_API_KEY", "")
+    if not gemini_api_key or gemini_api_key == "your-gemini-api-key-here":
+        # Fallback: return a structured template when no API key is set
+        subject = f"Important Update: {event_name}"
+        body = (
+            f"Dear Participant,\n\n"
+            f"We are reaching out regarding {event_name}.\n\n"
+            f"{context if context else 'We have an important update to share with you.'}"
+            f"\n\nThank you for your participation.\n\nBest regards,\nNeST Digital Events Team"
+        )
+        return jsonify({
+            "success": True,
+            "data": {"subject": subject, "body": body, "note": "Template used (no Gemini API key configured)"}
+        }), 200
+
+    try:
+        import urllib.request
+        prompt = (
+            f"You are a professional event coordinator at NeST Digital, an engineering transformation company.\n"
+            f"Write a {tone} email for participants of '{event_name}'.\n"
+            f"Purpose: {purpose}.\n"
+            f"Additional context: {context}\n\n"
+            f"Return ONLY a JSON object with two keys: 'subject' (short email subject line) and 'body' (full email body with greeting and signature).\n"
+            f"The email should feel warm, professional, and on-brand for NeST Digital."
+        )
+        payload = json.dumps({
+            "contents": [{"parts": [{"text": prompt}]}]
+        }).encode()
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={gemini_api_key}"
+        req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"}, method="POST")
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            result = json.loads(resp.read())
+
+        text = result["candidates"][0]["content"]["parts"][0]["text"]
+        # Strip markdown code fences if Gemini wraps the JSON
+        text = text.strip()
+        if text.startswith("```"):
+            text = text.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+
+        email_data = json.loads(text)
+        return jsonify({
+            "success": True,
+            "data": {"subject": email_data.get("subject", ""), "body": email_data.get("body", "")}
+        }), 200
+
+    except Exception as e:
+        print(f"Gemini AI draft error: {e}")
+        return jsonify({"success": False, "message": f"AI draft failed: {str(e)}"}), 500
+
+
+# ── Event Manager Broadcast Mail ──
+
+@events_bp.route("/manager/broadcast-mail", methods=["POST"])
+@jwt_required()
+@manager_or_admin_required
+def event_manager_broadcast_mail():
+    """Send a broadcast email + in-app notification to selected event attendees."""
+    data = request.get_json() or {}
+    recipients = data.get("recipients", [])  # list of email strings
+    subject = data.get("subject", "")
+    body = data.get("body", "")
+    event_name = data.get("event_name", "")
+
+    if not recipients or not subject or not body:
+        return jsonify({"success": False, "message": "recipients, subject, and body are required."}), 400
+
+    db = get_db()
+
+    # Send actual emails via SMTP (or log to console if not configured)
+    email_count = broadcast_email(recipients, subject, body)
+
+    # Also push in-app notifications
+    notif_count = 0
+    for email in recipients:
+        user = db["users"].find_one({"email": email.lower()})
+        if user:
+            try:
+                from .notifications import create_notification
+                create_notification(
+                    db,
+                    user_id=user["_id"],
+                    type_str="event",
+                    title=f"📧 {subject}",
+                    message=body[:200] + ("..." if len(body) > 200 else ""),
+                    link="/events"
+                )
+                notif_count += 1
+            except Exception as e:
+                print(f"Notification error for {email}: {e}")
+
+    return jsonify({
+        "success": True,
+        "message": f"Message delivered to {email_count} email(s) and {notif_count} in-app notification(s).",
+        "data": {"email_count": email_count, "notif_count": notif_count}
     }), 200

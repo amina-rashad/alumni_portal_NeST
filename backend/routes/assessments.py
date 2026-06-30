@@ -153,12 +153,14 @@ def submit_stage(course_id, stage):
         user = db["users"].find_one({"_id": ObjectId(user_id)})
         course = db["courses"].find_one({"_id": ObjectId(course_id)})
         for admin in admins:
+            student_name = user.get('full_name') if user else 'Unknown Student'
+            course_name = course.get('title') if course else 'Unknown Course'
             create_notification(
                 db,
                 admin["_id"],
                 "system",
                 "New Assessment Submission",
-                f"Student {user.get('name', 'Unknown')} submitted Stage {stage} for course '{course.get('title', 'Unknown')}'.",
+                f"Student {student_name} submitted Stage {stage} for course '{course_name}'.",
                 "/admin/certification" # Links to the review tab
             )
     
@@ -176,7 +178,7 @@ def enroll_course(course_id):
     try:
         cid = ObjectId(course_id)
         uid = ObjectId(user_id)
-    except:
+    except Exception:
         return jsonify({"success": False, "message": "Invalid IDs."}), 400
         
     # Check if course exists
@@ -256,7 +258,7 @@ def update_course_progress():
     try:
         cid = ObjectId(course_id)
         uid = ObjectId(user_id)
-    except:
+    except Exception:
         return jsonify({"success": False, "message": "Invalid IDs."}), 400
         
     # Update enrollment

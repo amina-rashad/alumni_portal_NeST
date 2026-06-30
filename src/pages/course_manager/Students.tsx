@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { courseManagerAPI } from '../../services/api';
+import UserAvatar from '../../components/UserAvatar';
 
 const GlassSelect: React.FC<{
   label: string;
@@ -215,28 +216,13 @@ const CM_Students: React.FC = () => {
                 <tr key={student.id} style={{ borderBottom: '1px solid #f1f5f9' }} className="hover-row">
                   <td style={{ padding: '20px 24px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ position: 'relative' }}>
-                        <div style={{ 
-                          padding: '2px', 
-                          borderRadius: '14px', 
-                          background: (student.status === 'open_to_work' || (!student.status && student.role !== 'admin'))
-                            ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' 
-                            : student.status === 'hiring' 
-                              ? 'linear-gradient(135deg, #3b82f6 0%, #0284c7 100%)' 
-                              : 'transparent',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}>
-                          <div style={{ 
-                            width: '40px', height: '40px', borderRadius: '12px', background: 'linear-gradient(135deg, #c8102e 0%, #9b0a22 100%)', 
-                            color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '14px',
-                            border: '2px solid #fff'
-                          }}>
-                            {student.name.charAt(0)}
-                          </div>
-                        </div>
-                      </div>
+                      <UserAvatar
+                        src={student.profile_picture}
+                        name={student.name}
+                        status={student.status === 'open_to_work' || student.status === 'hiring' ? student.status : (student.role !== 'admin' ? 'open_to_work' : undefined)}
+                        size={40}
+                        bgColor="#c8102e"
+                      />
                       <div>
                         <div style={{ fontSize: '15px', fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
                           {student.name}

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Search, Linkedin, MessageSquare, UserPlus, Filter, X } from 'lucide-react';
 import { networkingApi } from '../services/api';
+import UserAvatar from '../components/UserAvatar';
 
 const UserDirectory: React.FC = () => {
   const [users, setUsers] = useState<any[]>([]);
@@ -113,45 +114,14 @@ const UserDirectory: React.FC = () => {
               style={{ background: '#ffffff', padding: '1.5rem', borderRadius: '1.5rem', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', border: '1px solid #f1f5f9' }}
             >
                 <div style={{ borderTop: '1px solid #f8fafc', marginTop: 'auto', paddingTop: '1rem' }}>
-                  <div style={{ 
-                    position: 'relative', 
-                    padding: '4px', 
-                    borderRadius: '1.2rem', 
-                    border: member.status === 'open_to_work' ? '3px solid #16a34a' : member.status === 'hiring' ? '3px solid #0284c7' : 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: '1rem'
-                  }}>
-                    <div style={{ width: '72px', height: '72px', borderRadius: '1rem', backgroundColor: '#f1f5f9', overflow: 'hidden' }}>
-                       {member.profile_picture ? (
-                         <img src={member.profile_picture} alt={member.full_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                       ) : (
-                         <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff1f1', color: 'var(--primary)', fontSize: '1.5rem', fontWeight: 800 }}>
-                            {member.full_name.charAt(0)}
-                         </div>
-                       )}
-                    </div>
-                    {member.status === 'open_to_work' && (
-                      <div style={{ 
-                        position: 'absolute', bottom: '-2px', right: '-2px', 
-                        backgroundColor: '#16a34a', color: 'white', fontSize: '8px', fontWeight: 900, 
-                        padding: '2px 6px', borderRadius: '8px', border: '2px solid #fff', boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
-                        whiteSpace: 'nowrap'
-                      }}>
-                        OPEN TO WORK
-                      </div>
-                    )}
-                    {member.status === 'hiring' && (
-                      <div style={{ 
-                        position: 'absolute', bottom: '-2px', right: '-2px', 
-                        backgroundColor: '#0284c7', color: 'white', fontSize: '8px', fontWeight: 900, 
-                        padding: '2px 6px', borderRadius: '8px', border: '2px solid #fff', boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
-                        whiteSpace: 'nowrap'
-                      }}>
-                        HIRING
-                      </div>
-                    )}
+                  <div style={{ marginBottom: '1rem', display: 'flex' }}>
+                    <UserAvatar
+                      src={member.profile_picture}
+                      name={member.full_name}
+                      status={member.status}
+                      size={72}
+                      bgColor="var(--primary)"
+                    />
                   </div>
                  <div style={{ flex: 1 }}>
                     <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0d2046', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '-0.01em' }}>{member.full_name}</h3>

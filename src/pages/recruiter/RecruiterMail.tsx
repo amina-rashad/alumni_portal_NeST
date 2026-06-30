@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Mail, Search, Filter, Users, Send, CheckCircle2,
-  AlertCircle, X, ChevronRight, ChevronDown, Eye, Code, BookOpen, Clock
+  AlertCircle, X, ChevronRight, ChevronDown, Eye, Code, BookOpen, Clock, Briefcase
 } from 'lucide-react';
 import { recruiterApi } from '../../services/api';
 
@@ -18,8 +18,9 @@ interface Talent {
 
 const RecruiterMail: React.FC = () => {
   const [talents, setTalents] = useState<Talent[]>([]);
-  const [searchParams, setSearchParams] = useState({ skill: '', course: '', specialization: '' });
+  const [searchParams, setSearchParams] = useState({ skill: '', course: '', specialization: '', job_id: '' });
   const [filters, setFilters] = useState<{ specializations: string[], courses: string[], skills: string[] }>({ specializations: [], courses: [], skills: [] });
+  const [availableJobs, setAvailableJobs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -35,7 +36,20 @@ const RecruiterMail: React.FC = () => {
   useEffect(() => {
     handleSearch();
     loadFilters();
+    loadJobs();
   }, []);
+
+  const loadJobs = async () => {
+    try {
+      const res = await recruiterApi.getMyJobs();
+      if (res.success && res.data) {
+        const activeJobs = (res.data.jobs || []).filter((j: any) => j.is_active !== false);
+        setAvailableJobs(activeJobs);
+      }
+    } catch (err) {
+      console.error("Failed to load jobs", err);
+    }
+  };
 
   const loadFilters = async () => {
     try {
@@ -270,27 +284,27 @@ const RecruiterMail: React.FC = () => {
                 </div>
               </div>
 
-              {/* Course Dropdown */}
+              {/* Job Role Dropdown */}
               <div>
-                <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', marginBottom: '6px', display: 'block' }}>Filter by Course</label>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', marginBottom: '6px', display: 'block' }}>Filter by Job Role</label>
                 <div style={{ position: 'relative' }}>
                   <div 
-                    onClick={() => setActiveDropdown(activeDropdown === 'course' ? null : 'course')}
+                    onClick={() => setActiveDropdown(activeDropdown === 'job' ? null : 'job')}
                     style={{ 
                       width: '100%', padding: '14px 16px 14px 44px', borderRadius: '30px', 
                       border: '1px solid rgba(226, 232, 240, 0.8)', background: 'rgba(248, 250, 252, 0.7)', 
                       backdropFilter: 'blur(8px)', fontSize: '14px', cursor: 'pointer', 
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      color: searchParams.course ? nestNavy : '#1e293b', fontWeight: 500, transition: 'all 0.3s'
+                      color: searchParams.job_id ? nestNavy : '#1e293b', fontWeight: 500, transition: 'all 0.3s'
                     }}
                   >
-                    <BookOpen size={16} style={{ position: 'absolute', left: '16px', color: nestNavy }} />
-                    <span>{searchParams.course || 'All Courses'}</span>
-                    <ChevronDown size={14} style={{ color: nestRed, transform: activeDropdown === 'course' ? 'rotate(180deg)' : 'rotate(0)', transition: '0.3s' }} />
+                    <Briefcase size={16} style={{ position: 'absolute', left: '16px', color: nestNavy }} />
+                    <span>{availableJobs.find(j => j.id === searchParams.job_id)?.title || 'All Job Roles'}</span>
+                    <ChevronDown size={14} style={{ color: nestRed, transform: activeDropdown === 'job' ? 'rotate(180deg)' : 'rotate(0)', transition: '0.3s' }} />
                   </div>
 
                   <AnimatePresence>
-                    {activeDropdown === 'course' && (
+                    {activeDropdown === 'job' && (
                       <motion.div
                         initial={{ opacity: 0, y: -10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 5, scale: 1 }}
@@ -303,26 +317,26 @@ const RecruiterMail: React.FC = () => {
                         }}
                       >
                         <div 
-                          onClick={() => { setSearchParams({ ...searchParams, course: '' }); setActiveDropdown(null); }}
+                          onClick={() => { setSearchParams({ ...searchParams, job_id: '' }); setActiveDropdown(null); }}
                           style={{ padding: '10px 16px', borderRadius: '12px', fontSize: '14px', cursor: 'pointer', transition: '0.2s', color: '#64748b' }}
                           onMouseEnter={(e) => (e.currentTarget.style.background = '#f1f5f9')}
                           onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                         >
-                          All Courses
+                          All Job Roles
                         </div>
-                        {(filters.courses || []).map(c => (
+                        {(availableJobs || []).map(j => (
                           <div 
-                            key={c}
-                            onClick={() => { setSearchParams({ ...searchParams, course: c }); setActiveDropdown(null); }}
+                            key={j.id}
+                            onClick={() => { setSearchParams({ ...searchParams, job_id: j.id }); setActiveDropdown(null); }}
                             style={{ 
                               padding: '10px 16px', borderRadius: '12px', fontSize: '14px', cursor: 'pointer', 
-                              transition: '0.2s', background: searchParams.course === c ? 'rgba(26, 38, 82, 0.05)' : 'transparent',
-                              color: searchParams.course === c ? nestNavy : '#1e293b', fontWeight: searchParams.course === c ? 700 : 500
+                              transition: '0.2s', background: searchParams.job_id === j.id ? 'rgba(26, 38, 82, 0.05)' : 'transparent',
+                              color: searchParams.job_id === j.id ? nestNavy : '#1e293b', fontWeight: searchParams.job_id === j.id ? 700 : 500
                             }}
                             onMouseEnter={(e) => (e.currentTarget.style.background = '#f1f5f9')}
-                            onMouseLeave={(e) => (e.currentTarget.style.background = searchParams.course === c ? 'rgba(37, 99, 235, 0.05)' : 'transparent')}
+                            onMouseLeave={(e) => (e.currentTarget.style.background = searchParams.job_id === j.id ? 'rgba(37, 99, 235, 0.05)' : 'transparent')}
                           >
-                            {c}
+                            {j.title}
                           </div>
                         ))}
                       </motion.div>

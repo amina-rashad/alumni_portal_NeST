@@ -4,14 +4,22 @@ Populates the MongoDB database with sample data for development/testing.
 Run: python seed_data.py
 """
 
+import os
+from dotenv import load_dotenv
 import bcrypt
 from pymongo import MongoClient
 from datetime import datetime, timezone, timedelta
 import random
 
+# Load environment variables
+load_dotenv()
+
 # ── Connect ──
-client = MongoClient("mongodb://localhost:27017/")
-db = client["alumni_portal"]
+mongo_uri = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
+db_name = os.getenv("MONGO_DB_NAME", "alumni_portal")
+
+client = MongoClient(mongo_uri)
+db = client[db_name]
 
 print("🌱 Seeding Alumni Portal Database...")
 print("=" * 50)

@@ -54,6 +54,13 @@ const EventManagerAttendees: React.FC = () => {
   const [selectedAttendeeForEmail, setSelectedAttendeeForEmail] = useState<Attendee | null>(null);
   const [emailSubject, setEmailSubject] = useState('');
   const [emailMessage, setEmailMessage] = useState('');
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [isBulkMailMode, setIsBulkMailMode] = useState(false);
+  const [isGeneratingDraft, setIsGeneratingDraft] = useState(false);
+  const [aiContext, setAiContext] = useState('');
+  const [aiTone, setAiTone] = useState('professional');
+  const [aiPurpose, setAiPurpose] = useState('general update');
+  const [showAiPanel, setShowAiPanel] = useState(false);
   
   const [modalConfig, setModalConfig] = useState({
     isOpen: false,
@@ -380,6 +387,103 @@ const EventManagerAttendees: React.FC = () => {
       newSelected.add(id);
     }
     setSelectedAttendeeIds(newSelected);
+  };
+
+  const closeEmailModal = () => {
+    setSelectedAttendeeForEmail(null);
+    setIsBulkMailMode(false);
+    setEmailSubject('');
+    setEmailMessage('');
+    setAiContext('');
+    setShowAiPanel(false);
+  };
+
+  const handleOpenBulkMail = () => {
+    if (selectedAttendeeIds.size === 0) return;
+    setIsBulkMailMode(true);
+    setSelectedAttendeeForEmail(null);
+    setEmailSubject('');
+    setEmailMessage('');
+    setAiContext('');
+    setShowAiPanel(false);
+  };
+
+  const handleOpenSingleMail = (attendee: Attendee) => {
+    setIsBulkMailMode(false);
+    setSelectedAttendeeForEmail(attendee);
+    setEmailSubject('');
+    setEmailMessage('');
+    setAiContext('');
+    setShowAiPanel(false);
+  };
+
+  const getMailRecipients = (): string[] => {
+    if (isBulkMailMode) {
+      return attendees
+        .filter(a => selectedAttendeeIds.has(a.id))
+        .map(a => a.email)
+        .filter(Boolean);
+    }
+    return selectedAttendeeForEmail ? [selectedAttendeeForEmail.email] : [];
+  };
+
+  const handleSendEmail = async () => {
+    const recipients = getMailRecipients();
+    if (!recipients.length || !emailSubject.trim() || !emailMessage.trim()) {
+      toast.error('Please fill in subject and message before sending.');
+      return;
+    }
+    setIsSendingEmail(true);
+    try {
+      const eventName = isBulkMailMode
+        ? (eventNameParam ? decodeURIComponent(eventNameParam) : 'your event')
+        : (selectedAttendeeForEmail?.event || 'your event');
+      const res = await eventManagerApi.broadcastMail({
+        recipients,
+        subject: emailSubject,
+        body: emailMessage,
+        event_name: eventName,
+      });
+      if (res.success) {
+        toast.success(res.message || `Message sent to ${recipients.length} participant(s)!`);
+        closeEmailModal();
+        setSelectedAttendeeIds(new Set());
+      } else {
+        toast.error(res.message || 'Failed to send message.');
+      }
+    } catch (err) {
+      toast.error('An error occurred while sending the message.');
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
+  const handleAiDraft = async () => {
+    setIsGeneratingDraft(true);
+    try {
+      const eventName = isBulkMailMode
+        ? (eventNameParam ? decodeURIComponent(eventNameParam) : 'the event')
+        : (selectedAttendeeForEmail?.event || 'the event');
+      const res = await eventManagerApi.aiDraftEmail({
+        context: aiContext,
+        event_name: eventName,
+        tone: aiTone,
+        purpose: aiPurpose,
+      });
+      if (res.success && res.data) {
+        setEmailSubject(res.data.subject || '');
+        setEmailMessage(res.data.body || '');
+        setShowAiPanel(false);
+        if (res.data.note) toast(res.data.note, { icon: 'ℹ️' });
+        else toast.success('AI draft generated! Review and edit before sending.');
+      } else {
+        toast.error(res.message || 'AI draft failed.');
+      }
+    } catch (err) {
+      toast.error('Failed to connect to AI service.');
+    } finally {
+      setIsGeneratingDraft(false);
+    }
   };
 
   const handleExportPDF = () => {
@@ -754,6 +858,7 @@ const EventManagerAttendees: React.FC = () => {
                     <Trash2 size={16} /> Remove Selected
                   </button>
                   <button 
+                    onClick={handleOpenBulkMail}
                     style={{ 
                       display: 'flex', 
                       alignItems: 'center', 
@@ -859,7 +964,7 @@ const EventManagerAttendees: React.FC = () => {
                         <div style={{ 
                           padding: '2.5px', 
                           borderRadius: '50%', 
-                          background: (attendee.type === 'Intern' || attendee.status === 'open_to_work')
+                          background: (attendee.type === 'Intern' || attendee.author_status === 'open_to_work')
                             ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' 
                             : 'transparent',
                           display: 'flex',
@@ -874,7 +979,7 @@ const EventManagerAttendees: React.FC = () => {
                       <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <div style={{ fontWeight: 800, color: '#1e293b' }}>{attendee.name}</div>
-                          {(attendee.type === 'Intern' || attendee.status === 'open_to_work') && (
+                          {(attendee.type === 'Intern' || attendee.author_status === 'open_to_work') && (
                             <span style={{ fontSize: '8px', fontWeight: 900, padding: '2px 6px', borderRadius: '4px', background: '#dcfce7', color: '#16a34a', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
                               OPEN TO WORK
                             </span>
@@ -928,8 +1033,9 @@ const EventManagerAttendees: React.FC = () => {
                   <td style={{ padding: '20px 24px' }}>
                     <div style={{ display: 'flex', gap: '8px', position: 'relative' }}>
                       <button 
-                        onClick={() => setSelectedAttendeeForEmail(attendee)}
+                        onClick={() => handleOpenSingleMail(attendee)}
                         style={{ padding: '8px', borderRadius: '10px', border: '1px solid #e2e8f0', color: brandPrimary, background: '#fff', cursor: 'pointer', transition: 'all 0.2s' }}
+                        title="Send Message"
                       >
                         <Mail size={16} />
                       </button>
@@ -1025,14 +1131,14 @@ const EventManagerAttendees: React.FC = () => {
         </div>
       </div>
 
-      {/* Email Modal */}
+      {/* Enhanced AI-Powered Email Modal */}
       <AnimatePresence>
-        {selectedAttendeeForEmail && (
+        {(selectedAttendeeForEmail || isBulkMailMode) && (
           <div style={{
             position: 'fixed',
             top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(15, 23, 42, 0.6)',
-            backdropFilter: 'blur(4px)',
+            background: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(6px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -1046,87 +1152,180 @@ const EventManagerAttendees: React.FC = () => {
               style={{
                 background: '#fff',
                 width: '100%',
-                maxWidth: '560px',
-                borderRadius: '24px',
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-                overflow: 'hidden'
+                maxWidth: '640px',
+                borderRadius: '28px',
+                boxShadow: '0 25px 60px rgba(0, 0, 0, 0.2)',
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                maxHeight: '92vh'
               }}
             >
-              <div style={{ padding: '24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
+              {/* Header */}
+              <div style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(135deg, #233167 0%, #1e4bb8 100%)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ background: `${brandPrimary}15`, color: brandPrimary, padding: '10px', borderRadius: '12px' }}>
+                  <div style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', padding: '10px', borderRadius: '12px' }}>
                     <Mail size={20} />
                   </div>
                   <div>
-                    <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1e293b' }}>Send Message</h3>
-                    <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748b' }}>Contact participant directly</p>
+                    <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#fff' }}>
+                      {isBulkMailMode ? `Message ${selectedAttendeeIds.size} Participants` : `Message: ${selectedAttendeeForEmail?.name}`}
+                    </h3>
+                    <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>
+                      {isBulkMailMode
+                        ? `Sends email + in-app notification to ${getMailRecipients().length} recipients`
+                        : `To: ${selectedAttendeeForEmail?.email}`}
+                    </p>
                   </div>
                 </div>
                 <button 
-                  onClick={() => setSelectedAttendeeForEmail(null)}
-                  style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', cursor: 'pointer', transition: 'all 0.2s' }}
+                  onClick={closeEmailModal}
+                  style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '10px', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', cursor: 'pointer' }}
                 >
                   <X size={18} />
                 </button>
               </div>
-              
-              <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '8px' }}>To</label>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', background: '#f1f5f9', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                    <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: `${brandPrimary}`, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 'bold' }}>
-                      {selectedAttendeeForEmail.name.charAt(0)}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '14px', fontWeight: 600, color: '#1e293b' }}>{selectedAttendeeForEmail.name}</div>
-                      <div style={{ fontSize: '12px', color: '#64748b' }}>{selectedAttendeeForEmail.email}</div>
+
+              <div style={{ overflowY: 'auto', flex: 1 }}>
+                {/* Recipients preview for bulk */}
+                {isBulkMailMode && (
+                  <div style={{ padding: '16px 24px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>Recipients</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {attendees.filter(a => selectedAttendeeIds.has(a.id)).slice(0, 6).map(a => (
+                        <span key={a.id} style={{ background: '#eff6ff', color: '#3b82f6', padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 600 }}>
+                          {a.name}
+                        </span>
+                      ))}
+                      {selectedAttendeeIds.size > 6 && (
+                        <span style={{ background: '#f1f5f9', color: '#64748b', padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 600 }}>
+                          +{selectedAttendeeIds.size - 6} more
+                        </span>
+                      )}
                     </div>
                   </div>
-                </div>
+                )}
 
-                <div>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '8px' }}>Subject</label>
-                  <input 
-                    type="text" 
-                    placeholder="Enter message subject..." 
-                    value={emailSubject}
-                    onChange={(e) => setEmailSubject(e.target.value)}
-                    style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '14px', transition: 'border-color 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', background: '#fff', color: '#1e293b' }} 
-                  />
-                </div>
+                {/* AI Panel */}
+                <AnimatePresence>
+                  {showAiPanel && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      style={{ overflow: 'hidden', borderBottom: '1px solid #e2e8f0' }}
+                    >
+                      <div style={{ padding: '20px 24px', background: 'linear-gradient(135deg, #f0f4ff 0%, #faf5ff 100%)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                          <span style={{ fontSize: '20px' }}>✨</span>
+                          <div>
+                            <div style={{ fontWeight: 800, color: '#233167', fontSize: '15px' }}>Gemini AI Email Composer</div>
+                            <div style={{ fontSize: '12px', color: '#64748b' }}>Describe what you want to say and AI will draft a professional email</div>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                            <div>
+                              <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>Tone</label>
+                              <select value={aiTone} onChange={e => setAiTone(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: 600, outline: 'none', background: '#fff', color: '#1e293b' }}>
+                                <option value="professional">Professional</option>
+                                <option value="friendly">Friendly</option>
+                                <option value="formal">Formal</option>
+                                <option value="warm">Warm & Welcoming</option>
+                                <option value="urgent">Urgent</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>Purpose</label>
+                              <select value={aiPurpose} onChange={e => setAiPurpose(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: 600, outline: 'none', background: '#fff', color: '#1e293b' }}>
+                                <option value="general update">General Update</option>
+                                <option value="event reminder">Event Reminder</option>
+                                <option value="certificate notification">Certificate Notification</option>
+                                <option value="thank you">Thank You</option>
+                                <option value="follow up">Follow Up</option>
+                                <option value="cancellation">Event Cancellation</option>
+                                <option value="rescheduling">Rescheduling</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>Additional Context (optional)</label>
+                            <textarea
+                              value={aiContext}
+                              onChange={e => setAiContext(e.target.value)}
+                              placeholder="e.g. The event was postponed to next Friday. Please include parking instructions."
+                              rows={3}
+                              style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '13px', resize: 'none', outline: 'none', fontFamily: 'inherit', background: '#fff', color: '#1e293b' }}
+                            />
+                          </div>
+                          <button
+                            onClick={handleAiDraft}
+                            disabled={isGeneratingDraft}
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', borderRadius: '12px', border: 'none', background: 'linear-gradient(135deg, #233167 0%, #1e4bb8 100%)', color: '#fff', fontWeight: 700, fontSize: '14px', cursor: isGeneratingDraft ? 'wait' : 'pointer', opacity: isGeneratingDraft ? 0.7 : 1 }}
+                          >
+                            {isGeneratingDraft ? <><Loader2 size={16} className="animate-spin" /> Generating Draft...</> : <>✨ Generate Email with Gemini AI</>}
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <label style={{ fontSize: '13px', fontWeight: 600, color: '#475569' }}>Message</label>
+                {/* Email Form */}
+                <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <button
+                      onClick={() => setShowAiPanel(p => !p)}
+                      style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '10px', border: '1px solid #c7d2fe', background: showAiPanel ? '#eff0ff' : '#fff', color: '#233167', fontWeight: 700, fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s' }}
+                    >
+                      <span>✨</span> {showAiPanel ? 'Hide AI Composer' : 'Draft with Gemini AI'}
+                    </button>
                   </div>
-                  <textarea 
-                    placeholder="Type your message here..." 
-                    value={emailMessage}
-                    onChange={(e) => setEmailMessage(e.target.value)}
-                    rows={5}
-                    style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '14px', resize: 'vertical', minHeight: '120px', transition: 'border-color 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', fontFamily: 'inherit', background: '#fff', color: '#1e293b' }} 
-                  />
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '8px' }}>Subject</label>
+                    <input 
+                      type="text" 
+                      placeholder="Enter email subject..." 
+                      value={emailSubject}
+                      onChange={(e) => setEmailSubject(e.target.value)}
+                      style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '14px', fontWeight: 600, background: '#fff', color: '#1e293b', boxSizing: 'border-box' }} 
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '8px' }}>Message</label>
+                    <textarea 
+                      placeholder="Type your message here..." 
+                      value={emailMessage}
+                      onChange={(e) => setEmailMessage(e.target.value)}
+                      rows={7}
+                      style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '14px', resize: 'vertical', minHeight: '140px', fontFamily: 'inherit', background: '#fff', color: '#1e293b', boxSizing: 'border-box' }} 
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div style={{ padding: '20px 24px', borderTop: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-                <button 
-                  onClick={() => setSelectedAttendeeForEmail(null)}
-                  style={{ padding: '12px 20px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#fff', color: '#475569', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={() => {
-                    alert(`Message sent to ${selectedAttendeeForEmail.name}!`);
-                    setSelectedAttendeeForEmail(null);
-                    setEmailSubject('');
-                    setEmailMessage('');
-                  }}
-                  style={{ padding: '12px 24px', borderRadius: '12px', border: 'none', background: brandPrimary, color: '#fff', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: `0 4px 14px 0 ${brandPrimary}60`, transition: 'all 0.2s' }}
-                >
-                  <Send size={16} /> Send Message
-                </button>
+              {/* Footer */}
+              <div style={{ padding: '16px 24px', borderTop: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 500 }}>
+                  📧 Email + 🔔 In-app notification will be sent
+                </div>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button 
+                    onClick={closeEmailModal}
+                    style={{ padding: '12px 20px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#fff', color: '#475569', fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={handleSendEmail}
+                    disabled={isSendingEmail || !emailSubject.trim() || !emailMessage.trim()}
+                    style={{ padding: '12px 24px', borderRadius: '12px', border: 'none', background: (!emailSubject.trim() || !emailMessage.trim()) ? '#e2e8f0' : 'linear-gradient(135deg, #233167 0%, #1e4bb8 100%)', color: (!emailSubject.trim() || !emailMessage.trim()) ? '#94a3b8' : '#fff', fontWeight: 700, cursor: isSendingEmail ? 'wait' : (!emailSubject.trim() || !emailMessage.trim() ? 'not-allowed' : 'pointer'), display: 'flex', alignItems: 'center', gap: '8px', boxShadow: (!emailSubject.trim() || !emailMessage.trim()) ? 'none' : '0 4px 14px rgba(35,49,103,0.3)', transition: 'all 0.2s' }}
+                  >
+                    {isSendingEmail ? <><Loader2 size={16} className="animate-spin" /> Sending...</> : <><Send size={16} /> Send Message</>}
+                  </button>
+                </div>
               </div>
             </motion.div>
           </div>

@@ -20,7 +20,15 @@ const AdminDashboard: React.FC = () => {
     alumni: 0,
     iv_students: 0,
     staff: 0,
-    trainees: 0
+    trainees: 0,
+    other: 0,
+    monthly_growth: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    trends: {
+      users: '+0%',
+      jobs: '+0%',
+      applications: '+0%',
+      events: 'Live'
+    }
   });
   const [activities, setActivities] = useState<any[]>([]);
 
@@ -35,13 +43,29 @@ const AdminDashboard: React.FC = () => {
         if (statsRes.success && statsRes.data) {
           const s = statsRes.data.stats;
           const dist = s.distribution || {};
+          const alumni = dist["Alumni"] || 0;
+          const iv_students = dist["IV Students"] || 0;
+          const interns = dist["Interns"] || 0;
+          const staff = dist["Staff"] || 0;
+          const trainees = dist["Trainees"] || 0;
+          const represented = alumni + iv_students + interns + staff + trainees;
+          const other = Math.max(0, (s.total_users || 0) - represented);
+
           setStatsData({
             ...s,
-            alumni: dist["Alumni"] || 0,
-            iv_students: dist["IV Students"] || 0,
-            interns: dist["Interns"] || 0,
-            staff: dist["Staff"] || 0,
-            trainees: dist["Trainees"] || 0,
+            alumni,
+            iv_students,
+            interns,
+            staff,
+            trainees,
+            other,
+            monthly_growth: s.monthly_growth || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            trends: s.trends || {
+              users: '+0%',
+              jobs: '+0%',
+              applications: '+0%',
+              events: 'Live'
+            }
           });
         }
         if (actRes.success && actRes.data) {
@@ -55,11 +79,10 @@ const AdminDashboard: React.FC = () => {
   }, []);
 
   const stats = [
-    { title: 'Total Users', value: statsData.total_users.toLocaleString(), trend: '+0%', icon: Users, color: "#3b82f6", bg: '#eff6ff' },
-    { title: 'Interns', value: statsData.interns.toLocaleString(), trend: '+0%', icon: UserCheck, color: "#06b6d4", bg: '#ecfeff' },
-    { title: 'Active Jobs', value: statsData.active_jobs.toLocaleString(), trend: '+0%', icon: Briefcase, color: "#6366f1", bg: '#eef2ff' },
-    { title: 'Events', value: statsData.total_events.toLocaleString(), trend: 'Live', icon: Calendar, color: "#f43f5e", bg: '#fff1f2' },
-    { title: 'Applications', value: statsData.applications.toLocaleString(), trend: '+0%', icon: FileText, color: "#f59e0b", bg: '#fffbeb' },
+    { title: 'Total Users', value: statsData.total_users.toLocaleString(), trend: statsData.trends.users, icon: Users, color: "#3b82f6", bg: '#eff6ff' },
+    { title: 'Active Jobs', value: statsData.active_jobs.toLocaleString(), trend: statsData.trends.jobs, icon: Briefcase, color: "#6366f1", bg: '#eef2ff' },
+    { title: 'Events', value: statsData.total_events.toLocaleString(), trend: statsData.trends.events, icon: Calendar, color: "#f43f5e", bg: '#fff1f2' },
+    { title: 'Applications', value: statsData.applications.toLocaleString(), trend: statsData.trends.applications, icon: FileText, color: "#f59e0b", bg: '#fffbeb' },
   ];
 
   const formatTime = (iso: string) => {
@@ -73,11 +96,22 @@ const AdminDashboard: React.FC = () => {
     return date.toLocaleDateString();
   };
 
+  const totalPie = statsData.total_users > 0 ? statsData.total_users : 1;
+  const p1 = statsData.alumni / totalPie;
+  const p2 = statsData.iv_students / totalPie;
+  const p3 = statsData.interns / totalPie;
+  const p4 = statsData.staff / totalPie;
+  const p5 = statsData.trainees / totalPie;
+  const p6 = statsData.other / totalPie;
+
+  const maxGrowth = Math.max(...statsData.monthly_growth);
+  const growthScale = maxGrowth > 0 ? 160 / maxGrowth : 1; // 160px max height for bars
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', animation: 'fadeIn 0.5s ease-out' }}>
       
       {/* Stats - Compact Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
         {stats.map((stat, i) => (
           <motion.div 
             key={stat.title}
@@ -115,28 +149,41 @@ const AdminDashboard: React.FC = () => {
                   animate={{ scale: 1, rotate: 0, opacity: 1 }}
                   transition={{ duration: 1.2, ease: "backOut" }}
                   width="180" height="180" viewBox="0 0 100 100">
+                  
                   <motion.circle 
                     initial={{ strokeDasharray: "0 251.2" }}
-                    animate={{ strokeDasharray: `${statsData.total_users > 0 ? (statsData.alumni / statsData.total_users) * 251.2 : 0} 251.2` }}
+                    animate={{ strokeDasharray: `${p1 * 251.2} 251.2` }}
                     transition={{ duration: 1.5, delay: 0.2 }}
                     cx="50" cy="50" r="40" fill="transparent" stroke={nestNavy} strokeWidth="20" transform="rotate(-90 50 50)" />
                   <motion.circle 
                     initial={{ strokeDasharray: "0 251.2" }}
-                    animate={{ strokeDasharray: `${statsData.total_users > 0 ? (statsData.iv_students / statsData.total_users) * 251.2 : 0} 251.2` }}
+                    animate={{ strokeDasharray: `${p2 * 251.2} 251.2` }}
+                    transition={{ duration: 1.5, delay: 0.3 }}
+                    cx="50" cy="50" r="40" fill="transparent" stroke="#3b82f6" strokeWidth="20" transform={`rotate(${-90 + p1 * 360} 50 50)`} />
+                  <motion.circle 
+                    initial={{ strokeDasharray: "0 251.2" }}
+                    animate={{ strokeDasharray: `${p3 * 251.2} 251.2` }}
                     transition={{ duration: 1.5, delay: 0.4 }}
-                    cx="50" cy="50" r="40" fill="transparent" stroke="#3b82f6" strokeWidth="20" transform={`rotate(${statsData.total_users > 0 ? -90 + (statsData.alumni / statsData.total_users) * 360 : 0} 50 50)`} />
+                    cx="50" cy="50" r="40" fill="transparent" stroke="#f59e0b" strokeWidth="20" transform={`rotate(${-90 + (p1+p2) * 360} 50 50)`} />
                   <motion.circle 
                     initial={{ strokeDasharray: "0 251.2" }}
-                    animate={{ strokeDasharray: `${statsData.total_users > 0 ? (statsData.interns / statsData.total_users) * 251.2 : 0} 251.2` }}
+                    animate={{ strokeDasharray: `${p4 * 251.2} 251.2` }}
+                    transition={{ duration: 1.5, delay: 0.5 }}
+                    cx="50" cy="50" r="40" fill="transparent" stroke="#ef4444" strokeWidth="20" transform={`rotate(${-90 + (p1+p2+p3) * 360} 50 50)`} />
+                  <motion.circle 
+                    initial={{ strokeDasharray: "0 251.2" }}
+                    animate={{ strokeDasharray: `${p5 * 251.2} 251.2` }}
                     transition={{ duration: 1.5, delay: 0.6 }}
-                    cx="50" cy="50" r="40" fill="transparent" stroke="#f59e0b" strokeWidth="20" transform={`rotate(${statsData.total_users > 0 ? -90 + ((statsData.alumni + statsData.iv_students) / statsData.total_users) * 360 : 0} 50 50)`} />
+                    cx="50" cy="50" r="40" fill="transparent" stroke="#8b5cf6" strokeWidth="20" transform={`rotate(${-90 + (p1+p2+p3+p4) * 360} 50 50)`} />
                   <motion.circle 
                     initial={{ strokeDasharray: "0 251.2" }}
-                    animate={{ strokeDasharray: `${statsData.total_users > 0 ? (statsData.staff / statsData.total_users) * 251.2 : 0} 251.2` }}
-                    transition={{ duration: 1.5, delay: 0.8 }}
-                    cx="50" cy="50" r="40" fill="transparent" stroke="#ef4444" strokeWidth="20" transform={`rotate(${statsData.total_users > 0 ? -90 + ((statsData.alumni + statsData.iv_students + statsData.interns) / statsData.total_users) * 360 : 0} 50 50)`} />
+                    animate={{ strokeDasharray: `${p6 * 251.2} 251.2` }}
+                    transition={{ duration: 1.5, delay: 0.7 }}
+                    cx="50" cy="50" r="40" fill="transparent" stroke="#94a3b8" strokeWidth="20" transform={`rotate(${-90 + (p1+p2+p3+p4+p5) * 360} 50 50)`} />
+
                   <circle cx="50" cy="50" r="28" fill="#fff" />
                </motion.svg>
+               
                <motion.div 
                  initial={{ opacity: 0, scale: 0.5 }}
                  animate={{ opacity: 1, scale: 1 }}
@@ -146,6 +193,7 @@ const AdminDashboard: React.FC = () => {
                   <div style={{ fontSize: '20px', fontWeight: 800, color: '#1e293b' }}>{statsData.total_users}</div>
                </motion.div>
             </div>
+            
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '24px' }}>
                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#64748b', fontWeight: 700 }}>
                   <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: nestNavy }}></div> Alumni ({statsData.alumni || 0})
@@ -159,6 +207,12 @@ const AdminDashboard: React.FC = () => {
                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#64748b', fontWeight: 700 }}>
                   <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#ef4444' }}></div> Staff ({statsData.staff || 0})
                </div>
+               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#64748b', fontWeight: 700 }}>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#8b5cf6' }}></div> Trainees ({statsData.trainees || 0})
+               </div>
+               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#64748b', fontWeight: 700 }}>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#94a3b8' }}></div> Others ({statsData.other || 0})
+               </div>
             </div>
          </section>
 
@@ -168,14 +222,25 @@ const AdminDashboard: React.FC = () => {
                <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#1e293b', margin: 0 }}>Enrollment & Engagement Growth</h3>
             </div>
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '220px', padding: '0 10px' }}>
-               {[60, 40, 85, 30, 95, 70, 50, 110, 80, 130, 90, 105].map((h, i) => (
-                 <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', flex: 1 }}>
-                   <div style={{ position: 'relative', width: '20px', height: '100%', display: 'flex', alignItems: 'flex-end' }}>
-                      <div style={{ width: '100%', height: `${h}px`, background: i === 9 ? nestNavy : 'rgba(26, 38, 82, 0.15)', borderRadius: '6px' }}></div>
+               {statsData.monthly_growth.map((count, i) => {
+                 const h = count > 0 ? (count * growthScale) + 15 : 15; // min height 15px so empty months show a bump
+                 const currentMonth = new Date().getMonth();
+                 const isCurrent = i === currentMonth;
+                 
+                 return (
+                   <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', flex: 1 }} title={`${count} users`}>
+                     <div style={{ position: 'relative', width: '20px', height: '100%', display: 'flex', alignItems: 'flex-end' }}>
+                        <motion.div 
+                          initial={{ height: 0 }}
+                          animate={{ height: `${h}px` }}
+                          transition={{ duration: 1, delay: i * 0.05 }}
+                          style={{ width: '100%', background: isCurrent ? nestNavy : 'rgba(26, 38, 82, 0.15)', borderRadius: '6px' }}
+                        />
+                     </div>
+                     <span style={{ fontSize: '10px', color: isCurrent ? '#1e293b' : '#94a3b8', fontWeight: 700 }}>{['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'][i]}</span>
                    </div>
-                   <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 700 }}>{['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'][i]}</span>
-                 </div>
-               ))}
+                 );
+               })}
             </div>
          </section>
       </div>
@@ -242,23 +307,7 @@ const AdminDashboard: React.FC = () => {
               </div>
             </div>
 
-           {/* Global Actions */}
-           <section style={{ background: '#fff', borderRadius: '32px', padding: '32px', border: `2px solid ${nestNavy}15`, boxShadow: '0 10px 30px rgba(26, 38, 82, 0.04)' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                 <button 
-                  onClick={() => navigate('/admin/events')}
-                  style={{ width: '100%', padding: '14px', borderRadius: '16px', border: 'none', background: '#f43f5e', color: '#fff', fontWeight: 800, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', boxShadow: '0 4px 12px rgba(244, 63, 94, 0.2)' }}
-                 >
-                   <Plus size={16} /> Host Event
-                 </button>
-                 <button 
-                  onClick={() => navigate('/admin/add-courses')}
-                  style={{ width: '100%', padding: '14px', borderRadius: '16px', border: 'none', background: nestNavy, color: '#fff', fontWeight: 800, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', boxShadow: '0 4px 12px rgba(26, 38, 82, 0.2)' }}
-                 >
-                   <Plus size={16} /> Add Course
-                 </button>
-              </div>
-           </section>
+
         </div>
 
       </div>

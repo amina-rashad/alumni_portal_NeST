@@ -429,7 +429,6 @@ const EventManagerPosts: React.FC = () => {
                           <Clock size={14} /> {timeAgo(post.created_at)}
                         </span>
                         <span>❤️ {post.likes_count}</span>
-                        <span>💬 {post.comments_count}</span>
                       </div>
                     </div>
 

@@ -291,7 +291,7 @@ section {
 
 .cinematic-card {
   position: relative;
-  height: 420px;
+  height: 350px;
   border-radius: 24px;
   overflow: hidden;
   background: #010614;
@@ -368,7 +368,7 @@ section {
   bottom: 0;
   left: 0;
   width: 100%;
-  padding: 40px 30px;
+  padding: 26px 22px;
   z-index: 3;
   color: white;
   transform: translateY(20px);
@@ -390,7 +390,7 @@ section {
 }
 
 .card-content-cinematic h3 {
-  font-size: 22px;
+  font-size: 19px;
   font-weight: 800;
   margin: 0;
   letter-spacing: -0.5px;
@@ -398,10 +398,10 @@ section {
 }
 
 .card-content-cinematic p {
-  font-size: 14px;
+  font-size: 12.5px;
   color: rgba(255,255,255,0.7);
-  line-height: 1.6;
-  margin-bottom: 25px;
+  line-height: 1.5;
+  margin-bottom: 12px;
   opacity: 0.8;
   transition: opacity 0.5s ease;
 }

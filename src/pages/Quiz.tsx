@@ -119,39 +119,174 @@ const Quiz: React.FC = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            {/* Lobby Header */}
-            <div style={{ marginBottom: '3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', margin: 0 }}>
-                  Assessment <span style={{ color: '#d32f2f' }}>Center</span>
-                </h1>
-                <p style={{ color: '#64748B', marginTop: '0.5rem' }}>Manage and complete assessments for your enrolled courses.</p>
+            {/* Cinematic Hero Section */}
+            <section style={{ 
+              position: 'relative', 
+              width: '100vw', 
+              left: '50%', 
+              right: '50%', 
+              marginLeft: '-50vw', 
+              marginRight: '-50vw', 
+              background: '#0a0f1e',
+              height: '420px',
+              overflow: 'hidden',
+              marginBottom: '4rem',
+              display: 'flex',
+              alignItems: 'flex-end',
+              padding: '0 0 4rem 0'
+            }}>
+              {/* Premium Background Image */}
+              <div style={{ 
+                position: 'absolute', 
+                inset: 0, 
+                zIndex: 0,
+                overflow: 'hidden'
+              }}>
+                <motion.img 
+                  initial={{ opacity: 0, scale: 1.1 }}
+                  animate={{ opacity: 0.5, scale: 1 }}
+                  transition={{ duration: 1.5, ease: 'easeOut' }}
+                  src="/images/assessment/hero_background.png" 
+                  alt="" 
+                  style={{ 
+                    width: '100%', 
+                    height: '100%', 
+                    objectFit: 'cover',
+                    objectPosition: 'center',
+                  }}
+                />
+                {/* Advanced Atmospheric Overlays */}
+                <div style={{ 
+                  position: 'absolute', 
+                  inset: 0, 
+                  background: 'linear-gradient(to right, #0a0f1e 0%, rgba(10, 15, 30, 0.4) 50%, rgba(10, 15, 30, 0.2) 100%)',
+                  zIndex: 1 
+                }} />
+                <div style={{ 
+                  position: 'absolute', 
+                  inset: 0, 
+                  background: 'linear-gradient(to bottom, transparent 0%, rgba(10, 15, 30, 0.9) 100%)',
+                  zIndex: 2 
+                }} />
               </div>
-              <Link to="/courses/my-courses" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#d32f2f', fontWeight: 700, textDecoration: 'none' }}>
-                <ArrowLeft size={18} /> Back to Academy
-              </Link>
-            </div>
 
-            {/* Quick Stats */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
+              {/* Background Glows */}
+              <div style={{ position: 'absolute', bottom: '10%', left: '5%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(211,47,47,0.15) 0%, transparent 70%)', filter: 'blur(60px)', zIndex: 1 }} />
+              
+              <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 2rem', position: 'relative', zIndex: 10, width: '100%' }}>
+                <div style={{ maxWidth: '650px', textAlign: 'left' }}>
+                  <motion.div
+                    initial={{ opacity: 0, x: -30 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.8 }}
+                  >
+                    <span style={{ 
+                      display: 'inline-block', 
+                      background: 'rgba(255,255,255,0.08)', 
+                      backdropFilter: 'blur(10px)', 
+                      padding: '8px 18px', 
+                      borderRadius: '50px', 
+                      color: '#cbd5e1', 
+                      fontSize: '11px', 
+                      fontWeight: 800, 
+                      textTransform: 'uppercase', 
+                      letterSpacing: '1.2px',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      marginBottom: '1.5rem',
+                      boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
+                    }}>
+                      Quiz & Assessments
+                    </span>
+                    <h1 style={{ fontSize: '3.2rem', fontWeight: 900, color: '#ffffff', letterSpacing: '-0.03em', lineHeight: 1.1, margin: 0 }}>
+                      Assessment<br />
+                      <span style={{ color: '#d32f2f' }}>Center</span>
+                    </h1>
+                    <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: '1rem', marginTop: '1.2rem', lineHeight: 1.6, maxWidth: '440px', fontWeight: 400 }}>
+                      Manage and complete assessments for your enrolled courses and professional certifications.
+                    </p>
+                    
+                    <motion.div 
+                      initial={{ opacity: 0, width: 0 }}
+                      animate={{ opacity: 1, width: '40px' }}
+                      transition={{ delay: 0.6, duration: 0.8 }}
+                      style={{ 
+                        height: '3px', 
+                        background: '#d32f2f', 
+                        marginTop: '1.5rem',
+                        borderRadius: '2px'
+                      }}
+                    />
+                  </motion.div>
+                </div>
+              </div>
+            </section>
+
+            {/* Overlapping Stats Cards */}
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
+              gap: '2rem', 
+              marginBottom: '5rem',
+              position: 'relative',
+              zIndex: 20,
+              marginTop: '-5.5rem'
+            }}>
               {[
-                { label: 'Completed', count: completedCount, icon: CheckCircle2, color: '#10B981' },
-                { label: 'In Progress', count: inProgressCount, icon: Clock, color: '#6366F1' },
-                { label: 'Avg. Progress', count: `${avgProgress}%`, icon: Zap, color: '#F59E0B' },
+                { label: 'Completed', count: completedCount, subtext: 'Assessments finished', icon: CheckCircle2, color: '#10B981' },
+                { label: 'In Progress', count: inProgressCount, subtext: 'Assessments in progress', icon: Clock, color: '#6366F1' },
+                { label: 'Avg. Progress', count: `${avgProgress}%`, subtext: "Keep going, you've got this!", icon: Zap, color: '#F59E0B' },
               ].map((stat, i) => (
-                <div key={i} className="luxury-card" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-                  <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: `${stat.color}10`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <stat.icon size={24} color={stat.color} />
+                <motion.div 
+                  key={i} 
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 + (i * 0.1), duration: 0.6 }}
+                  className="glass-stat-card" 
+                  style={{ 
+                    padding: '2rem 1.8rem', 
+                    background: '#ffffff', 
+                    borderRadius: '24px',
+                    boxShadow: '0 25px 50px -12px rgba(0,0,0,0.08)',
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '1.25rem',
+                    border: '1px solid rgba(255,255,255,1)',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}
+                >
+                  <div style={{ 
+                    width: '60px', 
+                    height: '60px', 
+                    borderRadius: '18px', 
+                    background: `${stat.color}08`, 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    <stat.icon size={28} color={stat.color} strokeWidth={2.5} />
                   </div>
                   <div>
-                    <span style={{ display: 'block', color: '#64748B', fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{stat.label}</span>
-                    <span style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0F172A' }}>{stat.count}</span>
+                    <span style={{ display: 'block', color: '#94A3B8', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '2px' }}>{stat.label}</span>
+                    <span style={{ fontSize: '2.4rem', fontWeight: 900, color: '#0F172A', lineHeight: 1, letterSpacing: '-0.02em' }}>{stat.count}</span>
+                    <span style={{ display: 'block', color: '#64748B', fontSize: '0.85rem', marginTop: '6px', fontWeight: 500 }}>{stat.subtext}</span>
                   </div>
-                </div>
+                  
+                  {/* Subtle Wave Graphic in background */}
+                  <div style={{ position: 'absolute', bottom: '-10px', right: '-10px', width: '120px', height: '60px', opacity: 0.08 }}>
+                    <svg viewBox="0 0 100 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M0 40C20 40 30 0 50 0C70 0 80 40 100 40" stroke={stat.color} strokeWidth="20" />
+                    </svg>
+                  </div>
+                </motion.div>
               ))}
             </div>
 
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0F172A', marginBottom: '1.5rem' }}>Your Course Assessments</h2>
+            <div style={{ marginBottom: '2.5rem', position: 'relative' }}>
+              <h2 style={{ fontSize: '1.8rem', fontWeight: 900, color: '#0F172A', margin: 0 }}>Your Course Assessments</h2>
+              <div style={{ width: '40px', height: '4px', background: '#d32f2f', marginTop: '0.75rem', borderRadius: '2px' }} />
+            </div>
             
             {assessments.length === 0 ? (
               <div style={{ padding: '4rem', textAlign: 'center', background: 'white', borderRadius: '24px', border: '1px dashed #E2E8F0' }}>

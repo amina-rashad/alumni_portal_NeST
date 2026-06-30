@@ -44,18 +44,90 @@ const PerformanceAnalysis: React.FC = () => {
   return (
     <div style={{ maxWidth: '1400px', margin: '0 auto', paddingBottom: '5rem', fontFamily: '"Inter", "Montserrat", sans-serif' }}>
       
-      {/* ── Page Header ── */}
-      <div style={{ marginBottom: '3rem' }}>
+      {/* ── Page Header (Minimal Luxury) ── */}
+      <section style={{ 
+        marginBottom: '4rem', 
+        padding: '3rem 0',
+        position: 'relative',
+        overflow: 'hidden',
+        borderBottom: '1px solid rgba(15, 23, 42, 0.04)'
+      }}>
+        {/* Subtle Luxury Radial Glow */}
+        <div style={{ 
+          position: 'absolute', 
+          top: '-50%', 
+          left: '0', 
+          width: '600px', 
+          height: '600px', 
+          background: 'radial-gradient(circle, rgba(200,16,46,0.03) 0%, transparent 70%)', 
+          zIndex: 0,
+          filter: 'blur(80px)'
+        }} />
+
         <motion.div 
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: 'easeOut' }}
+          style={{ position: 'relative', zIndex: 1 }}
         >
-          <h1 style={{ fontSize: '2.8rem', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', marginBottom: '0.5rem' }}>
-            Performance <span style={{ color: '#c8102e' }}>Analysis</span>
+          <h1 style={{ 
+            fontSize: '3.8rem', 
+            fontWeight: 900, 
+            color: '#0F172A', 
+            letterSpacing: '-0.04em', 
+            marginBottom: '1rem',
+            lineHeight: 1.1 
+          }}>
+            Performance <span style={{ 
+              color: '#c8102e', 
+              position: 'relative',
+              display: 'inline-block'
+            }}>
+              Analysis
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: '100%' }}
+                transition={{ delay: 1, duration: 1, ease: 'easeInOut' }}
+                style={{ 
+                  position: 'absolute', 
+                  bottom: '12px', 
+                  left: 0, 
+                  height: '4px', 
+                  background: 'rgba(200, 16, 46, 0.1)', 
+                  zIndex: -1,
+                  borderRadius: '2px'
+                }}
+              />
+            </span>
           </h1>
-          <p style={{ color: '#64748B', fontSize: '1.1rem' }}>Comprehensive overview of your technical growth and community contributions.</p>
+          
+          <p style={{ 
+            color: '#64748B', 
+            fontSize: '1.15rem', 
+            maxWidth: '600px', 
+            lineHeight: 1.6,
+            fontWeight: 500,
+            letterSpacing: '-0.01em'
+          }}>
+            Comprehensive overview of your technical growth and community contributions within the NeST Digital ecosystem.
+          </p>
+
+          {/* Minimal Accent Line */}
+          <motion.div 
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ delay: 0.5, duration: 1.2, ease: 'circOut' }}
+            style={{ 
+              width: '80px', 
+              height: '3px', 
+              background: '#c8102e', 
+              marginTop: '2.5rem',
+              borderRadius: '2px',
+              transformOrigin: 'left'
+            }}
+          />
         </motion.div>
-      </div>
+      </section>
 
       {/* ── Top Level Stats ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>

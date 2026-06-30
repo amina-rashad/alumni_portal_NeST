@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import '../App.css';
 import nestMainLogo from '../assets/nest_logo.png';
+import nestIcon from '../assets/nest_icon.png';
 
 const featureDetails: Record<string, any> = {
   'talent-tracking': {
@@ -120,8 +121,78 @@ const PlatformCapabilities: React.FC = () => {
       {/* ── Header ── */}
       <header className={`header ${isScrolled ? 'header-scrolled' : 'header-glass'}`}>
         <div className="container header-container">
-          <Link to="/" className="logo">
-            <img src={nestMainLogo} alt="NeST Digital" className="nest-main-logo" style={{ background: '#fff', padding: '6px 14px', borderRadius: '8px' }} />
+          <Link 
+            to="/" 
+            className="logo" 
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '10px',
+              textDecoration: 'none',
+              transition: 'all 0.3s ease',
+              ...(!isScrolled ? {
+                background: 'rgba(5, 13, 30, 0.95)',
+                padding: '6px 16px',
+                borderRadius: '12px',
+                boxShadow: '0 4px 15px rgba(0, 0, 0, 0.15)'
+              } : {
+                background: 'transparent',
+                padding: '0',
+                borderRadius: '0',
+                boxShadow: 'none'
+              })
+            }}
+          >
+            <img 
+              src={nestIcon} 
+              alt="NeST" 
+              style={{ 
+                height: '36px', 
+                objectFit: 'contain',
+                borderRadius: '50%'
+              }} 
+            />
+            
+            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: '1.1', textAlign: 'left' }}>
+              <span style={{ 
+                fontFamily: "'Sora', 'Inter', sans-serif", 
+                fontSize: '18px', 
+                fontWeight: 800, 
+                color: '#ffffff', 
+                letterSpacing: '0.02em'
+              }}>NeST</span>
+              <span style={{ 
+                fontFamily: "'Inter', sans-serif", 
+                fontSize: '9px', 
+                fontWeight: 700, 
+                color: '#cbd5e1', 
+                letterSpacing: '0.12em'
+              }}>DIGITAL</span>
+            </div>
+            
+            <div style={{ 
+              height: '24px', 
+              width: '1px', 
+              backgroundColor: 'rgba(255, 255, 255, 0.25)', 
+              margin: '0 4px'
+            }} />
+            
+            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: '1.15', textAlign: 'left' }}>
+              <span style={{ 
+                fontFamily: "'Inter', sans-serif", 
+                fontSize: '9px', 
+                fontWeight: 500, 
+                color: '#cbd5e1', 
+                letterSpacing: '0.08em'
+              }}>ENGINEERING</span>
+              <span style={{ 
+                fontFamily: "'Inter', sans-serif", 
+                fontSize: '9px', 
+                fontWeight: 500, 
+                color: '#cbd5e1', 
+                letterSpacing: '0.08em'
+              }}>TRANSFORMATION</span>
+            </div>
           </Link>
           <nav className="desktop-nav">
             <ul className="nav-list">

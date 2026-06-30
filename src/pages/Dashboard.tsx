@@ -3,7 +3,7 @@ import { motion, type Variants, AnimatePresence } from 'framer-motion';
 import {
   Briefcase, Calendar, Users, Star,
   Activity, Image as ImageIcon, MapPin,
-  Clock, MessageSquare, ThumbsUp, Share2,
+  Clock, ThumbsUp, Share2,
   Award, ChevronRight, ChevronLeft,
   MoreHorizontal, FileText, ArrowRight,
   BrainCircuit, BookOpen, Heart, ShieldCheck, Sparkles, X, Play, CheckCircle2
@@ -123,6 +123,7 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
 
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [insightIndex, setInsightIndex] = useState(0);
   const [selectedJob, setSelectedJob] = useState<any>(null);
   const [feedPosts, setFeedPosts] = useState<any[]>([]);
 
@@ -141,6 +142,15 @@ const Dashboard: React.FC = () => {
   }, []);
 
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isCarouselPaused, setIsCarouselPaused] = useState(false);
+
+  useEffect(() => {
+    if (feedPosts.length === 0 || isCarouselPaused) return;
+    const interval = setInterval(() => {
+      setInsightIndex((prev) => (prev + 1) % feedPosts.length);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, [feedPosts.length, isCarouselPaused]);
   const [insights, setInsights] = useState<any>(null);
   const [pathways, setPathways] = useState<any[]>([]);
   const [queries, setQueries] = useState<any[]>([]);
@@ -159,7 +169,7 @@ const Dashboard: React.FC = () => {
         const [courseRes, jobRes, eventRes, insightRes, pathwayRes, queryRes] = await Promise.all([
           coursesApi.getAllCourses(),
           jobsApi.getAllJobs(),
-          eventsApi.getAllEvents(1, 4),
+          eventsApi.getAllEvents(1, 4, true),
           studentAPI.fetchPersonalInsights(),
           studentAPI.fetchRecommendedPathways(),
           studentAPI.fetchMyQueries()
@@ -329,22 +339,22 @@ const Dashboard: React.FC = () => {
           borderRadius: '0',
           display: 'flex',
           overflow: 'hidden',
-          minHeight: '520px',
+          minHeight: '440px',
           boxShadow: 'none',
           borderBottom: 'none',
           width: '100%',
           marginBottom: '0'
         }}>
           <div style={{ maxWidth: '1400px', margin: '0 auto', width: '100%', display: 'flex' }}>
-            <div style={{ padding: '5rem 2rem', flex: '1.1', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
-                <span style={{ fontWeight: 800, color: '#334155', letterSpacing: '0.12em', fontSize: '0.85rem', textTransform: 'uppercase' }}>Dashboard Overview</span>
+            <div style={{ padding: '4rem 2rem', flex: '1.1', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                <span style={{ fontWeight: 800, color: '#334155', letterSpacing: '0.12em', fontSize: '0.8rem', textTransform: 'uppercase' }}>Dashboard Overview</span>
               </div>
-              <h1 style={{ fontSize: '4.8rem', fontWeight: 900, color: '#0F172A', lineHeight: 1.1, marginBottom: '1.5rem', letterSpacing: '-0.02em' }}>
+              <h1 style={{ fontSize: '3.8rem', fontWeight: 900, color: '#0F172A', lineHeight: 1.1, marginBottom: '1.2rem', letterSpacing: '-0.02em' }}>
                 Welcome back,<br />
                 <span style={{ color: '#EF4444' }}>{user ? user.full_name.split(' ')[0] : 'Amina'}</span>
               </h1>
-              <p style={{ fontSize: '1.35rem', color: '#64748B', lineHeight: 1.6, maxWidth: '500px', fontWeight: 500, margin: 0 }}>
+              <p style={{ fontSize: '1.2rem', color: '#64748B', lineHeight: 1.6, maxWidth: '480px', fontWeight: 500, margin: 0 }}>
                 Your alumni network is growing. Check out the latest updates and opportunities from classmates.
               </p>
             </div>
@@ -826,7 +836,7 @@ const Dashboard: React.FC = () => {
                   key={i}
                   variants={itemVariants}
                   whileHover="hover"
-                  onClick={() => setSelectedJob(job)}
+                  onClick={() => navigate(`/jobs/${job.id || job._id}`)}
                   className="premium-border-card dark"
                   style={{
                     height: '230px',
@@ -960,7 +970,7 @@ const Dashboard: React.FC = () => {
                   </h2>
                 </div>
                 <button onClick={() => navigate('/dashboard/activity')} style={{ border: '1px solid #e2e8f0', background: '#ffffff', color: '#0d2046', fontWeight: 800, padding: '12px 32px', borderRadius: '999px', fontSize: '1rem', cursor: 'pointer', transition: 'all 0.3s ease' }}>
-                  Explore Feed
+                  Career Timelines
                 </button>
               </div>
 
@@ -975,14 +985,10 @@ const Dashboard: React.FC = () => {
               >
                 {feedPosts.length > 0 ? (
                   <motion.div
-                    animate={{ x: ["0%", "-50%"] }}
+                    animate={{ x: `-${insightIndex * (400 + 40)}px` }}
                     transition={{
-                      x: {
-                        repeat: Infinity,
-                        repeatType: "loop",
-                        duration: 40,
-                        ease: "linear",
-                      },
+                      duration: 0.8,
+                      ease: [0.32, 0.72, 0, 1], // Premium smooth transition
                     }}
                     style={{
                       display: 'flex',
@@ -990,18 +996,20 @@ const Dashboard: React.FC = () => {
                       width: 'fit-content',
                     }}
                   >
-                    {[...feedPosts, ...feedPosts, ...feedPosts, ...feedPosts].map((post, i) => (
+                    {feedPosts.map((post, i) => (
                       <motion.div
                         key={i}
                         whileHover={{ y: -10, transition: { duration: 0.4 } }}
                         onClick={() => navigate('/dashboard/activity')}
+                        onMouseEnter={() => setIsCarouselPaused(true)}
+                        onMouseLeave={() => setIsCarouselPaused(false)}
                         style={{
                           background: '#0d2046',
                           padding: '1.5rem',
                           borderRadius: '40px',
                           cursor: 'pointer',
                           position: 'relative',
-                          minWidth: '400px',
+                          width: '400px',
                           flexShrink: 0,
                           display: 'flex',
                           flexDirection: 'column',
@@ -1011,7 +1019,7 @@ const Dashboard: React.FC = () => {
                         {/* Top Image Container */}
                         <div style={{ position: 'relative', borderRadius: '32px', overflow: 'hidden', height: '180px' }}>
                           <img 
-                            src={post.image || 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80'} 
+                            src={post.image_url || 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80'} 
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                             alt="" 
                           />
@@ -1050,7 +1058,6 @@ const Dashboard: React.FC = () => {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
                           <div style={{ display: 'flex', gap: '1.5rem', color: 'rgba(255, 255, 255, 0.4)', fontSize: '0.9rem', fontWeight: 700 }}>
                             <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><ThumbsUp size={16} /> {post.likes_count}</span>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><MessageSquare size={16} /> {post.comments_count}</span>
                           </div>
                           <button
                             onClick={(e) => {
@@ -1069,6 +1076,28 @@ const Dashboard: React.FC = () => {
                   <div style={{ color: '#64748b', padding: '4rem', textAlign: 'center', width: '100%', background: '#f8fafc', borderRadius: '32px', border: '2px dashed #e2e8f0' }}>No insights shared yet. Be the first!</div>
                 )}
               </div>
+
+              {/* Indicators */}
+              {feedPosts.length > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '1rem' }}>
+                  {feedPosts.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setInsightIndex(idx)}
+                      style={{
+                        width: insightIndex === idx ? '24px' : '8px',
+                        height: '8px',
+                        borderRadius: '4px',
+                        background: insightIndex === idx ? '#3b82f6' : '#e2e8f0',
+                        border: 'none',
+                        cursor: 'pointer',
+                        transition: 'all 0.4s cubic-bezier(0.32, 0.72, 0, 1)',
+                        padding: 0
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           </motion.section>
 
@@ -1159,11 +1188,10 @@ const Dashboard: React.FC = () => {
                   key={course.id}
                   variants={itemVariants}
                   whileHover={{
-                    rotateY: 4,
-                    rotateX: -2,
+                    y: -10,
                     scale: 1.02,
-                    boxShadow: '8px 16px 40px rgba(0,0,0,0.15), -2px -2px 20px rgba(255,255,255,0.5)',
-                    transition: { duration: 0.4, ease: [0.23, 1, 0.32, 1] }
+                    boxShadow: '0px 4px 8px rgba(15, 23, 42, 0.02), 0px 8px 16px rgba(15, 23, 42, 0.03), 0px 16px 24px rgba(15, 23, 42, 0.04), 0px 24px 32px rgba(15, 23, 42, 0.05), 0px 32px 48px rgba(15, 23, 42, 0.06), 0px 48px 80px rgba(15, 23, 42, 0.08)',
+                    transition: { duration: 0.35, ease: [0.16, 1, 0.3, 1] }
                   }}
                   style={{
                     cursor: 'pointer',
@@ -1171,11 +1199,10 @@ const Dashboard: React.FC = () => {
                     overflow: 'hidden',
                     background: '#fff',
                     border: '1px solid rgba(0,0,0,0.06)',
-                    boxShadow: '0 6px 24px rgba(0,0,0,0.04)',
-                    perspective: '800px',
-                    transformStyle: 'preserve-3d',
+                    boxShadow: '0px 2px 4px rgba(15, 23, 42, 0.015), 0px 4px 8px rgba(15, 23, 42, 0.02), 0px 8px 16px rgba(15, 23, 42, 0.025), 0px 16px 24px rgba(15, 23, 42, 0.03), 0px 24px 32px rgba(15, 23, 42, 0.035), 0px 32px 48px rgba(15, 23, 42, 0.04)',
                     display: 'flex',
-                    flexDirection: 'column'
+                    flexDirection: 'column',
+                    transition: 'box-shadow 0.3s ease, border-color 0.3s ease'
                   }}
                   onClick={() => navigate(`/learning/course/${course.id}`)}
                 >

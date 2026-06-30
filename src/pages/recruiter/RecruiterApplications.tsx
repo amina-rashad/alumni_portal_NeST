@@ -3,6 +3,7 @@ import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { Search, Mail, User, FileText, Briefcase, Users, Calendar, Clock, Filter, Download, ChevronDown, DownloadCloud, FileArchive, X, AlertCircle, Edit, CheckSquare, MessageSquare, Loader2 } from 'lucide-react';
 import { recruiterApi } from '../../services/api';
 import nestIcon from '../../assets/nest_icon.png';
+import UserAvatar from '../../components/UserAvatar';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import JSZip from 'jszip';
@@ -67,7 +68,7 @@ const RecruiterApplications: React.FC = () => {
     try {
       const response = await recruiterApi.getApplications();
       if (response.success && response.data) {
-        let apps = response.data.applications;
+        const apps = response.data.applications;
         setApplications(apps);
       }
     } catch (error) {
@@ -366,30 +367,13 @@ const RecruiterApplications: React.FC = () => {
                   style={{ padding: '24px 32px', display: 'grid', gridTemplateColumns: '1.2fr 1fr auto', alignItems: 'center', gap: '32px' }}
                 >
                   <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-                    <div style={{ 
-                      position: 'relative',
-                      padding: '3px',
-                      borderRadius: '16px',
-                      background: (app.applicant_status === 'open_to_work' || !app.applicant_status)
-                        ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' 
-                        : app.applicant_status === 'hiring' 
-                          ? 'linear-gradient(135deg, #3b82f6 0%, #0284c7 100%)' 
-                          : 'transparent',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}>
-                      <div style={{ 
-                          width: '56px', height: '56px', background: 'linear-gradient(135deg, #f8fafc, #f1f5f9)', 
-                          borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: nestNavy, border: '2px solid #fff', overflow: 'hidden'
-                      }}>
-                        {app.applicant_picture ? (
-                          <img src={app.applicant_picture} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        ) : (
-                          <User size={28} />
-                        )}
-                      </div>
-                    </div>
+                      <UserAvatar
+                      src={app.applicant_picture}
+                      name={app.applicant_name}
+                      status={app.applicant_status || 'open_to_work'}
+                      size={56}
+                      bgColor={nestNavy}
+                    />
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                         <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#111827', margin: 0 }}>{app.applicant_name}</h3>

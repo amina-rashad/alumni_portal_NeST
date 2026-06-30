@@ -2,11 +2,17 @@ import os
 import bcrypt
 from pymongo import MongoClient
 from datetime import datetime, timezone
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Connect to the MongoDB database
-URI = "mongodb://localhost:27017/"
+URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
+DB_NAME = os.getenv("MONGO_DB_NAME", "alumni_portal")
+
 client = MongoClient(URI)
-db = client["alumni_portal"]
+db = client[DB_NAME]
 users = db["users"]
 
 # Admin credentials

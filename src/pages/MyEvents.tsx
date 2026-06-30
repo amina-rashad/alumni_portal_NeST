@@ -8,7 +8,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { eventsApi, usersApi } from '../services/api';
+import { eventsApi, usersApi, getUser } from '../services/api';
 import { generateEventCertificate } from '../utils/CertificateGenerator';
 import CertificateProgressButton from '../components/CertificateProgressButton';
 

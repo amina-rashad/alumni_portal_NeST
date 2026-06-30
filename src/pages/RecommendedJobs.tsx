@@ -60,6 +60,12 @@ const RecommendedJobs: React.FC = () => {
   const [isUpdatingSkills, setIsUpdatingSkills] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const JOBS_PER_PAGE = 5;
+  const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' } | null>(null);
+
+  const showToast = (message: string, type: 'error' | 'success' = 'error') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
 
   const fetchData = async () => {
     try {
@@ -193,12 +199,13 @@ const RecommendedJobs: React.FC = () => {
         const newApplied = new Set(appliedJobs);
         newApplied.add(id);
         setAppliedJobs(newApplied);
+        showToast('Application submitted successfully!', 'success');
       } else {
-        alert(res.message || "Failed to apply for job.");
+        showToast(res.message || 'Failed to apply for job.');
       }
     } catch (err) {
       console.error(err);
-      alert("An error occurred while applying.");
+      showToast('An error occurred while applying.');
     }
   };
 
@@ -225,6 +232,55 @@ const RecommendedJobs: React.FC = () => {
 
   return (
     <div style={{ minHeight: '100vh', padding: '2rem', background: 'transparent', color: '#1a1a1a', fontFamily: 'Montserrat, sans-serif' }}>
+
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+            style={{
+              position: 'fixed',
+              top: '24px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 9999,
+              background: toast.type === 'success' ? '#f0fdf4' : '#fef2f2',
+              border: `1.5px solid ${toast.type === 'success' ? '#86efac' : '#fca5a5'}`,
+              borderRadius: '16px',
+              padding: '14px 24px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              boxShadow: '0 10px 40px rgba(0,0,0,0.12)',
+              minWidth: '320px',
+              maxWidth: '500px',
+              fontFamily: "'Outfit', sans-serif"
+            }}
+          >
+            <div style={{
+              width: '32px', height: '32px', borderRadius: '50%', flexShrink: 0,
+              background: toast.type === 'success' ? '#dcfce7' : '#fee2e2',
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+              {toast.type === 'success'
+                ? <Check size={16} color="#16a34a" />
+                : <AlertCircle size={16} color="#dc2626" />}
+            </div>
+            <span style={{ fontSize: '14px', fontWeight: 600, color: toast.type === 'success' ? '#15803d' : '#dc2626', flex: 1 }}>
+              {toast.message}
+            </span>
+            <button
+              onClick={() => setToast(null)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', padding: '2px', display: 'flex', flexShrink: 0 }}
+            >
+              ✕
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
 
         {/* Header */}

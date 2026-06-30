@@ -50,18 +50,54 @@ def get_stats():
     """Aggregate stats for the admin dashboard."""
     db = get_db()
     
+    now = datetime.now(timezone.utc)
+    from datetime import timedelta
+    first_day_this_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    first_day_last_month = (first_day_this_month - timedelta(days=1)).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    
+    def get_trend(collection, date_field):
+        this_month = db[collection].count_documents({date_field: {"$gte": first_day_this_month}})
+        last_month = db[collection].count_documents({date_field: {"$gte": first_day_last_month, "$lt": first_day_this_month}})
+        
+        if last_month == 0:
+            return f"+{this_month * 100}%" if this_month > 0 else "+0%"
+        
+        pct = ((this_month - last_month) / last_month) * 100
+        return f"+{int(pct)}%" if pct >= 0 else f"{int(pct)}%"
+        
     total_users = db["users"].count_documents({})
     interns = db["users"].count_documents({"user_type": "Intern"})
-    active_jobs = db["jobs"].count_documents({"is_active": {"$ne": False}})
-    total_applications = db["applications"].count_documents({}) if "applications" in db.list_collection_names() else 0
-    total_events = db["events"].count_documents({}) if "events" in db.list_collection_names() else 0
-    total_courses = db["courses"].count_documents({}) if "courses" in db.list_collection_names() else 0
+    active_jobs = db["jobs"].count_documents({"is_active": True})
+    total_applications = db["applications"].count_documents({})
+    total_events = db["events"].count_documents({})
+    total_courses = db["courses"].count_documents({})
     iv_students = db["users"].count_documents({"user_type": "Industrial Student"})
     trainees = db["users"].count_documents({"user_type": "Trainee"})
     alumni = db["users"].count_documents({"user_type": "Alumni"})
     staff = db["users"].count_documents({"user_type": "Staff"})
     total_managers = db["users"].count_documents({"role": {"$in": ["event_manager", "course_manager", "job_recruiter"]}})
 
+    trends = {
+        "users": get_trend("users", "created_at"),
+        "jobs": get_trend("jobs", "createdAt"),
+        "applications": get_trend("applications", "applied_at"),
+        "events": "Live"  # Events typically say Live or could also be a trend
+    }
+
+    # Calculate monthly growth (users registered per month for the current year)
+    monthly_growth = [0] * 12
+    current_year = now.year
+    pipeline = [
+        {"$match": {"created_at": {"$gte": datetime(current_year, 1, 1, tzinfo=timezone.utc)}}},
+        {"$group": {"_id": {"$month": "$created_at"}, "count": {"$sum": 1}}}
+    ]
+    for doc in db["users"].aggregate(pipeline):
+        if doc["_id"]:
+            monthly_growth[doc["_id"] - 1] = doc["count"]
+            
+    # For a better visual if data is sparse (since this is a new portal), we might want to scale it or just send raw.
+    # Raw is accurate.
+    
     return jsonify({
         "success": True,
         "data": {
@@ -77,6 +113,8 @@ def get_stats():
                 "alumni": alumni,
                 "staff": staff,
                 "total_managers": total_managers,
+                "trends": trends,
+                "monthly_growth": monthly_growth,
                 "distribution": {
                     "Alumni": alumni,
                     "IV Students": iv_students,
@@ -196,6 +234,8 @@ def get_all_managers():
             "full_name": m.get("full_name", "Unknown"),
             "email": m.get("email", ""),
             "role": m.get("role", ""),
+            "emp_id": m.get("emp_id", ""),
+            "phone": m.get("phone", ""),
             "user_type": m.get("user_type", ""),
             "profile_picture": m.get("profile_picture"),
             "is_active": m.get("is_active", True),
@@ -303,6 +343,19 @@ def create_user():
         return jsonify({"success": False, "message": "Email and password required."}), 400
         
     db = get_db()
+    
+    # Secure role assignment: Only super_admin can create admin or super_admin users
+    creator_id = get_jwt_identity()
+    creator = db["users"].find_one({"_id": ObjectId(creator_id)})
+    requested_role = data.get("role", "user")
+    
+    if requested_role in ("admin", "super_admin"):
+        if not creator or creator.get("role") != "super_admin":
+            return jsonify({
+                "success": False, 
+                "message": "Access denied. Only Super Admin can create Admin or Super Admin accounts."
+            }), 403
+
     if db["users"].find_one({"email": data["email"].strip().lower()}):
         return jsonify({"success": False, "message": "Email already exists."}), 409
         
@@ -314,6 +367,7 @@ def create_user():
         "email": data["email"].strip().lower(),
         "password": hashed_pw,
         "phone": data.get("phone", ""),
+        "emp_id": data.get("emp_id", ""),
         "user_type": data.get("user_type", "Alumni"),
         "batch": data.get("batch", "N/A"),
         "specialization": data.get("specialization", "N/A"),
@@ -424,8 +478,18 @@ def update_user_status(user_id):
     """Update user: toggle active status, change role, or edit fields."""
     data = request.get_json()
     db = get_db()
-    
-    allowed_fields = ["is_active", "role", "full_name", "phone", "user_type", "batch", "specialization", "password"]
+    # Secure role updates: Only super_admin can set a role to admin or super_admin
+    requested_role = data.get("role")
+    if requested_role and requested_role in ("admin", "super_admin"):
+        creator_id = get_jwt_identity()
+        creator = db["users"].find_one({"_id": ObjectId(creator_id)})
+        if not creator or creator.get("role") != "super_admin":
+            return jsonify({
+                "success": False, 
+                "message": "Access denied. Only Super Admin can assign Admin or Super Admin roles."
+            }), 403
+
+    allowed_fields = ["is_active", "role", "full_name", "phone", "emp_id", "user_type", "batch", "specialization", "password"]
     update_data = {}
     for field in allowed_fields:
         if field in data:
@@ -467,6 +531,31 @@ def delete_user(user_id):
     db["notifications"].delete_many({"user_id": uid})
     
     return jsonify({"success": True, "message": "User deleted successfully."}), 200
+
+@admin_bp.route("/users/bulk-delete", methods=["POST"])
+@jwt_required()
+@admin_required
+def bulk_delete_users():
+    """Bulk delete multiple user accounts."""
+    db = get_db()
+    data = request.get_json() or {}
+    user_ids = data.get("user_ids", [])
+    
+    if not user_ids:
+        return jsonify({"success": False, "message": "No user IDs provided."}), 400
+        
+    try:
+        object_ids = [ObjectId(uid) for uid in user_ids]
+    except Exception:
+        return jsonify({"success": False, "message": "One or more invalid user IDs."}), 400
+        
+    result = db["users"].delete_many({"_id": {"$in": object_ids}})
+    
+    # Clean up related data
+    db["applications"].delete_many({"user_id": {"$in": object_ids}})
+    db["notifications"].delete_many({"user_id": {"$in": object_ids}})
+    
+    return jsonify({"success": True, "message": f"Successfully deleted {result.deleted_count} users."}), 200
 
 # ── Job Management ──
 
@@ -1178,7 +1267,7 @@ def bulk_issue_iv_certificates():
             try:
                 create_notification(
                     db,
-                    user_id=user["_id"],
+                    user_id=user_record["_id"],
                     type_str="system",
                     title="IV Certificate Issued!",
                     message=f"Your certificate for the industrial visit is now available on your profile.",
@@ -1219,3 +1308,181 @@ def get_issued_iv_certificates():
         "success": True,
         "data": {"certificates": certs_list}
     }), 200
+
+
+# ── Certificate Overview (All Roles) ──
+
+@admin_bp.route("/certificates/overview", methods=["GET"])
+@jwt_required()
+@admin_required
+def get_certificates_overview():
+    """
+    Get a unified certificate overview across all user types.
+    Returns per-user cert records so the admin can see what has been issued.
+    """
+    db = get_db()
+    now = datetime.now(timezone.utc)
+
+    # --- IV students ---
+    iv_users = list(db["users"].find({"user_type": "Industrial Student"}))
+    iv_list = []
+    for u in iv_users:
+        issued_certs = [c for c in u.get("certificates", []) if c.get("type") == "iv"]
+        iv_list.append({
+            "id": str(u["_id"]),
+            "full_name": u.get("full_name", ""),
+            "email": u.get("email", ""),
+            "profile_picture": u.get("profile_picture", ""),
+            "college": u.get("college", "N/A"),
+            "batch": u.get("batch", "N/A"),
+            "cert_status": "Issued" if issued_certs else "Pending",
+            "issued_at": issued_certs[-1].get("issued_at", "N/A") if issued_certs else None,
+            "cert_count": len(issued_certs),
+        })
+
+    # --- Interns ---
+    intern_users = list(db["users"].find({"user_type": "Intern"}))
+    intern_list = []
+    for u in intern_users:
+        issued_certs = [c for c in u.get("certificates", []) if c.get("type") == "intern"]
+        intern_list.append({
+            "id": str(u["_id"]),
+            "full_name": u.get("full_name", ""),
+            "email": u.get("email", ""),
+            "profile_picture": u.get("profile_picture", ""),
+            "specialization": u.get("specialization", "General"),
+            "batch": u.get("batch", "N/A"),
+            "cert_status": "Issued" if issued_certs else "Pending",
+            "issued_at": issued_certs[-1].get("issued_at", "N/A") if issued_certs else None,
+            "cert_count": len(issued_certs),
+        })
+
+    # --- Alumni ---
+    # Work experience certificates have been removed completely.
+    alumni_list = []
+
+    # --- Course completions ---
+    completed_enrollments = list(db["course_enrollments"].find({"status": "Completed"}))
+    course_list = []
+    for en in completed_enrollments:
+        user = db["users"].find_one({"_id": en["user_id"]})
+        course = db["courses"].find_one({"_id": en["course_id"]})
+        if user and course:
+            cert = db["certificates"].find_one({"enrollment_id": en["_id"]})
+            course_list.append({
+                "id": str(en["_id"]),
+                "full_name": user.get("full_name", ""),
+                "email": user.get("email", ""),
+                "profile_picture": user.get("profile_picture", ""),
+                "course_name": course.get("title", ""),
+                "cert_status": cert.get("status", "Pending Generation") if cert else "Pending Generation",
+                "issued_at": cert.get("issued_at").isoformat() if cert and hasattr(cert.get("issued_at"), "isoformat") else None,
+            })
+
+    return jsonify({
+        "success": True,
+        "data": {
+            "iv": iv_list,
+            "intern": intern_list,
+            "alumni": [],
+            "course": course_list,
+            "stats": {
+                "iv_total": len(iv_list),
+                "iv_issued": sum(1 for u in iv_list if u["cert_status"] == "Issued"),
+                "intern_total": len(intern_list),
+                "intern_issued": sum(1 for u in intern_list if u["cert_status"] == "Issued"),
+                "alumni_total": 0,
+                "alumni_issued": 0,
+                "course_total": len(course_list),
+                "course_issued": sum(1 for u in course_list if u["cert_status"] == "Generated"),
+            }
+        }
+    }), 200
+
+
+@admin_bp.route("/certificates/intern/<user_id>/issue", methods=["POST"])
+@jwt_required()
+@admin_required
+def issue_intern_certificate(user_id):
+    """Issue an internship completion certificate to an intern."""
+    db = get_db()
+    now = datetime.now(timezone.utc)
+
+    user = db["users"].find_one({"_id": ObjectId(user_id)})
+    if not user:
+        return jsonify({"success": False, "message": "User not found."}), 404
+
+    cert_doc = {
+        "id": f"intern_{ObjectId()}",
+        "type": "intern",
+        "title": "Internship Completion Certificate",
+        "student_name": user.get("full_name", ""),
+        "specialization": user.get("specialization", "General"),
+        "batch": user.get("batch", "N/A"),
+        "date": now.strftime("%Y-%m-%d"),
+        "issuer": "NeST Academy",
+        "color": "#1a2652",
+        "issued_at": now.isoformat(),
+    }
+
+    # Upsert — replace existing intern cert if present
+    user_certs = user.get("certificates", [])
+    existing_idx = next((i for i, c in enumerate(user_certs) if c.get("type") == "intern"), None)
+    if existing_idx is not None:
+        user_certs[existing_idx] = cert_doc
+        db["users"].update_one({"_id": user["_id"]}, {"$set": {"certificates": user_certs}})
+    else:
+        db["users"].update_one({"_id": user["_id"]}, {"$push": {"certificates": cert_doc}})
+
+    # Notify
+    try:
+        create_notification(
+            db, user["_id"], "system",
+            "Internship Certificate Issued!",
+            "Your internship completion certificate is now available on your profile.",
+            "/profile"
+        )
+    except Exception:
+        pass
+
+    return jsonify({"success": True, "message": f"Internship certificate issued to {user.get('full_name')}."}), 200
+
+
+@admin_bp.route("/certificates/alumni/<user_id>/issue", methods=["POST"])
+@jwt_required()
+@admin_required
+def issue_alumni_certificate(user_id):
+    """Deprecated: Work experience certificates are removed."""
+    return jsonify({"success": False, "message": "Work experience certificates are no longer supported."}), 400
+
+
+@admin_bp.route("/certificates/course/<enrollment_id>/generate", methods=["POST"])
+@jwt_required()
+@admin_required
+def generate_course_certificate(enrollment_id):
+    """Mark a course completion certificate as Generated."""
+    db = get_db()
+    now = datetime.now(timezone.utc)
+
+    eid = ObjectId(enrollment_id)
+    enrollment = db["course_enrollments"].find_one({"_id": eid})
+    if not enrollment:
+        return jsonify({"success": False, "message": "Enrollment not found."}), 404
+
+    db["certificates"].update_one(
+        {"enrollment_id": eid},
+        {"$set": {"status": "Generated", "issued_at": now, "updated_at": now}},
+        upsert=True
+    )
+
+    try:
+        create_notification(
+            db, enrollment["user_id"], "system",
+            "Course Certificate Ready!",
+            "Your course completion certificate has been generated and is available on your profile.",
+            "/profile"
+        )
+    except Exception:
+        pass
+
+    return jsonify({"success": True, "message": "Certificate generated."}), 200

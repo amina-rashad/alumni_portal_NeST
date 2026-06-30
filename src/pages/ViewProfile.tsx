@@ -6,7 +6,7 @@ import {
   Edit3, Mail, Phone,
   Briefcase, Book, Award, 
   Linkedin, Github, Twitter, Globe,
-  CheckCircle2, Building, Info, Share2, GraduationCap, FileText, Download, ExternalLink, MoreHorizontal, Eye, Share
+  CheckCircle2, Building, Info, Share2, GraduationCap, FileText, Download, ExternalLink, MoreHorizontal, Eye, Share, ArrowRight, Clock
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { usersApi, getUser, eventsApi, coursesApi } from '../services/api';
@@ -320,16 +320,8 @@ const ViewProfile: React.FC = () => {
     fetchAllCertificates();
   }, []);
 
-  useEffect(() => {
-    if (user) {
-      console.log('DEBUG: Current user profile data:', {
-        name: user.full_name,
-        resume_url: user.resume_url ? `${user.resume_url.substring(0, 50)}...` : null,
-        is_resume_created: user.is_resume_created,
-        has_resume_data: !!user.resume_data
-      });
-    }
-  }, [user]);
+
+
 
   if (loading) {
     return (
@@ -495,28 +487,83 @@ const ViewProfile: React.FC = () => {
             </div>
           </section>
 
-          {/* Experience Section */}
+          {/* Career Timeline Section */}
           <section style={{ background: 'rgba(255, 255, 255, 0.7)', backdropFilter: 'blur(24px)', padding: '32px', borderRadius: '24px', border: '1px solid rgba(255, 255, 255, 0.6)', boxShadow: '0 10px 40px -10px rgba(0,0,0,0.08)' }}>
-            <h3 style={{ margin: '0 0 24px', fontSize: '19px', fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <Briefcase size={22} color="#c8102e" /> Experience
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              {user.experience && user.experience.length > 0 ? (
-                user.experience.map((exp: any) => (
-                  <div key={exp.id} style={{ display: 'flex', gap: '20px' }}>
-                    <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #f1f5f9' }}>
-                      <Building size={28} color="#94a3b8" />
-                    </div>
-                    <div>
-                      <h4 style={{ margin: 0, fontSize: '17px', fontWeight: 750, color: '#1e292b' }}>{exp.role}</h4>
-                      <p style={{ margin: '4px 0', fontSize: '15px', color: '#64748b', fontWeight: 500 }}>{exp.company} • {exp.type || 'Full-time'}</p>
-                      <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8' }}>{exp.duration}</p>
-                    </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+              <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <Briefcase size={22} color="#c8102e" /> Career Timeline
+              </h3>
+              <Link to="/dashboard/activity" style={{ fontSize: '13px', color: '#c8102e', fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                View Feed <ArrowRight size={14} />
+              </Link>
+            </div>
+            
+            <div style={{ position: 'relative', paddingLeft: '32px' }}>
+              {/* Vertical Timeline Line */}
+              <div style={{ 
+                position: 'absolute', 
+                left: '7px', 
+                top: '8px', 
+                bottom: '8px', 
+                width: '2px', 
+                background: 'linear-gradient(to bottom, #c8102e 0%, #1a2652 100%)',
+                opacity: 0.2
+              }} />
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
+                {user.experience && user.experience.length > 0 ? (
+                  user.experience.map((exp: any, index: number) => (
+                    <motion.div 
+                      key={exp.id || index} 
+                      initial={{ opacity: 0, x: -10 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: index * 0.1 }}
+                      style={{ position: 'relative' }}
+                    >
+                      {/* Timeline Dot */}
+                      <div style={{ 
+                        position: 'absolute', 
+                        left: '-32px', 
+                        top: '6px', 
+                        width: '16px', 
+                        height: '16px', 
+                        borderRadius: '50%', 
+                        background: '#fff', 
+                        border: `3px solid ${index === 0 ? '#c8102e' : '#1a2652'}`,
+                        zIndex: 2,
+                        boxShadow: '0 0 0 4px rgba(255,255,255,1)'
+                      }} />
+
+                      <div style={{ display: 'flex', gap: '20px' }}>
+                        <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #f1f5f9', flexShrink: 0 }}>
+                          <Building size={28} color={index === 0 ? "#c8102e" : "#94a3b8"} />
+                        </div>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+                            <h4 style={{ margin: 0, fontSize: '17px', fontWeight: 750, color: '#1e292b' }}>{exp.role}</h4>
+                            {index === 0 && (
+                              <span style={{ fontSize: '10px', fontWeight: 900, background: '#fee2e2', color: '#c8102e', padding: '2px 8px', borderRadius: '6px', textTransform: 'uppercase' }}>Present</span>
+                            )}
+                          </div>
+                          <p style={{ margin: '0 0 8px 0', fontSize: '15px', color: '#64748b', fontWeight: 600 }}>{exp.company} • {exp.type || 'Full-time'}</p>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#94a3b8', fontSize: '13px', fontWeight: 500 }}>
+                            <Clock size={14} /> {exp.duration}
+                          </div>
+                          {exp.description && (
+                            <p style={{ marginTop: '12px', fontSize: '14px', color: '#475569', lineHeight: 1.6 }}>{exp.description}</p>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                    <p style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: '15px' }}>No career milestones listed yet.</p>
+                    <Link to="/profile/edit" style={{ fontSize: '14px', color: '#c8102e', fontWeight: 700, textDecoration: 'none' }}>+ Add Experience</Link>
                   </div>
-                ))
-              ) : (
-                <p style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: '15px' }}>No experience listed yet.</p>
-              )}
+                )}
+              </div>
             </div>
           </section>
 
@@ -566,7 +613,7 @@ const ViewProfile: React.FC = () => {
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
-                {[...certificates, ...(user?.certificates || [])].map((cert, i) => (
+                {[...certificates, ...(user?.certificates || []).filter((c: any) => c.type !== 'alumni' && c.type !== 'work_experience' && c.type !== 'job')].map((cert, i) => (
                   <motion.div
                     key={cert.id || i}
                     whileHover={{ y: -5 }}
