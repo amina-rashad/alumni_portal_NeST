@@ -431,7 +431,6 @@ const RecruiterPost: React.FC = () => {
                           <Clock size={14} /> {timeAgo(post.created_at)}
                         </span>
                         <span>❤️ {post.likes_count}</span>
-                        <span>💬 {post.comments_count}</span>
                       </div>
                     </div>
 
@@ -471,7 +470,7 @@ const RecruiterPost: React.FC = () => {
         {[
           { icon: <Globe size={24} color="#1a2652" />, title: 'Global Reach', text: 'Visible to all alumni, students, and admins.' },
           { icon: <ShieldCheck size={24} color="#16a34a" />, title: 'Verified Post', text: 'Broadcasts carry the Official Recruiter badge.' },
-          { icon: <MessageSquare size={24} color="#c8102e" />, title: 'Engagement', text: 'Users can like and comment on your updates.' }
+          { icon: <MessageSquare size={24} color="#c8102e" />, title: 'Engagement', text: 'Users can like your updates.' }
         ].map((item, idx) => (
           <div key={idx} style={{ background: '#f8fafc', padding: '24px', borderRadius: '24px', border: '1px solid #f1f5f9' }}>
             <div style={{ marginBottom: '16px' }}>{item.icon}</div>

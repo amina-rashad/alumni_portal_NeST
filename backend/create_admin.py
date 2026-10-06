@@ -2,16 +2,22 @@ import os
 import bcrypt
 from pymongo import MongoClient
 from datetime import datetime, timezone
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Connect to the MongoDB database
-URI = "mongodb://localhost:27017/"
+URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
+DB_NAME = os.getenv("MONGO_DB_NAME", "alumni_portal")
+
 client = MongoClient(URI)
-db = client["alumni_portal"]
+db = client[DB_NAME]
 users = db["users"]
 
 # Admin credentials
-ADMIN_EMAIL = "noblesibi@nestgroup.net"
-ADMIN_PASSWORD = "Noble@02"
+ADMIN_EMAIL = "amina.rashad@nestgroup.net"
+ADMIN_PASSWORD = "AdminPassword@123"
 
 # Check if admin already exists
 existing_admin = users.find_one({"email": ADMIN_EMAIL})
@@ -24,7 +30,7 @@ else:
 
     # Create the admin document matching our database schema
     admin_doc = {
-        "full_name": "Noble Sibi",
+        "full_name": "Amina Rashad",
         "email": ADMIN_EMAIL,
         "password": hashed_pw,
         "phone": "000-000-0000",

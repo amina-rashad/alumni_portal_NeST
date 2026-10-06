@@ -19,6 +19,15 @@ const AccountSettings: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [editingItem, setEditingItem] = useState<{label: string, value: string} | null>(null);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    return localStorage.getItem('darkMode') === 'true';
+  });
+
+  const handleToggleDarkMode = () => {
+    const nextVal = !isDarkMode;
+    setIsDarkMode(nextVal);
+    localStorage.setItem('darkMode', String(nextVal));
+  };
 
   const handleSave = () => {
     setIsSaving(true);
@@ -38,11 +47,11 @@ const AccountSettings: React.FC = () => {
   ];
 
   return (
-    <div style={{ background: '#f4f2ee', minHeight: '100vh', padding: '2rem 0', fontFamily: '-apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Fira Sans", Ubuntu, Oxygen, "Oxygen Sans", Cantarell, "Droid Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Lucida Grande", Helvetica, Arial, sans-serif' }}>
+    <div className={`theme-container ${isDarkMode ? 'dark' : 'light'}`} style={{ minHeight: '100vh', padding: '2rem 0', fontFamily: '-apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Fira Sans", Ubuntu, Oxygen, "Oxygen Sans", Cantarell, "Droid Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Lucida Grande", Helvetica, Arial, sans-serif' }}>
       <div style={{ maxWidth: '1128px', margin: '0 auto', display: 'grid', gridTemplateColumns: '312px 1fr', gap: '24px' }}>
         
         {/* LinkedIn-style Sidebar */}
-        <aside style={{ background: 'white', borderRadius: '8px', border: '1px solid #e0e0e0', overflow: 'hidden', height: 'fit-content', position: 'sticky', top: '24px' }}>
+        <aside style={{ borderRadius: '8px', border: '1px solid transparent', overflow: 'hidden', height: 'fit-content', position: 'sticky', top: '24px', transition: 'all 0.4s' }}>
           <div style={{ padding: '24px 24px 16px' }}>
             <button 
               onClick={() => navigate('/dashboard')}
@@ -50,7 +59,7 @@ const AccountSettings: React.FC = () => {
             >
               <ArrowLeft size={16} /> Back to NeST
             </button>
-            <h1 style={{ fontSize: '20px', fontWeight: 600, color: 'rgba(0,0,0,0.9)', margin: 0 }}>Settings</h1>
+            <h1 style={{ fontSize: '20px', fontWeight: 600, color: 'inherit', margin: 0 }}>Settings</h1>
           </div>
           
           <nav style={{ display: 'flex', flexDirection: 'column' }}>
@@ -65,8 +74,8 @@ const AccountSettings: React.FC = () => {
                   padding: '12px 24px',
                   border: 'none',
                   borderLeft: `4px solid ${activeTab === tab.id ? '#c8102e' : 'transparent'}`,
-                  background: activeTab === tab.id ? '#fff1f1' : 'white',
-                  color: activeTab === tab.id ? 'rgba(0,0,0,0.9)' : 'rgba(0,0,0,0.6)',
+                  background: activeTab === tab.id ? '#fff1f1' : 'transparent',
+                  color: activeTab === tab.id ? '#c8102e' : 'inherit',
                   fontWeight: 600,
                   fontSize: '14px',
                   cursor: 'pointer',
@@ -74,7 +83,7 @@ const AccountSettings: React.FC = () => {
                   transition: '0.2s all'
                 }}
               >
-                <tab.icon size={20} style={{ color: activeTab === tab.id ? '#c8102e' : 'rgba(0,0,0,0.6)' }} />
+                <tab.icon size={20} style={{ color: activeTab === tab.id ? '#c8102e' : 'inherit' }} />
                 {tab.label}
               </button>
             ))}
@@ -87,7 +96,7 @@ const AccountSettings: React.FC = () => {
             key={activeTab}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            style={{ background: 'white', borderRadius: '8px', border: '1px solid #e0e0e0', padding: '32px' }}
+            style={{ borderRadius: '8px', border: '1px solid transparent', padding: '32px', transition: 'all 0.4s' }}
           >
             <AnimatePresence>
               {showSuccess && (
@@ -103,7 +112,7 @@ const AccountSettings: React.FC = () => {
             </AnimatePresence>
 
             <header style={{ marginBottom: '32px' }}>
-              <h2 style={{ fontSize: '24px', fontWeight: 400, color: 'rgba(0,0,0,0.9)', margin: '0 0 8px' }}>
+              <h2 style={{ fontSize: '24px', fontWeight: 400, color: 'inherit', margin: '0 0 8px' }}>
                 {tabs.find(t => t.id === activeTab)?.label}
               </h2>
             </header>
@@ -128,12 +137,42 @@ const AccountSettings: React.FC = () => {
                   />
                   
                   <Section title="Display" />
-                  <SettingItem label="Dark mode" desc="Off" isActionable onClick={() => setEditingItem({label: 'Dark mode', value: 'Off'})} />
+                  <SettingItem 
+                    label="Dark mode" 
+                    desc={isDarkMode ? "On" : "Off"} 
+                    onClick={handleToggleDarkMode}
+                    action={
+                      <motion.div 
+                        style={{
+                          width: '44px',
+                          height: '24px',
+                          borderRadius: '12px',
+                          background: isDarkMode ? '#c8102e' : '#cbd5e1',
+                          padding: '2px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: isDarkMode ? 'flex-end' : 'flex-start',
+                          transition: 'background-color 0.3s'
+                        }}
+                      >
+                        <motion.div 
+                          layout
+                          style={{
+                            width: '20px',
+                            height: '20px',
+                            borderRadius: '50%',
+                            background: 'white',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                          }}
+                        />
+                      </motion.div>
+                    } 
+                  />
                   
                   <Section title="General preferences" />
                   <SettingItem label="Language" desc="English" isActionable onClick={() => setEditingItem({label: 'Language', value: 'English'})} />
                   <SettingItem label="Content language" desc="English" isActionable onClick={() => setEditingItem({label: 'Content language', value: 'English'})} />
-                  <SettingItem label="Autoplay videos" desc="On" isActionable onClick={() => setEditingItem({label: 'Autoplay videos', value: 'On'})} />
                 </>
               )}
 
@@ -185,7 +224,6 @@ const AccountSettings: React.FC = () => {
                   
                   <Section title="Who can reach you" />
                   <SettingItem label="Invitations to connect" desc="Everyone on NeST" isActionable onClick={() => setEditingItem({label: 'Who can invite', value: 'Everyone'})} />
-                  <SettingItem label="Messages" desc="Allow messages from people you follow" isActionable onClick={() => setEditingItem({label: 'Messaging rules', value: 'Mutuals only'})} />
                 </>
               )}
             </div>
@@ -205,7 +243,7 @@ const AccountSettings: React.FC = () => {
                     </div>
                     
                     <div style={{ marginBottom: '32px' }}>
-                      <label style={{ display: 'block', fontSize: '14px', color: 'rgba(0,0,0,0.6)', marginBottom: '8px' }}>Update your settings for {editingItem.label.toLowerCase()}</label>
+                      <label style={{ display: 'block', fontSize: '14px', color: 'inherit', opacity: 0.8, marginBottom: '8px' }}>Update your settings for {editingItem.label.toLowerCase()}</label>
                       <input 
                         type="text" 
                         defaultValue={editingItem.value}
@@ -256,8 +294,77 @@ const AccountSettings: React.FC = () => {
       </div>
 
       <style>{`
-        body { margin: 0; background: #f4f2ee; }
+        body { margin: 0; background: #f4f2ee; transition: background-color 0.5s ease; }
         * { box-sizing: border-box; }
+        
+        /* Theme Transitions */
+        .theme-container {
+          transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        /* Light Mode Styles */
+        .theme-container.light {
+          background-color: #f4f2ee;
+          color: rgba(0,0,0,0.9);
+        }
+        .theme-container.light aside, 
+        .theme-container.light main > div {
+          background-color: #ffffff;
+          border-color: #e0e0e0;
+        }
+        .theme-container.light .setting-item {
+          border-bottom-color: #f3f2f0;
+        }
+        .theme-container.light .setting-label {
+          color: rgba(0,0,0,0.9);
+        }
+        .theme-container.light .setting-desc {
+          color: rgba(0,0,0,0.6);
+        }
+        .theme-container.light .section-title {
+          border-bottom-color: #e0e0e0;
+        }
+        .theme-container.light aside nav button:hover {
+          background-color: #f8fafc;
+        }
+
+        /* Dark Mode Styles */
+        .theme-container.dark {
+          background-color: #0B0F19;
+          color: #F8FAFC;
+        }
+        .theme-container.dark aside, 
+        .theme-container.dark main > div {
+          background-color: #111827;
+          border-color: rgba(255,255,255,0.08);
+          box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .theme-container.dark aside nav button:hover {
+          background-color: #1F2937;
+        }
+        .theme-container.dark .setting-item {
+          border-bottom-color: rgba(255,255,255,0.06);
+        }
+        .theme-container.dark .setting-label {
+          color: #F8FAFC;
+        }
+        .theme-container.dark .setting-desc {
+          color: #94A3B8;
+        }
+        .theme-container.dark .section-title {
+          border-bottom-color: rgba(255,255,255,0.08);
+        }
+        .theme-container.dark .editing-modal {
+          background-color: #111827 !important;
+          box-shadow: 0 20px 50px rgba(0,0,0,0.5) !important;
+          color: #F8FAFC;
+          border: 1px solid rgba(255,255,255,0.08);
+        }
+        .theme-container.dark input {
+          background-color: #1F2937 !important;
+          border-color: rgba(255,255,255,0.12) !important;
+          color: #F8FAFC !important;
+        }
       `}</style>
     </div>
   );
@@ -266,13 +373,28 @@ const AccountSettings: React.FC = () => {
 /* --- LinkedIn Style Components --- */
 
 const Section = ({ title }: { title: string }) => (
-  <div style={{ padding: '24px 0 12px', borderBottom: '1px solid #e0e0e0', marginBottom: '8px' }}>
-    <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'rgba(0,0,0,0.9)', margin: 0 }}>{title}</h3>
+  <div className="section-title" style={{ padding: '24px 0 12px', borderBottom: '1px solid #e0e0e0', marginBottom: '8px', transition: 'all 0.4s' }}>
+    <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'inherit', margin: 0 }}>{title}</h3>
   </div>
 );
 
-const SettingItem = ({ label, desc, onClick, onAction, isActionable }: { label: string, desc: string, onClick?: () => void, onAction?: () => void, isActionable?: boolean }) => (
+const SettingItem = ({ 
+  label, 
+  desc, 
+  onClick, 
+  onAction, 
+  isActionable,
+  action 
+}: { 
+  label: string, 
+  desc: string, 
+  onClick?: () => void, 
+  onAction?: () => void, 
+  isActionable?: boolean,
+  action?: React.ReactNode
+}) => (
   <div 
+    className="setting-item"
     onClick={onClick || onAction}
     style={{ 
       display: 'flex', 
@@ -280,15 +402,20 @@ const SettingItem = ({ label, desc, onClick, onAction, isActionable }: { label: 
       alignItems: 'center', 
       padding: '16px 0', 
       borderBottom: '1px solid #f3f2f0',
-      cursor: onClick || onAction || isActionable ? 'pointer' : 'default'
+      cursor: onClick || onAction || isActionable ? 'pointer' : 'default',
+      transition: 'all 0.4s'
     }}
   >
     <div style={{ flex: 1 }}>
-      <div style={{ fontSize: '14px', fontWeight: 600, color: 'rgba(0,0,0,0.9)', marginBottom: '4px' }}>{label}</div>
-      <div style={{ fontSize: '14px', color: 'rgba(0,0,0,0.6)' }}>{desc}</div>
+      <div className="setting-label" style={{ fontSize: '14px', fontWeight: 600, color: 'rgba(0,0,0,0.9)', marginBottom: '4px', transition: 'all 0.4s' }}>{label}</div>
+      <div className="setting-desc" style={{ fontSize: '14px', color: 'rgba(0,0,0,0.6)', transition: 'all 0.4s' }}>{desc}</div>
     </div>
-    <div style={{ color: '#c8102e', fontSize: '14px', fontWeight: 600, marginLeft: '16px' }}>
-      {onClick || onAction || isActionable ? 'Change' : ''}
+    <div style={{ marginLeft: '16px' }} onClick={(e) => { if(action) e.stopPropagation(); }}>
+      {action ? action : (
+        <span style={{ color: '#c8102e', fontSize: '14px', fontWeight: 600 }}>
+          {onClick || onAction || isActionable ? 'Change' : ''}
+        </span>
+      )}
     </div>
   </div>
 );

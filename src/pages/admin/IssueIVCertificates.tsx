@@ -46,7 +46,7 @@ const IssueIVCertificates: React.FC = () => {
         const sheet = workbook.Sheets[sheetName];
         const parsedData: any[] = XLSX.utils.sheet_to_json(sheet);
         
-        console.log("Parsed Excel Data:", parsedData);
+
 
         // Expected columns: Name, College, Date, Batch, Phone, Email
         const formattedData: StudentData[] = parsedData.map(row => {

@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -8,6 +9,7 @@ import {
 } from 'lucide-react';
 import nestMainLogo from '../assets/nest_logo.png';
 import { getUser, authApi, notificationsApi, type AuthUser } from '../services/api';
+import UserAvatar from '../components/UserAvatar';
 import '../App.css';
 
 /* ─────────────────────────── types ─────────────────────────── */
@@ -157,7 +159,7 @@ interface MobileMenuProps {
   user: AuthUser | null;
 }
 
-const MobileMenu: React.FC<MobileMenuProps> = ({ activePath, onClose, onLogout, user }) => {
+const MobileMenu: React.FC<MobileMenuProps & { menuGroups: NavGroup[] }> = ({ activePath, onClose, onLogout, user, menuGroups }) => {
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState<string | null>(null);
 
@@ -252,6 +254,7 @@ const MainLayout: React.FC = () => {
       section: 'Insights', icon: <Home size={17} />,
       items: [
         { name: 'Insights Overview', path: '/dashboard',          icon: <Home size={15} /> },
+        { name: 'Career Timelines',  path: '/dashboard/activity',  icon: <Activity size={15} /> },
       ]
     },
     {
@@ -271,7 +274,7 @@ const MainLayout: React.FC = () => {
         { name: 'Performance Analysis', path: '/assessments/analytics', icon: <Activity size={15} /> },
       ]
     },
-    ...(user?.user_type?.toLowerCase() === 'industrial student' || user?.user_type?.toLowerCase() === 'intern' ? [
+    ...(user?.user_type?.toLowerCase() === 'industrial student' ? [
       {
         section: 'Certificates', icon: <Award size={17} />,
         items: [
@@ -501,35 +504,13 @@ const MainLayout: React.FC = () => {
               onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
               onMouseLeave={e => { if(!profileDropdownOpen) e.currentTarget.style.background = 'transparent' }}
             >
-              <div style={{ position: 'relative' }}>
-                <div style={{ 
-                  padding: '3px', 
-                  borderRadius: '50%', 
-                  background: (user?.status === 'open_to_work' || (!user?.status && user?.user_type === 'Intern'))
-                    ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' 
-                    : user?.status === 'hiring' 
-                      ? 'linear-gradient(135deg, #3b82f6 0%, #0284c7 100%)' 
-                      : 'transparent',
-                  boxShadow: (user?.status === 'open_to_work' || (!user?.status && user?.user_type === 'Intern'))
-                    ? '0 0 12px rgba(34, 197, 94, 0.5)' 
-                    : user?.status === 'hiring'
-                      ? '0 0 12px rgba(59, 130, 246, 0.5)'
-                      : 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
-                }}>
-                  {user?.profile_picture ? (
-                    <img src={user.profile_picture} alt={user.full_name} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #fff' }} />
-                  ) : (
-                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #c8102e 0%, #9b0a22 100%)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '13px', border: '2px solid #fff' }}>
-                      {initials}
-                    </div>
-                  )}
-                </div>
-
-              </div>
+              <UserAvatar
+                src={user?.profile_picture}
+                name={user?.full_name}
+                status={user?.status || (user?.user_type === 'Intern' ? 'open_to_work' : undefined)}
+                size={36}
+                bgColor="#c8102e"
+              />
               <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1, userSelect: 'none' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>{user?.full_name || 'Guest'}</span>
@@ -609,6 +590,7 @@ const MainLayout: React.FC = () => {
             onClose={() => setMobileOpen(false)}
             onLogout={handleLogout}
             user={user}
+            menuGroups={menuGroups}
           />
         )}
       </AnimatePresence>
@@ -621,26 +603,20 @@ const MainLayout: React.FC = () => {
       >
         <div style={{ 
           padding: (
-            location.pathname === '/dashboard' || 
-            location.pathname === '/dashboard/' || 
-            location.pathname === '/dashboard/activity' || 
-            location.pathname === '/jobs' || 
-            location.pathname === '/jobs/' || 
-            location.pathname === '/jobs/applications' || 
-            location.pathname === '/jobs/recommended' || 
-            location.pathname === '/courses' ||
-            location.pathname === '/courses/'
+            location.pathname.startsWith('/dashboard') || 
+            location.pathname.startsWith('/jobs') || 
+            location.pathname.startsWith('/courses') || 
+            location.pathname.startsWith('/events') || 
+            location.pathname === '/assessments/quiz' ||
+            location.pathname === '/iv-certificates'
           ) ? '0' : '28px 32px', 
           maxWidth: (
-            location.pathname === '/dashboard' || 
-            location.pathname === '/dashboard/' || 
-            location.pathname === '/dashboard/activity' || 
-            location.pathname === '/jobs' || 
-            location.pathname === '/jobs/' || 
-            location.pathname === '/jobs/applications' || 
-            location.pathname === '/jobs/recommended' || 
-            location.pathname === '/courses' ||
-            location.pathname === '/courses/'
+            location.pathname.startsWith('/dashboard') || 
+            location.pathname.startsWith('/jobs') || 
+            location.pathname.startsWith('/courses') || 
+            location.pathname.startsWith('/events') || 
+            location.pathname === '/assessments/quiz' ||
+            location.pathname === '/iv-certificates'
           ) ? 'none' : '1400px', 
           margin: '0 auto',
           width: '100%'

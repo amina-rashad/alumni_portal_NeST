@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, BookOpen, Clock, Award, PlayCircle, CheckCircle2, ChevronDown, Search, Filter, BarChart3, Calendar, Star, ChevronRight, Loader2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { usersApi, coursesApi } from '../services/api';
+import { usersApi, coursesApi, getUser } from '../services/api';
 import { generateCourseCertificate } from '../utils/CertificateGenerator';
 import CertificateProgressButton from '../components/CertificateProgressButton';
 
@@ -178,7 +178,7 @@ const MyCourses: React.FC = () => {
             marginRight: '-50vw',
             padding: '5.5rem 0',
             marginBottom: '3.5rem',
-            background: 'url("https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=2000&auto=format&fit=crop")',
+            background: 'url("/placeholder.jpg")',
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             overflow: 'hidden',
@@ -543,9 +543,9 @@ const MyCourses: React.FC = () => {
                                 {course.certificateAvailable && (
                                   <CertificateProgressButton 
                                     onGenerate={() => {
-                                      if (!userProfile) return alert("Profile loading...");
+                                      const participantName = userProfile?.full_name || userProfile?.name || getUser()?.full_name || 'NeST Member';
                                       generateCourseCertificate(
-                                        userProfile.full_name || 'NeST Member',
+                                        participantName,
                                         course.title,
                                         course.completedDate || new Date().toLocaleDateString()
                                       );

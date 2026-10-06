@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React, { useState } from 'react';
 import { 
   ArrowLeft, BookOpen, Clock, Upload, Video, 
@@ -151,7 +152,7 @@ const AdminAddCourse: React.FC = () => {
     };
 
     try {
-      console.log('Submitting Course Data:', payload);
+
       // await courseService.createCourse(payload);
       
       // Simulate API delay

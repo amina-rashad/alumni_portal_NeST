@@ -55,6 +55,20 @@ const RecruiterJobs: React.FC = () => {
     }
   };
 
+  const handleToggleStatus = async (id: string, currentStatus: boolean) => {
+    const actionText = currentStatus ? 'close' : 'reopen';
+    if (window.confirm(`Are you sure you want to ${actionText} this job role?`)) {
+        try {
+            const response = await recruiterApi.updateJob(id, { is_active: !currentStatus });
+            if (response.success) {
+                setJobs(prev => prev.map(j => j.id === id ? { ...j, is_active: !currentStatus } : j));
+            }
+        } catch (error) {
+            console.error('Error toggling job status:', error);
+        }
+    }
+  };
+
   const filteredJobs = jobs.filter(job => {
     const titleMatch = job?.title?.toLowerCase().includes(searchTerm.toLowerCase());
     const locationMatch = job?.location?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -304,6 +318,23 @@ const RecruiterJobs: React.FC = () => {
                         <Users size={16} /> Manage Candidates
                       </button>
                     </Link>
+                    
+                    <button 
+                      onClick={() => handleToggleStatus(job.id, job.is_active)}
+                      style={{ 
+                          width: '100%',
+                          padding: '12px', borderRadius: '12px', 
+                          background: job.is_active ? 'rgba(239, 68, 68, 0.08)' : 'rgba(16, 185, 129, 0.08)',
+                          border: job.is_active ? '1px solid rgba(239, 68, 68, 0.2)' : '1px solid rgba(16, 185, 129, 0.2)',
+                          color: job.is_active ? '#ef4444' : '#10b981', 
+                          fontWeight: 800, cursor: 'pointer', 
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '13px',
+                          transition: 'all 0.2s'
+                      }}
+                    >
+                      {job.is_active ? <CheckCircle size={16} /> : <Clock size={16} />}
+                      {job.is_active ? 'Close Job Role' : 'Reopen Job Role'}
+                    </button>
                     
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '10px' }}>
                         <Link to={`/recruiter/jobs/edit/${job.id}`} style={{ textDecoration: 'none', flex: 1 }}>

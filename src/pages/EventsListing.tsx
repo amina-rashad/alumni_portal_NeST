@@ -41,7 +41,7 @@ const EventsListing: React.FC = () => {
   const fetchEvents = async () => {
     try {
       setLoading(true);
-      const res = await eventsApi.getAllEvents(currentPage, eventsPerPage);
+      const res = await eventsApi.getAllEvents(currentPage, eventsPerPage, true);
       const data = res.data as any;
       if (res.success && data && data.events) {
         setEvents(data.events);
@@ -157,7 +157,7 @@ const EventsListing: React.FC = () => {
             <motion.img 
               variants={{ hover: { scale: 1.05 } }}
               transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
-              src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80" 
+              src="/placeholder.jpg" 
               alt="Technical Summits" 
               style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
             />
@@ -197,7 +197,7 @@ const EventsListing: React.FC = () => {
               <motion.img 
                 variants={{ hover: { scale: 1.1 } }}
                 transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-                src="https://images.unsplash.com/photo-1515169067868-5387ec356754?auto=format&fit=crop&w=800&q=80" 
+                src="/elite_gatherings.png" 
                 alt="Networking Events" 
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
               />
@@ -230,7 +230,7 @@ const EventsListing: React.FC = () => {
               <motion.img 
                 variants={{ hover: { scale: 1.1 } }}
                 transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-                src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=800&q=80" 
+                src="/diverse_inclusion.png" 
                 alt="Cultural Meets" 
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
               />
@@ -294,7 +294,7 @@ const EventsListing: React.FC = () => {
               }}
             >
               <div style={{ width: '220px', flexShrink: 0, position: 'relative' }}>
-                 <img src={event.cover_image || "https://images.unsplash.com/photo-1540575861501-7cf05a4b125a?w=800&auto=format&fit=crop&q=60"} alt={event.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                 <img src={event.cover_image || "/placeholder.jpg"} alt={event.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
 
               <div style={{ padding: '2rem', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>

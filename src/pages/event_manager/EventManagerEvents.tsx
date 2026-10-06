@@ -101,6 +101,35 @@ const GlassSelect: React.FC<{
   );
 };
 
+const isEventOver = (dateStr: string, timeStr?: string) => {
+  if (!dateStr) return false;
+  try {
+    let timePart = timeStr || "00:00";
+    timePart = timePart.trim();
+    const match = timePart.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+    let hours = 0;
+    let minutes = 0;
+    if (match) {
+      hours = parseInt(match[1]);
+      minutes = parseInt(match[2]);
+      const ampm = match[3];
+      if (ampm) {
+        if (ampm.toUpperCase() === 'PM' && hours < 12) {
+          hours += 12;
+        } else if (ampm.toUpperCase() === 'AM' && hours === 12) {
+          hours = 0;
+        }
+      }
+    }
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const eventDate = new Date(year, month - 1, day, hours, minutes);
+    return eventDate < new Date();
+  } catch (e) {
+    const todayStr = new Date().toISOString().split('T')[0];
+    return dateStr < todayStr;
+  }
+};
+
 const EventManagerEvents: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -153,10 +182,16 @@ const EventManagerEvents: React.FC = () => {
       const res = await eventsApi.getAllEvents(page, itemsPerPage);
       if (res.success && res.data) {
         const rawEvents = (res.data as any).events || [];
-        const mappedEvents = rawEvents.map((e: any) => ({
-          ...e,
-          status: e.is_active ? 'Active' : 'Draft'
-        }));
+        const mappedEvents = rawEvents.map((e: any) => {
+          let status = 'Draft';
+          if (e.is_active) {
+            status = isEventOver(e.date, e.time) ? 'Past' : 'Active';
+          }
+          return {
+            ...e,
+            status
+          };
+        });
         
         setEvents(mappedEvents);
         setTotalPages((res.data as any).total_pages || 1);
@@ -233,7 +268,7 @@ const EventManagerEvents: React.FC = () => {
         category: formData.category,
         max_attendees: parseInt(formData.limit) || 0,
         mode: formData.mode,
-        cover_image: selectedImage || 'https://images.unsplash.com/photo-1540575861501-7cf05a4b125a?w=800&auto=format&fit=crop&q=60'
+        cover_image: selectedImage || '/placeholder.jpg'
       };
 
       let res;
@@ -459,7 +494,7 @@ const EventManagerEvents: React.FC = () => {
                       value={formData.date} 
                       onChange={handleInputChange} 
                       onClick={(e) => {
-                        try { (e.target as any).showPicker(); } catch(err) {}
+                        try { (e.target as any).showPicker(); } catch(err) { /* ignore */ }
                       }}
                       style={{ ...glossyInputStyle, paddingLeft: '40px', cursor: 'pointer' } as any} 
                     />
@@ -476,7 +511,7 @@ const EventManagerEvents: React.FC = () => {
                         value={formData.startTime} 
                         onChange={handleInputChange} 
                         onClick={(e) => {
-                          try { (e.target as any).showPicker(); } catch(err) {}
+                          try { (e.target as any).showPicker(); } catch(err) { /* ignore */ }
                         }}
                         style={{ ...glossyInputStyle, paddingLeft: '40px', cursor: 'pointer' } as any} 
                       />
@@ -671,7 +706,7 @@ const EventManagerEvents: React.FC = () => {
               }}
             >
               <div style={{ position: 'relative', height: '200px' }}>
-                <img src={event.cover_image || 'https://images.unsplash.com/photo-1540575861501-7cf05a4b125a?w=800&auto=format&fit=crop&q=60'} alt={event.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={event.cover_image || '/placeholder.jpg'} alt={event.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 <div style={{ position: 'absolute', top: '16px', right: '16px' }}>
                   <div style={{
                     padding: '8px 16px',
@@ -729,7 +764,7 @@ const EventManagerEvents: React.FC = () => {
                     <Edit2 size={16} /> Edit
                   </button>
                   <button 
-                    onClick={() => navigate(`${baseRoute}/attendees`)}
+                    onClick={() => navigate(`${baseRoute}/attendees?eventId=${event.id}&eventName=${encodeURIComponent(event.title)}`)}
                     style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#fff', color: '#1e293b', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                   >
                     <Users size={16} /> Attendees

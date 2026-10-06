@@ -228,6 +228,13 @@ const SuperAdminDashboard: React.FC = () => {
            
            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <AdminActionBtn 
+                onClick={() => navigate('/admin/activity')}
+                icon={<Activity size={20} />} 
+                label="Career Timelines" 
+                desc="Professional breakthrough chronicles" 
+                color="#DC2626" 
+              />
+              <AdminActionBtn 
                 onClick={() => navigate('/admin/add-manager')}
                 icon={<UserPlus size={20} />} 
                 label="Initialize Staff" 

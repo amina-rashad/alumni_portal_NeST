@@ -2,13 +2,18 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  UserPlus, Mail, Shield, ChevronDown, Lock, Phone, ArrowLeft, Banknote, Calendar, DollarSign
+  UserPlus, Mail, Shield, Phone, ArrowLeft, Banknote
 } from 'lucide-react';
-import { adminApi } from '../../services/api';
+import { adminApi, getUser } from '../../services/api';
 import nestIcon from '../../assets/nest_icon.png';
 
 const AdminAddUser: React.FC = () => {
   const navigate = useNavigate();
+  
+  // Check if the current logged-in user is a Super Admin
+  const currentUser = getUser();
+  const isSuperAdmin = currentUser && (currentUser.role === 'super_admin' || currentUser.role === 'superadmin');
+
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -17,9 +22,7 @@ const AdminAddUser: React.FC = () => {
     salary: '',
     joining_date: '',
     role: 'Alumni',
-    status: 'Active / Verified',
-    password: '',
-    require_password_change: true
+    status: 'Active / Verified'
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
@@ -29,13 +32,17 @@ const AdminAddUser: React.FC = () => {
     e.preventDefault();
     setIsSubmitting(true);
 
+    // Auto-generate a secure random password to satisfy backend validation
+    // since the portal uses passwordless OTP login.
+    const randomPassword = Math.random().toString(36).slice(-8) + 'A1!';
+
     const apiPayload = {
       full_name: `${formData.first_name} ${formData.last_name}`.trim(),
       email: formData.email,
       phone: formData.phone,
       role: formData.role.toLowerCase() === 'system admin' ? 'admin' : 'user',
       user_type: formData.role,
-      password: formData.password
+      password: randomPassword
     };
 
     const res = await adminApi.createUser(apiPayload);
@@ -210,8 +217,9 @@ const AdminAddUser: React.FC = () => {
                 <label style={{ fontSize: '13px', fontWeight: 700, color: '#475569' }}>Assign Role</label>
                 <select value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})} style={{ padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '14px', color: '#1e293b', background: '#fff', cursor: 'pointer' }}>
                   <option value="Alumni">Alumni</option>
-                  <option value="System Admin">System Admin</option>
+                  {isSuperAdmin && <option value="System Admin">System Admin</option>}
                   <option value="Intern">Intern</option>
+                  <option value="IV Student">IV Student</option>
                   <option value="Staff">Staff</option>
                   <option value="Trainee">Trainee</option>
                 </select>
@@ -224,36 +232,6 @@ const AdminAddUser: React.FC = () => {
                   <option value="Pending" style={{ color: '#f59e0b' }}>Pending</option>
                   <option value="Inactive" style={{ color: '#ef4444' }}>Inactive</option>
                 </select>
-              </div>
-
-            </div>
-          </div >
-
-  {/* Section: Security Settings */ }
-  < div style = {{ border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden' }}>
-            <div style={{ background: '#f8fafc', padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '8px', color: '#1e293b', fontWeight: 700, fontSize: '15px' }}>
-              <Lock size={18} color="#475569" /> Security Settings
-            </div>
-            <div style={{ padding: '24px', display: 'grid', gridTemplateColumns: '1fr', gap: '24px' }}>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ fontSize: '13px', fontWeight: 700, color: '#475569' }}>Temporary Password</label>
-                <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <input required type="password" placeholder="Create a temporary password" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} style={{ padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '14px', color: '#1e293b', flex: 1, minWidth: '280px', maxWidth: '400px', background: '#fff' }} />
-                  
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#475569' }}>
-                    <input 
-                      type="checkbox" 
-                      checked={formData.require_password_change} 
-                      onChange={e => setFormData({...formData, require_password_change: e.target.checked})}
-                      style={{ 
-                        width: '18px', height: '18px', accentColor: nestNavy, cursor: 'pointer',
-                        borderRadius: '4px', border: '1px solid #cbd5e1'
-                      }} 
-                    />
-                    Require password change on first login
-                  </label>
-                </div>
               </div>
 
             </div>

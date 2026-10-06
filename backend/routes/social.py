@@ -41,7 +41,7 @@ def _serialize_post(post: dict, db=None, current_user_id=None) -> dict:
                 result["author_type"] = author.get("user_type", "")
                 result["author_picture"] = author.get("profile_picture")
                 result["author_status"] = author.get("status", "none")
-        except:
+        except Exception:
             pass
 
     # Include comments (latest 5)
@@ -169,7 +169,7 @@ def get_post(post_id):
 
     try:
         post = db["posts"].find_one({"_id": ObjectId(post_id)})
-    except:
+    except Exception:
         return jsonify({"success": False, "message": "Invalid post ID."}), 400
 
     if not post:
@@ -193,7 +193,7 @@ def toggle_like(post_id):
     try:
         oid = ObjectId(post_id)
         uid = ObjectId(user_id)
-    except:
+    except Exception:
         return jsonify({"success": False, "message": "Invalid ID."}), 400
 
     post = db["posts"].find_one({"_id": oid})
@@ -205,6 +205,25 @@ def toggle_like(post_id):
         return jsonify({"success": True, "message": "Post unliked.", "data": {"liked": False}}), 200
     else:
         db["posts"].update_one({"_id": oid}, {"$addToSet": {"likes": uid}})
+        
+        # Notify post author if they aren't the liker
+        author_id = post.get("author_id")
+        if author_id and str(author_id) != user_id:
+            try:
+                liker = db["users"].find_one({"_id": uid})
+                liker_name = liker.get("full_name", "Someone") if liker else "Someone"
+                post_preview = post.get("content", "")[:50]
+                create_notification(
+                    db,
+                    user_id=author_id,
+                    type_str="social",
+                    title="Post Liked",
+                    message=f"{liker_name} liked your post: '{post_preview}...'",
+                    link="/dashboard/activity"
+                )
+            except Exception as notif_err:
+                print(f"Error creating like notification: {notif_err}")
+
         return jsonify({"success": True, "message": "Post liked!", "data": {"liked": True}}), 200
 
 
@@ -239,6 +258,23 @@ def add_comment(post_id):
         {"$push": {"comments": comment}}
     )
 
+    # Notify post author if they aren't the commenter
+    try:
+        post = db["posts"].find_one({"_id": ObjectId(post_id)})
+        if post:
+            author_id = post.get("author_id")
+            if author_id and str(author_id) != user_id:
+                create_notification(
+                    db,
+                    user_id=author_id,
+                    type_str="social",
+                    title="New Comment",
+                    message=f"{author_name} commented on your post: '{comment['text'][:50]}...'",
+                    link="/dashboard/activity"
+                )
+    except Exception as notif_err:
+        print(f"Error creating comment notification: {notif_err}")
+
     return jsonify({
         "success": True,
         "message": "Comment added!",
@@ -256,7 +292,7 @@ def delete_post(post_id):
 
     try:
         post = db["posts"].find_one({"_id": ObjectId(post_id)})
-    except:
+    except Exception:
         return jsonify({"success": False, "message": "Invalid post ID."}), 400
 
     if not post:
@@ -270,4 +306,45 @@ def delete_post(post_id):
 
     db["posts"].delete_one({"_id": ObjectId(post_id)})
 
-    return jsonify({"success": True, "message": "Post deleted."}), 200
+# ── Update Post ──
+
+@social_bp.route("/posts/<post_id>", methods=["PATCH"])
+@jwt_required()
+def update_post(post_id):
+    """Update a post (only by author)."""
+    user_id = get_jwt_identity()
+    db = get_db()
+    data = request.get_json(silent=True)
+
+    if not data or not data.get("content", "").strip():
+        return jsonify({"success": False, "message": "Post content is required."}), 400
+
+    try:
+        post = db["posts"].find_one({"_id": ObjectId(post_id)})
+    except Exception:
+        return jsonify({"success": False, "message": "Invalid post ID."}), 400
+
+    if not post:
+        return jsonify({"success": False, "message": "Post not found."}), 404
+
+    # Only author can edit
+    if str(post["author_id"]) != user_id:
+        return jsonify({"success": False, "message": "Access denied."}), 403
+
+    update_data = {
+        "content": data["content"].strip(),
+        "updated_at": datetime.now(timezone.utc)
+    }
+
+    # Optionally update image if provided
+    if "image_url" in data:
+        update_data["image_url"] = data.get("image_url")
+    if "video_url" in data:
+        update_data["video_url"] = data.get("video_url")
+
+    db["posts"].update_one(
+        {"_id": ObjectId(post_id)},
+        {"$set": update_data}
+    )
+
+    return jsonify({"success": True, "message": "Post updated successfully."}), 200

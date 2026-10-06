@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   TrendingUp, Award, Target, 
@@ -7,8 +7,9 @@ import {
   ChevronRight, Sparkles, History, Info, BookOpen, Calendar, Trophy, Medal, Shield
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { usersApi } from '../services/api';
 
-const SKILLS_DATA = [
+const DEFAULT_SKILLS_DATA = [
   { name: 'React', level: 92, category: 'Frontend' },
   { name: 'Go', level: 78, category: 'Backend' },
   { name: 'System Design', level: 85, category: 'Architecture' },
@@ -17,7 +18,7 @@ const SKILLS_DATA = [
   { name: 'Cybernetics', level: 58, category: 'Innovation' },
 ];
 
-const USER_POINTS = {
+const DEFAULT_USER_POINTS = {
   total: 2450,
   level: "Gold",
   nextLevel: "Platinum",
@@ -40,30 +41,174 @@ const USER_POINTS = {
 
 const PerformanceAnalysis: React.FC = () => {
   const [hoveredWay, setHoveredWay] = useState<number | null>(null);
+  const [skillsData, setSkillsData] = useState(DEFAULT_SKILLS_DATA);
+  const [userPoints, setUserPoints] = useState(DEFAULT_USER_POINTS);
+  const [stats, setStats] = useState({
+    xp: '15.4K',
+    assessments: '12',
+    rank: 'Top 5%',
+    network: '450+'
+  });
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const res = await usersApi.getProfile();
+        const data = res.data as any;
+        if (res.success && data && data.user) {
+          const u = data.user;
+          
+          const expCount = (u.experience || []).length;
+          const eduCount = (u.education || []).length;
+          const certCount = (u.certificates || []).length;
+          const calculatedXp = (expCount * 5000 + eduCount * 3000 + certCount * 1000 + 2450) / 1000;
+          
+          setStats({
+            xp: calculatedXp > 0 ? `${calculatedXp.toFixed(1)}K` : '0',
+            assessments: certCount.toString(),
+            rank: calculatedXp > 15 ? 'Top 1%' : calculatedXp > 5 ? 'Top 5%' : 'Top 25%',
+            network: u.batch ? `${parseInt(u.batch.toString().slice(-2)) * 10}+` : '150+'
+          });
+
+          // Sync points based on XP
+          const totalPoints = calculatedXp * 1000;
+          let level = "Bronze";
+          let nextLevel = "Silver";
+          let pointsToNext = 5000 - totalPoints;
+          let progressToNext = (totalPoints / 5000) * 100;
+          
+          if (totalPoints > 15000) {
+            level = "Platinum";
+            nextLevel = "Diamond";
+            progressToNext = ((totalPoints - 15000) / 10000) * 100;
+            pointsToNext = 25000 - totalPoints;
+          } else if (totalPoints > 5000) {
+            level = "Gold";
+            nextLevel = "Platinum";
+            progressToNext = ((totalPoints - 5000) / 10000) * 100;
+            pointsToNext = 15000 - totalPoints;
+          }
+
+          setUserPoints(prev => ({
+            ...prev,
+            total: totalPoints,
+            level,
+            nextLevel,
+            progressToNext: Math.min(100, Math.round(progressToNext)),
+            pointsToNext: Math.max(0, pointsToNext)
+          }));
+
+          if (u.skills && u.skills.length > 0) {
+            const mappedSkills = u.skills.map((skill: string, index: number) => ({
+               name: skill,
+               level: Math.max(40, 95 - index * 5),
+               category: 'Technical'
+            }));
+            setSkillsData(mappedSkills.slice(0, 8));
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load profile for analytics", err);
+      }
+    };
+    loadData();
+  }, []);
 
   return (
     <div style={{ maxWidth: '1400px', margin: '0 auto', paddingBottom: '5rem', fontFamily: '"Inter", "Montserrat", sans-serif' }}>
       
-      {/* ── Page Header ── */}
-      <div style={{ marginBottom: '3rem' }}>
+      {/* ── Page Header (Minimal Luxury) ── */}
+      <section style={{ 
+        marginBottom: '4rem', 
+        padding: '3rem 0',
+        position: 'relative',
+        overflow: 'hidden',
+        borderBottom: '1px solid rgba(15, 23, 42, 0.04)'
+      }}>
+        {/* Subtle Luxury Radial Glow */}
+        <div style={{ 
+          position: 'absolute', 
+          top: '-50%', 
+          left: '0', 
+          width: '600px', 
+          height: '600px', 
+          background: 'radial-gradient(circle, rgba(200,16,46,0.03) 0%, transparent 70%)', 
+          zIndex: 0,
+          filter: 'blur(80px)'
+        }} />
+
         <motion.div 
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: 'easeOut' }}
+          style={{ position: 'relative', zIndex: 1 }}
         >
-          <h1 style={{ fontSize: '2.8rem', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', marginBottom: '0.5rem' }}>
-            Performance <span style={{ color: '#c8102e' }}>Analysis</span>
+          <h1 style={{ 
+            fontSize: '3.8rem', 
+            fontWeight: 900, 
+            color: '#0F172A', 
+            letterSpacing: '-0.04em', 
+            marginBottom: '1rem',
+            lineHeight: 1.1 
+          }}>
+            Performance <span style={{ 
+              color: '#c8102e', 
+              position: 'relative',
+              display: 'inline-block'
+            }}>
+              Analysis
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: '100%' }}
+                transition={{ delay: 1, duration: 1, ease: 'easeInOut' }}
+                style={{ 
+                  position: 'absolute', 
+                  bottom: '12px', 
+                  left: 0, 
+                  height: '4px', 
+                  background: 'rgba(200, 16, 46, 0.1)', 
+                  zIndex: -1,
+                  borderRadius: '2px'
+                }}
+              />
+            </span>
           </h1>
-          <p style={{ color: '#64748B', fontSize: '1.1rem' }}>Comprehensive overview of your technical growth and community contributions.</p>
+          
+          <p style={{ 
+            color: '#64748B', 
+            fontSize: '1.15rem', 
+            maxWidth: '600px', 
+            lineHeight: 1.6,
+            fontWeight: 500,
+            letterSpacing: '-0.01em'
+          }}>
+            Comprehensive overview of your technical growth and community contributions within the NeST Digital ecosystem.
+          </p>
+
+          {/* Minimal Accent Line */}
+          <motion.div 
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ delay: 0.5, duration: 1.2, ease: 'circOut' }}
+            style={{ 
+              width: '80px', 
+              height: '3px', 
+              background: '#c8102e', 
+              marginTop: '2.5rem',
+              borderRadius: '2px',
+              transformOrigin: 'left'
+            }}
+          />
         </motion.div>
-      </div>
+      </section>
 
       {/* ── Top Level Stats ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
         {[
-          { label: 'Total Career XP', value: '15.4K', icon: Zap, color: '#F59E0B' },
-          { label: 'Assessments Passed', value: '12', icon: Target, color: '#10B981' },
-          { label: 'Rank Percentile', value: 'Top 5%', icon: Award, color: '#6366F1' },
-          { label: 'Network Reach', value: '450+', icon: Users, color: '#3B82F6' },
+          { label: 'Total Career XP', value: stats.xp, icon: Zap, color: '#F59E0B' },
+          { label: 'Assessments Passed', value: stats.assessments, icon: Target, color: '#10B981' },
+          { label: 'Rank Percentile', value: stats.rank, icon: Award, color: '#6366F1' },
+          { label: 'Network Reach', value: stats.network, icon: Users, color: '#3B82F6' },
         ].map((kpi, i) => (
           <motion.div
             key={i}
@@ -116,7 +261,7 @@ const PerformanceAnalysis: React.FC = () => {
                   animate={{ scale: 1, opacity: 1 }}
                   style={{ fontSize: '4.5rem', fontWeight: 900, margin: 0, letterSpacing: '-0.02em' }}
                 >
-                  {USER_POINTS.total.toLocaleString()}
+                  {userPoints.total.toLocaleString()}
                 </motion.h2>
                 <span style={{ fontSize: '1.25rem', fontWeight: 700, opacity: 0.6 }}>POINTS</span>
               </div>
@@ -125,21 +270,21 @@ const PerformanceAnalysis: React.FC = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <Award size={18} color="#facc15" />
-                    <span style={{ fontWeight: 800, fontSize: '1rem' }}>{USER_POINTS.level} Rank</span>
+                    <span style={{ fontWeight: 800, fontSize: '1rem' }}>{userPoints.level} Rank</span>
                   </div>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 600, opacity: 0.6 }}>{USER_POINTS.progressToNext}% to {USER_POINTS.nextLevel}</span>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 600, opacity: 0.6 }}>{userPoints.progressToNext}% to {userPoints.nextLevel}</span>
                 </div>
                 
                 <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', marginBottom: '0.5rem' }}>
                   <motion.div 
                     initial={{ width: 0 }}
-                    animate={{ width: `${USER_POINTS.progressToNext}%` }}
+                    animate={{ width: `${userPoints.progressToNext}%` }}
                     transition={{ duration: 1.5, ease: 'easeOut' }}
-                    style={{ height: '100%', width: `${USER_POINTS.progressToNext}%`, background: '#c8102e', borderRadius: '4px', boxShadow: '0 0 10px rgba(200, 16, 46, 0.5)' }}
+                    style={{ height: '100%', width: `${userPoints.progressToNext}%`, background: '#c8102e', borderRadius: '4px', boxShadow: '0 0 10px rgba(200, 16, 46, 0.5)' }}
                   ></motion.div>
                 </div>
                 <p style={{ margin: 0, fontSize: '0.75rem', opacity: 0.6, fontWeight: 500 }}>
-                  Earn {USER_POINTS.pointsToNext.toLocaleString()} more points to reach {USER_POINTS.nextLevel} status.
+                  Earn {userPoints.pointsToNext.toLocaleString()} more points to reach {userPoints.nextLevel} status.
                 </p>
               </div>
             </div>
@@ -155,7 +300,7 @@ const PerformanceAnalysis: React.FC = () => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
-              {SKILLS_DATA.map((skill, index) => (
+              {skillsData.map((skill, index) => (
                 <div key={index}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
                     <span style={{ fontWeight: 700, color: '#475569', fontSize: '1rem' }}>
@@ -225,7 +370,7 @@ const PerformanceAnalysis: React.FC = () => {
               <Sparkles size={22} color="#c8102e" /> Community Growth
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {USER_POINTS.waysToEarn.map((way, idx) => (
+              {userPoints.waysToEarn.map((way, idx) => (
                 <motion.div
                   key={idx}
                   onMouseEnter={() => setHoveredWay(idx)}
@@ -267,7 +412,7 @@ const PerformanceAnalysis: React.FC = () => {
 
           {/* Level Benefits Snippet */}
           <div className="luxury-card" style={{ padding: '1.75rem', border: '1px dashed #E2E8F0', background: '#F8FAFC' }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0d2046', marginBottom: '1.25rem' }}>{USER_POINTS.level} Rank Benefits</h3>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0d2046', marginBottom: '1.25rem' }}>{userPoints.level} Rank Benefits</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
               {[
                 { title: 'Meetups', icon: <Users size={14} /> },
@@ -315,7 +460,7 @@ const PerformanceAnalysis: React.FC = () => {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', background: '#f1f5f9', borderRadius: '1.5rem', overflow: 'hidden', border: '1px solid #f1f5f9' }}>
-            {USER_POINTS.recentActivities.map((activity, idx) => (
+            {userPoints.recentActivities.map((activity, idx) => (
               <motion.div
                 key={activity.id}
                 initial={{ opacity: 0 }}

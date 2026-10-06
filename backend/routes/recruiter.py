@@ -25,7 +25,7 @@ def recruiter_required(fn):
         db = get_db()
         try:
             user = db["users"].find_one({"_id": ObjectId(user_id)})
-        except:
+        except Exception:
             print(f"DEBUG: Invalid user_id format: {user_id}")
             return jsonify({"success": False, "message": "Invalid user identification."}), 401
             
@@ -73,6 +73,34 @@ def get_stats():
         "job_id": {"$in": my_job_ids},
         "status": {"$regex": "pending", "$options": "i"}
     })
+    reviewed = db["applications"].count_documents({
+        "job_id": {"$in": my_job_ids},
+        "status": {"$in": ["Shortlisted", "Interview Scheduled", "Offered", "Rejected"]}
+    })
+
+    # Calculate weekly trends (Mon-Sun)
+    days_count = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0}
+    apps = db["applications"].find({"job_id": {"$in": my_job_ids}})
+    for app in apps:
+        applied_at = app.get("applied_at")
+        if applied_at:
+            if isinstance(applied_at, str):
+                try:
+                    applied_at = datetime.fromisoformat(applied_at.replace("Z", "+00:00"))
+                except Exception:
+                    continue
+            try:
+                weekday = applied_at.isoweekday()
+                days_count[weekday] += 1
+            except Exception:
+                continue
+                
+    weekly_trends = [days_count[i] for i in range(1, 8)]
+    
+    # Identify day with maximum candidate engagement
+    weekdays_names = ["Mondays", "Tuesdays", "Wednesdays", "Thursdays", "Fridays", "Saturdays", "Sundays"]
+    max_day_idx = max(days_count, key=days_count.get) if any(days_count.values()) else 2  # Default to Tuesdays (index 2)
+    best_day = weekdays_names[max_day_idx - 1]
 
     return jsonify({
         "success": True,
@@ -82,7 +110,10 @@ def get_stats():
                 "total_applications": total_applications,
                 "shortlisted": shortlisted,
                 "hired": hired,
-                "pending": pending
+                "pending": pending,
+                "reviewed": reviewed,
+                "weekly_trends": weekly_trends,
+                "best_day": best_day
             }
         }
     }), 200
@@ -193,7 +224,7 @@ def manage_job(job_id):
     
     try:
         oid = ObjectId(job_id)
-    except:
+    except Exception:
         return jsonify({"success": False, "message": "Invalid job ID."}), 400
         
     job = db["jobs"].find_one({"_id": oid})
@@ -228,7 +259,7 @@ def delete_job(job_id):
     db = get_db()
     try:
         oid = ObjectId(job_id)
-    except:
+    except Exception:
         return jsonify({"success": False, "message": "Invalid job ID."}), 400
         
     # Check ownership or admin
@@ -279,7 +310,7 @@ def get_job_applications():
             job = db["jobs"].find_one({"_id": ObjectId(a["job_id"])})
             if job:
                 app_data["job_title"] = job.get("title", "")
-        except:
+        except Exception:
             pass
         
         # Populate user info
@@ -294,7 +325,7 @@ def get_job_applications():
                 app_data["resume_url"] = a.get("resume_url") or user.get("resume_url", "")
                 app_data["resume_data"] = user.get("resume_data")
                 app_data["applicant_status"] = user.get("status", "none")
-        except:
+        except Exception:
             pass
         
         apps_list.append(app_data)
@@ -428,6 +459,7 @@ def search_talents():
     skill_query = request.args.get("skill")
     course_query = request.args.get("course")
     spec_query = request.args.get("specialization")
+    job_id_query = request.args.get("job_id")
     
     query = {"role": {"$nin": ["admin", "super_admin", "recruiter", "job_recruiter"]}}
     
@@ -447,6 +479,20 @@ def search_talents():
             enrollments = db["course_enrollments"].find({"course_id": course["_id"]})
             user_ids = [e["user_id"] for e in enrollments]
             query["_id"] = {"$in": user_ids}
+
+    if job_id_query:
+        try:
+            # Find all user_ids who applied for this job role
+            apps = db["applications"].find({"job_id": ObjectId(job_id_query)})
+            user_ids = [a["user_id"] for a in apps]
+            # If multiple filters are active (e.g. course and job), intersect user_ids
+            if "_id" in query and isinstance(query["_id"], dict) and "$in" in query["_id"]:
+                existing_in = set(query["_id"]["$in"])
+                query["_id"] = {"$in": list(existing_in.intersection(user_ids))}
+            else:
+                query["_id"] = {"$in": user_ids}
+        except Exception:
+            pass
 
     talents_cursor = db["users"].find(query).limit(100)
     talents_list = []

@@ -7,11 +7,10 @@ import { Toaster } from 'react-hot-toast';
 // Splash & Styles
 import './App.css';
 import nestMainLogo from './assets/nest_logo.png';
-import heroBg from './assets/hero-bg.png';
+
 
 // Main / Public Pages
 import Home from './pages/Home';
-import Login from './pages/Login';
 import Register from './pages/Register';
 import PlatformCapabilities from './pages/PlatformCapabilities';
 import UserTypeOverview from './pages/UserTypeOverview';
@@ -19,10 +18,7 @@ import UserTypeOverview from './pages/UserTypeOverview';
 // Layout
 import MainLayout from './pages/MainLayout';
 
-// Auth Pages
-import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
-import EmailVerification from './pages/EmailVerification';
+
 
 // Dashboard Pages
 import Dashboard from './pages/Dashboard';
@@ -33,22 +29,17 @@ import Notifications from './pages/Notifications';
 import ViewProfile from './pages/ViewProfile';
 import EditProfile from './pages/EditProfile';
 import PublicProfile from './pages/PublicProfile';
-import ResumeUpload from './pages/ResumeUpload';
-import ProfileCompletion from './pages/ProfileCompletion';
+
 
 // Networking Pages
 import UserDirectory from './pages/UserDirectory';
-import SuggestedConnections from './pages/SuggestedConnections';
-import SearchResults from './pages/SearchResults';
-import ConnectionRequests from './pages/ConnectionRequests';
-import FollowersFollowing from './pages/FollowersFollowing';
 
 // Job Pages
 import JobListings from './pages/JobListings';
 import JobDetails from './pages/JobDetails';
 import ApplyJob from './pages/ApplyJob';
 import MyApplications from './pages/MyApplications';
-import SavedJobs from './pages/SavedJobs';
+
 import RecommendedJobs from './pages/RecommendedJobs';
 
 // Course Pages
@@ -56,7 +47,7 @@ import CourseListing from './pages/CourseListing';
 import CourseDetails from './pages/CourseDetails';
 import CoursePlayer from './pages/CoursePlayer';
 import MyCourses from './pages/MyCourses';
-import CourseCompletion from './pages/CourseCompletion';
+
 import IVCertificates from './pages/IVCertificates';
 
 // Assessment Pages
@@ -65,27 +56,23 @@ import QuizInstructions from './pages/QuizInstructions';
 import QuizResult from './pages/QuizResult';
 import PerformanceAnalysis from './pages/PerformanceAnalysis';
 import AssessmentCenter from './pages/AssessmentCenter';
-import Badges from './pages/Badges';
+
 
 
 // Events Pages
 import EventsListing from './pages/EventsListing';
-import EventDetails from './pages/EventDetails';
-import EventRegistration from './pages/EventRegistration';
+
 import MyEvents from './pages/MyEvents';
 
 // Social Pages
 import CreatePost from './pages/CreatePost';
 import PostDetails from './pages/PostDetails';
 
-// Additional Notification Settings
-import EmailPreferences from './pages/EmailPreferences';
+
 
 // Settings Pages
 import AccountSettings from './pages/AccountSettings';
-import PrivacySettings from './pages/PrivacySettings';
-import NotificationSettings from './pages/NotificationSettings';
-import ChangePassword from './pages/ChangePassword';
+
 
 // Admin Pages
 import AdminLayout from './pages/admin/AdminLayout';
@@ -106,10 +93,12 @@ import AdminCertification from './pages/admin/AdminCertification';
 import SuperAdminDashboard from './pages/admin/SuperAdminDashboard';
 import AdminRoleManager from './pages/admin/AdminRoleManager';
 import AdminAddManager from './pages/admin/AdminAddManager';
+import AdminViewManagers from './pages/admin/AdminViewManagers';
 import IssueIVCertificates from './pages/admin/IssueIVCertificates';
 import AdminBulkAddUsers from './pages/admin/AdminBulkAddUsers';
 import AdminUserView from './pages/admin/AdminUserView';
 import AdminBulkUploadHistory from './pages/admin/AdminBulkUploadHistory';
+import AdminPosts from './pages/admin/AdminPosts';
 
 // Event Manager Pages
 import EventManagerLayout from './pages/event_manager/EventManagerLayout';
@@ -131,7 +120,7 @@ import RecruiterEditJob from './pages/recruiter/RecruiterEditJob';
 import RecruiterApplications from './pages/recruiter/RecruiterApplications';
 import RecruiterReports from './pages/recruiter/RecruiterReports';
 import RecruiterSettings from './pages/recruiter/RecruiterSettings';
-import RecruiterPost from './pages/recruiter/RecruiterPost';
+
 import RecruiterPosts from './pages/recruiter/RecruiterPosts';
 
 import RecruiterHelp from './pages/recruiter/RecruiterHelp';
@@ -405,12 +394,10 @@ const AnimatedRoutes: React.FC = () => {
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<PageTransition><Home /></PageTransition>} />
-        <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
+        <Route path="/login" element={<Navigate to="/?login=true" replace />} />
         <Route path="/register" element={<PageTransition><Register /></PageTransition>} />
 
-        <Route path="/forgot-password" element={<PageTransition><ForgotPassword /></PageTransition>} />
-        <Route path="/reset-password" element={<PageTransition><ResetPassword /></PageTransition>} />
-        <Route path="/email-verification" element={<PageTransition><EmailVerification /></PageTransition>} />
+
         <Route path="/platform-capabilities/:id" element={<PageTransition><PlatformCapabilities /></PageTransition>} />
         <Route path="/user-type-overview/:id" element={<PageTransition><UserTypeOverview /></PageTransition>} />
 
@@ -423,44 +410,37 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="/profile" element={<PageTransition><ViewProfile /></PageTransition>} />
           <Route path="/profile/edit" element={<PageTransition><EditProfile /></PageTransition>} />
           <Route path="/profile/:id" element={<PageTransition><PublicProfile /></PageTransition>} />
-          <Route path="/profile/resume" element={<PageTransition><ResumeUpload /></PageTransition>} />
-          <Route path="/profile/completion" element={<PageTransition><ProfileCompletion /></PageTransition>} />
+
           <Route path="/networking" element={<PageTransition><UserDirectory /></PageTransition>} />
-          <Route path="/networking/suggested" element={<PageTransition><SuggestedConnections /></PageTransition>} />
-          <Route path="/networking/search" element={<PageTransition><SearchResults /></PageTransition>} />
-          <Route path="/networking/requests" element={<PageTransition><ConnectionRequests /></PageTransition>} />
-          <Route path="/networking/connections" element={<PageTransition><FollowersFollowing /></PageTransition>} />
+
           <Route path="/jobs" element={<PageTransition><JobListings /></PageTransition>} />
           <Route path="/jobs/:id" element={<PageTransition><JobDetails /></PageTransition>} />
           <Route path="/jobs/:id/apply" element={<PageTransition><ApplyJob /></PageTransition>} />
           <Route path="/jobs/applications" element={<PageTransition><MyApplications /></PageTransition>} />
-          <Route path="/jobs/saved" element={<PageTransition><SavedJobs /></PageTransition>} />
+
           <Route path="/jobs/recommended" element={<PageTransition><RecommendedJobs /></PageTransition>} />
           <Route path="/courses" element={<PageTransition><CourseListing /></PageTransition>} />
           <Route path="/courses/:id" element={<PageTransition><CourseDetails /></PageTransition>} />
           <Route path="/courses/my-courses" element={<PageTransition><MyCourses /></PageTransition>} />
           <Route path="/iv-certificates" element={<PageTransition><IVCertificates /></PageTransition>} />
           <Route path="/assessment/:id" element={<PageTransition><AssessmentCenter /></PageTransition>} />
-          <Route path="/courses/:id/completion" element={<PageTransition><CourseCompletion /></PageTransition>} />
+
           <Route path="/assessments/quiz" element={<PageTransition><Quiz /></PageTransition>} />
           <Route path="/assessments/quiz/instructions" element={<PageTransition><QuizInstructions /></PageTransition>} />
           <Route path="/assessments/quiz/result" element={<PageTransition><QuizResult /></PageTransition>} />
           <Route path="/assessments/analytics" element={<PageTransition><PerformanceAnalysis /></PageTransition>} />
-          <Route path="/gamification/badges" element={<PageTransition><Badges /></PageTransition>} />
+
           <Route path="/events" element={<PageTransition><EventsListing /></PageTransition>} />
-          <Route path="/events/:id" element={<PageTransition><EventDetails /></PageTransition>} />
-          <Route path="/events/:id/register" element={<PageTransition><EventRegistration /></PageTransition>} />
+
           <Route path="/events/my-events" element={<PageTransition><MyEvents /></PageTransition>} />
           <Route path="/social/feed" element={<Navigate to="/dashboard/activity" replace />} />
           <Route path="/feed" element={<Navigate to="/dashboard/activity" replace />} />
           <Route path="/social/post/create" element={<PageTransition><CreatePost /></PageTransition>} />
           <Route path="/social/post/:id" element={<PageTransition><PostDetails /></PageTransition>} />
           <Route path="/notifications" element={<PageTransition><Notifications /></PageTransition>} />
-          <Route path="/notifications/preferences" element={<PageTransition><EmailPreferences /></PageTransition>} />
+
           <Route path="/settings" element={<PageTransition><AccountSettings /></PageTransition>} />
-          <Route path="/settings/privacy" element={<PageTransition><PrivacySettings /></PageTransition>} />
-          <Route path="/settings/notifications" element={<PageTransition><NotificationSettings /></PageTransition>} />
-          <Route path="/settings/password" element={<PageTransition><ChangePassword /></PageTransition>} />
+
         </Route>
 
         {/* Admin Routes with Transitions */}
@@ -470,6 +450,7 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="super-dashboard" element={<PageTransition><SuperAdminDashboard /></PageTransition>} />
           <Route path="roles" element={<PageTransition><AdminRoleManager /></PageTransition>} />
           <Route path="add-manager" element={<PageTransition><AdminAddManager /></PageTransition>} />
+          <Route path="view-managers" element={<PageTransition><AdminViewManagers /></PageTransition>} />
           <Route path="users" element={<PageTransition><AdminUsers /></PageTransition>} />
           <Route path="users/add" element={<PageTransition><AdminAddUser /></PageTransition>} />
           <Route path="users/view/:id" element={<PageTransition><AdminUserView /></PageTransition>} />
@@ -486,6 +467,7 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="reports" element={<PageTransition><Reports /></PageTransition>} />
           <Route path="events" element={<PageTransition><EventManagerEvents /></PageTransition>} />
           <Route path="activity" element={<PageTransition><ActivityFeed /></PageTransition>} />
+          <Route path="posts" element={<PageTransition><AdminPosts /></PageTransition>} />
           <Route path="settings" element={<PageTransition><Settings /></PageTransition>} />
         </Route>
 
@@ -540,6 +522,7 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="recommendations" element={<CourseManagerRecommendations />} />
           <Route path="performance" element={<CourseManagerPerformance />} />
           <Route path="insights" element={<CourseManagerInsights />} />
+          <Route path="community-feed" element={<PageTransition><ActivityFeed /></PageTransition>} />
         </Route>
 
         {/* Fallback Catch-all Route */}

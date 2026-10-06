@@ -3,10 +3,10 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from flask import current_app
 
-def send_email(to_email, subject, body):
+def send_email(to_email, subject, body, html_body=None):
     """
     Sends an email using the configured SMTP settings.
-    If credentials are not provided, it logs the email to the console.
+    Raises ValueError if SMTP credentials are not configured.
     """
     # Get config from current_app
     server = current_app.config.get("MAIL_SERVER")
@@ -16,23 +16,19 @@ def send_email(to_email, subject, body):
     sender = current_app.config.get("MAIL_DEFAULT_SENDER")
     use_tls = current_app.config.get("MAIL_USE_TLS")
 
-    # Fallback to logging if no credentials
+    # Raise an error if no credentials
     if not username or not password:
-        print("\n" + "="*50)
-        print("MOCK EMAIL SENT")
-        print(f"To: {to_email}")
-        print(f"Subject: {subject}")
-        print(f"Body: {body}")
-        print("="*50 + "\n")
-        return True
+        raise ValueError("SMTP Configuration Error: Valid credentials must be provided to send emails.")
 
     try:
         # Create message
-        msg = MIMEMultipart()
+        msg = MIMEMultipart('alternative')
         msg['From'] = sender
         msg['To'] = to_email
         msg['Subject'] = subject
         msg.attach(MIMEText(body, 'plain'))
+        if html_body:
+            msg.attach(MIMEText(html_body, 'html'))
 
         # Connect and send
         smtp = smtplib.SMTP(server, port)

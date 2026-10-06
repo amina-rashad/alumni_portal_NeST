@@ -21,6 +21,9 @@ const AdminEditUser: React.FC = () => {
     batch: '',
     specialization: ''
   });
+
+  const isStaff = formData.user_type === 'Staff' || ['super_admin', 'admin', 'event_manager', 'course_manager', 'job_recruiter'].includes(formData.role);
+  const backPath = isStaff ? '/admin/view-managers' : '/admin/users';
   
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -116,7 +119,7 @@ const AdminEditUser: React.FC = () => {
               <button 
                 onClick={() => {
                   setShowPopup(false);
-                  if (popupMessage.type === 'success') navigate('/admin/users');
+                  if (popupMessage.type === 'success') navigate(backPath);
                 }}
                 style={{ 
                   width: '100%', 
@@ -140,7 +143,7 @@ const AdminEditUser: React.FC = () => {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
         <button 
-          onClick={() => navigate('/admin/users')}
+          onClick={() => navigate(backPath)}
           style={{ 
             background: '#fff', 
             border: '1px solid #e2e8f0', 
@@ -357,7 +360,7 @@ const AdminEditUser: React.FC = () => {
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '16px' }}>
-            <button type="button" onClick={() => navigate('/admin/users')} style={{ padding: '12px 28px', borderRadius: '8px', background: '#fff', color: '#475569', fontWeight: 700, border: '1px solid #cbd5e1', cursor: 'pointer' }}>
+            <button type="button" onClick={() => navigate(backPath)} style={{ padding: '12px 28px', borderRadius: '8px', background: '#fff', color: '#475569', fontWeight: 700, border: '1px solid #cbd5e1', cursor: 'pointer' }}>
               Cancel
             </button>
             <button disabled={isSubmitting} type="submit" style={{ padding: '12px 28px', borderRadius: '8px', background: nestNavy, color: '#fff', fontWeight: 700, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', opacity: isSubmitting ? 0.7 : 1 }}>

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+import { courseManagerAPI } from '../../services/api';
 
 interface CertificateRecord {
   id: string;

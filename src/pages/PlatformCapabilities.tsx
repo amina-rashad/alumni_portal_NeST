@@ -7,12 +7,13 @@ import {
 } from 'lucide-react';
 import '../App.css';
 import nestMainLogo from '../assets/nest_logo.png';
+import nestIcon from '../assets/nest_icon.png';
 
 const featureDetails: Record<string, any> = {
   'talent-tracking': {
     title: 'Talent Tracking',
     subtitle: 'Comprehensive lifecycle tracking for all platform members.',
-    heroImage: 'https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=1600&auto=format&fit=crop',
+    heroImage: '/placeholder.jpg',
     color: '#c8102e',
     narrative: 'Our Talent Tracking system is engineered to provide a 360-degree view of your ecosystem. From the moment a trainee joins to their evolution into a senior alumnus, NeST Digital tracks every milestone, skill acquisition, and interaction.',
     specs: [
@@ -29,7 +30,7 @@ const featureDetails: Record<string, any> = {
   'job-management': {
     title: 'Job Management',
     subtitle: 'Streamline hiring directly from your vetted NeST pipeline.',
-    heroImage: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=1600&auto=format&fit=crop',
+    heroImage: '/placeholder.jpg',
     color: '#1e4fa0',
     narrative: 'NeST Jobs bridges the gap between hiring needs and verified talent. Our proprietary matching algorithm ensures that you find the perfect fit based on technical skills, behavioral scores, and cultural alignment.',
     specs: [
@@ -46,7 +47,7 @@ const featureDetails: Record<string, any> = {
   'learning-courses': {
     title: 'Learning & Courses',
     subtitle: 'Provide continuous upskilling resources.',
-    heroImage: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=1600&auto=format&fit=crop',
+    heroImage: '/placeholder.jpg',
     color: '#10b981',
     narrative: 'Upskilling is at the heart of engineering transformation. Our Learning Management System (LMS) provides modular, high-impact courses designed by industry architects to ensure your team stays ahead of the curve.',
     specs: [
@@ -63,7 +64,7 @@ const featureDetails: Record<string, any> = {
   'assessments': {
     title: 'Assessments',
     subtitle: 'Ensure quality and readiness with automated skill checks.',
-    heroImage: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?q=80&w=1600&auto=format&fit=crop',
+    heroImage: '/placeholder.jpg',
     color: '#f59e0b',
     narrative: 'Validation is key to maintaining high standards. NeST Assessments provide secure, automated testing environments for coding, behavioral analysis, and domain-specific knowledge checks.',
     specs: [
@@ -120,8 +121,78 @@ const PlatformCapabilities: React.FC = () => {
       {/* ── Header ── */}
       <header className={`header ${isScrolled ? 'header-scrolled' : 'header-glass'}`}>
         <div className="container header-container">
-          <Link to="/" className="logo">
-            <img src={nestMainLogo} alt="NeST Digital" className="nest-main-logo" style={{ background: '#fff', padding: '6px 14px', borderRadius: '8px' }} />
+          <Link 
+            to="/" 
+            className="logo" 
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '10px',
+              textDecoration: 'none',
+              transition: 'all 0.3s ease',
+              ...(!isScrolled ? {
+                background: 'rgba(5, 13, 30, 0.95)',
+                padding: '6px 16px',
+                borderRadius: '12px',
+                boxShadow: '0 4px 15px rgba(0, 0, 0, 0.15)'
+              } : {
+                background: 'transparent',
+                padding: '0',
+                borderRadius: '0',
+                boxShadow: 'none'
+              })
+            }}
+          >
+            <img 
+              src={nestIcon} 
+              alt="NeST" 
+              style={{ 
+                height: '36px', 
+                objectFit: 'contain',
+                borderRadius: '50%'
+              }} 
+            />
+            
+            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: '1.1', textAlign: 'left' }}>
+              <span style={{ 
+                fontFamily: "'Sora', 'Inter', sans-serif", 
+                fontSize: '18px', 
+                fontWeight: 800, 
+                color: '#ffffff', 
+                letterSpacing: '0.02em'
+              }}>NeST</span>
+              <span style={{ 
+                fontFamily: "'Inter', sans-serif", 
+                fontSize: '9px', 
+                fontWeight: 700, 
+                color: '#cbd5e1', 
+                letterSpacing: '0.12em'
+              }}>DIGITAL</span>
+            </div>
+            
+            <div style={{ 
+              height: '24px', 
+              width: '1px', 
+              backgroundColor: 'rgba(255, 255, 255, 0.25)', 
+              margin: '0 4px'
+            }} />
+            
+            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: '1.15', textAlign: 'left' }}>
+              <span style={{ 
+                fontFamily: "'Inter', sans-serif", 
+                fontSize: '9px', 
+                fontWeight: 500, 
+                color: '#cbd5e1', 
+                letterSpacing: '0.08em'
+              }}>ENGINEERING</span>
+              <span style={{ 
+                fontFamily: "'Inter', sans-serif", 
+                fontSize: '9px', 
+                fontWeight: 500, 
+                color: '#cbd5e1', 
+                letterSpacing: '0.08em'
+              }}>TRANSFORMATION</span>
+            </div>
           </Link>
           <nav className="desktop-nav">
             <ul className="nav-list">

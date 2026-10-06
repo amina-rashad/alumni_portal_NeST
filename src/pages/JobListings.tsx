@@ -142,11 +142,11 @@ const JobListings: React.FC = () => {
   const jobsPerPage = 6;
   const [currentBannerImage, setCurrentBannerImage] = useState(0);
   const bannerImages = [
-    "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=1200&q=80",
-    "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1200&q=80",
-    "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1200&q=80",
-    "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1200&q=80",
-    "https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=1200&q=80"
+    "/placeholder.jpg",
+    "/placeholder.jpg",
+    "/placeholder.jpg",
+    "/placeholder.jpg",
+    "/placeholder.jpg"
   ];
 
   useEffect(() => {
@@ -321,7 +321,7 @@ const JobListings: React.FC = () => {
           }}
         >
           <img 
-            src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=1920&q=80" 
+            src="/placeholder.jpg" 
             alt="Careers at NeST" 
             style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }}
           />
@@ -336,31 +336,55 @@ const JobListings: React.FC = () => {
         }} />
 
         {/* Hero Content */}
-        <div style={{ position: 'relative', zIndex: 2, textAlign: 'center' }}>
+        <div style={{ 
+          position: 'absolute', 
+          zIndex: 2, 
+          left: '3rem', 
+          bottom: '3rem', 
+          textAlign: 'left',
+          maxWidth: '600px'
+        }}>
           <motion.h1 
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8 }}
             style={{ 
-              fontSize: '5.2rem', 
+              fontSize: '2.8rem', 
               fontWeight: 900, 
-              letterSpacing: '-0.04em', 
-              lineHeight: 1, 
+              letterSpacing: '-0.02em', 
+              lineHeight: 1.1, 
               color: '#ffffff',
-              fontFamily: "'Montserrat', sans-serif"
+              fontFamily: "'Montserrat', sans-serif",
+              margin: 0
             }}
           >
             <span style={{ color: '#ef4444' }}>Careers</span> at NeST<span style={{ color: '#ef4444' }}>.</span>
           </motion.h1>
+          
+          <motion.p
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3, duration: 0.8 }}
+            style={{
+              fontSize: '0.95rem',
+              color: 'rgba(255, 255, 255, 0.8)',
+              marginTop: '1rem',
+              lineHeight: 1.6,
+              fontWeight: 400,
+              fontFamily: '"Outfit", sans-serif'
+            }}
+          >
+            Explore exciting career opportunities and join our global community of innovators, engineers, and digital transformation leaders.
+          </motion.p>
+
           <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
+            initial={{ opacity: 0, width: 0 }}
+            animate={{ opacity: 1, width: '40px' }}
+            transition={{ delay: 0.6, duration: 0.8 }}
             style={{ 
-              width: '80px', 
-              height: '4px', 
+              height: '3px', 
               background: '#ef4444', 
-              margin: '1.5rem auto 0',
+              marginTop: '1.5rem',
               borderRadius: '2px'
             }}
           />
@@ -709,12 +733,12 @@ const JobListings: React.FC = () => {
         ) : filteredJobs.length > 0 ? (
           filteredJobs.map((job, index) => {
             const bgs = [
-              'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=800&q=80', 
-              'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800&q=80', 
-              'https://images.unsplash.com/photo-1573164713988-8665fc963095?auto=format&fit=crop&w=800&q=80', 
-              'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80', 
-              'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=800&q=80', 
-              'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80'
+              '/placeholder.jpg', 
+              '/placeholder.jpg', 
+              '/placeholder.jpg', 
+              '/placeholder.jpg', 
+              '/placeholder.jpg', 
+              '/placeholder.jpg'
             ];
             const bgImage = bgs[index % bgs.length];
 

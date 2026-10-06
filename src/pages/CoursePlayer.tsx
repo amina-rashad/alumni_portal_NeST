@@ -31,7 +31,7 @@ const CoursePlayer: React.FC = () => {
 
   useEffect(() => {
     const fetchCourse = async () => {
-      console.log("[CoursePlayer] useEffect triggered with id:", id);
+
       if (!id) return;
 
       const MOCK_DATA = [
@@ -45,20 +45,20 @@ const CoursePlayer: React.FC = () => {
 
       const match = MOCK_DATA.find(c => String(c.id) === String(id));
       if (match) {
-        console.log("[CoursePlayer] Found mock match:", match);
+
         setCourse(match);
         setLoading(false);
         return;
       }
 
-      console.log("[CoursePlayer] No mock match, calling API...");
+
       try {
         const res = await coursesApi.getCourseById(id);
         if (res.success && res.data && (res.data as any).course) {
-          console.log("[CoursePlayer] API Success:", (res.data as any).course);
+
           setCourse((res.data as any).course);
         } else {
-          console.log("[CoursePlayer] API returned no data");
+
         }
       } catch (err) {
         console.error("[CoursePlayer] API Error:", err);
