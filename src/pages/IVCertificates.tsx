@@ -357,7 +357,7 @@ const IVCertificates: React.FC = () => {
               src="/images/hero/iv_hero.png" 
               alt="Industrial Excellence" 
               onError={(e) => {
-                (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=1200";
+                (e.target as HTMLImageElement).src = "/placeholder.jpg";
               }}
               style={{ 
                 width: '100%', 

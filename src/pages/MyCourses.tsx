@@ -178,7 +178,7 @@ const MyCourses: React.FC = () => {
             marginRight: '-50vw',
             padding: '5.5rem 0',
             marginBottom: '3.5rem',
-            background: 'url("https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=2000&auto=format&fit=crop")',
+            background: 'url("/placeholder.jpg")',
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             overflow: 'hidden',

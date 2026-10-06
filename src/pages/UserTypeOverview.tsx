@@ -15,7 +15,7 @@ const userTypeData: Record<string, any> = {
     title: 'Alumni Network',
     tagline: 'Leveraging years of expertise and corporate wisdom.',
     description: 'Our alumni network is the backbone of NeST Digital. Comprising former employees and trainees who have gone on to achieve great heights in the tech industry, this group provides invaluable mentorship and career pathways for current members.',
-    heroImage: 'https://images.unsplash.com/photo-1523287562758-66c7fc58967f?q=80&w=1600&auto=format&fit=crop',
+    heroImage: '/placeholder.jpg',
     color: '#C8102E',
     pillars: [
       { title: 'Global Presence', desc: 'Our alumni are spread across 15+ countries, holding senior leadership positions in FAANG and Fortune 500 companies.', icon: Globe },
@@ -37,7 +37,7 @@ const userTypeData: Record<string, any> = {
     title: 'Intern Hub',
     tagline: 'Cultivating the next generation of digital leaders.',
     description: 'Our internship program offers students and fresh graduates the opportunity to work on real-world projects alongside industry experts. It is a launchpad for careers in software engineering, UI/UX, and data science.',
-    heroImage: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=1600&auto=format&fit=crop',
+    heroImage: '/placeholder.jpg',
     color: '#1E4FA0',
     pillars: [
       { title: 'Structured Paths', desc: 'Each intern follows a 12-week modular roadmap tailored to their specific technology stack.', icon: MapPin },
@@ -59,7 +59,7 @@ const userTypeData: Record<string, any> = {
     title: 'Trainee Program',
     tagline: 'Bridging the skill gap through intensive training.',
     description: 'The Trainee Program at NeST is designed for individuals who want to pivot or deep-dive into new technologies. We provide structured learning paths and hands-on laboratory sessions to ensure industry readiness.',
-    heroImage: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?q=80&w=1600&auto=format&fit=crop',
+    heroImage: '/placeholder.jpg',
     color: '#10B981',
     pillars: [
       { title: 'Certified Labs', desc: 'Our state-of-the-art labs are equipped with the latest hardware and software environments.', icon: ShieldCheck },
@@ -81,7 +81,7 @@ const userTypeData: Record<string, any> = {
     title: 'Industrial Visits',
     tagline: 'Experiencing engineering excellence first-hand.',
     description: 'We welcome students from various universities to visit our facilities and witness the engineering transformation at NeST Digital. These visits provide a window into the corporate world and help students align their learning with industry standards.',
-    heroImage: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=1600&auto=format&fit=crop',
+    heroImage: '/placeholder.jpg',
     color: '#F59E0B',
     pillars: [
       { title: 'Expert Talks', desc: '30-minute power talks with our senior architects during the visit.', icon: Zap },

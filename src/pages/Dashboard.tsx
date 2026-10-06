@@ -48,7 +48,7 @@ const feed = [
     content: 'Excited to share that my team has successfully launched our new AI analytics platform! The foundational engineering principles I learned during my time at NeST were instrumental to this success. Let\'s connect! 🤖💡',
     likes: 128,
     comments: 24,
-    image: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=1200&auto=format&fit=crop'
+    image: '/placeholder.jpg'
   },
   {
     id: 4,
@@ -395,7 +395,7 @@ const Dashboard: React.FC = () => {
                     style={{ width: '100%', height: '100%', cursor: 'pointer', position: 'relative' }}
                   >
                     <img
-                      src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80"
+                      src="/placeholder.jpg"
                       style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }}
                       alt="Professional Growth"
                     />
@@ -604,7 +604,7 @@ const Dashboard: React.FC = () => {
                         {/* Image Header with Badge and Tag */}
                         <div style={{ height: '180px', position: 'relative', borderRadius: '20px', overflow: 'hidden', marginBottom: '1.5rem' }}>
                           <img 
-                            src={event.cover_image || 'https://images.unsplash.com/photo-1540575861501-7cf05a4b125a?w=800&auto=format&fit=crop&q=60'} 
+                            src={event.cover_image || '/placeholder.jpg'} 
                             alt={event.title} 
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                           />
@@ -1019,7 +1019,7 @@ const Dashboard: React.FC = () => {
                         {/* Top Image Container */}
                         <div style={{ position: 'relative', borderRadius: '32px', overflow: 'hidden', height: '180px' }}>
                           <img 
-                            src={post.image_url || 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80'} 
+                            src={post.image_url || '/placeholder.jpg'} 
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                             alt="" 
                           />
@@ -1135,7 +1135,7 @@ const Dashboard: React.FC = () => {
                   id: 'c1',
                   title: 'React & Next.js Masterclass',
                   desc: 'Build production-grade applications with server components, streaming SSR, and advanced patterns.',
-                  image: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=800&auto=format&fit=crop',
+                  image: '/featured_images/career_growth_3d_card_1777327661219.png',
                   level: 'Advanced',
                   duration: '12 Weeks',
                   rating: 4.9,
@@ -1148,7 +1148,7 @@ const Dashboard: React.FC = () => {
                   id: 'c2',
                   title: 'AI & Deep Learning with Python',
                   desc: 'Master neural networks, transformers, and generative AI using PyTorch and TensorFlow.',
-                  image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?q=80&w=800&auto=format&fit=crop',
+                  image: '/featured_images/generative_ai_3d_card_1777327602189.png',
                   level: 'Expert',
                   duration: '16 Weeks',
                   rating: 4.8,
@@ -1161,7 +1161,7 @@ const Dashboard: React.FC = () => {
                   id: 'c3',
                   title: 'Cloud Architecture on AWS',
                   desc: 'Design resilient, scalable cloud infrastructure with hands-on labs and real-world case studies.',
-                  image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=800&auto=format&fit=crop',
+                  image: '/featured_images/data_science_3d_card_1777327642533.png',
                   level: 'Intermediate',
                   duration: '10 Weeks',
                   rating: 4.7,
@@ -1174,7 +1174,7 @@ const Dashboard: React.FC = () => {
                   id: 'c4',
                   title: 'Cybersecurity & Ethical Hacking',
                   desc: 'Learn penetration testing, threat modeling, and zero-trust security frameworks from industry experts.',
-                  image: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=800&auto=format&fit=crop',
+                  image: '/featured_images/it_certifications_3d_card_1777327623657.png',
                   level: 'Advanced',
                   duration: '14 Weeks',
                   rating: 4.9,

@@ -819,7 +819,7 @@ section {
 
 /* -- Responsive -- */
 @media (max-width: 1200px) {
-  .features-grid { grid-template-columns: repeat(2, 1fr); }
+  .features-grid, .cinematic-grid { grid-template-columns: repeat(2, 1fr); }
   .users-grid { grid-template-columns: repeat(3, 1fr); }
 }
 @media (max-width: 992px) {
@@ -836,7 +836,7 @@ section {
   .hero-title { font-size: 28px; white-space: normal; }
   .hero-subtitle { font-size: 15px; }
   .hero-cards-area { grid-template-columns: 1fr; }
-  .features-grid, .users-grid, .how-grid, .about-card-grid { grid-template-columns: 1fr; }
+  .features-grid, .users-grid, .how-grid, .about-card-grid, .cinematic-grid { grid-template-columns: 1fr; }
   .section-header h2 { font-size: 30px; }
   .cta-content h2 { font-size: 30px; }
   .stat-item h3 { font-size: 38px; }

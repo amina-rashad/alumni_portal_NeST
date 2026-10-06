@@ -7,7 +7,7 @@ import {
   MessageSquare, Heart, Loader2,
   Users, Award, Calendar
 } from 'lucide-react';
-import { socialApi, getUser } from '../services/api';
+import { socialApi, getUser, usersApi } from '../services/api';
 import UserAvatar from '../components/UserAvatar';
 import alumniStoriesBg from '../assets/alumni_stories_bg.png';
 
@@ -26,13 +26,7 @@ interface Post {
   created_at: string;
 }
 
-const trendingTopics = [
-  { topic: 'Quantum FinTech', growth: '+32%', interactions: '2.4k' },
-  { topic: 'Cloud Governance', growth: '+15%', interactions: '920' },
-  { topic: 'Alumni Meet 2026', growth: '+45%', interactions: '3.1k' },
-  { topic: 'Industrial IoT', growth: '+28%', interactions: '1.2k' },
-  { topic: 'Cyber Security', growth: '+12%', interactions: '850' }
-];
+// Trending topics loaded dynamically
 
 const smoothSpring = { type: 'spring' as const, stiffness: 80, damping: 20, mass: 1 };
 
@@ -65,8 +59,35 @@ const ActivityFeed: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [tick, setTick] = useState(0);
   const [isCultureHovered, setIsCultureHovered] = useState(false);
+  const [trending, setTrending] = useState<any[]>([
+    { topic: 'Quantum FinTech', growth: '+32%', interactions: '2.4k' },
+    { topic: 'Cloud Governance', growth: '+15%', interactions: '920' },
+    { topic: 'Alumni Meet 2026', growth: '+45%', interactions: '3.1k' }
+  ]);
+  const [communityStats, setCommunityStats] = useState({ newAlumni: 124, certifications: 45 });
+  
   const navigate = useNavigate();
   const user = getUser() as any;
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await usersApi.getCommunityStats();
+        if (res.success && res.data) {
+          if (res.data.trending?.length) setTrending(res.data.trending);
+          if (res.data.highlights) {
+            setCommunityStats({
+              newAlumni: res.data.highlights.new_alumni ?? 0,
+              certifications: res.data.highlights.certifications ?? 0
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load community stats", err);
+      }
+    };
+    fetchStats();
+  }, []);
 
   const handleCreatePost = () => {
     if (user?.role === 'event_manager') {
@@ -701,7 +722,7 @@ const ActivityFeed: React.FC = () => {
                    <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 2 }} style={{ width: '8px', height: '8px', background: '#10B981', borderRadius: '50%' }} />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
-                   {trendingTopics.map((item, i) => (
+                   {trending.map((item, i) => (
                       <div key={i}>
                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.4rem' }}>
                             <span style={{ fontWeight: 700, color: '#1e293b' }}>#{item.topic.replace(' ', '')}</span>
@@ -721,7 +742,7 @@ const ActivityFeed: React.FC = () => {
                             <Users size={22} />
                          </div>
                          <div>
-                            <div style={{ fontSize: '1rem', fontWeight: 800, color: '#1e293b', lineHeight: 1.2 }}>124 New Alumni</div>
+                            <div style={{ fontSize: '1rem', fontWeight: 800, color: '#1e293b', lineHeight: 1.2 }}>{communityStats.newAlumni} New Alumni</div>
                             <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Joined this month</div>
                          </div>
                       </div>
@@ -730,7 +751,7 @@ const ActivityFeed: React.FC = () => {
                             <Award size={22} />
                           </div>
                           <div>
-                             <div style={{ fontSize: '1rem', fontWeight: 800, color: '#1e293b', lineHeight: 1.2 }}>45 Certifications</div>
+                             <div style={{ fontSize: '1rem', fontWeight: 800, color: '#1e293b', lineHeight: 1.2 }}>{communityStats.certifications} Certifications</div>
                              <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Awarded last week</div>
                           </div>
                        </div>

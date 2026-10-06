@@ -207,6 +207,8 @@ export const authApi = {
 
 // --- USERS API ---
 export const usersApi = {
+  getCommunityStats: () => apiRequest('/users/community-stats', { method: 'GET' }),
+  
   getProfile: () =>
     apiRequest('/users/me', { method: 'GET' }),
 

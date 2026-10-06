@@ -16,8 +16,8 @@ db = client[DB_NAME]
 users = db["users"]
 
 # Admin credentials
-ADMIN_EMAIL = "noblesibi@nestgroup.net"
-ADMIN_PASSWORD = "Noble@02"
+ADMIN_EMAIL = "amina.rashad@nestgroup.net"
+ADMIN_PASSWORD = "AdminPassword@123"
 
 # Check if admin already exists
 existing_admin = users.find_one({"email": ADMIN_EMAIL})
@@ -30,7 +30,7 @@ else:
 
     # Create the admin document matching our database schema
     admin_doc = {
-        "full_name": "Noble Sibi",
+        "full_name": "Amina Rashad",
         "email": ADMIN_EMAIL,
         "password": hashed_pw,
         "phone": "000-000-0000",

@@ -106,6 +106,7 @@ const EditProfile: React.FC = () => {
 
   const [activeOverlay, setActiveOverlay] = useState<'none' | 'experience' | 'education' | 'certificate'>('none');
   const [overlayData, setOverlayData] = useState<any>({});
+  const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
 
   const handleResumeChange = useCallback((data: any) => {
     setResumeData(data);
@@ -341,8 +342,8 @@ const EditProfile: React.FC = () => {
         
         <button 
           onClick={handleSubmit}
-          disabled={saving}
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', background: '#1a2652', color: 'white', border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', boxShadow: '0 4px 12px rgba(26, 38, 82, 0.2)' }}
+          disabled={saving || !disclaimerAccepted}
+          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', background: (!disclaimerAccepted || saving) ? '#94a3b8' : '#1a2652', color: 'white', border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: 700, cursor: (!disclaimerAccepted || saving) ? 'not-allowed' : 'pointer', boxShadow: (!disclaimerAccepted || saving) ? 'none' : '0 4px 12px rgba(26, 38, 82, 0.2)' }}
         >
           <Save size={18} /> {saving ? 'Saving...' : 'Save Changes'}
         </button>
@@ -796,6 +797,22 @@ const EditProfile: React.FC = () => {
               >
                 <Upload size={18} /> Upload Certificate
               </button>
+            </div>
+          </section>
+
+          {/* Organizational Disclaimer Section */}
+          <section style={{ marginTop: '16px', paddingTop: '32px', borderTop: '1px solid #f1f5f9' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '16px', background: disclaimerAccepted ? '#f0fdf4' : '#fff1f1', borderRadius: '12px', border: `1px solid ${disclaimerAccepted ? '#bbf7d0' : '#fecaca'}`, transition: 'all 0.3s' }}>
+              <input 
+                type="checkbox" 
+                id="disclaimer-checkbox"
+                checked={disclaimerAccepted}
+                onChange={(e) => setDisclaimerAccepted(e.target.checked)}
+                style={{ marginTop: '4px', width: '20px', height: '20px', accentColor: '#c8102e', cursor: 'pointer', flexShrink: 0 }}
+              />
+              <label htmlFor="disclaimer-checkbox" style={{ fontSize: '14px', color: '#475569', lineHeight: 1.5, cursor: 'pointer', userSelect: 'none' }}>
+                <strong style={{ color: '#0f172a' }}>Mandatory Consent:</strong> I acknowledge and agree that my profile details may be used by the organization for internal purposes, including talent mapping, event organization, and professional networking within the portal.
+              </label>
             </div>
           </section>
         </div>

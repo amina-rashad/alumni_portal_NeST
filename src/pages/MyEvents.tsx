@@ -72,7 +72,7 @@ const MyEvents: React.FC = () => {
           style={{
             position: 'absolute',
             inset: 0,
-            backgroundImage: 'url("https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=2000")',
+            backgroundImage: 'url("/placeholder.jpg")',
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             zIndex: 0
@@ -265,7 +265,7 @@ const MyEvents: React.FC = () => {
             >
               {/* Thumbnail with Overlay */}
               <div style={{ position: 'relative', height: '160px' }}>
-                <img src={event.cover_image || 'https://images.unsplash.com/photo-1540575861501-7ad05823c95b?auto=format&fit=crop&q=80&w=400'} alt={event.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={event.cover_image || '/placeholder.jpg'} alt={event.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 <div style={{ position: 'absolute', top: '1rem', right: '1rem' }}>
                   <div style={{ 
                     background: 'rgba(255, 255, 255, 0.9)', 

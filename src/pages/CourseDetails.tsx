@@ -154,7 +154,7 @@ const CourseDetails: React.FC = () => {
                   {course.cover_image ? (
                     <img src={course.cover_image} alt={course.title} style={{ width: '100%', display: 'block' }} />
                   ) : (
-                    <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop" alt={course.title} style={{ width: '100%', display: 'block' }} />
+                    <img src="/placeholder.jpg" alt={course.title} style={{ width: '100%', display: 'block' }} />
                   )}
                   <div 
                     onClick={() => {

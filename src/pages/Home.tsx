@@ -45,12 +45,12 @@ const Counter: React.FC<{ end: number; suffix: string; label: string }> = ({ end
   );
 };
 
+
+
 const aboutImages = [
-  "https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=1200&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=1200&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?q=80&w=1200&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=1200&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=1200&auto=format&fit=crop"
+  splash1,
+  splash2,
+  splash3,
 ];
 
 const AboutSplash: React.FC = () => {
@@ -748,10 +748,10 @@ const Home: React.FC = () => {
           </motion.div>
           <div className="features-grid cinematic-grid">
             {[
-              { id: 'talent-tracking', img: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=800&auto=format&fit=crop', title: 'Talent Tracking', desc: 'Monitor skills, course completions, and engagement in real-time.' },
-              { id: 'job-management', img: 'https://images.unsplash.com/photo-1556761175-b413da4baf72?q=80&w=800&auto=format&fit=crop', title: 'Job Management', desc: 'Streamline vacancies and identify top-tier matches instantly.' },
-              { id: 'learning-courses', img: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=800&auto=format&fit=crop', title: 'Learning & Courses', desc: 'Dynamic learning paths built for modern industrial excellence.' },
-              { id: 'assessments', img: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=800&auto=format&fit=crop', title: 'Assessments', desc: 'Advanced cognitive & skill testing with automated AI scoring.' },
+              { id: 'talent-tracking', img: '/placeholder.jpg', title: 'Talent Tracking', desc: 'Monitor skills, course completions, and engagement in real-time.' },
+              { id: 'job-management', img: '/placeholder.jpg', title: 'Job Management', desc: 'Streamline vacancies and identify top-tier matches instantly.' },
+              { id: 'learning-courses', img: '/placeholder.jpg', title: 'Learning & Courses', desc: 'Dynamic learning paths built for modern industrial excellence.' },
+              { id: 'assessments', img: '/placeholder.jpg', title: 'Assessments', desc: 'Advanced cognitive & skill testing with automated AI scoring.' },
             ].map((f, i) => (
               <motion.div
                 key={i}
@@ -802,28 +802,28 @@ const Home: React.FC = () => {
             {[
               { 
                 id: 'alumni',
-                img: "https://images.unsplash.com/photo-1523287562758-66c7fc58967f?q=80&w=800&auto=format&fit=crop", 
+                img: "/placeholder.jpg", 
                 title: 'Alumni', 
                 desc: 'Former employees & trainees',
                 color: '#C8102E'
               },
               { 
                 id: 'interns',
-                img: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=800&auto=format&fit=crop", 
+                img: "/placeholder.jpg", 
                 title: 'Interns', 
                 desc: 'Current & former interns',
                 color: '#1E4FA0'
               },
               { 
                 id: 'trainees',
-                img: "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?q=80&w=800&auto=format&fit=crop", 
+                img: "/placeholder.jpg", 
                 title: 'Trainees', 
                 desc: 'Skill-building participants',
                 color: '#10B981'
               },
               { 
                 id: 'iv-students',
-                img: "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=800&auto=format&fit=crop", 
+                img: "/placeholder.jpg", 
                 title: 'IV Students', 
                 desc: 'Industrial Visit visitors',
                 color: '#F59E0B'

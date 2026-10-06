@@ -268,7 +268,7 @@ const EventManagerEvents: React.FC = () => {
         category: formData.category,
         max_attendees: parseInt(formData.limit) || 0,
         mode: formData.mode,
-        cover_image: selectedImage || 'https://images.unsplash.com/photo-1540575861501-7cf05a4b125a?w=800&auto=format&fit=crop&q=60'
+        cover_image: selectedImage || '/placeholder.jpg'
       };
 
       let res;
@@ -706,7 +706,7 @@ const EventManagerEvents: React.FC = () => {
               }}
             >
               <div style={{ position: 'relative', height: '200px' }}>
-                <img src={event.cover_image || 'https://images.unsplash.com/photo-1540575861501-7cf05a4b125a?w=800&auto=format&fit=crop&q=60'} alt={event.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={event.cover_image || '/placeholder.jpg'} alt={event.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 <div style={{ position: 'absolute', top: '16px', right: '16px' }}>
                   <div style={{
                     padding: '8px 16px',

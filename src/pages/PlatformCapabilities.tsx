@@ -13,7 +13,7 @@ const featureDetails: Record<string, any> = {
   'talent-tracking': {
     title: 'Talent Tracking',
     subtitle: 'Comprehensive lifecycle tracking for all platform members.',
-    heroImage: 'https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=1600&auto=format&fit=crop',
+    heroImage: '/placeholder.jpg',
     color: '#c8102e',
     narrative: 'Our Talent Tracking system is engineered to provide a 360-degree view of your ecosystem. From the moment a trainee joins to their evolution into a senior alumnus, NeST Digital tracks every milestone, skill acquisition, and interaction.',
     specs: [
@@ -30,7 +30,7 @@ const featureDetails: Record<string, any> = {
   'job-management': {
     title: 'Job Management',
     subtitle: 'Streamline hiring directly from your vetted NeST pipeline.',
-    heroImage: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=1600&auto=format&fit=crop',
+    heroImage: '/placeholder.jpg',
     color: '#1e4fa0',
     narrative: 'NeST Jobs bridges the gap between hiring needs and verified talent. Our proprietary matching algorithm ensures that you find the perfect fit based on technical skills, behavioral scores, and cultural alignment.',
     specs: [
@@ -47,7 +47,7 @@ const featureDetails: Record<string, any> = {
   'learning-courses': {
     title: 'Learning & Courses',
     subtitle: 'Provide continuous upskilling resources.',
-    heroImage: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=1600&auto=format&fit=crop',
+    heroImage: '/placeholder.jpg',
     color: '#10b981',
     narrative: 'Upskilling is at the heart of engineering transformation. Our Learning Management System (LMS) provides modular, high-impact courses designed by industry architects to ensure your team stays ahead of the curve.',
     specs: [
@@ -64,7 +64,7 @@ const featureDetails: Record<string, any> = {
   'assessments': {
     title: 'Assessments',
     subtitle: 'Ensure quality and readiness with automated skill checks.',
-    heroImage: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?q=80&w=1600&auto=format&fit=crop',
+    heroImage: '/placeholder.jpg',
     color: '#f59e0b',
     narrative: 'Validation is key to maintaining high standards. NeST Assessments provide secure, automated testing environments for coding, behavioral analysis, and domain-specific knowledge checks.',
     specs: [

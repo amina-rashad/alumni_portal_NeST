@@ -27,6 +27,17 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
 
   const [step, setStep] = useState<'credentials' | 'otp'>('credentials');
   const [otpCode, setOtpCode] = useState('');
+  const [resendTimer, setResendTimer] = useState(0);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [resendTimer]);
 
   // Reset steps on close or open change
   useEffect(() => {
@@ -68,6 +79,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
 
       if (response.success) {
         setStep('otp');
+        setResendTimer(30);
       } else {
         setError(response.message || 'Failed to send verification code. Please check your email.');
       }
@@ -111,10 +123,16 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
   };
 
   const handleResendOtp = async () => {
+    if (resendTimer > 0) return;
     setIsLoading(true);
     setError('');
     try {
-      await authApi.sendOtp(formData.email);
+      const response = await authApi.sendOtp(formData.email);
+      if (response && response.success === false) {
+        setError(response.message || 'Failed to resend verification code.');
+      } else {
+        setResendTimer(30);
+      }
     } catch {
       setError('Failed to resend verification code. Please try again.');
     } finally {
@@ -335,26 +353,14 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                     <button 
                       type="button" 
                       onClick={handleResendOtp}
-                      disabled={isLoading}
-                      style={{ background: 'none', border: 'none', color: '#c8102e', fontSize: '13px', cursor: 'pointer', fontWeight: 600 }}
+                      disabled={isLoading || resendTimer > 0}
+                      style={{ background: 'none', border: 'none', color: (isLoading || resendTimer > 0) ? '#94a3b8' : '#c8102e', fontSize: '13px', cursor: (isLoading || resendTimer > 0) ? 'not-allowed' : 'pointer', fontWeight: 600 }}
                     >
-                      Resend Code
+                      {resendTimer > 0 ? `Resend Code (${resendTimer}s)` : 'Resend Code'}
                     </button>
                   </div>
                 </form>
               )}
-
-              <div className="auth-divider"><span>Or continue with</span></div>
-
-              <div className="social-auth" style={{ display: 'flex', justifyContent: 'center', gap: '16px', width: '100%' }}>
-                <button type="button" className="social-btn" onClick={() => handleSocialSignIn('Google')}>
-                  {getProviderIcon('Google')} Google
-                </button>
-                <button type="button" className="social-btn" onClick={() => handleSocialSignIn('Microsoft')}>
-                  {getProviderIcon('Microsoft')} Microsoft
-                </button>
-              </div>
-
               <p className="auth-footer" style={{ textAlign: 'center', marginTop: '24px', width: '100%' }}>Secure Access Only</p>
             </div>
 

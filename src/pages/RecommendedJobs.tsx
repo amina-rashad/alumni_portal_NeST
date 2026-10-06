@@ -319,9 +319,9 @@ const RecommendedJobs: React.FC = () => {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2rem' }}>
             {[
-              { title: 'Experienced professionals', img: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=800&q=80' },
-              { title: 'Early careers', img: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=800&q=80' },
-              { title: 'Contract opportunities', img: 'https://images.unsplash.com/photo-1515378960530-7c0da6231fb1?auto=format&fit=crop&w=800&q=80' }
+              { title: 'Experienced professionals', img: '/experienced_pro_career.png' },
+              { title: 'Early careers', img: '/early_career_talents.png' },
+              { title: 'Contract opportunities', img: '/contract_opportunities.png' }
             ].map((card, idx) => (
               <motion.div
                 key={idx}

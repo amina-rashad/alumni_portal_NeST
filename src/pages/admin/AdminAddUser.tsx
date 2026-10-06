@@ -219,6 +219,7 @@ const AdminAddUser: React.FC = () => {
                   <option value="Alumni">Alumni</option>
                   {isSuperAdmin && <option value="System Admin">System Admin</option>}
                   <option value="Intern">Intern</option>
+                  <option value="IV Student">IV Student</option>
                   <option value="Staff">Staff</option>
                   <option value="Trainee">Trainee</option>
                 </select>
