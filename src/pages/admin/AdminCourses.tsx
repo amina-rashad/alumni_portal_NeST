@@ -3,7 +3,7 @@ import { coursesApi } from '../../services/api';
 import { motion } from 'framer-motion';
 import { 
   MoreVertical, Edit3, CheckCircle2, 
-  AlertCircle, X, Star, Trash2, Plus, Search, Filter, Clock
+  AlertCircle, X, Star, Trash2, Plus, Search, Filter, Clock, Power
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import StatusModal from '../../components/StatusModal';
@@ -15,7 +15,8 @@ interface Course {
   duration: string;
   enrolledStudents: number;
   rating: number;
-  status: 'Published' | 'Draft' | 'Archived';
+  status: 'Published' | 'Draft' | 'Archived' | 'Inactive';
+  isActive: boolean;
   thumbnail: string;
 }
 
@@ -48,16 +49,20 @@ const AdminCourses: React.FC = () => {
       if (res.success && res.data) {
         // Map backend fields to frontend interface
         const rawCourses = (res.data as any).courses || [];
-        const mappedCourses = rawCourses.map((c: any) => ({
-          id: c.id || c._id,
-          title: c.title,
-          category: c.category || 'General',
-          duration: c.duration || '0h',
-          enrolledStudents: c.enrolled_count || 0,
-          rating: 4.8, // Dummy rating for now
-          status: c.is_published ? 'Published' : 'Draft',
-          thumbnail: c.title.substring(0, 2).toUpperCase()
-        }));
+        const mappedCourses = rawCourses.map((c: any) => {
+          const isActive = c.is_active !== false && String(c.status || '').toLowerCase() !== 'inactive';
+          return {
+            id: c.id || c._id,
+            title: c.title,
+            category: c.category || 'General',
+            duration: c.duration || '0h',
+            enrolledStudents: c.enrolled_count || 0,
+            rating: c.rating || 0,
+            status: !isActive ? 'Inactive' : (c.is_published ? 'Published' : 'Draft'),
+            isActive: isActive,
+            thumbnail: (c.title || 'CR').substring(0, 2).toUpperCase()
+          };
+        });
         setCourses(mappedCourses);
       }
     } catch (err) {
@@ -71,6 +76,51 @@ const AdminCourses: React.FC = () => {
     fetchCourses();
   }, []);
 
+  const handleToggleActive = (course: Course) => {
+    const newActiveState = !course.isActive;
+    setModal({
+      isOpen: true,
+      type: 'warning',
+      title: newActiveState ? 'Activate Course' : 'Deactivate Course',
+      message: `Are you sure you want to turn "${course.title}" ${newActiveState ? 'Active' : 'Inactive'}?`,
+      showConfirmOnly: false,
+      onConfirm: async () => {
+        try {
+          const res = await coursesApi.updateCourse(course.id, {
+            is_active: newActiveState,
+            status: newActiveState ? 'active' : 'inactive'
+          });
+          if (res.success) {
+            setModal({
+              isOpen: true,
+              type: 'success',
+              title: 'Status Updated!',
+              message: `Course has been marked as ${newActiveState ? 'Active' : 'Inactive'}.`,
+              showConfirmOnly: true
+            });
+            fetchCourses();
+          } else {
+            setModal({
+              isOpen: true,
+              type: 'error',
+              title: 'Update Failed',
+              message: res.message || 'Could not update status.',
+              showConfirmOnly: true
+            });
+          }
+        } catch (err) {
+          setModal({
+            isOpen: true,
+            type: 'error',
+            title: 'Error',
+            message: 'An unexpected error occurred.',
+            showConfirmOnly: true
+          });
+        }
+      }
+    });
+  };
+
   const filteredCourses = courses.filter(c => 
     c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.category.toLowerCase().includes(searchTerm.toLowerCase())
@@ -79,6 +129,7 @@ const AdminCourses: React.FC = () => {
   const getStatusStyle = (status: string) => {
     switch (status) {
       case 'Published': return { bg: '#f0fdf4', color: '#16a34a', icon: <CheckCircle2 size={12} /> };
+      case 'Inactive': return { bg: '#fef2f2', color: '#dc2626', icon: <Power size={12} /> };
       case 'Draft': return { bg: '#fefce8', color: '#ca8a04', icon: <AlertCircle size={12} /> };
       case 'Archived': return { bg: '#fef2f2', color: '#dc2626', icon: <X size={12} /> };
       default: return { bg: '#f1f5f9', color: '#475569', icon: <Clock size={12} /> };
@@ -167,10 +218,30 @@ const AdminCourses: React.FC = () => {
                         </span>
                       </td>
                       <td style={{ padding: '20px 32px' }}>
-                        <div style={{ display: 'flex', gap: '8px' }}>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <button 
+                            title={course.isActive ? "Turn Inactive" : "Turn Active"}
+                            onClick={() => handleToggleActive(course)}
+                            style={{ 
+                              padding: '6px 12px', 
+                              borderRadius: '8px', 
+                              border: `1px solid ${course.isActive ? '#fecaca' : '#a7f3d0'}`, 
+                              background: course.isActive ? '#fff5f5' : '#f0fdf4', 
+                              color: course.isActive ? '#dc2626' : '#16a34a', 
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              fontSize: '12px',
+                              fontWeight: 700
+                            }}
+                          >
+                            <Power size={14} /> {course.isActive ? 'Turn Inactive' : 'Turn Active'}
+                          </button>
                           <button 
                             onClick={() => navigate(`/admin/courses/edit/${course.id}`)}
                             style={{ padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#fff', color: '#64748b', cursor: 'pointer' }}
+                            title="Edit Course"
                           >
                             <Edit3 size={16} />
                           </button>

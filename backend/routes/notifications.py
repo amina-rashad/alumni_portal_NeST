@@ -9,6 +9,7 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from app import get_db
+from utils.date_helpers import format_datetime_utc
 
 notifications_bp = Blueprint("notifications", __name__)
 
@@ -35,7 +36,7 @@ def _serialize_notification(n: dict, db=None, current_user_role=None) -> dict:
         "message": n.get("message", ""),
         "is_read": n.get("is_read", False),
         "link": link,
-        "created_at": n.get("created_at").isoformat() if n.get("created_at") else None,
+        "created_at": format_datetime_utc(n.get("created_at")),
     }
 
 

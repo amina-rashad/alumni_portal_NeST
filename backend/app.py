@@ -6,12 +6,20 @@ Registers all blueprints (route modules).
 
 import os
 from flask import Flask
+from flask.json.provider import DefaultJSONProvider
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from pymongo import MongoClient
+from bson import ObjectId
 import certifi
 
 from config import config_by_name
+
+class MongoJSONProvider(DefaultJSONProvider):
+    def default(self, obj):
+        if isinstance(obj, ObjectId):
+            return str(obj)
+        return super().default(obj)
 
 # ── Global extensions ──
 mongo_client = None
@@ -32,6 +40,8 @@ def create_app(config_name=None):
         config_name = os.getenv("FLASK_ENV", "development")
 
     app = Flask(__name__)
+    app.json_provider_class = MongoJSONProvider
+    app.json = MongoJSONProvider(app)
     app.config.from_object(config_by_name[config_name])
     app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500 MB Limit
     app.url_map.strict_slashes = False
@@ -50,7 +60,8 @@ def create_app(config_name=None):
     jwt.init_app(app)
 
     # ── MongoDB ──
-    mongo_client = MongoClient(app.config["MONGO_URI"])
+    import certifi
+    mongo_client = MongoClient(app.config["MONGO_URI"], tlsCAFile=certifi.where())
     db = mongo_client[app.config["MONGO_DB_NAME"]]
 
     # Create indexes for users collection
@@ -74,6 +85,7 @@ def create_app(config_name=None):
 
     from routes.insights import insights_bp
     from routes.recommendations import recommendations_bp
+    from routes.reminders import reminders_bp
 
     app.register_blueprint(health_bp, url_prefix="/api")
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
@@ -90,6 +102,7 @@ def create_app(config_name=None):
     app.register_blueprint(course_manager_bp, url_prefix="/api/course-manager")
     app.register_blueprint(insights_bp, url_prefix="/api/insights")
     app.register_blueprint(recommendations_bp, url_prefix="/api/recommendations")
+    app.register_blueprint(reminders_bp, url_prefix="/api/reminders")
 
     return app
 

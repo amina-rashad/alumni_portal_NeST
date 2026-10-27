@@ -7,6 +7,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { notificationsApi } from '../services/api';
+import { formatTimeAgo } from '../utils/dateUtils';
 
 const getNotifConfig = (type: string) => {
   switch (type) {
@@ -25,27 +26,7 @@ const getNotifConfig = (type: string) => {
   }
 };
 
-const formatTime = (dateStr: string) => {
-    if (!dateStr) return '';
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    
-    const seconds = Math.floor(diff / 1000);
-    const mins = Math.floor(seconds / 60);
-    const hours = Math.floor(mins / 60);
-    const days = Math.floor(hours / 24);
-    const weeks = Math.floor(days / 7);
-    const months = Math.floor(days / 30);
-    
-    if (seconds < 30) return 'Just now';
-    if (mins < 60) return `${mins}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    if (days < 7) return `${days}d ago`;
-    if (weeks < 4) return `${weeks}w ago`;
-    if (months < 12) return `${months}mo ago`;
-    return date.toLocaleDateString();
-};
+const formatTime = (dateStr: string) => formatTimeAgo(dateStr, '');
 
 const Notifications: React.FC = () => {
   const [notifications, setNotifications] = useState<any[]>([]);

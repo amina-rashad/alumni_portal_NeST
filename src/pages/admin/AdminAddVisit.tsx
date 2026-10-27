@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { adminApi } from '../../services/api';
 import nestIcon from '../../assets/nest_icon.png';
+import { validateEmail, validateName, validatePhone, validateRequired, validateDate } from '../../utils/validation';
 
 const AdminAddVisit: React.FC = () => {
   const navigate = useNavigate();
@@ -28,6 +29,39 @@ const AdminAddVisit: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const collegeErr = validateRequired(formData.college, 'College / Institution name');
+    if (collegeErr) {
+      setPopupMessage({ type: 'error', text: collegeErr });
+      setShowPopup(true);
+      return;
+    }
+
+    const dateErr = validateDate(formData.date, 'Visit date', true);
+    if (dateErr) {
+      setPopupMessage({ type: 'error', text: dateErr });
+      setShowPopup(true);
+      return;
+    }
+
+    if (formData.coordinator_email) {
+      const emailErr = validateEmail(formData.coordinator_email, false);
+      if (emailErr) {
+        setPopupMessage({ type: 'error', text: emailErr });
+        setShowPopup(true);
+        return;
+      }
+    }
+
+    if (formData.coordinator_phone) {
+      const phoneErr = validatePhone(formData.coordinator_phone, false);
+      if (phoneErr) {
+        setPopupMessage({ type: 'error', text: phoneErr });
+        setShowPopup(true);
+        return;
+      }
+    }
+
     setIsSubmitting(true);
 
     // Formatting payload for backend
@@ -116,7 +150,7 @@ const AdminAddVisit: React.FC = () => {
       {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <button
-            onClick={() => navigate('/admin/iv-students')}
+            onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/admin/iv-students')}
             style={{
               display: 'flex',
               alignItems: 'center',

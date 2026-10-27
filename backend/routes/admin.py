@@ -12,19 +12,115 @@ import bcrypt
 
 from app import get_db
 from .notifications import create_notification
+from .auth import _is_user_added_by_admin
+from .applications import serialize_timeline
+from .recruiter import serialize_email_history, build_status_email_content
+from utils.mailer import send_email
+from utils.date_helpers import format_datetime_utc
+import re
+import secrets
+import uuid
+
+EMAIL_REGEX = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
+
+def normalize_college_name(name: str) -> str:
+    if not name or str(name).strip().upper() in ("N/A", "NONE", "NULL", ""):
+        return "Not Specified"
+    cleaned = str(name).strip()
+    if "saintgits" in cleaned.lower():
+        return "Saintgits College of Engineering"
+    
+    words = cleaned.split()
+    capitalized_words = []
+    lower_words = {"of", "and", "in", "for", "the", "at"}
+    for i, w in enumerate(words):
+        if i > 0 and w.lower() in lower_words:
+            capitalized_words.append(w.lower())
+        else:
+            capitalized_words.append(w.capitalize())
+    return " ".join(capitalized_words)
+
+
+def _is_valid_drive_link(link: str) -> bool:
+    if not link or not isinstance(link, str):
+        return False
+    s = link.strip().lower()
+    if s.startswith("data:") or s.endswith(".pdf") or s.endswith(".docx") or s.endswith(".doc"):
+        return False
+    return s.startswith("http://") or s.startswith("https://") or "drive.google.com" in s or "dropbox.com" in s or "onedrive." in s
+
 
 admin_bp = Blueprint("admin", __name__)
+
+def get_user_from_jwt():
+    """Resilient lookup for JWT identity as ObjectId, email, or emp_id."""
+    from flask_jwt_extended import get_jwt
+    user_id = get_jwt_identity()
+    claims = {}
+    try:
+        claims = get_jwt() or {}
+    except Exception:
+        pass
+    db = get_db()
+    user = None
+    try:
+        user = db["users"].find_one({"_id": ObjectId(user_id)})
+    except Exception:
+        pass
+    if not user:
+        user = db["users"].find_one({"$or": [{"email": str(user_id).strip().lower()}, {"emp_id": str(user_id)}]})
+    if not user and claims.get("email"):
+        user = db["users"].find_one({"email": str(claims.get("email")).strip().lower()})
+    return user
 
 def admin_required(fn):
     """Decorator to check if user has admin or super_admin role."""
     from functools import wraps
+    from flask_jwt_extended import get_jwt
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        user_id = get_jwt_identity()
-        db = get_db()
-        user = db["users"].find_one({"_id": ObjectId(user_id)})
-        if not user or user.get("role") not in ("admin", "super_admin"):
+        user = get_user_from_jwt()
+        claims = {}
+        try:
+            claims = get_jwt() or {}
+        except Exception:
+            pass
+        role = (user.get("role") or claims.get("role") or "").strip().lower() if (user or claims) else ""
+        if role not in ("admin", "super_admin"):
             return jsonify({"success": False, "message": "Admin privileges required."}), 403
+        return fn(*args, **kwargs)
+    return wrapper
+
+def job_management_required(fn):
+    """Decorator to check if user has recruiter, admin, or super_admin role."""
+    from functools import wraps
+    from flask_jwt_extended import get_jwt
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        user = get_user_from_jwt()
+        claims = {}
+        try:
+            claims = get_jwt() or {}
+        except Exception:
+            pass
+        role = (user.get("role") or claims.get("role") or "").strip().lower() if (user or claims) else ""
+        user_type = user.get("user_type") if user else claims.get("user_type")
+        allowed = ("admin", "super_admin", "job_recruiter", "recruiter")
+        if role not in allowed and user_type != "Staff":
+            return jsonify({"success": False, "message": "Recruiter or Admin privileges required."}), 403
+        return fn(*args, **kwargs)
+    return wrapper
+
+def event_management_required(fn):
+    """Decorator to check if user has event_manager, admin, or super_admin role."""
+    from functools import wraps
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        user = get_user_from_jwt()
+        role = (user.get("role") or "").strip().lower() if user else ""
+        allowed = ("admin", "super_admin", "event_manager")
+        if not user or (role not in allowed and user.get("user_type") != "Staff"):
+            return jsonify({"success": False, "message": "Event Manager or Admin privileges required."}), 403
         return fn(*args, **kwargs)
     return wrapper
 
@@ -33,10 +129,10 @@ def course_management_required(fn):
     from functools import wraps
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        user_id = get_jwt_identity()
-        db = get_db()
-        user = db["users"].find_one({"_id": ObjectId(user_id)})
-        if not user or user.get("role") not in ("admin", "super_admin", "course_manager"):
+        user = get_user_from_jwt()
+        role = (user.get("role") or "").strip().lower() if user else ""
+        allowed = ("admin", "super_admin", "course_manager")
+        if not user or (role not in allowed and user.get("user_type") != "Staff"):
             return jsonify({"success": False, "message": "Course Management privileges required."}), 403
         return fn(*args, **kwargs)
     return wrapper
@@ -71,7 +167,7 @@ def get_stats():
     total_applications = db["applications"].count_documents({})
     total_events = db["events"].count_documents({})
     total_courses = db["courses"].count_documents({})
-    iv_students = db["users"].count_documents({"user_type": "Industrial Student"})
+    iv_students = db["users"].count_documents({"user_type": {"$in": ["Industrial Student", "IV Student"]}})
     trainees = db["users"].count_documents({"user_type": "Trainee"})
     alumni = db["users"].count_documents({"user_type": "Alumni"})
     staff = db["users"].count_documents({"user_type": "Staff"})
@@ -132,48 +228,167 @@ def get_stats():
 def get_activity():
     """Get recent global activity for the admin dashboard."""
     db = get_db()
-    
-    # Recent Users
-    recent_users = db["users"].find({}, {"full_name": 1, "created_at": 1}).sort("created_at", -1).limit(5)
-    # Recent Jobs
-    recent_jobs = db["jobs"].find({}, {"title": 1, "createdAt": 1}).sort("createdAt", -1).limit(5)
-    # Recent Apps
-    recent_apps = db["applications"].find({}, {"job_id": 1, "user_id": 1, "applied_at": 1}).sort("applied_at", -1).limit(5)
-    
+
+    def _to_datetime(val):
+        if not val:
+            return datetime.min.replace(tzinfo=timezone.utc)
+        if isinstance(val, datetime):
+            if val.tzinfo is None:
+                return val.replace(tzinfo=timezone.utc)
+            return val
+        if isinstance(val, str):
+            val = val.strip()
+            try:
+                clean = val.replace("Z", "+00:00")
+                dt = datetime.fromisoformat(clean)
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+                return dt
+            except Exception:
+                pass
+            for fmt in ("%Y-%m-%d", "%Y-%m-%d %H:%M:%S", "%d-%m-%Y", "%b %d, %Y"):
+                try:
+                    dt = datetime.strptime(val, fmt)
+                    return dt.replace(tzinfo=timezone.utc)
+                except Exception:
+                    continue
+        return datetime.min.replace(tzinfo=timezone.utc)
+
+    def _get_avatar(name):
+        if not name:
+            return "U"
+        parts = name.strip().split()
+        if len(parts) >= 2:
+            return (parts[0][0] + parts[1][0]).upper()
+        return name[:2].upper() if len(name) >= 2 else name.upper()
+
     activities = []
-    
-    for u in recent_users:
+
+    # 1. New Users
+    for u in db["users"].find().sort("created_at", -1).limit(10):
+        dt = _to_datetime(u.get("created_at"))
+        name = u.get("full_name") or u.get("name") or "User"
         activities.append({
-            "user": u.get("full_name", "User"),
+            "user": name,
             "action": "joined the platform",
-            "time": u.get("created_at").isoformat() if hasattr(u.get("created_at"), "isoformat") else "Recently",
-            "avatar": u.get("full_name", "U")[0].upper()
+            "time": dt.isoformat(),
+            "_dt": dt,
+            "avatar": _get_avatar(name)
         })
-        
-    for j in recent_jobs:
+
+    # 2. Posted Jobs
+    for j in db["jobs"].find().sort("createdAt", -1).limit(10):
+        dt = _to_datetime(j.get("createdAt") or j.get("created_at"))
+        poster_name = None
+        posted_by = j.get("posted_by")
+        if posted_by:
+            try:
+                pu = db["users"].find_one({"$or": [{"_id": ObjectId(posted_by)}, {"_id": str(posted_by)}]})
+                if pu:
+                    poster_name = pu.get("full_name")
+            except Exception:
+                pass
+        poster_name = poster_name or j.get("company") or "Recruiter"
         activities.append({
-            "user": "System",
+            "user": poster_name,
             "action": f"posted new job: {j.get('title')}",
-            "time": j.get("createdAt").isoformat() if hasattr(j.get("createdAt"), "isoformat") else "Recently",
-            "avatar": "SJ"
+            "time": dt.isoformat(),
+            "_dt": dt,
+            "avatar": _get_avatar(poster_name)
         })
-        
-    for a in recent_apps:
-        user = db["users"].find_one({"_id": a["user_id"]}, {"full_name": 1})
-        job = db["jobs"].find_one({"_id": a["job_id"]}, {"title": 1})
+
+    # 3. Published Courses
+    for c in db["courses"].find().sort("createdAt", -1).limit(10):
+        dt = _to_datetime(c.get("createdAt") or c.get("created_at"))
+        creator_name = None
+        created_by = c.get("created_by")
+        if created_by:
+            try:
+                cu = db["users"].find_one({"$or": [{"_id": ObjectId(created_by)}, {"_id": str(created_by)}]})
+                if cu:
+                    creator_name = cu.get("full_name")
+            except Exception:
+                pass
+        creator_name = creator_name or c.get("instructor") or "Course Lead"
         activities.append({
-            "user": user.get("full_name", "Applicant") if user else "Applicant",
-            "action": f"applied for {job.get('title')}" if job else "applied for a job",
-            "time": a.get("applied_at").isoformat() if hasattr(a.get("applied_at"), "isoformat") else "Recently",
-            "avatar": "AP"
+            "user": creator_name,
+            "action": f"published course: {c.get('title')}",
+            "time": dt.isoformat(),
+            "_dt": dt,
+            "avatar": _get_avatar(creator_name)
         })
-        
-    # Sort all by time (we'd need real datetime objects for perfect sort, but this is a good start)
-    # Since we added them in blocks, we can just return the combined list or sort if we have dates.
-    
+
+    # 4. Scheduled Events
+    for e in db["events"].find().sort("createdAt", -1).limit(10):
+        dt = _to_datetime(e.get("createdAt") or e.get("created_at") or e.get("date"))
+        org_name = None
+        created_by = e.get("created_by")
+        if created_by:
+            try:
+                eu = db["users"].find_one({"$or": [{"_id": ObjectId(created_by)}, {"_id": str(created_by)}]})
+                if eu:
+                    org_name = eu.get("full_name")
+            except Exception:
+                pass
+        org_name = org_name or e.get("organizer") or "Event Lead"
+        activities.append({
+            "user": org_name,
+            "action": f"scheduled event: {e.get('title')}",
+            "time": dt.isoformat(),
+            "_dt": dt,
+            "avatar": _get_avatar(org_name)
+        })
+
+    # 5. Shared Posts / Broadcasts
+    for p in db["posts"].find().sort("created_at", -1).limit(10):
+        dt = _to_datetime(p.get("created_at") or p.get("createdAt"))
+        author_name = None
+        author_id = p.get("author_id")
+        if author_id:
+            try:
+                au = db["users"].find_one({"$or": [{"_id": ObjectId(author_id)}, {"_id": str(author_id)}]})
+                if au:
+                    author_name = au.get("full_name")
+            except Exception:
+                pass
+        author_name = author_name or "Community"
+        snippet = (p.get("content") or "").strip()
+        if len(snippet) > 40:
+            snippet = snippet[:40] + "..."
+        action = f"shared broadcast: \"{snippet}\"" if snippet else "shared a new post"
+        activities.append({
+            "user": author_name,
+            "action": action,
+            "time": dt.isoformat(),
+            "_dt": dt,
+            "avatar": _get_avatar(author_name)
+        })
+
+    # 6. Job Applications
+    for a in db["applications"].find().sort("applied_at", -1).limit(10):
+        dt = _to_datetime(a.get("applied_at"))
+        user = db["users"].find_one({"_id": a.get("user_id")})
+        job = db["jobs"].find_one({"_id": a.get("job_id")})
+        user_name = user.get("full_name", "Applicant") if user else "Applicant"
+        job_title = job.get("title", "a role") if job else "a role"
+        activities.append({
+            "user": user_name,
+            "action": f"applied for {job_title}",
+            "time": dt.isoformat(),
+            "_dt": dt,
+            "avatar": _get_avatar(user_name)
+        })
+
+    # Sort descending by real datetime
+    activities.sort(key=lambda x: x["_dt"], reverse=True)
+
+    # Strip internal sort key
+    for item in activities:
+        del item["_dt"]
+
     return jsonify({
         "success": True,
-        "data": {"activities": activities[:10]}
+        "data": {"activities": activities[:15]}
     }), 200
 
 @admin_bp.route("/audit-logs", methods=["GET"])
@@ -222,10 +437,15 @@ def get_audit_logs():
 @jwt_required()
 @admin_required
 def get_all_managers():
-    """List all users with manager roles (event_manager, course_manager, job_recruiter)."""
+    """List all users with manager roles (event_manager, course_manager, job_recruiter, recruiter)."""
     db = get_db()
-    manager_roles = ["event_manager", "course_manager", "job_recruiter"]
-    managers_cursor = db["users"].find({"role": {"$in": manager_roles}}).sort("created_at", -1)
+    manager_roles = ["event_manager", "course_manager", "job_recruiter", "recruiter"]
+    managers_cursor = db["users"].find({
+        "$or": [
+            {"role": {"$in": manager_roles}},
+            {"user_type": "Staff", "role": {"$nin": ["user", ""]}}
+        ]
+    }).sort("created_at", -1)
 
     managers_list = []
     for m in managers_cursor:
@@ -259,22 +479,28 @@ def get_all_users():
     query = {}
     user_type = request.args.get("type")
     if user_type:
-        query["user_type"] = user_type
+        if user_type in ["IV Student", "Industrial Student"]:
+            query["user_type"] = {"$in": ["IV Student", "Industrial Student"]}
+        else:
+            query["user_type"] = user_type
     
     users_cursor = db["users"].find(query).sort("created_at", -1)
     
     users_list = []
     for u in users_cursor:
-        u["id"] = str(u["_id"])
-        del u["_id"]
+        u["id"] = str(u.pop("_id", ""))
+        if "created_by" in u and isinstance(u["created_by"], ObjectId):
+            u["created_by"] = str(u["created_by"])
         if "password" in u:
             del u["password"]
-        if "created_at" in u and hasattr(u["created_at"], "isoformat"):
-            u["created_at"] = u["created_at"].isoformat()
-        if "updated_at" in u and hasattr(u["updated_at"], "isoformat"):
-            u["updated_at"] = u["updated_at"].isoformat()
-        if "last_login" in u and u["last_login"] and hasattr(u["last_login"], "isoformat"):
-            u["last_login"] = u["last_login"].isoformat()
+        if not u.get("user_type") and u.get("role") not in ("admin", "super_admin", "recruiter", "event_manager", "course_manager"):
+            u["user_type"] = "Applicant"
+        if "created_at" in u:
+            u["created_at"] = format_datetime_utc(u["created_at"])
+        if "updated_at" in u:
+            u["updated_at"] = format_datetime_utc(u["updated_at"])
+        if "last_login" in u:
+            u["last_login"] = format_datetime_utc(u["last_login"])
         users_list.append(u)
         
     return jsonify({
@@ -296,9 +522,13 @@ def get_user_details(user_id):
     if not user:
         return jsonify({"success": False, "message": "User not found."}), 404
         
-    user["id"] = str(user.pop("_id"))
+    user["id"] = str(user.pop("_id", ""))
+    if "created_by" in user and isinstance(user["created_by"], ObjectId):
+        user["created_by"] = str(user["created_by"])
     if "password" in user:
         del user["password"]
+    if not user.get("user_type") and user.get("role") not in ("admin", "super_admin", "recruiter", "event_manager", "course_manager"):
+        user["user_type"] = "Applicant"
     
     # Convert dates to ISO
     for field in ["created_at", "updated_at", "last_login"]:
@@ -333,6 +563,57 @@ def get_bulk_upload_history():
         "data": {"history": history_list}
     }), 200
 
+@admin_bp.route("/check-email", methods=["GET"])
+@jwt_required()
+@admin_required
+def check_email_exists():
+    """Check if an email address is already registered in the system."""
+    raw_email = (request.args.get("email") or "").strip().lower()
+    if not raw_email:
+        return jsonify({"success": False, "message": "Email parameter is required."}), 400
+
+    if not EMAIL_REGEX.match(raw_email):
+        return jsonify({
+            "success": True,
+            "data": {
+                "valid_format": False,
+                "exists": False,
+                "message": "Please enter a valid email address."
+            }
+        }), 200
+
+    db = get_db()
+    existing = db["users"].find_one(
+        {"email": {"$regex": f"^{re.escape(raw_email)}$", "$options": "i"}},
+        {"full_name": 1, "email": 1, "role": 1, "user_type": 1}
+    )
+
+    if existing:
+        role_label = existing.get("user_type") or existing.get("role") or "User"
+        name = existing.get("full_name") or "Existing User"
+        return jsonify({
+            "success": True,
+            "data": {
+                "valid_format": True,
+                "exists": True,
+                "message": f"This email is already in use by {name} ({role_label}). Duplicate emails are not allowed.",
+                "existing_user": {
+                    "full_name": name,
+                    "role": existing.get("role"),
+                    "user_type": existing.get("user_type")
+                }
+            }
+        }), 200
+
+    return jsonify({
+        "success": True,
+        "data": {
+            "valid_format": True,
+            "exists": False,
+            "message": "Email is available."
+        }
+    }), 200
+
 @admin_bp.route("/users", methods=["POST"])
 @jwt_required()
 @admin_required
@@ -356,24 +637,49 @@ def create_user():
                 "message": "Access denied. Only Super Admin can create Admin or Super Admin accounts."
             }), 403
 
-    if db["users"].find_one({"email": data["email"].strip().lower()}):
-        return jsonify({"success": False, "message": "Email already exists."}), 409
+    raw_email = (data.get("email") or "").strip().lower()
+    if not raw_email or not EMAIL_REGEX.match(raw_email):
+        return jsonify({"success": False, "message": "Please provide a valid email address."}), 400
+
+    full_name = (data.get("full_name") or "").strip()
+    if full_name and len(full_name) < 2:
+        return jsonify({"success": False, "message": "Full name must be at least 2 characters."}), 400
+
+    # Strict case-insensitive duplicate email check
+    existing_user = db["users"].find_one({
+        "email": {"$regex": f"^{re.escape(raw_email)}$", "$options": "i"}
+    })
+    if existing_user:
+        existing_role = existing_user.get("user_type") or existing_user.get("role") or "User"
+        existing_name = existing_user.get("full_name") or "Existing Account"
+        return jsonify({
+            "success": False, 
+            "message": f"A user or manager with email '{raw_email}' already exists ({existing_name} - {existing_role}). Duplicate emails are not allowed.",
+            "code": "DUPLICATE_EMAIL"
+        }), 409
         
     hashed_pw = bcrypt.hashpw(data["password"].encode("utf-8"), bcrypt.gensalt()).decode('utf-8')
     now = datetime.now(timezone.utc)
     
     user_doc = {
-        "full_name": data.get("full_name", "New User"),
-        "email": data["email"].strip().lower(),
+        "full_name": full_name or "New User",
+        "first_name": data.get("first_name", ""),
+        "last_name": data.get("last_name", ""),
+        "email": raw_email,
         "password": hashed_pw,
         "phone": data.get("phone", ""),
         "emp_id": data.get("emp_id", ""),
         "user_type": data.get("user_type", "Alumni"),
         "batch": data.get("batch", "N/A"),
         "specialization": data.get("specialization", "N/A"),
+        "college": data.get("college", "N/A"),
+        "salary": data.get("salary", ""),
+        "joining_date": data.get("joining_date", ""),
         "role": data.get("role", "user"),
         "is_active": True,
         "is_email_verified": True,
+        "added_by_admin": True,
+        "created_by": ObjectId(get_jwt_identity()),
         "profile_picture": None,
         "bio": None,
         "linkedin_url": None,
@@ -383,7 +689,17 @@ def create_user():
         "last_login": None,
     }
     
-    result = db["users"].insert_one(user_doc)
+    try:
+        result = db["users"].insert_one(user_doc)
+    except Exception as e:
+        if "duplicate" in str(e).lower() or e.__class__.__name__ == "DuplicateKeyError":
+            return jsonify({
+                "success": False,
+                "message": f"An account with email '{raw_email}' already exists in the system. Duplicate emails are not allowed.",
+                "code": "DUPLICATE_EMAIL"
+            }), 409
+        raise e
+
     return jsonify({
         "success": True,
         "message": "User created successfully.",
@@ -394,7 +710,7 @@ def create_user():
 @jwt_required()
 @admin_required
 def bulk_add_users():
-    """Bulk create users from an admin-provided list."""
+    """Bulk create users from an admin-provided list with duplicate email prevention."""
     data = request.get_json()
     if not data or "users" not in data or not isinstance(data["users"], list):
         return jsonify({"success": False, "message": "List of users required."}), 400
@@ -404,38 +720,73 @@ def bulk_add_users():
     added_count = 0
     skipped_count = 0
     errors = []
+    seen_in_batch = set()
     
     now = datetime.now(timezone.utc)
-    # Default password for bulk created users
-    default_pw_str = "Welcome@NeST2024"
-    default_hashed_pw = bcrypt.hashpw(default_pw_str.encode("utf-8"), bcrypt.gensalt())
     
     for idx, u in enumerate(input_users):
-        email = u.get("email", "").strip().lower()
+        email = str(u.get("email") or "").strip().lower()
         if not email:
             errors.append(f"Row {idx+1}: Missing email.")
             skipped_count += 1
             continue
             
-        if db["users"].find_one({"email": email}):
+        if not EMAIL_REGEX.match(email):
+            errors.append(f"Row {idx+1} ({email}): Invalid email format.")
+            skipped_count += 1
+            continue
+
+        if email in seen_in_batch:
+            errors.append(f"Row {idx+1} ({email}): Duplicate email within uploaded file.")
+            skipped_count += 1
+            continue
+
+        seen_in_batch.add(email)
+
+        # Check existing user in DB (case-insensitive)
+        existing = db["users"].find_one({
+            "email": {"$regex": f"^{re.escape(email)}$", "$options": "i"}
+        })
+        if existing:
+            existing_role = existing.get("user_type") or existing.get("role") or "User"
+            errors.append(f"Row {idx+1} ({email}): Email already registered ({existing_role}).")
             skipped_count += 1
             continue
             
         try:
-            # Individual hash for better security and ensuring string storage
-            user_hashed_pw = bcrypt.hashpw(default_pw_str.encode("utf-8"), bcrypt.gensalt()).decode('utf-8')
+            # Generate a secure random password for each user (portal uses passwordless OTP verification)
+            rand_pw = secrets.token_urlsafe(16) + "A1!"
+            user_hashed_pw = bcrypt.hashpw(rand_pw.encode("utf-8"), bcrypt.gensalt()).decode('utf-8')
             
+            full_name = str(u.get("full_name", "")).strip()
+            if not full_name:
+                f_name = str(u.get("first_name", "")).strip()
+                l_name = str(u.get("last_name", "")).strip()
+                if f_name or l_name:
+                    full_name = f"{f_name} {l_name}".strip()
+                else:
+                    full_name = "User"
+
+            user_type = str(u.get("user_type", "Alumni")).strip() or "Alumni"
+            user_role = "admin" if user_type.lower() in ("admin", "system admin") else u.get("role", "user")
+            salary = str(u.get("salary", "")).strip()
+            joining_date = str(u.get("joining_date", "")).strip()
+
             user_doc = {
-                "full_name": u.get("full_name", "User"),
+                "full_name": full_name,
                 "email": email,
                 "password": user_hashed_pw,
-                "phone": u.get("phone", ""),
-                "user_type": u.get("user_type", "Alumni"),
-                "batch": u.get("batch", "N/A"),
-                "specialization": u.get("specialization", "N/A"),
-                "role": u.get("role", "user"),
+                "phone": str(u.get("phone", "")).strip(),
+                "user_type": user_type,
+                "batch": str(u.get("batch", "N/A")).strip() or "N/A",
+                "specialization": str(u.get("specialization", "N/A")).strip() or "N/A",
+                "salary": salary,
+                "joining_date": joining_date,
+                "role": user_role,
                 "is_active": True,
                 "is_email_verified": True,
+                "added_by_admin": True,
+                "created_by": ObjectId(get_jwt_identity()),
                 "profile_picture": None,
                 "bio": u.get("bio"),
                 "linkedin_url": u.get("linkedin_url"),
@@ -489,12 +840,23 @@ def update_user_status(user_id):
                 "message": "Access denied. Only Super Admin can assign Admin or Super Admin roles."
             }), 403
 
-    allowed_fields = ["is_active", "role", "full_name", "phone", "emp_id", "user_type", "batch", "specialization", "password"]
+    allowed_fields = ["is_active", "role", "full_name", "phone", "salary", "joining_date", "emp_id", "user_type", "batch", "specialization", "password"]
     update_data = {}
     for field in allowed_fields:
         if field in data:
             if field == "password" and data[field]:
                 update_data["password"] = bcrypt.hashpw(data[field].encode("utf-8"), bcrypt.gensalt()).decode('utf-8')
+            elif field == "full_name" and data[field] is not None:
+                name_val = str(data[field]).strip()
+                if len(name_val) < 2:
+                    return jsonify({"success": False, "message": "Full name must be at least 2 characters."}), 400
+                update_data["full_name"] = name_val
+            elif field == "phone" and data[field]:
+                phone_clean = str(data[field]).strip()
+                digits_only = re.sub(r"\D", "", phone_clean)
+                if digits_only and (len(digits_only) < 7 or len(digits_only) > 15):
+                    return jsonify({"success": False, "message": "Please enter a valid phone number (7-15 digits)."}), 400
+                update_data["phone"] = phone_clean
             else:
                 update_data[field] = data[field]
         
@@ -561,7 +923,7 @@ def bulk_delete_users():
 
 @admin_bp.route("/jobs", methods=["GET"])
 @jwt_required()
-@admin_required
+@job_management_required
 def get_all_jobs():
     """List all jobs for admin management."""
     db = get_db()
@@ -571,8 +933,8 @@ def get_all_jobs():
     for j in jobs_cursor:
         j["id"] = str(j["_id"])
         del j["_id"]
-        if "createdAt" in j and hasattr(j["createdAt"], "isoformat"):
-            j["createdAt"] = j["createdAt"].isoformat()
+        if "createdAt" in j:
+            j["createdAt"] = format_datetime_utc(j["createdAt"])
         jobs_list.append(j)
         
     return jsonify({
@@ -582,7 +944,7 @@ def get_all_jobs():
 
 @admin_bp.route("/jobs", methods=["POST"])
 @jwt_required()
-@admin_required
+@job_management_required
 def add_job():
     """Add a new job listing."""
     data = request.get_json()
@@ -633,7 +995,7 @@ def add_job():
 
 @admin_bp.route("/jobs/<job_id>", methods=["PATCH"])
 @jwt_required()
-@admin_required
+@job_management_required
 def update_job(job_id):
     """Update a job listing."""
     data = request.get_json()
@@ -656,7 +1018,7 @@ def update_job(job_id):
 
 @admin_bp.route("/jobs/<job_id>", methods=["DELETE"])
 @jwt_required()
-@admin_required
+@job_management_required
 def delete_job(job_id):
     """Delete a job listing."""
     db = get_db()
@@ -685,13 +1047,37 @@ def get_all_courses():
     for c in courses_cursor:
         c["id"] = str(c["_id"])
         
-        # Count enrollments for this course
-        enrolled_count = db["course_enrollments"].count_documents({"course_id": c["_id"]})
+        oid = c["_id"]
+        # Find all enrollments for this course (matching either ObjectId or string id)
+        enrolls = list(db["course_enrollments"].find({
+            "$or": [{"course_id": oid}, {"course_id": str(oid)}]
+        }))
+        enrolled_count = len(enrolls)
         c["enrolled_count"] = enrolled_count
         
+        # Real course health & progress calculated directly from learner enrollments
+        if enrolled_count > 0:
+            progs = [e.get("progress", 0) for e in enrolls]
+            avg_progress = round(sum(progs) / len(progs))
+            completed_count = sum(1 for e in enrolls if str(e.get("status", "")).lower() == "completed" or e.get("progress", 0) >= 100)
+            active_learners = enrolled_count - completed_count
+            c["avg_progress"] = avg_progress
+            c["active_learners"] = active_learners
+            c["completed_learners"] = completed_count
+            c["health_percent"] = avg_progress
+        else:
+            c["avg_progress"] = 0
+            c["active_learners"] = 0
+            c["completed_learners"] = 0
+            c["health_percent"] = 0
+
+        c["is_active"] = c.get("is_active", False if str(c.get("status", "")).lower() == "inactive" else True)
+        if "status" not in c or not c["status"]:
+            c["status"] = "Active" if c["is_active"] else "Inactive"
+        
         del c["_id"]
-        if "createdAt" in c and hasattr(c["createdAt"], "isoformat"):
-            c["createdAt"] = c["createdAt"].isoformat()
+        if "createdAt" in c:
+            c["createdAt"] = format_datetime_utc(c["createdAt"])
         courses_list.append(c)
         
     return jsonify({
@@ -728,6 +1114,8 @@ def add_course():
         "modules": data.get("modules", []),
         "required_assessments": data.get("required_assessments", [1, 2, 3, 4, 5]),
         "is_published": data.get("is_published", True),
+        "is_active": data.get("is_active", True),
+        "status": data.get("status", "Active"),
         "created_by": get_jwt_identity(),
         "createdAt": datetime.now(timezone.utc)
     }
@@ -766,7 +1154,7 @@ def update_course(course_id):
     
     allowed_fields = ["title", "description", "instructor", "duration", "level",
                        "category", "thumbnail", "cover_image", "video_url", "modules", 
-                       "required_assessments", "is_published", "certification", 
+                       "required_assessments", "is_published", "is_active", "status", "certification", 
                        "access_level", "start_date"]
     update_data = {}
     for field in allowed_fields:
@@ -785,24 +1173,95 @@ def update_course(course_id):
 @jwt_required()
 @course_management_required
 def delete_course(course_id):
-    """Delete a course."""
+    """Delete a course and cascade cleanups."""
     db = get_db()
     
     try:
-        result = db["courses"].delete_one({"_id": ObjectId(course_id)})
+        oid = ObjectId(course_id)
+        result = db["courses"].delete_one({"$or": [{"_id": oid}, {"_id": str(course_id)}]})
     except:
-        return jsonify({"success": False, "message": "Invalid course ID."}), 400
+        result = db["courses"].delete_one({"_id": str(course_id)})
     
     if result.deleted_count == 0:
         return jsonify({"success": False, "message": "Course not found."}), 404
     
+    try:
+        db["course_enrollments"].delete_many({"$or": [{"course_id": ObjectId(course_id)}, {"course_id": str(course_id)}]})
+        db["course_assessments"].delete_many({"$or": [{"course_id": ObjectId(course_id)}, {"course_id": str(course_id)}]})
+        db["assessment_submissions"].delete_many({"$or": [{"course_id": ObjectId(course_id)}, {"course_id": str(course_id)}]})
+        db["assessment_attempts"].delete_many({"$or": [{"course_id": ObjectId(course_id)}, {"course_id": str(course_id)}]})
+        db["course_recommendations"].delete_many({"$or": [{"course_id": ObjectId(course_id)}, {"course_id": str(course_id)}]})
+    except Exception as e:
+        print(f"Cleanup error on course delete: {e}")
+
     return jsonify({"success": True, "message": "Course deleted successfully."}), 200
+
+# ── Job Management ──
+
+@admin_bp.route("/jobs", methods=["GET"])
+@jwt_required()
+@job_management_required
+def get_all_jobs_admin():
+    """List all jobs for admin."""
+    db = get_db()
+    jobs = list(db["jobs"].find().sort("createdAt", -1))
+    for j in jobs:
+        j["id"] = str(j["_id"])
+        del j["_id"]
+        if "createdAt" in j:
+            j["createdAt"] = format_datetime_utc(j["createdAt"])
+    return jsonify({"success": True, "data": {"jobs": jobs}}), 200
+
+@admin_bp.route("/jobs", methods=["POST"])
+@jwt_required()
+@job_management_required
+def add_job_admin():
+    """Create a new job as admin."""
+    data = request.get_json()
+    db = get_db()
+    if not data or not data.get("title"):
+        return jsonify({"success": False, "message": "Job title is required."}), 400
+
+    job_doc = {
+        "title": data.get("title"),
+        "company": data.get("company", "NeST Digital"),
+        "location": data.get("location", "Kochi, Kerala"),
+        "salary": data.get("salary", "Competitive"),
+        "type": data.get("type", "Full-time"),
+        "department": data.get("department", "Technology"),
+        "description": data.get("description", ""),
+        "requirements": data.get("requirements", []),
+        "skills_required": data.get("skills_required", []),
+        "experience_level": data.get("experience_level", "Entry Level"),
+        "is_active": True,
+        "status": "Active",
+        "posted_by": get_jwt_identity(),
+        "createdAt": datetime.now(timezone.utc)
+    }
+    result = db["jobs"].insert_one(job_doc)
+    return jsonify({"success": True, "message": "Job created successfully.", "data": {"id": str(result.inserted_id)}}), 201
+
+@admin_bp.route("/jobs/<job_id>", methods=["DELETE"])
+@jwt_required()
+@job_management_required
+def delete_job_admin(job_id):
+    """Delete a job."""
+    db = get_db()
+    try:
+        oid = ObjectId(job_id)
+        result = db["jobs"].delete_one({"$or": [{"_id": oid}, {"_id": str(job_id)}]})
+    except Exception:
+        result = db["jobs"].delete_one({"_id": str(job_id)})
+
+    if result.deleted_count == 0:
+        return jsonify({"success": False, "message": "Job not found."}), 404
+    return jsonify({"success": True, "message": "Job deleted successfully."}), 200
 
 # ── Event Management ──
 
 @admin_bp.route("/events", methods=["GET"])
 @jwt_required()
-@admin_required
+@event_management_required
 def get_all_events():
     """List all events for admin management."""
     db = get_db()
@@ -824,7 +1283,7 @@ def get_all_events():
 
 @admin_bp.route("/events", methods=["POST"])
 @jwt_required()
-@admin_required
+@event_management_required
 def add_event():
     """Create a new event."""
     data = request.get_json()
@@ -875,7 +1334,7 @@ def add_event():
 
 @admin_bp.route("/events/<event_id>", methods=["PATCH"])
 @jwt_required()
-@admin_required
+@event_management_required
 def update_event(event_id):
     """Update an event."""
     data = request.get_json()
@@ -898,18 +1357,29 @@ def update_event(event_id):
 
 @admin_bp.route("/events/<event_id>", methods=["DELETE"])
 @jwt_required()
-@admin_required
+@event_management_required
 def delete_event(event_id):
-    """Delete an event."""
+    """Delete an event and related records."""
     db = get_db()
     
     try:
-        result = db["events"].delete_one({"_id": ObjectId(event_id)})
-    except:
-        return jsonify({"success": False, "message": "Invalid event ID."}), 400
+        oid = ObjectId(event_id)
+        result = db["events"].delete_one({"$or": [{"_id": oid}, {"_id": str(event_id)}]})
+    except Exception:
+        result = db["events"].delete_one({"_id": str(event_id)})
     
     if result.deleted_count == 0:
         return jsonify({"success": False, "message": "Event not found."}), 404
+
+    try:
+        db["event_registrations"].delete_many({"$or": [{"event_id": ObjectId(event_id)}, {"event_id": str(event_id)}]})
+    except Exception:
+        db["event_registrations"].delete_many({"event_id": str(event_id)})
+
+    try:
+        db["event_bookmarks"].delete_many({"$or": [{"event_id": ObjectId(event_id)}, {"event_id": str(event_id)}]})
+    except Exception:
+        db["event_bookmarks"].delete_many({"event_id": str(event_id)})
     
     return jsonify({"success": True, "message": "Event deleted successfully."}), 200
 
@@ -983,11 +1453,25 @@ def get_all_applications():
     
     apps_list = []
     for a in apps_cursor:
+        applied_at_val = a.get("applied_at")
+        withdrawn_at_val = a.get("withdrawn_at")
+        reapplied_at_val = a.get("reapplied_at")
+        status_updated_at_val = a.get("status_updated_at") or a.get("updatedAt") or a.get("updated_at")
+
         app_data = {
             "id": str(a["_id"]),
             "status": a.get("status", "pending"),
             "cover_letter": a.get("cover_letter", ""),
-            "applied_at": a.get("applied_at").isoformat() if a.get("applied_at") else None,
+            "applied_at": format_datetime_utc(applied_at_val),
+            "withdrawn_at": format_datetime_utc(withdrawn_at_val),
+            "reapplied_at": format_datetime_utc(reapplied_at_val),
+            "status_updated_at": format_datetime_utc(status_updated_at_val),
+            "updated_at": format_datetime_utc(status_updated_at_val),
+            "notes": a.get("notes", ""),
+            "last_status_note": a.get("last_status_note", a.get("notes", "")),
+            "last_updated_by": a.get("last_updated_by"),
+            "timeline": serialize_timeline(a.get("timeline"), a, is_internal=True),
+            "email_history": serialize_email_history(a.get("email_history", [])),
         }
         
         # Populate job info
@@ -1005,8 +1489,117 @@ def get_all_applications():
             try:
                 user = db["users"].find_one({"_id": ObjectId(a["user_id"])})
                 if user:
-                    app_data["applicant_name"] = user.get("full_name", "")
-                    app_data["applicant_email"] = user.get("email", "")
+                    app_data["applicant_name"] = a.get("full_name") or user.get("full_name", "")
+                    app_data["applicant_email"] = a.get("email") or user.get("email", "")
+                    raw_a_drive = a.get("resume_drive_link", "")
+                    raw_u_drive = user.get("resume_drive_link", "")
+                    safe_drive_link = raw_a_drive if _is_valid_drive_link(raw_a_drive) else (raw_u_drive if _is_valid_drive_link(raw_u_drive) else "")
+
+                    # Extract proper resume document name
+                    resume_file_name = a.get("resume_name") or user.get("resume_name", "")
+                    if not resume_file_name:
+                        if raw_a_drive and not _is_valid_drive_link(raw_a_drive):
+                            resume_file_name = raw_a_drive
+                        elif raw_u_drive and not _is_valid_drive_link(raw_u_drive):
+                            resume_file_name = raw_u_drive
+
+                    app_data["resume_url"] = a.get("resume_url") or user.get("resume_url", "")
+                    app_data["resume_name"] = resume_file_name
+                    app_data["resume_filename"] = resume_file_name
+                    app_data["phone"] = a.get("phone") or user.get("phone", "")
+                    app_data["graduation_year"] = a.get("graduation_year") or user.get("graduation_year", "") or a.get("batch") or user.get("batch", "")
+                    app_data["batch"] = a.get("graduation_year") or user.get("graduation_year", "") or a.get("batch") or user.get("batch", "")
+                    app_data["current_organisation"] = a.get("current_organisation") or user.get("current_organisation", "") or a.get("current_company") or user.get("current_company", "")
+                    app_data["current_designation"] = a.get("current_designation") or user.get("current_designation", "") or a.get("title") or user.get("title", "")
+                    app_data["total_experience"] = a.get("total_experience") or user.get("total_experience", "")
+                    app_data["current_location"] = a.get("current_location") or user.get("current_location", "") or a.get("location") or user.get("location", "")
+                    app_data["location"] = a.get("current_location") or user.get("current_location", "") or a.get("location") or user.get("location", "")
+                    app_data["preferred_location"] = a.get("preferred_location") or user.get("preferred_location", "")
+                    app_data["resume_drive_link"] = safe_drive_link
+                    app_data["referral_source"] = a.get("referral_source") or user.get("referral_source", "")
+                    app_data["referral_source_details"] = a.get("referral_source_details") or user.get("referral_source_details", "")
+                    app_data["tech_stacks"] = a.get("tech_stacks") or user.get("tech_stacks", [])
+                    app_data["interested_positions"] = a.get("interested_positions") or user.get("interested_positions", [])
+                    app_data["declaration_confirmed"] = bool(a.get("declaration_confirmed") or user.get("declaration_confirmed", False))
+                    app_data["specialization"] = a.get("specialization") or user.get("specialization", "")
+                    app_data["linkedin_url"] = a.get("linkedin_url") or user.get("linkedin_url", "")
+                    app_data["github_url"] = user.get("github_url", "")
+                    app_data["portfolio_url"] = user.get("portfolio_url", "")
+                    app_data["skills"] = user.get("skills", [])
+                    app_data["bio"] = user.get("bio", "")
+                    app_data["experience"] = user.get("experience", [])
+                    app_data["education"] = user.get("education", [])
+                    app_data["certificates"] = user.get("certificates", [])
+                    app_data["emp_id"] = user.get("emp_id") or user.get("student_id", "")
+                    app_data["student_id"] = user.get("student_id", "")
+                    app_data["user_type"] = user.get("user_type", "")
+                    raw_college = (
+                        a.get("college") or 
+                        user.get("college") or 
+                        a.get("referral_source_details") or 
+                        user.get("referral_source_details") or 
+                        ""
+                    )
+                    app_data["college"] = normalize_college_name(raw_college)
+                    is_admin_user = _is_user_added_by_admin(user)
+                    app_data["added_by_admin"] = is_admin_user
+                    app_data["not_added_by_admin"] = not is_admin_user
+                    app_data["form_data"] = {
+                        "full_name": a.get("full_name", ""),
+                        "email": a.get("email", ""),
+                        "phone": a.get("phone", ""),
+                        "college": a.get("college", "") or a.get("referral_source_details", ""),
+                        "graduation_year": a.get("graduation_year", "") or a.get("batch", ""),
+                        "batch": a.get("graduation_year", "") or a.get("batch", ""),
+                        "specialization": a.get("specialization", ""),
+                        "current_organisation": a.get("current_organisation", "") or a.get("current_company", ""),
+                        "current_designation": a.get("current_designation", "") or a.get("title", ""),
+                        "total_experience": a.get("total_experience", ""),
+                        "current_location": a.get("current_location", "") or a.get("location", ""),
+                        "preferred_location": a.get("preferred_location", ""),
+                        "resume_drive_link": raw_a_drive if _is_valid_drive_link(raw_a_drive) else "",
+                        "referral_source": a.get("referral_source", ""),
+                        "referral_source_details": a.get("referral_source_details", ""),
+                        "tech_stacks": a.get("tech_stacks", []),
+                        "interested_positions": a.get("interested_positions", []),
+                        "declaration_confirmed": bool(a.get("declaration_confirmed", False)),
+                        "linkedin_url": a.get("linkedin_url", ""),
+                        "resume_url": a.get("resume_url", ""),
+                        "resume_name": a.get("resume_name", ""),
+                        "cover_letter": a.get("cover_letter", ""),
+                        "applied_at": format_datetime_utc(a.get("applied_at")),
+                    }
+                    app_data["profile_data"] = {
+                        "full_name": user.get("full_name", ""),
+                        "email": user.get("email", ""),
+                        "phone": user.get("phone", ""),
+                        "user_type": user.get("user_type", "") or user.get("role", "Alumni"),
+                        "emp_id": user.get("emp_id") or user.get("student_id", ""),
+                        "student_id": user.get("student_id", ""),
+                        "college": user.get("college", "") or user.get("institution", ""),
+                        "specialization": user.get("specialization", "") or user.get("department", ""),
+                        "batch": user.get("batch", "") or user.get("graduation_year", ""),
+                        "graduation_year": user.get("graduation_year", "") or user.get("batch", ""),
+                        "bio": user.get("bio", ""),
+                        "skills": user.get("skills", []),
+                        "current_organisation": user.get("current_organisation") or user.get("current_company", ""),
+                        "current_designation": user.get("current_designation") or user.get("title", ""),
+                        "total_experience": user.get("total_experience", ""),
+                        "current_location": user.get("current_location") or user.get("location", ""),
+                        "preferred_location": user.get("preferred_location", ""),
+                        "experience": user.get("experience", []),
+                        "education": user.get("education", []),
+                        "certificates": user.get("certificates", []),
+                        "tech_stacks": user.get("tech_stacks", []),
+                        "interested_positions": user.get("interested_positions", []),
+                        "linkedin_url": user.get("linkedin_url", ""),
+                        "github_url": user.get("github_url", ""),
+                        "portfolio_url": user.get("portfolio_url", ""),
+                        "resume_url": user.get("resume_url", ""),
+                        "resume_name": user.get("resume_name", ""),
+                        "resume_drive_link": raw_u_drive if _is_valid_drive_link(raw_u_drive) else "",
+                        "declaration_confirmed": bool(user.get("declaration_confirmed", False))
+                    }
             except:
                 pass
         
@@ -1041,9 +1634,118 @@ def update_application_status(app_id):
         
     job = db["jobs"].find_one({"_id": app_doc["job_id"]})
 
+    now = datetime.now(timezone.utc)
+    admin_id = get_jwt_identity()
+    admin_user = db["users"].find_one({"_id": ObjectId(admin_id)})
+    admin_name = (admin_user.get("full_name") if admin_user else "") or "Admin"
+    admin_emp_id = (admin_user.get("emp_id") or admin_user.get("employee_id") or str(admin_id)) if admin_user else str(admin_id)
+    admin_email = (admin_user.get("email") if admin_user else "") or ""
+    admin_role = (admin_user.get("role") if admin_user else "Admin") or "Admin"
+    prev_status = app_doc.get("status", "Applied")
+    notes = data.get("notes", "")
+
+    # Fetch candidate details
+    applicant_user = db["users"].find_one({"_id": ObjectId(app_doc["user_id"])}) if app_doc.get("user_id") else None
+    candidate_email = app_doc.get("email") or (applicant_user.get("email") if applicant_user else "")
+    candidate_name = app_doc.get("full_name") or (applicant_user.get("full_name") if applicant_user else "Candidate")
+    job_title = (job.get("title") if job else "") or app_doc.get("job_title") or "Position"
+    job_location = (job.get("location") if job else "") or app_doc.get("job_location") or "Kochi, Kerala"
+    company_name = (job.get("company") if job else "") or "NeST Digital"
+
+    # Email Trigger Logic
+    send_email_flag = data.get("send_email", True)
+    custom_subject = data.get("email_subject")
+    candidate_note = (data.get("email_candidate_note") or "").strip()
+    interview_date = data.get("interviewDate") or data.get("interview_date")
+    interview_time = data.get("interview_time") or ""
+    interview_location = data.get("interview_location") or ""
+
+    email_sent = False
+    email_log_entry = None
+
+    if send_email_flag and candidate_email:
+        subject = custom_subject or f"Application Status Update: {job_title} at {company_name} — {new_status}"
+        plain_body, html_body = build_status_email_content(
+            candidate_name=candidate_name,
+            job_title=job_title,
+            company_name=company_name,
+            job_location=job_location,
+            prev_status=prev_status,
+            new_status=new_status,
+            recruiter_name=admin_name,
+            interview_date=interview_date,
+            interview_time=interview_time,
+            interview_location=interview_location,
+            candidate_note=candidate_note
+        )
+
+        try:
+            email_sent = send_email(candidate_email, subject, plain_body, html_body=html_body)
+        except Exception as em_err:
+            print(f"Admin status update email error: {em_err}")
+            email_sent = False
+
+        email_log_entry = {
+            "id": str(uuid.uuid4())[:8],
+            "sent_at": now,
+            "sent_by": {
+                "id": str(admin_id),
+                "name": admin_name,
+                "email": admin_email,
+                "recruiter_id": admin_emp_id,
+                "role": "Admin"
+            },
+            "recipient_email": candidate_email,
+            "recipient_name": candidate_name,
+            "subject": subject,
+            "status_from": prev_status,
+            "status_to": new_status,
+            "job_title": job_title,
+            "job_location": job_location,
+            "interview_date": interview_date,
+            "interview_time": interview_time,
+            "interview_location": interview_location,
+            "candidate_note": candidate_note,
+            "delivery_status": "Sent" if email_sent else "Failed"
+        }
+
+    status_event = {
+        "action": "Status Changed",
+        "status": new_status,
+        "previous_status": prev_status,
+        "timestamp": now,
+        "actor_id": str(admin_id),
+        "actor_name": admin_name,
+        "actor_role": "Admin",
+        "recruiter_id": admin_emp_id,
+        "recruiter_email": admin_email,
+        "note": notes or f"Application status updated to {new_status} by {admin_name}.",
+        "email_sent": email_sent if send_email_flag else False
+    }
+
+    push_ops: dict = {"timeline": status_event}
+    if email_log_entry:
+        push_ops["email_history"] = email_log_entry
+
     db["applications"].update_one(
         {"_id": ObjectId(app_id)},
-        {"$set": {"status": new_status, "updated_at": datetime.now(timezone.utc)}}
+        {
+            "$set": {
+                "status": new_status,
+                "status_updated_at": now,
+                "updated_at": now,
+                "notes": notes,
+                "last_status_note": notes,
+                "last_updated_by": {
+                    "id": str(admin_id),
+                    "name": admin_name,
+                    "recruiter_id": admin_emp_id,
+                    "email": admin_email,
+                    "role": "Admin"
+                }
+            },
+            "$push": push_ops
+        }
     )
 
     # Notify student
@@ -1290,20 +1992,50 @@ def bulk_issue_iv_certificates():
 @admin_bp.route("/iv/issued-certificates", methods=["GET"])
 @jwt_required()
 def get_issued_iv_certificates():
-    """Fetch all issued certificates from the global repository."""
+    """Fetch all issued certificates from the global repository and registered users."""
     db = get_db()
     certs_cursor = db["issued_iv_certificates"].find().sort("issued_at", -1)
     certs_list = []
+    seen = set()
     for c in certs_cursor:
+        email = (c.get("email") or "").lower().strip()
+        date = c.get("date") or ""
+        seen.add((email, date))
         certs_list.append({
             "id": str(c["_id"]),
-            "name": c.get("name"),
-            "email": c.get("email"),
-            "college": c.get("college"),
-            "date": c.get("date"),
-            "batch": c.get("batch"),
+            "name": c.get("name") or "Student",
+            "email": c.get("email") or "N/A",
+            "college": c.get("college") or "N/A",
+            "date": c.get("date") or "N/A",
+            "batch": c.get("batch") or "N/A",
             "issuedAt": c.get("issued_at").isoformat() if hasattr(c.get("issued_at"), "isoformat") else str(c.get("issued_at"))
         })
+
+    # Also include any users who have IV certificates recorded
+    try:
+        iv_users = db["users"].find({"certificates.type": "iv"})
+        for u in iv_users:
+            u_email = (u.get("email") or "").lower().strip()
+            for cert in u.get("certificates", []):
+                if cert.get("type") == "iv":
+                    c_date = cert.get("date") or "N/A"
+                    if (u_email, c_date) not in seen:
+                        seen.add((u_email, c_date))
+                        issued_val = cert.get("issued_at")
+                        if hasattr(issued_val, "isoformat"):
+                            issued_val = issued_val.isoformat()
+                        certs_list.append({
+                            "id": str(u["_id"]),
+                            "name": u.get("full_name") or cert.get("title") or "Student",
+                            "email": u.get("email") or "N/A",
+                            "college": u.get("college") or "N/A",
+                            "date": c_date,
+                            "batch": u.get("batch") or "N/A",
+                            "issuedAt": str(issued_val) if issued_val else datetime.now(timezone.utc).isoformat()
+                        })
+    except Exception as e:
+        print(f"Error fetching user iv certificates: {e}")
+
     return jsonify({
         "success": True,
         "data": {"certificates": certs_list}
@@ -1324,7 +2056,7 @@ def get_certificates_overview():
     now = datetime.now(timezone.utc)
 
     # --- IV students ---
-    iv_users = list(db["users"].find({"user_type": "Industrial Student"}))
+    iv_users = list(db["users"].find({"user_type": {"$in": ["Industrial Student", "IV Student"]}}))
     iv_list = []
     for u in iv_users:
         issued_certs = [c for c in u.get("certificates", []) if c.get("type") == "iv"]
@@ -1469,9 +2201,26 @@ def generate_course_certificate(enrollment_id):
     if not enrollment:
         return jsonify({"success": False, "message": "Enrollment not found."}), 404
 
+    # Enforce passing percentage configured by Course Manager
+    assess_doc = db["course_assessments"].find_one({
+        "$or": [{"course_id": enrollment["course_id"]}, {"course_id": str(enrollment["course_id"])}]
+    })
+    passing_score = int(assess_doc.get("passing_score", 70)) if assess_doc else 70
+
+    latest_sub = db["assessment_submissions"].find_one(
+        {"user_id": enrollment["user_id"], "course_id": enrollment["course_id"]},
+        sort=[("submitted_at", -1)]
+    )
+    user_score = latest_sub.get("score") if latest_sub else None
+    if user_score is None or user_score < passing_score:
+        return jsonify({
+            "success": False,
+            "message": f"Cannot generate certificate: Learner has not passed the assessment (Score: {user_score if user_score is not None else 'Not Attended'}, Required: {passing_score}%)."
+        }), 400
+
     db["certificates"].update_one(
         {"enrollment_id": eid},
-        {"$set": {"status": "Generated", "issued_at": now, "updated_at": now}},
+        {"$set": {"status": "Generated", "grade": f"{user_score}%", "issued_at": now, "updated_at": now}},
         upsert=True
     )
 

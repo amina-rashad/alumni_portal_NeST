@@ -27,7 +27,7 @@ const EventManagerReports: React.FC = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <div>
-        <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#1e293b', margin: 0, fontFamily: "'Montserrat', sans-serif" }}>Analytics Reports</h1>
+        <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#1e293b', margin: 0, fontFamily: "'Inter', sans-serif" }}>Analytics Reports</h1>
         <p style={{ color: '#64748b', marginTop: '4px' }}>Analyze event performance, attendance metrics, and user engagement.</p>
       </div>
 

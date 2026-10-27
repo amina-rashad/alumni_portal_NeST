@@ -141,9 +141,25 @@ const RecruiterPostJob: React.FC = () => {
                 }
             `}</style>
 
-            <Link to="/recruiter/jobs" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: '#64748b', textDecoration: 'none', marginBottom: '32px', fontWeight: 600, fontSize: '14px' }}>
-                <ArrowLeft size={18} /> Back to Management
-            </Link>
+            <button 
+                type="button"
+                onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/recruiter/jobs')}
+                style={{ 
+                    display: 'inline-flex', 
+                    alignItems: 'center', 
+                    gap: '8px', 
+                    color: '#64748b', 
+                    background: 'none', 
+                    border: 'none', 
+                    padding: 0, 
+                    marginBottom: '32px', 
+                    fontWeight: 600, 
+                    fontSize: '14px', 
+                    cursor: 'pointer' 
+                }}
+            >
+                <ArrowLeft size={18} /> Back
+            </button>
 
             <motion.header
                 initial={{ opacity: 0, y: -10 }}

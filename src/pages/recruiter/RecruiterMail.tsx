@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Mail, Search, Filter, Users, Send, CheckCircle2,
-  AlertCircle, X, ChevronRight, ChevronDown, Eye, Code, BookOpen, Clock, Briefcase
+  AlertCircle, X, ChevronRight, ChevronDown, ChevronUp, Eye, Code, BookOpen, Clock, Briefcase, History, Loader2
 } from 'lucide-react';
 import { recruiterApi } from '../../services/api';
 
@@ -14,6 +14,16 @@ interface Talent {
   specialization: string;
   user_type: string;
   selected?: boolean;
+}
+
+interface MailHistoryItem {
+  id: string;
+  subject: string;
+  body: string;
+  recipients: string[];
+  recipient_count: number;
+  sent_at: string;
+  status: string;
 }
 
 const RecruiterMail: React.FC = () => {
@@ -30,8 +40,34 @@ const RecruiterMail: React.FC = () => {
   const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
+  // Email History state
+  const [showHistory, setShowHistory] = useState(false);
+  const [mailHistory, setMailHistory] = useState<MailHistoryItem[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [historySearch, setHistorySearch] = useState('');
+  const [expandedMailId, setExpandedMailId] = useState<string | null>(null);
+
   const nestNavy = '#1a2652';
   const nestRed = '#c8102e';
+
+  const fetchHistory = async () => {
+    setLoadingHistory(true);
+    try {
+      const res = await recruiterApi.getMailHistory();
+      if (res.success && res.data) {
+        setMailHistory(res.data.history || []);
+      }
+    } catch (err) {
+      console.error("Failed to load mail history", err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const handleOpenHistory = () => {
+    setShowHistory(true);
+    fetchHistory();
+  };
 
   useEffect(() => {
     handleSearch();
@@ -123,6 +159,7 @@ const RecruiterMail: React.FC = () => {
         setStatus({ type: 'success', message: res.message || 'Emails sent successfully!' });
         setMailContent({ subject: '', body: '' });
         setSelectedIds(new Set());
+        fetchHistory();
       } else {
         setStatus({ type: 'error', message: res.message || 'Failed to send emails.' });
       }
@@ -138,16 +175,50 @@ const RecruiterMail: React.FC = () => {
     <div style={{ maxWidth: '1200px', margin: '0 auto', fontFamily: "'Inter', sans-serif" }}>
 
       {/* Header */}
-      <header style={{ marginBottom: '40px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-          <div style={{ padding: '10px', background: 'rgba(200, 16, 46, 0.1)', borderRadius: '12px', color: nestRed }}>
-            <Mail size={24} />
+      <header style={{ marginBottom: '36px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+            <div style={{ padding: '10px', background: 'rgba(200, 16, 46, 0.1)', borderRadius: '12px', color: nestRed }}>
+              <Mail size={24} />
+            </div>
+            <h1 style={{ fontSize: '32px', fontWeight: 900, color: '#111827', margin: 0, letterSpacing: '-0.02em' }}>
+              Talent <span style={{ color: nestNavy }}>Mailing</span>
+            </h1>
           </div>
-          <h1 style={{ fontSize: '32px', fontWeight: 900, color: '#111827', margin: 0, letterSpacing: '-0.02em' }}>
-            Talent <span style={{ color: nestNavy }}>Mailing</span>
-          </h1>
+          <p style={{ color: '#64748b', fontSize: '15px', margin: 0 }}>Filter the target audience and send personalized HTML/Rich-Text emails.</p>
         </div>
-        <p style={{ color: '#64748b', fontSize: '16px', margin: 0 }}>Filter the target audience and send personalized HTML/Rich-Text emails.</p>
+
+        <button
+          onClick={handleOpenHistory}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '11px 22px',
+            borderRadius: '14px',
+            border: '1px solid #e2e8f0',
+            background: '#ffffff',
+            color: nestNavy,
+            fontWeight: 700,
+            fontSize: '14px',
+            cursor: 'pointer',
+            boxShadow: '0 4px 14px rgba(26, 38, 82, 0.05)',
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = '#f8fafc';
+            e.currentTarget.style.borderColor = '#cbd5e1';
+            e.currentTarget.style.transform = 'translateY(-1px)';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = '#ffffff';
+            e.currentTarget.style.borderColor = '#e2e8f0';
+            e.currentTarget.style.transform = 'translateY(0)';
+          }}
+        >
+          <History size={17} color={nestNavy} />
+          History
+        </button>
       </header>
 
       <div style={{ display: 'grid', gridTemplateColumns: '400px 1fr', gap: '32px', alignItems: 'start' }}>
@@ -538,6 +609,354 @@ const RecruiterMail: React.FC = () => {
       </div>
 
       <div style={{ paddingBottom: '100px' }} />
+
+      {/* History Modal */}
+      <AnimatePresence>
+        {showHistory && (
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 10000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '24px',
+            background: 'rgba(15, 23, 42, 0.55)',
+            backdropFilter: 'blur(6px)',
+          }}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 20 }}
+              transition={{ duration: 0.2 }}
+              style={{
+                width: '100%',
+                maxWidth: '820px',
+                maxHeight: '85vh',
+                background: '#ffffff',
+                borderRadius: '24px',
+                boxShadow: '0 25px 60px rgba(15, 23, 42, 0.25)',
+                border: '1px solid #e2e8f0',
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+              }}
+            >
+              {/* Modal Header */}
+              <div style={{
+                padding: '24px 28px',
+                borderBottom: '1px solid #f1f5f9',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                background: 'linear-gradient(to right, #f8fafc, #ffffff)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{
+                    width: '42px',
+                    height: '42px',
+                    borderRadius: '12px',
+                    background: 'rgba(26, 38, 82, 0.08)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: nestNavy
+                  }}>
+                    <History size={22} />
+                  </div>
+                  <div>
+                    <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                      Sent Email History
+                    </h2>
+                    <p style={{ margin: '2px 0 0', fontSize: '13px', color: '#64748b' }}>
+                      Review all talent acquisition broadcast emails that were sent
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowHistory(false)}
+                  style={{
+                    background: '#f1f5f9',
+                    border: 'none',
+                    borderRadius: '10px',
+                    width: '36px',
+                    height: '36px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    color: '#64748b',
+                    transition: 'all 0.15s'
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#e2e8f0'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#f1f5f9'; }}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Search filter in modal */}
+              <div style={{ padding: '16px 28px', borderBottom: '1px solid #f1f5f9', background: '#fafbfc' }}>
+                <div style={{
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}>
+                  <Search size={16} style={{ position: 'absolute', left: '14px', color: '#94a3b8' }} />
+                  <input
+                    type="text"
+                    placeholder="Search sent emails by subject or recipient..."
+                    value={historySearch}
+                    onChange={e => setHistorySearch(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px 10px 38px',
+                      borderRadius: '12px',
+                      border: '1px solid #e2e8f0',
+                      background: '#fff',
+                      fontSize: '13.5px',
+                      outline: 'none',
+                    }}
+                  />
+                  {historySearch && (
+                    <button
+                      onClick={() => setHistorySearch('')}
+                      style={{
+                        position: 'absolute',
+                        right: '12px',
+                        background: 'none',
+                        border: 'none',
+                        color: '#94a3b8',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Modal Body - List of Sent Emails */}
+              <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px' }}>
+                {loadingHistory ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 0', color: '#94a3b8' }}>
+                    <Loader2 size={32} className="animate-spin" style={{ color: nestNavy, marginBottom: '12px' }} />
+                    <span style={{ fontSize: '14px', fontWeight: 600 }}>Loading email history...</span>
+                  </div>
+                ) : (() => {
+                  const filtered = mailHistory.filter(item => {
+                    if (!historySearch) return true;
+                    const q = historySearch.toLowerCase();
+                    const subMatch = (item.subject || '').toLowerCase().includes(q);
+                    const recMatch = (item.recipients || []).some(r => r.toLowerCase().includes(q));
+                    return subMatch || recMatch;
+                  });
+
+                  if (filtered.length === 0) {
+                    return (
+                      <div style={{ textAlign: 'center', padding: '48px 16px', color: '#94a3b8' }}>
+                        <div style={{
+                          width: '56px',
+                          height: '56px',
+                          borderRadius: '16px',
+                          background: '#f1f5f9',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          margin: '0 auto 16px',
+                          color: '#94a3b8'
+                        }}>
+                          <Mail size={28} />
+                        </div>
+                        <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#334155', margin: '0 0 6px' }}>
+                          {historySearch ? 'No matching emails found' : 'No sent emails yet'}
+                        </h3>
+                        <p style={{ fontSize: '13px', margin: 0, maxWidth: '340px', marginInline: 'auto' }}>
+                          {historySearch ? 'Try adjusting your search keyword' : 'Any broadcast email you compose and send will appear here with delivery details.'}
+                        </p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      {filtered.map((item) => {
+                        const isExpanded = expandedMailId === item.id;
+                        const formattedDate = item.sent_at
+                          ? new Date(item.sent_at).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })
+                          : 'Recently';
+
+                        return (
+                          <div
+                            key={item.id}
+                            style={{
+                              background: '#ffffff',
+                              borderRadius: '16px',
+                              border: '1px solid #e2e8f0',
+                              padding: '18px 20px',
+                              transition: 'all 0.2s',
+                              boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                                  <span style={{
+                                    fontSize: '11px',
+                                    fontWeight: 700,
+                                    background: 'rgba(16, 185, 129, 0.1)',
+                                    color: '#059669',
+                                    padding: '3px 8px',
+                                    borderRadius: '6px',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px'
+                                  }}>
+                                    <CheckCircle2 size={12} /> Delivered
+                                  </span>
+                                  <span style={{
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    color: '#64748b',
+                                    background: '#f1f5f9',
+                                    padding: '3px 8px',
+                                    borderRadius: '6px',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px'
+                                  }}>
+                                    <Users size={12} /> {item.recipient_count || item.recipients?.length || 0} Recipient{(item.recipient_count || item.recipients?.length) === 1 ? '' : 's'}
+                                  </span>
+                                  <span style={{ fontSize: '12px', color: '#94a3b8', display: 'inline-flex', alignItems: 'center', gap: '4px', marginLeft: 'auto' }}>
+                                    <Clock size={12} /> {formattedDate}
+                                  </span>
+                                </div>
+
+                                <h4 style={{ margin: '0 0 6px', fontSize: '15px', fontWeight: 800, color: '#1e293b' }}>
+                                  {item.subject}
+                                </h4>
+
+                                {/* Recipients list snippet */}
+                                <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '10px' }}>
+                                  <strong style={{ color: '#334155' }}>To: </strong>
+                                  {(item.recipients || []).slice(0, 3).join(', ')}
+                                  {(item.recipients || []).length > 3 && ` +${item.recipients.length - 3} more`}
+                                </div>
+
+                                {/* Body preview or full */}
+                                {isExpanded ? (
+                                  <div style={{
+                                    marginTop: '12px',
+                                    padding: '14px',
+                                    background: '#f8fafc',
+                                    borderRadius: '12px',
+                                    border: '1px solid #edf2f7',
+                                    fontSize: '13px',
+                                    color: '#334155',
+                                    lineHeight: 1.6,
+                                    whiteSpace: 'pre-wrap',
+                                    wordBreak: 'break-word'
+                                  }}>
+                                    <div style={{ marginBottom: '10px', paddingBottom: '8px', borderBottom: '1px dashed #cbd5e1' }}>
+                                      <strong style={{ fontSize: '11px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Full Recipient List:</strong>
+                                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
+                                        {(item.recipients || []).map((em, idx) => (
+                                          <span key={idx} style={{ background: '#fff', border: '1px solid #e2e8f0', padding: '2px 8px', borderRadius: '6px', fontSize: '11px', color: '#475569' }}>
+                                            {em}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    </div>
+                                    <strong style={{ fontSize: '11px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Email Content:</strong>
+                                    <div style={{ marginTop: '4px' }}>{item.body}</div>
+                                  </div>
+                                ) : (
+                                  <p style={{
+                                    margin: 0,
+                                    fontSize: '13px',
+                                    color: '#64748b',
+                                    lineHeight: 1.5,
+                                    display: '-webkit-box',
+                                    WebkitLineClamp: 2,
+                                    WebkitBoxOrient: 'vertical',
+                                    overflow: 'hidden'
+                                  }}>
+                                    {item.body}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+
+                            <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'flex-end' }}>
+                              <button
+                                onClick={() => setExpandedMailId(isExpanded ? null : item.id)}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: nestNavy,
+                                  fontSize: '12px',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  padding: '4px 8px',
+                                  borderRadius: '6px'
+                                }}
+                              >
+                                {isExpanded ? (
+                                  <>Hide Details <ChevronUp size={14} /></>
+                                ) : (
+                                  <>View Full Message <ChevronDown size={14} /></>
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Modal Footer */}
+              <div style={{
+                padding: '16px 28px',
+                borderTop: '1px solid #f1f5f9',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                background: '#fafbfc'
+              }}>
+                <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 600 }}>
+                  Showing {mailHistory.length} sent broadcast{mailHistory.length === 1 ? '' : 's'}
+                </span>
+                <button
+                  onClick={() => setShowHistory(false)}
+                  style={{
+                    padding: '8px 20px',
+                    borderRadius: '10px',
+                    border: '1px solid #e2e8f0',
+                    background: '#fff',
+                    color: '#334155',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

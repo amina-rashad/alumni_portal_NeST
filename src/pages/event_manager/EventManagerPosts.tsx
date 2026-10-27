@@ -2,19 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ImagePlus, Send, X, Loader2,
-  CheckCircle2, Trash2, Clock, MessageSquare, Video as VideoIcon, Plus
+  CheckCircle2, Trash2, Clock, MessageSquare, Video as VideoIcon, Plus,
+  Edit2, Save
 } from 'lucide-react';
 import { socialApi } from '../../services/api';
 import StatusModal from '../../components/StatusModal';
 
-const mockEvents = [
-  { id: '1', name: 'Global Alumni Meet 2024' },
-  { id: '2', name: 'Tech Talk: Future of AI' },
-  { id: '3', name: 'Web Development Workshop' },
-];
+
 
 interface Post {
   id: string;
+  _id?: string;
   content: string;
   image_url?: string;
   likes_count: number;
@@ -37,6 +35,9 @@ const EventManagerPosts: React.FC = () => {
   const [myPosts, setMyPosts] = useState<Post[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [tick, setTick] = useState(0);
 
   // Modal state
@@ -133,8 +134,8 @@ const EventManagerPosts: React.FC = () => {
     setModalConfig({
       isOpen: true,
       type: 'warning',
-      title: 'Delete Post?',
-      message: 'This post will be permanently removed from the feed. This action cannot be undone.',
+      title: 'Delete Broadcast?',
+      message: 'This broadcast will be permanently removed from the feed. This action cannot be undone.',
       confirmText: 'Yes, Delete',
       showConfirmOnly: false,
       onConfirm: () => executeDelete(postId),
@@ -147,12 +148,12 @@ const EventManagerPosts: React.FC = () => {
     try {
       const res = await socialApi.deletePost(postId);
       if (res.success) {
-        setMyPosts(prev => prev.filter(p => p.id !== postId));
+        setMyPosts(prev => prev.filter(p => (p.id ?? p._id)?.toString() !== postId.toString()));
         setModalConfig({
           isOpen: true,
           type: 'success',
           title: 'Deleted',
-          message: 'Your post has been removed successfully.',
+          message: 'Your broadcast has been removed successfully.',
           confirmText: 'Okay',
           showConfirmOnly: true,
           onConfirm: closeModal,
@@ -162,7 +163,7 @@ const EventManagerPosts: React.FC = () => {
           isOpen: true,
           type: 'error',
           title: 'Delete Failed',
-          message: res.message || 'Could not delete the post. Please try again.',
+          message: res.message || 'Could not delete the broadcast. Please try again.',
           confirmText: 'Okay',
           showConfirmOnly: true,
           onConfirm: closeModal,
@@ -183,30 +184,78 @@ const EventManagerPosts: React.FC = () => {
     }
   };
 
+  const handleEditClick = (post: Post) => {
+    setEditingId(post.id);
+    setEditContent(post.content);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditContent('');
+  };
+
+  const handleSaveEdit = async (postId: string) => {
+    if (!editContent.trim()) return;
+    setIsSavingEdit(true);
+    try {
+      const res = await socialApi.updatePost(postId, { content: editContent });
+      if (res.success) {
+        setMyPosts(prev => prev.map(p => p.id === postId ? { ...p, content: editContent } : p));
+        setEditingId(null);
+        setEditContent('');
+      } else {
+        setModalConfig({
+          isOpen: true,
+          type: 'error',
+          title: 'Update Failed',
+          message: res.message || 'Could not update the post. Please try again.',
+          confirmText: 'Okay',
+          showConfirmOnly: true,
+          onConfirm: closeModal,
+        });
+      }
+    } catch (err) {
+      setModalConfig({
+        isOpen: true,
+        type: 'error',
+        title: 'Network Error',
+        message: 'Something went wrong. Please check your connection and try again.',
+        confirmText: 'Okay',
+        showConfirmOnly: true,
+        onConfirm: closeModal,
+      });
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
   const timeAgo = (dateStr: string) => {
     if (!dateStr) return 'Just now';
     
-    // Ensure the date string is treated as UTC if it lacks timezone info
-    let normalizedDate = dateStr;
-    if (!dateStr.endsWith('Z') && !dateStr.includes('+') && !dateStr.includes('-')) {
-      normalizedDate += 'Z';
+    let cleanStr = String(dateStr).trim();
+    if (!cleanStr.endsWith('Z') && !/[+-]\d{2}(:?\d{2})?$/.test(cleanStr)) {
+      cleanStr += 'Z';
     }
     
-    const diff = Date.now() - new Date(normalizedDate).getTime();
+    const parsedTime = new Date(cleanStr).getTime();
+    if (isNaN(parsedTime)) return 'Just now';
+
+    const diff = Date.now() - parsedTime;
+    if (diff < 60000) return 'Just now';
     const mins = Math.floor(diff / 60000);
-    if (mins < 1) return 'Just now';
     if (mins < 60) return `${mins}m ago`;
     const hrs = Math.floor(mins / 60);
     if (hrs < 24) return `${hrs}h ago`;
     const days = Math.floor(hrs / 24);
-    return `${days}d ago`;
+    if (days < 30) return `${days}d ago`;
+    return new Date(cleanStr).toLocaleDateString();
   };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '1200px', margin: '0 auto', width: '100%', paddingBottom: '60px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#1e293b', margin: 0, fontFamily: "'Montserrat', sans-serif" }}>Event Posts</h1>
+          <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#1e293b', margin: 0, fontFamily: "'Inter', sans-serif" }}>Event Posts</h1>
           <p style={{ color: '#64748b', marginTop: '4px' }}>Share event highlights, photos, and updates with participants.</p>
         </div>
       </div>
@@ -352,22 +401,22 @@ const EventManagerPosts: React.FC = () => {
         </div>
       </div>
 
-      {/* My Posts Section */}
+      {/* My Broadcasts Section */}
       <div style={{ marginTop: '20px', paddingTop: '40px', borderTop: '2px solid #f1f5f9' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <div>
-            <h3 style={{ fontSize: '22px', fontWeight: 800, color: '#1e293b', margin: 0 }}>My Post History</h3>
+            <h3 style={{ fontSize: '22px', fontWeight: 800, color: '#1e293b', margin: 0 }}>My Broadcast History</h3>
             <p style={{ color: '#64748b', fontSize: '14px', margin: '4px 0 0' }}>Manage and track all updates you've shared with the community.</p>
           </div>
           <div style={{ background: `${brandPrimary}10`, color: brandPrimary, padding: '8px 16px', borderRadius: '12px', fontSize: '14px', fontWeight: 700 }}>
-            {myPosts.length} {myPosts.length === 1 ? 'Post' : 'Posts'}
+            {myPosts.length} {myPosts.length === 1 ? 'Broadcast' : 'Broadcasts'}
           </div>
         </div>
 
         {loadingPosts ? (
           <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
             <Loader2 size={28} className="spin" style={{ margin: '0 auto 12px' }} />
-            <p style={{ fontWeight: 600 }}>Loading your posts...</p>
+            <p style={{ fontWeight: 600 }}>Loading your broadcasts...</p>
           </div>
         ) : myPosts.length === 0 ? (
           <div style={{ 
@@ -378,7 +427,7 @@ const EventManagerPosts: React.FC = () => {
             border: '1px solid #f1f5f9' 
           }}>
             <MessageSquare size={32} style={{ color: '#cbd5e1', marginBottom: '12px' }} />
-            <p style={{ color: '#94a3b8', fontWeight: 600, margin: 0 }}>You haven't posted anything yet.</p>
+            <p style={{ color: '#94a3b8', fontWeight: 600, margin: 0 }}>You haven't broadcasted anything yet.</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -400,17 +449,37 @@ const EventManagerPosts: React.FC = () => {
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ 
-                        color: '#1e293b', 
-                        fontSize: '15px', 
-                        lineHeight: 1.6, 
-                        margin: '0 0 12px',
-                        wordBreak: 'break-word'
-                      }}>
-                        {post.content}
-                      </p>
+                      {editingId === post.id ? (
+                        <textarea 
+                          value={editContent}
+                          onChange={(e) => setEditContent(e.target.value)}
+                          style={{ 
+                            width: '100%', 
+                            minHeight: '120px', 
+                            padding: '16px', 
+                            borderRadius: '12px', 
+                            border: '1px solid #cbd5e1', 
+                            fontSize: '15px', 
+                            resize: 'vertical',
+                            outline: 'none',
+                            lineHeight: 1.6,
+                            fontFamily: 'inherit',
+                            marginBottom: '12px'
+                          }}
+                        />
+                      ) : (
+                        <p style={{ 
+                          color: '#1e293b', 
+                          fontSize: '15px', 
+                          lineHeight: 1.6, 
+                          margin: '0 0 12px',
+                          wordBreak: 'break-word'
+                        }}>
+                          {post.content}
+                        </p>
+                      )}
 
-                      {post.image_url && (
+                      {post.image_url && !editingId && (
                         <img 
                           src={post.image_url} 
                           alt="Post" 
@@ -432,29 +501,75 @@ const EventManagerPosts: React.FC = () => {
                       </div>
                     </div>
 
-                    <button
-                      onClick={() => promptDelete(post.id)}
-                      disabled={deletingId === post.id}
-                      title="Delete post"
-                      style={{ 
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: '40px',
-                        height: '40px',
-                        background: deletingId === post.id ? '#fecaca' : '#fef2f2',
-                        color: '#ef4444',
-                        border: 'none',
-                        borderRadius: '12px',
-                        cursor: deletingId === post.id ? 'not-allowed' : 'pointer',
-                        transition: '0.2s',
-                        flexShrink: 0
-                      }}
-                      onMouseEnter={e => { if (deletingId !== post.id) e.currentTarget.style.background = '#fecaca'; }}
-                      onMouseLeave={e => { if (deletingId !== post.id) e.currentTarget.style.background = '#fef2f2'; }}
-                    >
-                      {deletingId === post.id ? <Loader2 size={18} className="spin" /> : <Trash2 size={18} />}
-                    </button>
+                    <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                      {editingId === post.id ? (
+                        <>
+                          <button
+                            onClick={handleCancelEdit}
+                            title="Cancel"
+                            style={{ 
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              width: '40px', height: '40px', background: '#f1f5f9', color: '#64748b',
+                              border: 'none', borderRadius: '12px', cursor: 'pointer', transition: '0.2s',
+                            }}
+                          >
+                            <X size={18} />
+                          </button>
+                          <button
+                            onClick={() => handleSaveEdit(post.id)}
+                            disabled={isSavingEdit || !editContent.trim()}
+                            title="Save Edit"
+                            style={{ 
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              width: '40px', height: '40px', background: '#ecfdf5', color: '#10b981',
+                              border: 'none', borderRadius: '12px', cursor: 'pointer', transition: '0.2s',
+                              opacity: (!editContent.trim() || isSavingEdit) ? 0.5 : 1
+                            }}
+                          >
+                            {isSavingEdit ? <Loader2 size={18} className="spin" /> : <Save size={18} />}
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => handleEditClick(post)}
+                            title="Edit broadcast"
+                            style={{ 
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              width: '40px', height: '40px', background: '#f8fafc', color: '#64748b',
+                              border: '1px solid #e2e8f0', borderRadius: '12px', cursor: 'pointer', transition: '0.2s',
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
+                            onMouseLeave={e => e.currentTarget.style.background = '#f8fafc'}
+                          >
+                            <Edit2 size={18} />
+                          </button>
+                          <button
+                            onClick={() => promptDelete(post.id)}
+                            disabled={deletingId === post.id}
+                            title="Delete post"
+                            style={{ 
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              width: '40px',
+                              height: '40px',
+                              background: deletingId === post.id ? '#fecaca' : '#fef2f2',
+                              color: '#ef4444',
+                              border: 'none',
+                              borderRadius: '12px',
+                              cursor: deletingId === post.id ? 'not-allowed' : 'pointer',
+                              transition: '0.2s',
+                              flexShrink: 0
+                            }}
+                            onMouseEnter={e => { if (deletingId !== post.id) e.currentTarget.style.background = '#fecaca'; }}
+                            onMouseLeave={e => { if (deletingId !== post.id) e.currentTarget.style.background = '#fef2f2'; }}
+                          >
+                            {deletingId === post.id ? <Loader2 size={18} className="spin" /> : <Trash2 size={18} />}
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </motion.div>
               ))}

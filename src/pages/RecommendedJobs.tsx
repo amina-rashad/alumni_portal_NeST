@@ -17,6 +17,8 @@ interface RecommendedJob {
   skills: string[];
   matchedSkills: string[];
   missingSkills: string[];
+  matchedTechStacks: string[];
+  matchedPositions: string[];
   matchScore: number;
   matchReason: string;
   salary?: string;
@@ -27,36 +29,100 @@ const getMatchColor = (score: number) => {
   if (score >= 85) return { color: '#2b8a3e', bg: '#ebfbee', border: '#69db7c', glow: 'rgba(43,138,62,0.1)' };
   if (score >= 70) return { color: '#1971c2', bg: '#e7f5ff', border: '#74c0fc', glow: 'rgba(25,113,194,0.1)' };
   if (score >= 50) return { color: '#e67700', bg: '#fff9db', border: '#ffd43b', glow: 'rgba(230,119,0,0.1)' };
-  return { color: '#868e96', bg: '#f8f9fa', border: '#dee2e6', glow: 'rgba(0,0,0,0.03)' };
+  if (score > 0) return { color: '#495057', bg: '#f8f9fa', border: '#dee2e6', glow: 'rgba(0,0,0,0.03)' };
+  return { color: '#94a3b8', bg: '#f8fafc', border: '#e2e8f0', glow: 'rgba(0,0,0,0.02)' };
 };
 
 const getMatchLabel = (score: number) => {
   if (score >= 85) return 'Excellent Match';
   if (score >= 70) return 'Strong Match';
   if (score >= 50) return 'Good Match';
-  return 'Moderate Match';
+  if (score > 0) return 'Moderate Match';
+  return 'No Match';
 };
 
 const timeAgo = (dateStr: string | undefined) => {
   if (!dateStr) return 'Recently';
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-  
+  let cleanStr = String(dateStr).trim();
+  if (!cleanStr.endsWith('Z') && !/[+-]\d{2}(:?\d{2})?$/.test(cleanStr)) {
+    cleanStr += 'Z';
+  }
+  const parsedTime = new Date(cleanStr).getTime();
+  if (isNaN(parsedTime)) return 'Recently';
+
+  const diffInSeconds = Math.floor((Date.now() - parsedTime) / 1000);
   if (diffInSeconds < 60) return 'Just now';
   if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
   if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
   if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
-  return date.toLocaleDateString();
+  return new Date(cleanStr).toLocaleDateString();
+};
+
+// Helper: Check if a job matches a selected Tech Stack
+const checkTechStackMatch = (stack: string, jobTitle: string, jobDept: string, jobDesc: string, jobSkills: string[]): boolean => {
+  const text = `${jobTitle} ${jobDept} ${jobDesc} ${jobSkills.join(' ')}`.toLowerCase();
+  const s = stack.toLowerCase().trim();
+
+  if (text.includes(s)) return true;
+
+  switch (s) {
+    case 'software engineering':
+      return text.includes('software') || text.includes('developer') || text.includes('engineer') || text.includes('backend') || text.includes('frontend') || text.includes('fullstack') || text.includes('web') || text.includes('programming');
+    case 'architecture':
+      return text.includes('architect') || text.includes('architecture') || text.includes('system design') || text.includes('solution');
+    case 'quality engineering':
+      return text.includes('quality') || text.includes('qa') || text.includes('test') || text.includes('tester') || text.includes('sdet') || text.includes('automation') || text.includes('load test');
+    case 'cybersecurity':
+      return text.includes('security') || text.includes('cyber') || text.includes('infosec') || text.includes('penetration') || text.includes('soc') || text.includes('vulnerability');
+    case 'embedded systems':
+      return text.includes('embedded') || text.includes('firmware') || text.includes('rtos') || text.includes('microcontroller') || text.includes('c++') || text.includes('hardware') || text.includes('iot');
+    case 'iot':
+      return text.includes('iot') || text.includes('internet of things') || text.includes('connected') || text.includes('sensors') || text.includes('mqtt');
+    case 'data and analytics':
+      return text.includes('data') || text.includes('analytics') || text.includes('bi') || text.includes('sql') || text.includes('machine learning') || text.includes('ai') || text.includes('etl') || text.includes('database');
+    case 'finance':
+      return text.includes('finance') || text.includes('financial') || text.includes('accounting') || text.includes('analyst') || text.includes('audit');
+    case 'project management':
+      return text.includes('project') || text.includes('program') || text.includes('scrum') || text.includes('agile') || text.includes('pmp') || text.includes('delivery');
+    default:
+      return false;
+  }
+};
+
+// Helper: Check if a job matches a selected Target Position
+const checkPositionMatch = (pos: string, jobTitle: string): boolean => {
+  const normPos = pos.toLowerCase().trim();
+  const normTitle = jobTitle.toLowerCase().trim();
+
+  // 1. Direct substring match
+  if (normTitle.includes(normPos) || normPos.includes(normTitle)) return true;
+
+  // 2. Token overlap analysis
+  const stopWords = new Set(['in', 'and', 'the', 'of', 'for', 'with', 'at', 'to', 'a', '&', 'c++', 'qt']);
+  const posWords = normPos.split(/[\s,–—\-_/]+/).filter(w => w.length > 2 && !stopWords.has(w));
+  const titleWords = normTitle.split(/[\s,–—\-_/]+/).filter(w => w.length > 2 && !stopWords.has(w));
+
+  const commonWords = posWords.filter(w => titleWords.includes(w));
+  
+  if (commonWords.length >= 2) return true;
+  if (commonWords.length === 1 && (commonWords[0] === 'architect' || commonWords[0] === 'tester' || commonWords[0] === 'embedded')) {
+    return true;
+  }
+
+  return false;
 };
 
 const RecommendedJobs: React.FC = () => {
   const [jobs, setJobs] = useState<RecommendedJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [userSkills, setUserSkills] = useState<string[]>([]);
+  const [userTechStacks, setUserTechStacks] = useState<string[]>([]);
+  const [userInterestedPositions, setUserInterestedPositions] = useState<string[]>([]);
+  const [userSpecialization, setUserSpecialization] = useState<string>('');
   const [savedJobs, setSavedJobs] = useState<Set<string>>(new Set());
   const [appliedJobs, setAppliedJobs] = useState<Set<string>>(new Set());
   const [sortBy, setSortBy] = useState<'match' | 'recent'>('match');
+  const [filterPreference, setFilterPreference] = useState<'all' | 'positions' | 'tech_stacks'>('all');
   const [isUpdatingSkills, setIsUpdatingSkills] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const JOBS_PER_PAGE = 5;
@@ -71,77 +137,159 @@ const RecommendedJobs: React.FC = () => {
     try {
       setLoading(true);
       
-      // 1. Get Real User Skills from Profile
+      // 1. Get Real User Skills, Tech Stacks & Interested Positions from Profile
       let skills: string[] = [];
+      let techStacks: string[] = [];
+      let interestedPositions: string[] = [];
+      let specialization = '';
+
       try {
         const profileRes = await usersApi.getProfile();
         if (profileRes.success && profileRes.data?.user) {
-          skills = profileRes.data.user.skills || [];
+          const u = profileRes.data.user;
+          skills = Array.isArray(u.skills) 
+            ? u.skills 
+            : (typeof u.skills === 'string' ? u.skills.split(',').map((s: string) => s.trim()).filter(Boolean) : []);
+          techStacks = Array.isArray(u.tech_stacks) ? u.tech_stacks : [];
+          interestedPositions = Array.isArray(u.interested_positions) ? u.interested_positions : [];
+          specialization = u.specialization || '';
         } else {
-          const localUser = getUser();
+          const localUser = getUser() as any;
           skills = (localUser?.skills as string[]) || [];
+          techStacks = (localUser?.tech_stacks as string[]) || [];
+          interestedPositions = (localUser?.interested_positions as string[]) || [];
+          specialization = localUser?.specialization || '';
         }
       } catch (err) {
-        const localUser = getUser();
+        const localUser = getUser() as any;
         skills = (localUser?.skills as string[]) || [];
+        techStacks = (localUser?.tech_stacks as string[]) || [];
+        interestedPositions = (localUser?.interested_positions as string[]) || [];
+        specialization = localUser?.specialization || '';
       }
       
       setUserSkills(skills);
+      setUserTechStacks(techStacks);
+      setUserInterestedPositions(interestedPositions);
+      setUserSpecialization(specialization);
 
-      // 2. Get All Jobs
-      const jobsRes = await jobsApi.getAllJobs();
+      // 2. Get All Jobs & Applications (fetch up to 100 to evaluate all portal jobs)
+      const jobsRes = await jobsApi.getAllJobs(1, 100);
       const appsRes = await applicationsApi.getMyApplications();
       
       if (jobsRes.success && jobsRes.data) {
         const allJobsRaw = Array.isArray(jobsRes.data) ? jobsRes.data : (jobsRes.data as any).jobs || [];
         const allJobs = allJobsRaw.filter((j: any) => j.is_active !== false);
         const myApps = appsRes.success && appsRes.data ? (appsRes.data as any).applications || [] : [];
-        const appliedIds = new Set<string>(myApps.map((a: any) => String(a.job_id)));
+        const appliedIds = new Set<string>(
+          myApps
+            .filter((a: any) => a.status !== 'Withdrawn' && a.status !== 'withdrawn')
+            .map((a: any) => String(a.job_id))
+        );
         setAppliedJobs(appliedIds);
 
-        // 3. Calculate Recommendation Scores
+        // 3. Multi-Factor Recommendation Engine: Skills + Tech Stacks + Interested Positions
         const recommendations: RecommendedJob[] = allJobs.map((job: any) => {
           const jobSkills = job.skills_required || [];
           const normalizedJobSkills = Array.isArray(jobSkills) 
             ? jobSkills 
             : typeof jobSkills === 'string' 
-              ? jobSkills.split(',').map(s => s.trim())
+              ? jobSkills.split(',').map((s: string) => s.trim()).filter(Boolean)
               : [];
 
-          const matched = normalizedJobSkills.filter((s: string) => 
+          const matchedSkills = normalizedJobSkills.filter((s: string) => 
             skills.some(us => us.toLowerCase() === s.toLowerCase())
           );
-          const missing = normalizedJobSkills.filter((s: string) => 
+          const missingSkills = normalizedJobSkills.filter((s: string) => 
             !skills.some(us => us.toLowerCase() === s.toLowerCase())
           );
 
-          // Advanced Scoring Logic
-          // - Skill match (up to 70 points)
-          // - Experience match (heuristic, up to 15 points)
-          // - Category/Title match (heuristic, up to 15 points)
-          
-          let skillScore = 0;
-          if (normalizedJobSkills.length > 0 && skills.length > 0) {
-            skillScore = (matched.length / normalizedJobSkills.length) * 80;
-          }
-          
-          let titleScore = 0;
-          if (skills.length > 0) {
-            const lowerTitle = job.title.toLowerCase();
-            if (skills.some(s => lowerTitle.includes(s.toLowerCase()))) titleScore = 20;
+          // Evaluate Match for Tech Stacks
+          const matchedTechStacks = techStacks.filter((stack: string) => 
+            checkTechStackMatch(stack, job.title || '', job.category || job.department || '', job.description || '', normalizedJobSkills)
+          );
+
+          // Evaluate Match for Interested Target Positions
+          const matchedPositions = interestedPositions.filter((pos: string) => 
+            checkPositionMatch(pos, job.title || '')
+          );
+
+          // Check if any criteria actually matched
+          const hasAnyMatch = matchedSkills.length > 0 || matchedPositions.length > 0 || matchedTechStacks.length > 0;
+          const isProfileEmpty = skills.length === 0 && techStacks.length === 0 && interestedPositions.length === 0;
+
+          let totalScore = 0;
+
+          if (hasAnyMatch) {
+            // Weighted Scoring Calculation:
+            // A. Skill Match: up to 40 points
+            let skillPoints = 0;
+            if (normalizedJobSkills.length > 0 && skills.length > 0) {
+              skillPoints = (matchedSkills.length / normalizedJobSkills.length) * 40;
+            } else if (skills.length > 0 && normalizedJobSkills.length === 0) {
+              skillPoints = 20;
+            }
+
+            // B. Target Position Preference Match: up to 35 points
+            let positionPoints = 0;
+            if (matchedPositions.length > 0) {
+              const isDirectMatch = matchedPositions.some((p: string) => 
+                job.title.toLowerCase().includes(p.toLowerCase()) || p.toLowerCase().includes(job.title.toLowerCase())
+              );
+              positionPoints = isDirectMatch ? 35 : 25;
+            }
+
+            // C. Tech Stack Preference Match: up to 25 points
+            let techStackPoints = 0;
+            if (matchedTechStacks.length > 0) {
+              techStackPoints = Math.min(25, 15 + (matchedTechStacks.length - 1) * 5);
+            }
+
+            // D. Bonuses (Urgency, Full Skill Mastery, Specialization alignment): up to 10 points
+            let bonusPoints = 0;
+            if (specialization && (job.title.toLowerCase().includes(specialization.toLowerCase()) || (job.category && job.category.toLowerCase().includes(specialization.toLowerCase())))) {
+              bonusPoints += 4;
+            }
+            if (job.is_urgent) {
+              bonusPoints += 3;
+            }
+            if (matchedSkills.length > 0 && matchedSkills.length === normalizedJobSkills.length) {
+              bonusPoints += 5;
+            }
+
+            totalScore = Math.round(skillPoints + positionPoints + techStackPoints + bonusPoints);
+            totalScore = Math.min(100, Math.max(10, totalScore));
+
+            if (matchedPositions.length > 0 && matchedTechStacks.length > 0 && matchedSkills.length >= 2) {
+              totalScore = 100;
+            }
+          } else {
+            // User matches 0 skills, 0 positions, and 0 tech stacks for this role
+            totalScore = 0;
           }
 
-          let score = Math.round(skillScore + titleScore);
-          
-          // Boost for excellent matches
-          if (matched.length > 0 && matched.length === normalizedJobSkills.length) score += 5;
-          
-          score = Math.max(0, Math.min(100, score));
+          // Formulate Personalized, Human-Readable AI Match Reason
+          let matchReason = '';
+          if (matchedPositions.length > 0 && matchedTechStacks.length > 0) {
+            matchReason = `Direct match for target position "${matchedPositions[0]}" in ${matchedTechStacks[0]}`;
+          } else if (matchedPositions.length > 0) {
+            matchReason = `Matches your selected target position: "${matchedPositions[0]}"`;
+          } else if (matchedTechStacks.length > 0 && matchedSkills.length > 0) {
+            matchReason = `Aligned with your ${matchedTechStacks[0]} focus & skills in ${matchedSkills.slice(0, 2).join(' & ')}`;
+          } else if (matchedTechStacks.length > 0) {
+            matchReason = `Fits your interested Tech Stack in ${matchedTechStacks.slice(0, 2).join(' & ')}`;
+          } else if (matchedSkills.length > 0) {
+            matchReason = `Matches your core expertise in ${matchedSkills.slice(0, 3).join(', ')}`;
+          } else if (isProfileEmpty) {
+            matchReason = 'Add your skills, tech stacks, or target roles in Edit Profile to calculate match';
+          } else {
+            matchReason = 'No matching skills or target roles found on your profile for this job';
+          }
 
           return {
             id: job.id || job._id,
             title: job.title,
-            department: job.category || 'Engineering',
+            department: job.category || job.department || 'Engineering',
             company: job.company || 'NeST Digital',
             location: job.location,
             type: job.type || 'Full-time',
@@ -149,15 +297,13 @@ const RecommendedJobs: React.FC = () => {
             postedAt: timeAgo(job.createdAt),
             description: job.description,
             skills: normalizedJobSkills,
-            matchedSkills: matched,
-            missingSkills: missing,
-            matchScore: score,
-            matchReason: skills.length === 0 
-              ? 'Complete your profile to get personalized matches'
-              : matched.length > 0 
-                ? `Matches your expertise in ${matched.slice(0, 2).join(' & ')}`
-                : 'Limited skill overlap detected',
-            salary: job.salary_range,
+            matchedSkills: matchedSkills,
+            missingSkills: missingSkills,
+            matchedTechStacks: matchedTechStacks,
+            matchedPositions: matchedPositions,
+            matchScore: totalScore,
+            matchReason: matchReason,
+            salary: job.salary_range || job.salary,
             urgent: job.is_urgent || false
           };
         });
@@ -177,8 +323,7 @@ const RecommendedJobs: React.FC = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [sortBy, userSkills]);
-
+  }, [sortBy, userSkills, filterPreference]);
 
   const toggleSaveJob = (e: React.MouseEvent, id: string) => {
     e.preventDefault();
@@ -209,7 +354,17 @@ const RecommendedJobs: React.FC = () => {
     }
   };
 
-  const sortedJobs = [...jobs].sort((a, b) => {
+  const filteredJobs = jobs.filter(job => {
+    if (filterPreference === 'positions') {
+      return job.matchedPositions.length > 0;
+    }
+    if (filterPreference === 'tech_stacks') {
+      return job.matchedTechStacks.length > 0;
+    }
+    return true;
+  });
+
+  const sortedJobs = [...filteredJobs].sort((a, b) => {
     if (sortBy === 'match') return b.matchScore - a.matchScore;
     if (sortBy === 'recent') {
       return b.id.localeCompare(a.id);
@@ -361,78 +516,209 @@ const RecommendedJobs: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
           style={{
-            background: 'linear-gradient(135deg, #fff8f8 0%, #f8f9fa 50%, #f0f4ff 100%)',
-            border: '1px solid #e9ecef',
-            borderRadius: '16px',
-            padding: '1.8rem 2rem',
+            background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%)',
+            border: '1px solid #e2e8f0',
+            borderRadius: '20px',
+            padding: '2rem',
             marginBottom: '2.5rem',
             display: 'flex',
-            flexWrap: 'wrap',
-            gap: '2rem',
-            alignItems: 'center'
+            flexDirection: 'column',
+            gap: '1.5rem',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.03)'
           }}
         >
-          <div style={{ flex: '1 1 300px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Target size={18} color="var(--primary)" />
-                <span style={{ fontWeight: 700, color: '#1a1a1a', fontSize: '1rem' }}>Your Profile Strengths</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '1.2rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Target size={20} color="#c8102e" />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>Your Recommendation Profile</h3>
+                <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Jobs are dynamically matched against your selected Tech Stacks, Target Positions, and Core Skills.</p>
               </div>
             </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.5rem' }}>
-              {userSkills.length > 0 ? (
-                userSkills.map(skill => (
-                  <span
-                    key={skill}
-                    style={{
-                      fontSize: '0.85rem',
-                      background: '#ffffff',
-                      color: '#4a4a4a',
-                      border: '1px solid #dee2e6',
-                      padding: '0.35rem 0.9rem',
-                      borderRadius: '16px',
-                      fontWeight: 600,
-                      display: 'flex',
-                      alignItems: 'center',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
-                    }}
-                  >
-                    {skill}
-                  </span>
-                ))
-              ) : (
-                <span style={{ fontSize: '0.85rem', color: '#6c757d', fontStyle: 'italic' }}>
-                  No skills listed in your profile
+
+            <Link
+              to="/profile/edit"
+              state={{ from: '/jobs/recommended' }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 16px',
+                background: '#ffffff',
+                border: '1px solid #cbd5e1',
+                borderRadius: '10px',
+                color: '#1a2652',
+                fontSize: '13px',
+                fontWeight: 700,
+                textDecoration: 'none',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                transition: 'all 0.2s'
+              }}
+            >
+              Edit Stacks & Positions →
+            </Link>
+          </div>
+
+          {/* Preferences Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.2rem' }}>
+            {/* Target Positions */}
+            <div style={{ background: '#ffffff', borderRadius: '14px', padding: '1.2rem', border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#6d28d9', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  🎯 Target Positions ({userInterestedPositions.length})
                 </span>
-              )}
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                {userInterestedPositions.length > 0 ? (
+                  userInterestedPositions.map(pos => (
+                    <span key={pos} style={{ fontSize: '0.8rem', background: '#f5f3ff', color: '#5b21b6', border: '1px solid #ddd6fe', padding: '0.25rem 0.65rem', borderRadius: '12px', fontWeight: 600 }}>
+                      {pos}
+                    </span>
+                  ))
+                ) : (
+                  <Link to="/profile/edit" state={{ from: '/jobs/recommended' }} style={{ fontSize: '0.82rem', color: '#8b5cf6', textDecoration: 'underline' }}>
+                    + Select interested positions in profile
+                  </Link>
+                )}
+              </div>
+            </div>
+
+            {/* Tech Stacks */}
+            <div style={{ background: '#ffffff', borderRadius: '14px', padding: '1.2rem', border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0369a1', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  💻 Interested Tech Stacks ({userTechStacks.length})
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                {userTechStacks.length > 0 ? (
+                  userTechStacks.map(stack => (
+                    <span key={stack} style={{ fontSize: '0.8rem', background: '#f0f9ff', color: '#0369a1', border: '1px solid #bae6fd', padding: '0.25rem 0.65rem', borderRadius: '12px', fontWeight: 600 }}>
+                      {stack}
+                    </span>
+                  ))
+                ) : (
+                  <Link to="/profile/edit" state={{ from: '/jobs/recommended' }} style={{ fontSize: '0.82rem', color: '#0284c7', textDecoration: 'underline' }}>
+                    + Select interested tech stacks in profile
+                  </Link>
+                )}
+              </div>
+            </div>
+
+            {/* Core Skills */}
+            <div style={{ background: '#ffffff', borderRadius: '14px', padding: '1.2rem', border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#15803d', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  🛠️ Core Skills ({userSkills.length})
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                {userSkills.length > 0 ? (
+                  userSkills.slice(0, 6).map(skill => (
+                    <span key={skill} style={{ fontSize: '0.8rem', background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', padding: '0.25rem 0.65rem', borderRadius: '12px', fontWeight: 600 }}>
+                      {skill}
+                    </span>
+                  ))
+                ) : (
+                  <Link to="/profile/edit" state={{ from: '/jobs/recommended' }} style={{ fontSize: '0.82rem', color: '#16a34a', textDecoration: 'underline' }}>
+                    + Add skills in profile
+                  </Link>
+                )}
+                {userSkills.length > 6 && (
+                  <span style={{ fontSize: '0.78rem', color: '#64748b', alignSelf: 'center', fontWeight: 600 }}>+{userSkills.length - 6} more</span>
+                )}
+              </div>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+
+          {/* Stats Bar */}
+          <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'space-around', background: '#f8fafc', padding: '1rem', borderRadius: '14px', flexWrap: 'wrap', border: '1px solid #e2e8f0' }}>
             <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--primary)', margin: '0 0 0.1rem 0' }}>{jobs.length}</p>
-              <p style={{ fontSize: '0.8rem', color: '#6c757d', fontWeight: 500, margin: 0 }}>Jobs Matched</p>
+              <p style={{ fontSize: '1.8rem', fontWeight: 800, color: '#c8102e', margin: 0 }}>{jobs.length}</p>
+              <p style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, margin: 0, textTransform: 'uppercase' }}>Opportunities Evaluated</p>
             </div>
             <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: '2rem', fontWeight: 800, color: '#2b8a3e', margin: '0 0 0.1rem 0' }}>{jobs.filter(j => j.matchScore >= 85).length}</p>
-              <p style={{ fontSize: '0.8rem', color: '#6c757d', fontWeight: 500, margin: 0 }}>Excellent Fits</p>
+              <p style={{ fontSize: '1.8rem', fontWeight: 800, color: '#2b8a3e', margin: 0 }}>{jobs.filter(j => j.matchScore >= 85).length}</p>
+              <p style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, margin: 0, textTransform: 'uppercase' }}>Excellent Fits (85%+)</p>
             </div>
             <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: '2rem', fontWeight: 800, color: '#1971c2', margin: '0 0 0.1rem 0' }}>{jobs.filter(j => j.matchScore >= 70 && j.matchScore < 85).length}</p>
-              <p style={{ fontSize: '0.8rem', color: '#6c757d', fontWeight: 500, margin: 0 }}>Strong Fits</p>
+              <p style={{ fontSize: '1.8rem', fontWeight: 800, color: '#1971c2', margin: 0 }}>{jobs.filter(j => j.matchScore >= 70 && j.matchScore < 85).length}</p>
+              <p style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, margin: 0, textTransform: 'uppercase' }}>Strong Fits (70–84%)</p>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ fontSize: '1.8rem', fontWeight: 800, color: '#7c3aed', margin: 0 }}>{jobs.filter(j => j.matchedPositions.length > 0 || j.matchedTechStacks.length > 0).length}</p>
+              <p style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, margin: 0, textTransform: 'uppercase' }}>Target Stack & Role Fits</p>
             </div>
           </div>
         </motion.div>
 
-        {/* Sort Controls */}
+        {/* Filter & Sort Controls */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.15 }}
-          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.8rem' }}
+          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}
         >
-          <span style={{ color: '#6c757d', fontSize: '0.95rem' }}>
-            Showing <strong style={{ color: '#1a1a1a' }}>{sortedJobs.length}</strong> personalized recommendations
-          </span>
+          {/* Quick Filter Tabs */}
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => setFilterPreference('all')}
+              style={{
+                padding: '0.45rem 1rem',
+                borderRadius: '12px',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+                border: filterPreference === 'all' ? '1px solid #1a2652' : '1px solid #e2e8f0',
+                background: filterPreference === 'all' ? '#1a2652' : '#ffffff',
+                color: filterPreference === 'all' ? '#ffffff' : '#64748b',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              All Matches ({jobs.length})
+            </button>
+            <button
+              onClick={() => setFilterPreference('positions')}
+              style={{
+                padding: '0.45rem 1rem',
+                borderRadius: '12px',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+                border: filterPreference === 'positions' ? '1px solid #7c3aed' : '1px solid #e2e8f0',
+                background: filterPreference === 'positions' ? '#7c3aed' : '#ffffff',
+                color: filterPreference === 'positions' ? '#ffffff' : '#64748b',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.3rem'
+              }}
+            >
+              🎯 Target Roles ({jobs.filter(j => j.matchedPositions.length > 0).length})
+            </button>
+            <button
+              onClick={() => setFilterPreference('tech_stacks')}
+              style={{
+                padding: '0.45rem 1rem',
+                borderRadius: '12px',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+                border: filterPreference === 'tech_stacks' ? '1px solid #0284c7' : '1px solid #e2e8f0',
+                background: filterPreference === 'tech_stacks' ? '#0284c7' : '#ffffff',
+                color: filterPreference === 'tech_stacks' ? '#ffffff' : '#64748b',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.3rem'
+              }}
+            >
+              💻 Tech Stacks ({jobs.filter(j => j.matchedTechStacks.length > 0).length})
+            </button>
+          </div>
+
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
             <span style={{ fontSize: '0.85rem', color: '#6c757d' }}>Sort by:</span>
             <button
@@ -589,11 +875,70 @@ const RecommendedJobs: React.FC = () => {
                         {job.description}
                       </p>
 
-                      {/* AI Match Reason */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '1rem', padding: '0.4rem 0.8rem', background: '#f8f9fa', borderRadius: '6px', width: 'fit-content' }}>
-                        <Zap size={13} color="var(--primary)" />
-                        <span style={{ fontSize: '0.8rem', color: '#4a4a4a', fontStyle: 'italic' }}>{job.matchReason}</span>
+                      {/* AI Match Reason Banner */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        marginBottom: '0.8rem',
+                        padding: '0.45rem 0.9rem',
+                        background: '#f8fafc',
+                        borderRadius: '8px',
+                        width: 'fit-content',
+                        border: '1px solid #e2e8f0'
+                      }}>
+                        <Zap size={14} color={job.matchScore > 0 ? 'var(--primary)' : '#94a3b8'} />
+                        <span style={{ fontSize: '0.82rem', color: job.matchScore > 0 ? '#334155' : '#64748b', fontWeight: 600 }}>
+                          {job.matchReason}
+                        </span>
+                        {job.matchScore === 0 && userSkills.length === 0 && (
+                          <Link
+                            to="/profile/edit"
+                            state={{ from: '/jobs/recommended' }}
+                            style={{ fontSize: '0.78rem', color: 'var(--primary)', fontWeight: 700, marginLeft: '4px', textDecoration: 'underline' }}
+                          >
+                            Edit Profile →
+                          </Link>
+                        )}
                       </div>
+
+                      {/* Preference Match Badges (Positions & Tech Stacks) */}
+                      {(job.matchedPositions.length > 0 || job.matchedTechStacks.length > 0) && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.8rem' }}>
+                          {job.matchedPositions.map(pos => (
+                            <span key={pos} style={{
+                              fontSize: '0.78rem',
+                              background: '#f5f3ff',
+                              color: '#6d28d9',
+                              border: '1px solid #ddd6fe',
+                              padding: '0.25rem 0.75rem',
+                              borderRadius: '12px',
+                              fontWeight: 700,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.3rem'
+                            }}>
+                              🎯 Target Position: {pos}
+                            </span>
+                          ))}
+                          {job.matchedTechStacks.map(stack => (
+                            <span key={stack} style={{
+                              fontSize: '0.78rem',
+                              background: '#f0f9ff',
+                              color: '#0369a1',
+                              border: '1px solid #bae6fd',
+                              padding: '0.25rem 0.75rem',
+                              borderRadius: '12px',
+                              fontWeight: 700,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.3rem'
+                            }}>
+                              💻 Tech Stack: {stack}
+                            </span>
+                          ))}
+                        </div>
+                      )}
 
                       {/* Skills Match */}
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '1.2rem' }}>

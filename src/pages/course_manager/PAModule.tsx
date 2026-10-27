@@ -74,10 +74,10 @@ const PerformanceAnalysis: React.FC = () => {
       {/* Metric Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px' }}>
         {[
-          { label: 'Avg. Completion', value: '84%', icon: Target, color: '#10b981', bg: 'rgba(16, 185, 129, 0.05)' },
-          { label: 'Daily Active', value: data?.dailyActiveUsers?.[6] || '72', icon: Activity, color: brandPrimary, bg: 'rgba(200, 16, 46, 0.05)' },
-          { label: 'Active Streaks', value: '124', icon: Flame, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.05)' },
-          { label: 'Risk Students', value: data?.inactiveLearners?.length || '0', icon: AlertTriangle, color: '#6366f1', bg: 'rgba(99, 102, 241, 0.05)' },
+          { label: 'Avg. Completion', value: `${data?.overallAvgCompletion ?? 0}%`, icon: Target, color: '#10b981', bg: 'rgba(16, 185, 129, 0.05)' },
+          { label: 'Daily Active', value: (data?.dailyActiveUsers?.[6] ?? data?.totalEnrollments ?? 0).toString(), icon: Activity, color: brandPrimary, bg: 'rgba(200, 16, 46, 0.05)' },
+          { label: 'Active Streaks', value: (data?.totalActiveStreaks ?? data?.streaks?.length ?? 0).toString(), icon: Flame, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.05)' },
+          { label: 'Risk Students', value: (data?.inactiveLearners?.length || 0).toString(), icon: AlertTriangle, color: '#6366f1', bg: 'rgba(99, 102, 241, 0.05)' },
         ].map((stat, i) => (
           <motion.div 
             key={i}

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { 
   ArrowLeft, CheckCircle2, AlertCircle, 
-  Clock, Send, Code, Video, Link as LinkIcon, 
-  ChevronRight, Lock, BookOpen, Star, RefreshCcw, Award
+  Clock, Check, X, RotateCcw, Award,
+  HelpCircle, MessageSquare, ClipboardCheck,
+  ChevronRight, Sparkles, BookOpen, Lock
 } from 'lucide-react';
 import { assessmentsApi, coursesApi, usersApi } from '../services/api';
 import { generateCourseCertificate } from '../utils/CertificateGenerator';
@@ -12,19 +13,19 @@ import { generateCourseCertificate } from '../utils/CertificateGenerator';
 const AssessmentCenter: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+
   const [course, setCourse] = useState<any>(null);
   const [attempt, setAttempt] = useState<any>(null);
+  const [assessmentData, setAssessmentData] = useState<any>(null);
+  const [latestSubmission, setLatestSubmission] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
+
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [activeStage, setActiveStage] = useState(1);
-  
-  // Form states for different stages
-  const [scenarioText, setScenarioText] = useState('');
-  const [debugCode, setDebugCode] = useState('');
-  const [debugExplanation, setDebugExplanation] = useState('');
-  const [projectUrl, setProjectUrl] = useState('');
-  const [videoUrl, setVideoUrl] = useState('');
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [isTakingQuiz, setIsTakingQuiz] = useState(false);
+  const [selectedAnswers, setSelectedAnswers] = useState<{ [qId: string]: number }>({});
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
   const fetchData = async () => {
     if (!id) return;
@@ -37,7 +38,21 @@ const AssessmentCenter: React.FC = () => {
       ]);
       
       if (courseRes.success) setCourse((courseRes.data as any).course);
-      if (assessRes.success) setAttempt((assessRes.data as any).attempt);
+      if (assessRes.success) {
+        const d = (assessRes.data as any);
+        setAttempt(d.attempt);
+        if (d.assessment) {
+          setAssessmentData(d.assessment);
+        }
+        if (d.latest_submission) {
+          setLatestSubmission(d.latest_submission);
+          // If already submitted, default to showing evaluation results
+          setIsTakingQuiz(false);
+        } else {
+          // No submission yet, default to quiz taking mode
+          setIsTakingQuiz(true);
+        }
+      }
       if (profileRes.success) setUserProfile((profileRes.data as any).user);
       
     } catch (err) {
@@ -51,22 +66,78 @@ const AssessmentCenter: React.FC = () => {
     fetchData();
   }, [id]);
 
+  // Optional countdown timer during quiz mode
   useEffect(() => {
-    if (attempt) {
-      setActiveStage(attempt.current_stage);
+    if (isTakingQuiz && assessmentData?.time_limit_mins && timeLeft === null) {
+      setTimeLeft(assessmentData.time_limit_mins * 60);
     }
-  }, [attempt]);
+    if (!isTakingQuiz) {
+      setTimeLeft(null);
+    }
+  }, [isTakingQuiz, assessmentData]);
 
-  const handleSubmit = async (stage: number, payload: any) => {
-    if (!id) return;
+  useEffect(() => {
+    if (!isTakingQuiz || timeLeft === null || timeLeft <= 0) return;
+    const timer = setInterval(() => {
+      setTimeLeft(prev => (prev !== null && prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isTakingQuiz, timeLeft]);
+
+  const formatTimer = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
+  const questions = assessmentData?.questions || [];
+  const totalQuestions = questions.length;
+  const answeredCount = Object.keys(selectedAnswers).length;
+  const passingScore = assessmentData?.passing_score ?? 75;
+
+  const maxAttempts = latestSubmission?.max_attempts ?? assessmentData?.max_attempts ?? 3;
+  const attemptsCount = latestSubmission?.attempts_count ?? latestSubmission?.attempt_number ?? (latestSubmission ? 1 : 0);
+  const attemptsLeft = latestSubmission?.attempts_left !== undefined 
+    ? latestSubmission.attempts_left 
+    : (assessmentData?.attempts_left !== undefined 
+        ? assessmentData.attempts_left 
+        : Math.max(0, maxAttempts - attemptsCount));
+  const canRetake = latestSubmission ? (attemptsLeft > 0 || latestSubmission.can_retake === true) : true;
+
+  const handleStartRetake = () => {
+    if (latestSubmission && !latestSubmission.passed && !canRetake) {
+      alert(`You have reached the maximum attempt limit (${maxAttempts} attempts). Please contact your Course Manager to reset your attempts.`);
+      return;
+    }
+    setSelectedAnswers({});
+    if (assessmentData?.time_limit_mins) {
+      setTimeLeft(assessmentData.time_limit_mins * 60);
+    }
+    setIsTakingQuiz(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSubmitQuiz = async () => {
+    if (!id || !assessmentData?.questions) return;
     setSubmitting(true);
     try {
-      const res = await assessmentsApi.submitStage(id, stage, payload);
+      const answersPayload = Object.entries(selectedAnswers).map(([qid, opt]) => ({
+        question_id: qid,
+        selected_option: opt
+      }));
+
+      const res = await assessmentsApi.submitStage(id, 1, { answers: answersPayload });
       if (res.success) {
-        fetchData(); // Refresh status
+        await fetchData();
+        setIsTakingQuiz(false);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        alert(res.message || 'Submission failed. Please try again.');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Submission error:', err);
+      const errMsg = err?.response?.data?.message || err?.message || 'An error occurred while submitting your assessment.';
+      alert(errMsg);
     } finally {
       setSubmitting(false);
     }
@@ -74,369 +145,1001 @@ const AssessmentCenter: React.FC = () => {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80vh' }}>
-        <div style={{ width: '50px', height: '50px', border: '4px solid #f3f3f3', borderTop: '4px solid var(--primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', gap: '1rem' }}>
+        <div style={{ width: '48px', height: '48px', border: '4px solid #e2e8f0', borderTop: '4px solid #0d2046', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        <p style={{ color: '#64748b', fontWeight: 600, fontSize: '0.95rem' }}>Loading course assessment...</p>
+        <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
-
-  if (!attempt) {
-    return (
-      <div style={{ textAlign: 'center', padding: '5rem' }}>
-        <AlertCircle size={48} color="#EF4444" style={{ marginBottom: '1.5rem' }} />
-        <h2>Assessment NOT Found</h2>
-        <p>Please ensure you are enrolled and have finished the course modules.</p>
-        <Link to="/courses/my-courses">Back to My Courses</Link>
-      </div>
-    );
-  }
-
-  const stageStatus = attempt.stages[activeStage.toString()]?.status;
-
-  const renderStageContent = () => {
-    if (stageStatus === 'pending' && activeStage < 5) {
-      return (
-        <div style={{ textAlign: 'center', padding: '4rem 2rem' }}>
-          <div style={{ width: '80px', height: '80px', borderRadius: '50%', backgroundColor: '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem auto' }}>
-            <CheckCircle2 size={40} color="#16a34a" />
-          </div>
-          <h3 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#0f172a', marginBottom: '1rem' }}>Stage {activeStage} Submitted!</h3>
-          <p style={{ color: '#64748b', fontSize: '1.1rem', maxWidth: '500px', margin: '0 auto', marginBottom: '2rem' }}>
-            Expert review is pending, but you can continue to the next stage immediately.
-          </p>
-          <button 
-            onClick={() => {
-              const required = attempt.required_assessments || [1, 2, 3, 4, 5];
-              const nextStages = required.filter((s: number) => s > activeStage);
-              if(nextStages.length > 0) setActiveStage(Math.min(...nextStages));
-            }}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.75rem', background: 'var(--primary)', color: 'white', padding: '1rem 2rem', borderRadius: '0.75rem', border: 'none', fontWeight: 700, cursor: 'pointer' }}
-          >
-            Go to Next Stage <ChevronRight size={18} />
-          </button>
-        </div>
-      );
-    }
-
-    if (stageStatus === 'pending' && activeStage === 5) {
-      return (
-        <div style={{ textAlign: 'center', padding: '4rem 2rem' }}>
-          <div style={{ width: '80px', height: '80px', borderRadius: '50%', backgroundColor: '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem auto' }}>
-            <Clock size={40} color="#f97316" />
-          </div>
-          <h3 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#0f172a', marginBottom: '1rem' }}>Review in Progress</h3>
-          <p style={{ color: '#64748b', fontSize: '1.1rem', maxWidth: '500px', margin: '0 auto' }}>
-            Your submission for Stage {activeStage} is currently being reviewed by our expert panel. 
-            Estimated time: 24-48 hours. Check back soon!
-          </p>
-        </div>
-      );
-    }
-
-    if (stageStatus === 'rejected') {
-        const feedback = attempt.stages[activeStage.toString()]?.feedback;
-        return (
-            <div style={{ padding: '3rem', backgroundColor: '#fef2f2', borderRadius: '1.5rem', border: '1px solid #fee2e2' }}>
-                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem', color: '#dc2626' }}>
-                    <AlertCircle size={24} />
-                    <h3 style={{ margin: 0, fontWeight: 800 }}>Revision Required</h3>
-                 </div>
-                 <p style={{ color: '#991b1b', marginBottom: '2rem', fontSize: '1.05rem', lineHeight: 1.6 }}>
-                    <strong>Admin Feedback:</strong> {feedback || "Please review your submission and try again."}
-                 </p>
-                 <button 
-                  onClick={() => {
-                    // Logic to reset status from rejected back to not_started if needed, 
-                    // but for now we just show the form again in the next renders
-                  }}
-                  style={{ backgroundColor: '#dc2626', color: 'white', padding: '1rem 2rem', borderRadius: '0.75rem', border: 'none', fontWeight: 700 }}
-                 >
-                    Retry Submission
-                 </button>
-            </div>
-        );
-    }
-
-    switch (activeStage) {
-      case 1:
-        return (
-          <div style={{ padding: '2rem' }}>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '1.5rem' }}>Stage 1: Automated Quiz</h3>
-            <p style={{ color: '#64748b', marginBottom: '2rem' }}>Test your fundamental knowledge gained from the course modules.</p>
-            <div style={{ background: '#f8fafc', padding: '2rem', borderRadius: '1rem', border: '1px dashed #e2e8f0' }}>
-                 <p style={{ fontWeight: 600, color: '#0f172a' }}>Quiz Ready</p>
-                 <p style={{ fontSize: '0.9rem', color: '#64748b' }}>This quiz consists of 15 multiple-choice questions. Passing score: 80%.</p>
-                 <button 
-                    onClick={() => handleSubmit(1, { score: 100 })} // Mocking pass for demonstration
-                    style={{ background: '#0d2046', color: 'white', padding: '1rem 2rem', borderRadius: '0.75rem', border: 'none', fontWeight: 700, marginTop: '1.5rem' }}
-                >
-                    Start Quiz Now
-                </button>
-            </div>
-          </div>
-        );
-      case 2:
-        return (
-          <div style={{ padding: '2rem' }}>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '1.5rem' }}>Stage 2: Scenario Analysis</h3>
-            <p style={{ color: '#64748b', marginBottom: '2rem' }}>Provide a strategic solution to the problem statement provided below.</p>
-            <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '1rem', overflow: 'hidden' }}>
-                 <div style={{ padding: '1.5rem', backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                    <p style={{ fontWeight: 800, margin: 0, color: '#0d2046' }}>Problem Statement</p>
-                    <p style={{ fontSize: '0.95rem', color: '#475569', marginTop: '0.5rem' }}>
-                        "A legacy system is experiencing intermittent downtime during peak hours due to a database locking issue. 
-                        Outline a migration strategy to a serverless architecture while maintaining zero downtime."
-                    </p>
-                 </div>
-                 <textarea 
-                    placeholder="Type your strategic response here..."
-                    value={scenarioText}
-                    onChange={(e) => setScenarioText(e.target.value)}
-                    style={{ width: '100%', minHeight: '300px', padding: '1.5rem', border: 'none', outline: 'none', fontSize: '1.05rem', lineHeight: 1.6, color: '#000000' }}
-                 />
-                 <div style={{ padding: '1.5rem', textAlign: 'right', backgroundColor: '#f9fafb' }}>
-                    <button 
-                        disabled={scenarioText.length < 50 || submitting}
-                        onClick={() => handleSubmit(2, { response: scenarioText })}
-                        style={{ background: '#0d2046', color: 'white', padding: '0.8rem 2rem', borderRadius: '0.75rem', border: 'none', fontWeight: 700, opacity: (scenarioText.length < 50 || submitting) ? 0.6 : 1 }}
-                    >
-                        {submitting ? 'Submitting...' : 'Submit Analysis'}
-                    </button>
-                 </div>
-            </div>
-          </div>
-        );
-      case 3:
-        return (
-          <div style={{ padding: '2rem' }}>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '1.5rem' }}>Stage 3: Debugging Round</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-                <div>
-                    <p style={{ fontWeight: 700, marginBottom: '1rem' }}>Broken Implementation</p>
-                    <pre style={{ background: '#1e293b', color: '#f8fafc', padding: '1.5rem', borderRadius: '0.75rem', fontSize: '0.85rem', overflowX: 'auto' }}>
-{`function calculateAverage(nums) {
-  let total = 0;
-  for (let i = 0; i <= nums.length; i++) {
-    total += nums[i];
-  }
-  return total / nums.length;
-}`}
-                    </pre>
-                </div>
-                <div>
-                    <p style={{ fontWeight: 700, marginBottom: '1rem' }}>Your Fixed Code</p>
-                    <textarea 
-                        value={debugCode}
-                        onChange={(e) => setDebugCode(e.target.value)}
-                        placeholder="// Paste fixed code here..."
-                        style={{ width: '100%', height: '140px', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '0.75rem', padding: '1rem', fontFamily: 'monospace', color: '#000000' }}
-                    />
-                    <p style={{ fontWeight: 700, margin: '1.5rem 0 0.5rem 0' }}>Explanation</p>
-                    <textarea 
-                        value={debugExplanation}
-                        onChange={(e) => setDebugExplanation(e.target.value)}
-                        placeholder="Explain why the fix works..."
-                        style={{ width: '100%', height: '80px', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '0.75rem', padding: '1rem', color: '#000000' }}
-                    />
-                    <button 
-                        disabled={!debugCode || submitting}
-                        onClick={() => handleSubmit(3, { code: debugCode, explanation: debugExplanation })}
-                        style={{ width: '100%', marginTop: '1.5rem', background: '#0d2046', color: 'white', padding: '1rem', borderRadius: '0.75rem', border: 'none', fontWeight: 700 }}
-                    >
-                        Submit Corrected Code
-                    </button>
-                </div>
-            </div>
-          </div>
-        );
-      case 4:
-        return (
-          <div style={{ padding: '2rem', textAlign: 'center' }}>
-            <div style={{ width: '80px', height: '80px', borderRadius: '50%', backgroundColor: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem auto' }}>
-                <LinkIcon size={40} color="#16a34a" />
-            </div>
-            <h3 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '1rem' }}>Stage 4: Industry Project</h3>
-            <p style={{ color: '#64748b', fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto 2.5rem auto' }}>
-                Apply your skills to build a production-ready application. 
-                Host your source code on GitHub and provide the repository link for evaluation.
-            </p>
-            <div style={{ maxWidth: '500px', margin: '0 auto', textAlign: 'left' }}>
-                <label style={{ display: 'block', fontWeight: 700, marginBottom: '0.5rem' }}>GitHub Repository URL</label>
-                <input 
-                    type="url"
-                    value={projectUrl}
-                    onChange={(e) => setProjectUrl(e.target.value)}
-                    placeholder="https://github.com/username/project"
-                    style={{ width: '100%', padding: '1.25rem', borderRadius: '0.75rem', border: '2px solid #e2e8f0', marginBottom: '2rem', fontSize: '1rem', outline: 'none', color: '#000000' }}
-                />
-                <button 
-                    disabled={!projectUrl.includes('github.com') || submitting}
-                    onClick={() => handleSubmit(4, { repo_url: projectUrl })}
-                    style={{ width: '100%', background: '#0d2046', color: 'white', padding: '1.25rem', borderRadius: '0.75rem', border: 'none', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' }}
-                >
-                    <Send size={18} /> Submit Project for Review
-                </button>
-            </div>
-          </div>
-        );
-      case 5:
-        return (
-          <div style={{ padding: '2rem', textAlign: 'center' }}>
-            <div style={{ width: '80px', height: '80px', borderRadius: '50%', backgroundColor: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem auto' }}>
-                <Video size={40} color="#dc2626" />
-            </div>
-            <h3 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '1rem' }}>Stage 5: High-Level Review</h3>
-            <p style={{ color: '#64748b', fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto 2.5rem auto' }}>
-                The final phase! Submit a recorded video demonstration of your project. 
-                Explain your architecture, challenges, and core features.
-            </p>
-            <div style={{ maxWidth: '500px', margin: '0 auto', textAlign: 'left' }}>
-                <label style={{ display: 'block', fontWeight: 700, marginBottom: '0.5rem' }}>Link to Video Demo</label>
-                <input 
-                    type="url"
-                    value={videoUrl}
-                    onChange={(e) => setVideoUrl(e.target.value)}
-                    placeholder="YouTube, Vimeo, or Drive Link"
-                    style={{ width: '100%', padding: '1.25rem', borderRadius: '0.75rem', border: '2px solid #e2e8f0', marginBottom: '2rem', fontSize: '1rem', outline: 'none', color: '#000000' }}
-                />
-                <button 
-                    disabled={!videoUrl || submitting}
-                    onClick={() => handleSubmit(5, { video_url: videoUrl })}
-                    style={{ width: '100%', background: '#d32f2f', color: 'white', padding: '1.25rem', borderRadius: '0.75rem', border: 'none', fontWeight: 800, fontSize: '1.1rem', boxShadow: '0 10px 20px rgba(211,47,47,0.2)' }}
-                >
-                    Complete Final Review
-                </button>
-            </div>
-          </div>
-        );
-      default:
-        return <p>Unknown assessment stage.</p>;
-    }
-  };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc', padding: '4rem 1rem' }}>
-      <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-        
-        {/* Navigation & Header */}
-        <div style={{ marginBottom: '3rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-            <div>
-              <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: '#0d2046', margin: 0 }}>
-                Course <span style={{ color: 'var(--primary)' }}>Assessment</span>
-              </h1>
-              <p style={{ color: '#475569', fontSize: '1.1rem', marginTop: '0.5rem' }}>{course?.title || 'Loading Course...'}</p>
-            </div>
-            <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '1rem' }}>
-               {attempt?.is_completed && (
-                  <button 
-                    onClick={() => {
-                      if (!userProfile) return alert("Profile loading...");
-                      generateCourseCertificate(
-                        userProfile.full_name || 'NeST Member',
-                        course?.title || 'Course',
-                        new Date().toLocaleDateString()
-                      );
-                    }}
-                    style={{ 
-                      background: '#d32f2f', 
-                      color: 'white', 
-                      padding: '0.75rem 1.5rem', 
-                      borderRadius: '0.75rem', 
-                      border: 'none', 
-                      fontWeight: 800, 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: '0.6rem',
-                      cursor: 'pointer',
-                      boxShadow: '0 10px 20px rgba(211,47,47,0.2)'
-                    }}
-                  >
-                    <Award size={18} /> Download Certificate
-                  </button>
-               )}
-               <div style={{ backgroundColor: '#ffffff', padding: '0.5rem 1.5rem', borderRadius: '2rem', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
-                  <Star size={16} fill="#F59E0B" color="#F59E0B" />
-                  <span style={{ fontWeight: 800, color: '#0f172a' }}>Stage {activeStage} of {(attempt.required_assessments || [1, 2, 3, 4, 5]).length}</span>
-               </div>
-            </div>
+    <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc', padding: '2.5rem 1rem 5rem' }}>
+      <div style={{ maxWidth: '960px', margin: '0 auto' }}>
+
+        {/* Top Navigation */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+          <button
+            onClick={() => {
+              if (location.state && (location.state as any).from) {
+                navigate((location.state as any).from);
+              } else if (window.history.length > 1) {
+                navigate(-1);
+              } else {
+                navigate('/assessments/quiz');
+              }
+            }}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: '#ffffff',
+              border: '1px solid #e2e8f0',
+              color: '#0f172a',
+              borderRadius: '12px',
+              padding: '9px 18px',
+              fontWeight: 700,
+              fontSize: '13px',
+              cursor: 'pointer',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <ArrowLeft size={16} /> Back to Assessments
+          </button>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            {latestSubmission && (
+              <span style={{
+                background: '#f8fafc',
+                color: '#475569',
+                border: '1px solid #e2e8f0',
+                padding: '6px 14px',
+                borderRadius: '20px',
+                fontSize: '12px',
+                fontWeight: 800
+              }}>
+                Attempt {attemptsCount} of {maxAttempts}
+              </span>
+            )}
+            {latestSubmission && (
+              <span style={{
+                background: latestSubmission.passed ? '#ecfdf5' : '#fef2f2',
+                color: latestSubmission.passed ? '#15803d' : '#b91c1c',
+                border: `1px solid ${latestSubmission.passed ? '#bbf7d0' : '#fecaca'}`,
+                padding: '6px 14px',
+                borderRadius: '20px',
+                fontSize: '12px',
+                fontWeight: 800,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}>
+                {latestSubmission.passed ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
+                {latestSubmission.passed ? 'Assessment Passed' : 'Revision Required'}
+              </span>
+            )}
+            <span style={{
+              background: '#eff6ff',
+              color: '#1d4ed8',
+              border: '1px solid #dbeafe',
+              padding: '6px 14px',
+              borderRadius: '20px',
+              fontSize: '12px',
+              fontWeight: 800
+            }}>
+              MCQ Assessment
+            </span>
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '2rem' }}>
-          
-          {/* Progress Sidebar */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {(attempt.required_assessments || [1, 2, 3, 4, 5]).map((s: number) => {
-              const isActive = s === activeStage;
-              const isPast = (attempt?.stages[s.toString()]?.status === 'passed' || attempt?.stages[s.toString()]?.status === 'pending');
-              const isFuture = s > (attempt?.current_stage || 1);
-              const isSelectable = !isFuture;
-              
-              return (
-                <div 
-                  key={s} 
-                  onClick={() => isSelectable && setActiveStage(s)}
-                  style={{ 
-                    padding: '1.25rem', 
-                    borderRadius: '1rem', 
-                    background: isActive ? 'white' : 'transparent',
-                    border: isActive ? '1px solid #e2e8f0' : '1px solid transparent',
-                    boxShadow: isActive ? '0 10px 15px -3px rgba(0,0,0,0.05)' : 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '1rem',
-                    opacity: isSelectable ? 1 : 0.5,
-                    cursor: isSelectable ? 'pointer' : 'not-allowed',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  <div style={{ 
-                    width: '32px', 
-                    height: '32px', 
-                    borderRadius: '50%', 
-                    backgroundColor: isPast ? '#10B981' : isActive ? 'var(--primary)' : '#e2e8f0',
-                    color: 'white',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 900,
-                    fontSize: '0.8rem'
+        {/* Page Title & Course Banner */}
+        <div style={{
+          background: 'linear-gradient(135deg, #0d2046 0%, #1e3a8a 100%)',
+          borderRadius: '1.5rem',
+          padding: '2.5rem',
+          color: 'white',
+          marginBottom: '2rem',
+          boxShadow: '0 10px 25px rgba(13, 32, 70, 0.15)',
+          position: 'relative',
+          overflow: 'hidden'
+        }}>
+          <div style={{ position: 'relative', zIndex: 2 }}>
+            <span style={{
+              display: 'inline-block',
+              background: 'rgba(255, 255, 255, 0.15)',
+              padding: '4px 12px',
+              borderRadius: '20px',
+              fontSize: '12px',
+              fontWeight: 700,
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+              marginBottom: '0.75rem',
+              backdropFilter: 'blur(8px)'
+            }}>
+              NeST Course Evaluation
+            </span>
+            <h1 style={{ fontSize: '2.2rem', fontWeight: 900, margin: '0 0 0.5rem 0', letterSpacing: '-0.02em', color: '#ffffff' }}>
+              {course?.title || assessmentData?.title || 'Course Assessment'}
+            </h1>
+            <p style={{ margin: 0, color: '#cbd5e1', fontSize: '1rem', maxWidth: '650px', lineHeight: 1.5 }}>
+              {assessmentData?.description || 'Course Multiple Choice Assessment configured by Course Management.'}
+            </p>
+          </div>
+
+          <div style={{
+            position: 'absolute',
+            right: '-40px',
+            bottom: '-40px',
+            width: '200px',
+            height: '200px',
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%)',
+            pointerEvents: 'none'
+          }} />
+        </div>
+
+        {/* Guard: If no questions configured by course manager */}
+        {totalQuestions === 0 ? (
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '1.5rem',
+            padding: '4rem 2rem',
+            textAlign: 'center',
+            border: '1px solid #e2e8f0',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.03)'
+          }}>
+            <BookOpen size={48} color="#94a3b8" style={{ margin: '0 auto 1.5rem auto' }} />
+            <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.5rem' }}>
+              No Questions Configured Yet
+            </h3>
+            <p style={{ color: '#64748b', fontSize: '1rem', maxWidth: '500px', margin: '0 auto 2rem auto' }}>
+              The Course Manager has not yet uploaded multiple choice questions for this course. Please check back soon.
+            </p>
+            <Link
+              to="/courses/my-courses"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: '#0d2046',
+                color: 'white',
+                padding: '0.8rem 1.8rem',
+                borderRadius: '12px',
+                textDecoration: 'none',
+                fontWeight: 700,
+                fontSize: '14px'
+              }}
+            >
+              Return to My Courses
+            </Link>
+          </div>
+        ) : (
+          <>
+            {/* ============================================================== */}
+            {/* VIEW A: EVALUATION PROCESSES & RESULTS (When already submitted) */}
+            {/* ============================================================== */}
+            {latestSubmission && !isTakingQuiz ? (
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}
+              >
+                {/* 1. Evaluation Summary Hero */}
+                <div style={{
+                  background: '#ffffff',
+                  borderRadius: '1.5rem',
+                  border: `2px solid ${latestSubmission.passed ? '#bbf7d0' : '#fecaca'}`,
+                  overflow: 'hidden',
+                  boxShadow: '0 10px 30px rgba(0,0,0,0.04)'
+                }}>
+                  <div style={{
+                    padding: '2rem 2.5rem',
+                    background: latestSubmission.passed 
+                      ? 'linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%)' 
+                      : 'linear-gradient(180deg, #fef2f2 0%, #ffffff 100%)',
+                    borderBottom: '1px solid #f1f5f9'
                   }}>
-                    {isPast ? <CheckCircle2 size={16} /> : s}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                        <div style={{
+                          width: '64px',
+                          height: '64px',
+                          borderRadius: '50%',
+                          backgroundColor: latestSubmission.passed ? '#dcfce7' : '#fee2e2',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0
+                        }}>
+                          {latestSubmission.passed ? (
+                            <CheckCircle2 size={36} color="#16a34a" />
+                          ) : (
+                            <AlertCircle size={36} color="#dc2626" />
+                          )}
+                        </div>
+                        <div>
+                          <span style={{
+                            fontSize: '12px',
+                            fontWeight: 800,
+                            letterSpacing: '0.04em',
+                            textTransform: 'uppercase',
+                            color: latestSubmission.passed ? '#15803d' : '#b91c1c'
+                          }}>
+                            Evaluation Process Complete
+                          </span>
+                          <h2 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#0f172a', margin: '4px 0' }}>
+                            {latestSubmission.passed ? 'Assessment Passed & Approved' : 'Assessment Revision Required'}
+                          </h2>
+                          <p style={{ margin: 0, color: '#64748b', fontSize: '0.95rem' }}>
+                            {latestSubmission.passed
+                              ? 'Congratulations! You have satisfied the academic standard set by the Course Manager.'
+                              : (!canRetake
+                                ? `Score did not achieve the ${latestSubmission.passing_score ?? passingScore}% required passing standard. You have used all ${maxAttempts} of ${maxAttempts} allowed attempts. Please contact your Course Manager to request an attempt reset.`
+                                : `Score did not achieve the ${latestSubmission.passing_score ?? passingScore}% required passing standard. You have ${attemptsLeft} attempt${attemptsLeft === 1 ? '' : 's'} remaining.`)}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Action buttons */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                        {latestSubmission.passed && (
+                          <button
+                            onClick={() => {
+                              const studentName = userProfile?.full_name || 'NeST Member';
+                              const courseTitle = course?.title || assessmentData?.title || 'Course';
+                              const compDate = latestSubmission?.submitted_at || assessmentData?.completed_at || new Date().toISOString();
+                              generateCourseCertificate(studentName, courseTitle, compDate);
+                            }}
+                            style={{
+                              background: '#d32f2f',
+                              color: 'white',
+                              border: 'none',
+                              padding: '12px 22px',
+                              borderRadius: '12px',
+                              fontWeight: 800,
+                              fontSize: '14px',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              boxShadow: '0 6px 16px rgba(211, 47, 47, 0.25)',
+                              transition: 'transform 0.15s ease'
+                            }}
+                            onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-2px)')}
+                            onMouseLeave={e => (e.currentTarget.style.transform = 'translateY(0)')}
+                          >
+                            <Award size={18} /> Download Certificate
+                          </button>
+                        )}
+
+                        {canRetake ? (
+                          <button
+                            onClick={handleStartRetake}
+                            style={{
+                              background: '#ffffff',
+                              color: '#0d2046',
+                              border: '1.5px solid #cbd5e1',
+                              padding: '11px 20px',
+                              borderRadius: '12px',
+                              fontWeight: 700,
+                              fontSize: '14px',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              transition: 'all 0.15s ease'
+                            }}
+                            onMouseEnter={e => {
+                              e.currentTarget.style.borderColor = '#0d2046';
+                              e.currentTarget.style.background = '#f8fafc';
+                            }}
+                            onMouseLeave={e => {
+                              e.currentTarget.style.borderColor = '#cbd5e1';
+                              e.currentTarget.style.background = '#ffffff';
+                            }}
+                          >
+                            <RotateCcw size={16} /> Retake Assessment ({attemptsLeft} left)
+                          </button>
+                        ) : !latestSubmission.passed ? (
+                          <div style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '10px 18px',
+                            borderRadius: '12px',
+                            background: '#fef2f2',
+                            color: '#991b1b',
+                            border: '1px solid #fecaca',
+                            fontSize: '13px',
+                            fontWeight: 700
+                          }}>
+                            <Lock size={15} color="#dc2626" />
+                            <span>Attempts Exhausted ({attemptsCount}/{maxAttempts})</span>
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <p style={{ margin: 0, fontWeight: 700, color: isSelectable ? '#0d2046' : '#64748b', fontSize: '0.9rem' }}>
-                      {s === 1 ? 'Automated Quiz' : s === 2 ? 'Scenario Analysis' : s === 3 ? 'Debugging Round' : s === 4 ? 'Industry Project' : 'High-Level Review'}
-                    </p>
-                    {isActive && <span style={{ fontSize: '0.7rem', color: 'var(--primary)', fontWeight: 800, textTransform: 'uppercase' }}>Active View</span>}
+
+                  {/* KPI Stat Cards Grid */}
+                  <div style={{
+                    padding: '1.75rem 2.5rem',
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                    gap: '1.25rem',
+                    backgroundColor: '#ffffff'
+                  }}>
+                    <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '1rem', border: '1px solid #e2e8f0' }}>
+                      <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Final Score</span>
+                      <p style={{
+                        margin: '6px 0 0 0',
+                        fontSize: '1.8rem',
+                        fontWeight: 900,
+                        color: latestSubmission.passed ? '#15803d' : '#dc2626'
+                      }}>
+                        {latestSubmission.score ?? 0}%
+                      </p>
+                    </div>
+
+                    <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '1rem', border: '1px solid #e2e8f0' }}>
+                      <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Passing Target</span>
+                      <p style={{ margin: '6px 0 0 0', fontSize: '1.8rem', fontWeight: 900, color: '#0f172a' }}>
+                        {latestSubmission.passing_score ?? passingScore}%
+                      </p>
+                    </div>
+
+                    <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '1rem', border: '1px solid #e2e8f0' }}>
+                      <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Accuracy</span>
+                      <p style={{ margin: '6px 0 0 0', fontSize: '1.8rem', fontWeight: 900, color: '#0f172a' }}>
+                        {latestSubmission.correct_count ?? 0} / {latestSubmission.total_questions ?? totalQuestions}
+                      </p>
+                    </div>
+
+                    <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '1rem', border: '1px solid #e2e8f0' }}>
+                      <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Attempts Taken</span>
+                      <p style={{ margin: '6px 0 0 0', fontSize: '1.8rem', fontWeight: 900, color: '#0f172a' }}>
+                        {attemptsCount} / {maxAttempts}
+                      </p>
+                    </div>
+
+                    <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '1rem', border: '1px solid #e2e8f0' }}>
+                      <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Evaluation Status</span>
+                      <p style={{
+                        margin: '6px 0 0 0',
+                        fontSize: '1.4rem',
+                        fontWeight: 900,
+                        color: latestSubmission.passed ? '#15803d' : '#b91c1c'
+                      }}>
+                        {latestSubmission.status || (latestSubmission.passed ? 'Approved' : 'Rejected')}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              );
-            })}
-          </div>
 
-          {/* Main Assessment Area */}
-          <div style={{ 
-            background: 'white', 
-            borderRadius: '2rem', 
-            boxShadow: '0 20px 40px rgba(0,0,0,0.04)', 
-            border: '1px solid #f1f5f9',
-            overflow: 'hidden'
-          }}>
-             <AnimatePresence mode="wait">
-                <motion.div
-                  key={activeStage + stageStatus}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                >
-                    {renderStageContent()}
-                </motion.div>
-             </AnimatePresence>
-          </div>
+                {/* 2. Course Manager Evaluation Feedback Card */}
+                {latestSubmission.feedback && (
+                  <div style={{
+                    background: '#ffffff',
+                    borderRadius: '1.25rem',
+                    border: '1px solid #e2e8f0',
+                    padding: '1.75rem 2rem',
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.02)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.75rem' }}>
+                      <div style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '8px',
+                        background: '#eff6ff',
+                        color: '#1d4ed8',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <MessageSquare size={18} />
+                      </div>
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>
+                          Course Manager Evaluation Feedback
+                        </h4>
+                        <span style={{ fontSize: '12px', color: '#64748b' }}>
+                          Official assessment evaluation remarks
+                        </span>
+                      </div>
+                    </div>
+                    <div style={{
+                      background: '#f8fafc',
+                      padding: '1.25rem 1.5rem',
+                      borderRadius: '12px',
+                      borderLeft: '4px solid #0d2046',
+                      color: '#334155',
+                      fontSize: '1rem',
+                      lineHeight: 1.6,
+                      fontWeight: 500
+                    }}>
+                      "{latestSubmission.feedback}"
+                    </div>
+                  </div>
+                )}
 
-        </div>
+                {/* 3. Detailed Question-by-Question Evaluation Breakdown ("MCQ Evaluation Breakdown") */}
+                <div style={{
+                  background: '#ffffff',
+                  borderRadius: '1.5rem',
+                  border: '1px solid #e2e8f0',
+                  padding: '2.5rem',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.02)'
+                }}>
+                  <div style={{ marginBottom: '2rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#0d2046', marginBottom: '4px' }}>
+                      <ClipboardCheck size={20} />
+                      <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900 }}>
+                        MCQ Evaluation Breakdown
+                      </h3>
+                    </div>
+                    <p style={{ margin: 0, color: '#64748b', fontSize: '0.95rem' }}>
+                      Review your submitted responses alongside verified correct answers.
+                    </p>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+                    {(latestSubmission.answers && latestSubmission.answers.length > 0 
+                      ? latestSubmission.answers 
+                      : questions
+                    ).map((q: any, idx: number) => {
+                      const questionText = q.question_text || q.text;
+                      const opts = q.options || [];
+                      const selectedOpt = q.selected_option !== undefined ? q.selected_option : null;
+                      const correctOpt = q.correct_answer !== undefined ? q.correct_answer : null;
+                      const isCorrect = q.is_correct !== undefined 
+                        ? q.is_correct 
+                        : (selectedOpt !== null && correctOpt !== null && selectedOpt === correctOpt);
+
+                      return (
+                        <div
+                          key={q.question_id || q.id || idx}
+                          style={{
+                            background: '#ffffff',
+                            borderRadius: '1.25rem',
+                            border: `1.5px solid ${isCorrect ? '#86efac' : '#fca5a5'}`,
+                            padding: '1.75rem',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
+                          }}
+                        >
+                          {/* Question header row */}
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '8px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <span style={{
+                                background: '#0d2046',
+                                color: 'white',
+                                padding: '4px 10px',
+                                borderRadius: '8px',
+                                fontSize: '11px',
+                                fontWeight: 800,
+                                letterSpacing: '0.04em'
+                              }}>
+                                QUESTION {idx + 1}
+                              </span>
+                              <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748b' }}>
+                                {q.points ?? 1} Point
+                              </span>
+                            </div>
+
+                            <span style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              padding: '4px 12px',
+                              borderRadius: '20px',
+                              fontSize: '12px',
+                              fontWeight: 800,
+                              background: isCorrect ? '#ecfdf5' : '#fef2f2',
+                              color: isCorrect ? '#15803d' : '#b91c1c',
+                              border: `1px solid ${isCorrect ? '#bbf7d0' : '#fecaca'}`
+                            }}>
+                              {isCorrect ? <Check size={14} /> : <X size={14} />}
+                              {isCorrect ? `Correct (+${q.points ?? 1} pt)` : 'Incorrect (0 pts)'}
+                            </span>
+                          </div>
+
+                          {/* Question text */}
+                          <h4 style={{
+                            fontSize: '1.1rem',
+                            fontWeight: 700,
+                            color: '#0f172a',
+                            margin: '0 0 1.25rem 0',
+                            lineHeight: 1.5
+                          }}>
+                            {questionText}
+                          </h4>
+
+                          {/* Options breakdown */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            {opts.map((opt: string, optIdx: number) => {
+                              const isLearnerPick = selectedOpt === optIdx;
+                              const isCorrectPick = correctOpt === optIdx;
+
+                              let optBorder = '#e2e8f0';
+                              let optBg = '#f8fafc';
+                              let optTextColor = '#334155';
+
+                              if (isLearnerPick && isCorrectPick) {
+                                optBorder = '#22c55e';
+                                optBg = '#f0fdf4';
+                                optTextColor = '#15803d';
+                              } else if (isLearnerPick && !isCorrectPick) {
+                                optBorder = '#ef4444';
+                                optBg = '#fef2f2';
+                                optTextColor = '#b91c1c';
+                              } else if (!isLearnerPick && isCorrectPick) {
+                                optBorder = '#86efac';
+                                optBg = '#f0fdf4';
+                                optTextColor = '#15803d';
+                              }
+
+                              return (
+                                <div
+                                  key={optIdx}
+                                  style={{
+                                    padding: '12px 16px',
+                                    borderRadius: '12px',
+                                    border: `1.5px solid ${optBorder}`,
+                                    background: optBg,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    gap: '12px'
+                                  }}
+                                >
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <div style={{
+                                      width: '24px',
+                                      height: '24px',
+                                      borderRadius: '50%',
+                                      border: `1.5px solid ${isLearnerPick || isCorrectPick ? optBorder : '#cbd5e1'}`,
+                                      background: isLearnerPick ? (isCorrectPick ? '#16a34a' : '#dc2626') : (isCorrectPick ? '#16a34a' : 'transparent'),
+                                      color: 'white',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      fontSize: '11px',
+                                      fontWeight: 800,
+                                      flexShrink: 0
+                                    }}>
+                                      {isLearnerPick ? (
+                                        isCorrectPick ? <Check size={14} /> : <X size={14} />
+                                      ) : isCorrectPick ? (
+                                        <Check size={14} />
+                                      ) : (
+                                        String.fromCharCode(65 + optIdx)
+                                      )}
+                                    </div>
+
+                                    <span style={{ fontSize: '14px', fontWeight: isLearnerPick || isCorrectPick ? 700 : 500, color: optTextColor }}>
+                                      {opt}
+                                    </span>
+                                  </div>
+
+                                  {/* Badges for answer state */}
+                                  <div>
+                                    {isLearnerPick && isCorrectPick && (
+                                      <span style={{ fontSize: '11px', fontWeight: 800, color: '#15803d', background: '#dcfce7', padding: '3px 10px', borderRadius: '12px' }}>
+                                        Your Choice (Correct) ✓
+                                      </span>
+                                    )}
+                                    {isLearnerPick && !isCorrectPick && (
+                                      <span style={{ fontSize: '11px', fontWeight: 800, color: '#b91c1c', background: '#fee2e2', padding: '3px 10px', borderRadius: '12px' }}>
+                                        Your Choice (Incorrect) ✗
+                                      </span>
+                                    )}
+                                    {!isLearnerPick && isCorrectPick && (
+                                      <span style={{ fontSize: '11px', fontWeight: 800, color: '#15803d', background: '#dcfce7', padding: '3px 10px', borderRadius: '12px' }}>
+                                        Correct Answer ✓
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* Explanation if available */}
+                          {q.explanation && (
+                            <div style={{
+                              marginTop: '1rem',
+                              padding: '10px 14px',
+                              borderRadius: '8px',
+                              background: '#eff6ff',
+                              border: '1px solid #dbeafe',
+                              fontSize: '13px',
+                              color: '#1e40af',
+                              display: 'flex',
+                              alignItems: 'flex-start',
+                              gap: '8px'
+                            }}>
+                              <HelpCircle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
+                              <div>
+                                <strong>Explanation:</strong> {q.explanation}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Bottom Actions inside evaluation */}
+                  <div style={{ marginTop: '2.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', paddingTop: '1.5rem', borderTop: '1px solid #f1f5f9' }}>
+                    {canRetake ? (
+                      <button
+                        onClick={handleStartRetake}
+                        style={{
+                          background: '#ffffff',
+                          border: '1.5px solid #cbd5e1',
+                          color: '#0d2046',
+                          padding: '12px 24px',
+                          borderRadius: '12px',
+                          fontWeight: 700,
+                          fontSize: '14px',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '8px'
+                        }}
+                      >
+                        <RotateCcw size={16} /> Retake Assessment ({attemptsLeft} left)
+                      </button>
+                    ) : !latestSubmission.passed ? (
+                      <div style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '12px 20px',
+                        borderRadius: '12px',
+                        background: '#fef2f2',
+                        color: '#991b1b',
+                        border: '1px solid #fecaca',
+                        fontSize: '13px',
+                        fontWeight: 700
+                      }}>
+                        <Lock size={16} color="#dc2626" />
+                        Attempts Exhausted ({attemptsCount}/{maxAttempts}) — Contact Manager to Reset
+                      </div>
+                    ) : null}
+
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                      {latestSubmission.passed && (
+                        <button
+                          onClick={() => {
+                            const studentName = userProfile?.full_name || 'NeST Member';
+                            const courseTitle = course?.title || assessmentData?.title || 'Course';
+                            const compDate = latestSubmission?.submitted_at || assessmentData?.completed_at || new Date().toISOString();
+                            generateCourseCertificate(studentName, courseTitle, compDate);
+                          }}
+                          style={{
+                            background: '#d32f2f',
+                            color: 'white',
+                            border: 'none',
+                            padding: '12px 24px',
+                            borderRadius: '12px',
+                            fontWeight: 800,
+                            fontSize: '14px',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            boxShadow: '0 6px 16px rgba(211, 47, 47, 0.25)'
+                          }}
+                        >
+                          <Award size={18} /> Download Certificate
+                        </button>
+                      )}
+
+                      <Link
+                        to="/courses/my-courses"
+                        style={{
+                          background: '#0d2046',
+                          color: 'white',
+                          padding: '12px 24px',
+                          borderRadius: '12px',
+                          textDecoration: 'none',
+                          fontWeight: 700,
+                          fontSize: '14px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '8px'
+                        }}
+                      >
+                        Back to My Courses <ChevronRight size={16} />
+                      </Link>
+                    </div>
+                  </div>
+
+                </div>
+              </motion.div>
+            ) : (
+              /* ============================================================== */
+              /* VIEW B: TAKING THE MCQ QUESTIONS (Clean, focused test view)    */
+              /* ============================================================== */
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}
+              >
+                {/* Test Overview & Active Progress Bar */}
+                <div style={{
+                  background: '#ffffff',
+                  borderRadius: '1.5rem',
+                  border: '1px solid #e2e8f0',
+                  padding: '2rem 2.5rem',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.03)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
+                    <div>
+                      <h2 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#0f172a', margin: '0 0 6px 0' }}>
+                        {assessmentData?.title || 'Multiple Choice Assessment'}
+                      </h2>
+                      <p style={{ margin: 0, color: '#64748b', fontSize: '0.95rem' }}>
+                        Please answer all {totalQuestions} questions carefully. Evaluation is conducted automatically upon submission.
+                      </p>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      {timeLeft !== null && (
+                        <div style={{
+                          background: timeLeft < 300 ? '#fef2f2' : '#f8fafc',
+                          color: timeLeft < 300 ? '#dc2626' : '#0d2046',
+                          border: `1.5px solid ${timeLeft < 300 ? '#fca5a5' : '#e2e8f0'}`,
+                          padding: '8px 16px',
+                          borderRadius: '12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          fontWeight: 800,
+                          fontSize: '14px'
+                        }}>
+                          <Clock size={16} /> Time Left: {formatTimer(timeLeft)}
+                        </div>
+                      )}
+
+                      {latestSubmission && (
+                        <button
+                          onClick={() => setIsTakingQuiz(false)}
+                          style={{
+                            background: '#f1f5f9',
+                            color: '#475569',
+                            border: 'none',
+                            padding: '9px 16px',
+                            borderRadius: '10px',
+                            fontSize: '13px',
+                            fontWeight: 700,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Cancel Retake
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Criteria stats strip */}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+                    gap: '1rem',
+                    paddingTop: '1.5rem',
+                    borderTop: '1px solid #f1f5f9'
+                  }}>
+                    <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                      <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Total Questions</span>
+                      <p style={{ margin: '4px 0 0 0', fontSize: '1.3rem', fontWeight: 900, color: '#0f172a' }}>{totalQuestions}</p>
+                    </div>
+
+                    <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                      <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Passing Target</span>
+                      <p style={{ margin: '4px 0 0 0', fontSize: '1.3rem', fontWeight: 900, color: '#16a34a' }}>{passingScore}%</p>
+                    </div>
+
+                    <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                      <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Time Limit</span>
+                      <p style={{ margin: '4px 0 0 0', fontSize: '1.3rem', fontWeight: 900, color: '#0f172a' }}>{assessmentData?.time_limit_mins || 20} Mins</p>
+                    </div>
+
+                    <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                      <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Answered</span>
+                      <p style={{ margin: '4px 0 0 0', fontSize: '1.3rem', fontWeight: 900, color: answeredCount === totalQuestions ? '#16a34a' : '#d97706' }}>
+                        {answeredCount} of {totalQuestions}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Progress line */}
+                  <div style={{ marginTop: '1.25rem', width: '100%', height: '6px', background: '#f1f5f9', borderRadius: '3px', overflow: 'hidden' }}>
+                    <div style={{
+                      width: `${totalQuestions > 0 ? (answeredCount / totalQuestions) * 100 : 0}%`,
+                      height: '100%',
+                      background: answeredCount === totalQuestions ? '#16a34a' : '#0d2046',
+                      transition: 'width 0.3s ease'
+                    }} />
+                  </div>
+                </div>
+
+                {/* The MCQ Questions List */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+                  {questions.map((q: any, qIdx: number) => {
+                    const isAnswered = selectedAnswers[q.id] !== undefined;
+
+                    return (
+                      <div
+                        key={q.id || qIdx}
+                        style={{
+                          background: '#ffffff',
+                          borderRadius: '1.5rem',
+                          border: `1.5px solid ${isAnswered ? '#cbd5e1' : '#e2e8f0'}`,
+                          padding: '2rem',
+                          boxShadow: '0 4px 16px rgba(0,0,0,0.02)',
+                          transition: 'border-color 0.2s ease'
+                        }}
+                      >
+                        {/* Question Header */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                          <span style={{
+                            background: isAnswered ? '#0d2046' : '#64748b',
+                            color: 'white',
+                            padding: '4px 12px',
+                            borderRadius: '8px',
+                            fontSize: '11px',
+                            fontWeight: 800,
+                            letterSpacing: '0.04em'
+                          }}>
+                            QUESTION {qIdx + 1} OF {totalQuestions}
+                          </span>
+                          <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748b' }}>
+                            {q.points || 1} Point
+                          </span>
+                        </div>
+
+                        {/* Question Text */}
+                        <h3 style={{
+                          fontSize: '1.15rem',
+                          fontWeight: 700,
+                          color: '#0f172a',
+                          margin: '0 0 1.5rem 0',
+                          lineHeight: 1.5
+                        }}>
+                          {q.text}
+                        </h3>
+
+                        {/* Options Choices */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          {q.options?.map((opt: string, optIdx: number) => {
+                            const isSelected = selectedAnswers[q.id] === optIdx;
+
+                            return (
+                              <div
+                                key={optIdx}
+                                onClick={() => setSelectedAnswers(prev => ({ ...prev, [q.id]: optIdx }))}
+                                style={{
+                                  padding: '14px 18px',
+                                  borderRadius: '14px',
+                                  border: `2px solid ${isSelected ? '#0d2046' : '#e2e8f0'}`,
+                                  background: isSelected ? 'rgba(13, 32, 70, 0.04)' : '#f8fafc',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '14px',
+                                  transition: 'all 0.15s ease'
+                                }}
+                                onMouseEnter={e => {
+                                  if (!isSelected) {
+                                    e.currentTarget.style.borderColor = '#94a3b8';
+                                    e.currentTarget.style.background = '#ffffff';
+                                  }
+                                }}
+                                onMouseLeave={e => {
+                                  if (!isSelected) {
+                                    e.currentTarget.style.borderColor = '#e2e8f0';
+                                    e.currentTarget.style.background = '#f8fafc';
+                                  }
+                                }}
+                              >
+                                <div style={{
+                                  width: '26px',
+                                  height: '26px',
+                                  borderRadius: '50%',
+                                  border: `2px solid ${isSelected ? '#0d2046' : '#cbd5e1'}`,
+                                  background: isSelected ? '#0d2046' : 'white',
+                                  color: isSelected ? 'white' : '#64748b',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: '12px',
+                                  fontWeight: 800,
+                                  flexShrink: 0
+                                }}>
+                                  {String.fromCharCode(65 + optIdx)}
+                                </div>
+
+                                <span style={{
+                                  fontSize: '14.5px',
+                                  fontWeight: isSelected ? 700 : 500,
+                                  color: isSelected ? '#0d2046' : '#334155',
+                                  lineHeight: 1.4
+                                }}>
+                                  {opt}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Bottom Submit Actions Bar */}
+                <div style={{
+                  background: '#ffffff',
+                  borderRadius: '1.25rem',
+                  border: '1px solid #e2e8f0',
+                  padding: '1.5rem 2.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  boxShadow: '0 10px 25px rgba(0,0,0,0.04)',
+                  position: 'sticky',
+                  bottom: '1.5rem',
+                  zIndex: 20
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{
+                      width: '10px',
+                      height: '10px',
+                      borderRadius: '50%',
+                      background: answeredCount === totalQuestions ? '#16a34a' : '#f59e0b'
+                    }} />
+                    <span style={{ fontSize: '14px', fontWeight: 700, color: answeredCount === totalQuestions ? '#16a34a' : '#64748b' }}>
+                      {answeredCount === totalQuestions 
+                        ? '✓ All questions answered. Ready for evaluation.' 
+                        : `${totalQuestions - answeredCount} question(s) remaining`}
+                    </span>
+                  </div>
+
+                  <button
+                    disabled={submitting || answeredCount === 0}
+                    onClick={handleSubmitQuiz}
+                    style={{
+                      background: '#0d2046',
+                      color: 'white',
+                      padding: '14px 32px',
+                      borderRadius: '12px',
+                      border: 'none',
+                      fontWeight: 800,
+                      fontSize: '15px',
+                      cursor: (submitting || answeredCount === 0) ? 'not-allowed' : 'pointer',
+                      opacity: (submitting || answeredCount === 0) ? 0.6 : 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      boxShadow: '0 8px 20px rgba(13, 32, 70, 0.2)'
+                    }}
+                  >
+                    {submitting ? (
+                      <>Evaluating answers...</>
+                    ) : (
+                      <>
+                        <Sparkles size={18} /> Submit Assessment ({answeredCount}/{totalQuestions})
+                      </>
+                    )}
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </>
+        )}
 
       </div>
       <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>

@@ -5,20 +5,25 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   LayoutDashboard, BookOpen, Users, ClipboardCheck, Award,
   Bell, Menu, X, ChevronDown, LogOut, Settings, User, Clock, ArrowLeft,
-  Activity
+  Activity, Megaphone
 } from 'lucide-react';
 import nestMainLogo from '../../assets/nest_logo.png';
 import { getUser, authApi, type AuthUser, notificationsApi } from '../../services/api';
 import UserAvatar from '../../components/UserAvatar';
+import AdminSidebar from '../../components/AdminSidebar';
+import { formatTimeAgo } from '../../utils/dateUtils';
 
 const CourseManagerLayout: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [cmUser, setCmUser] = useState<AuthUser | null>(null);
+  const [cmUser, setCmUser] = useState<AuthUser | null>(() => getUser() as unknown as AuthUser);
+  const [adminSidebarOpen, setAdminSidebarOpen] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [coursesDropdownOpen, setCoursesDropdownOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+  const coursesDropdownRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLDivElement>(null);
 
@@ -56,18 +61,20 @@ const CourseManagerLayout: React.FC = () => {
       if (notifOpen && notifRef.current && !notifRef.current.contains(e.target as Node)) {
         setNotifOpen(false);
       }
+      if (coursesDropdownOpen && coursesDropdownRef.current && !coursesDropdownRef.current.contains(e.target as Node)) {
+        setCoursesDropdownOpen(false);
+      }
     };
     document.addEventListener('mousedown', handle);
     return () => {
       document.removeEventListener('mousedown', handle);
     };
-  }, [profileDropdownOpen, notifOpen]);
+  }, [profileDropdownOpen, notifOpen, coursesDropdownOpen]);
 
   useEffect(() => {
-    // eslint-disable-next-line
     setProfileDropdownOpen(false);
-    // eslint-disable-next-line
     setMobileOpen(false);
+    setCoursesDropdownOpen(false);
   }, [location.pathname]);
 
   const handleLogout = () => {
@@ -76,52 +83,90 @@ const CourseManagerLayout: React.FC = () => {
   };
 
   const brandPrimary = '#233167';
+  const isAdmin = cmUser?.role === 'admin' || cmUser?.role === 'super_admin';
 
-  const navLinks = [
-    { path: '/course-manager/dashboard', name: 'Dashboard', icon: <LayoutDashboard size={17} /> },
-    { path: '/course-manager/courses', name: 'Courses', icon: <BookOpen size={17} /> },
-    { path: '/course-manager/students', name: 'Students', icon: <Users size={17} /> },
-    { path: '/course-manager/assessments', name: 'Assessments', icon: <ClipboardCheck size={17} /> },
-    { path: '/course-manager/certificates', name: 'Certificates', icon: <Award size={17} /> },
-    { path: '/course-manager/community-feed', name: 'Career Timelines', icon: <Activity size={17} /> },
+  const coursesDropdownItems = [
+    { path: '/course-manager/courses', name: 'All Courses', desc: 'Course catalog & programs', icon: <BookOpen size={16} /> },
+    { path: '/course-manager/assessments', name: 'Assessments', desc: 'Module reviews & evaluation', icon: <ClipboardCheck size={16} /> },
+    { path: '/course-manager/certificates', name: 'Certificates', desc: 'Issued digital credentials', icon: <Award size={16} /> }
   ];
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#f8fafc', overflow: 'hidden', fontFamily: "'Montserrat', sans-serif" }}>
-      {/* ── TOP NAV ── */}
-      <header style={{
-        height: '66px',
-        background: '#ffffff',
-        borderBottom: '1px solid #e2e8f0',
-        display: 'flex',
-        alignItems: 'center',
-        padding: '0 24px',
-        gap: '16px',
-        zIndex: 1000,
-        flexShrink: 0,
-        boxShadow: '0 1px 8px rgba(35, 49, 103, 0.04)',
-        position: 'relative',
-      }}>
-        {/* Logo Container */}
-        <Link to="/course-manager/dashboard" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0 }}>
-          <div style={{
-            background: '#fff',
-            borderRadius: '0px',
-            padding: '4px 0',
-            display: 'flex',
-            alignItems: 'center',
-            borderRight: '1px solid #e2e8f0',
-            paddingRight: '16px'
-          }}>
-            <img src={nestMainLogo} alt="NeST Digital" style={{ height: '28px', objectFit: 'contain' }} />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', marginLeft: '12px' }}>
-            <span style={{ fontSize: '15px', fontWeight: 900, color: '#1e1b4b', letterSpacing: '0.01em', lineHeight: 1, textTransform: 'uppercase' }}>Course Manager</span>
-          </div>
-        </Link>
+  const isCoursesActive = location.pathname.startsWith('/course-manager/courses') ||
+                          location.pathname.startsWith('/course-manager/assessments') ||
+                          location.pathname.startsWith('/course-manager/certificates');
 
-        {/* Divider */}
-        <div style={{ width: '1px', height: '24px', background: '#e2e8f0', flexShrink: 0, margin: '0 4px' }} />
+  return (
+    <div style={{ display: 'flex', height: '100vh', background: '#f8fafc', overflow: 'hidden', fontFamily: "'Inter', sans-serif" }}>
+
+      {/* ── ADMIN SIDEBAR (Visible when admin/super_admin is viewing Course Manager) ── */}
+      {isAdmin && (
+        <AdminSidebar
+          isOpen={adminSidebarOpen}
+          onToggle={() => setAdminSidebarOpen(!adminSidebarOpen)}
+          userRole={cmUser?.role}
+          currentPath={location.pathname}
+          onLogout={handleLogout}
+        />
+      )}
+
+      {/* ── MAIN WORKSPACE CONTENT ── */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', minWidth: 0 }}>
+        {/* ── TOP NAV ── */}
+        <header style={{
+          height: '66px',
+          background: '#ffffff',
+          borderBottom: '1px solid #e2e8f0',
+          display: 'flex',
+          alignItems: 'center',
+          padding: '0 24px',
+          gap: '16px',
+          zIndex: 1000,
+          flexShrink: 0,
+          boxShadow: '0 1px 8px rgba(35, 49, 103, 0.04)',
+          position: 'relative',
+        }}>
+
+          {/* Logo / Workspace Indicator */}
+          {isAdmin ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, marginRight: '8px' }}>
+              <span style={{
+                fontSize: '11px',
+                fontWeight: 800,
+                background: '#1a2652',
+                color: '#ffffff',
+                padding: '6px 12px',
+                borderRadius: '8px',
+                letterSpacing: '0.04em',
+                textTransform: 'uppercase',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}>
+                <BookOpen size={13} />
+                COURSE WORKSPACE
+              </span>
+            </div>
+          ) : (
+            <Link to="/course-manager/dashboard" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0 }}>
+              <div style={{
+                background: '#fff',
+                borderRadius: '0px',
+                padding: '4px 0',
+                display: 'flex',
+                alignItems: 'center',
+                borderRight: '1px solid #e2e8f0',
+                paddingRight: '16px'
+              }}>
+                <img src={nestMainLogo} alt="NeST Digital" style={{ height: '28px', objectFit: 'contain' }} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', marginLeft: '12px' }}>
+                <span style={{ fontSize: '15px', fontWeight: 900, color: '#1e1b4b', letterSpacing: '0.01em', lineHeight: 1, textTransform: 'uppercase' }}>Course Manager</span>
+              </div>
+            </Link>
+          )}
+
+          {/* Divider */}
+          <div style={{ width: '1px', height: '24px', background: '#e2e8f0', flexShrink: 0, margin: '0 4px' }} />
 
         {/* Desktop Nav */}
         <nav 
@@ -131,64 +176,202 @@ const CourseManagerLayout: React.FC = () => {
             alignItems: 'center',
             gap: '4px',
             flex: 1,
-            overflowX: 'auto',
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none',
+            overflowX: 'visible',
           }}
         >
-          {navLinks.map((link) => {
-            const isActive = location.pathname.startsWith(link.path);
-            return (
-              <Link
-                key={link.path}
-                to={link.path}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '8px 16px',
-                  borderRadius: '12px',
-                  textDecoration: 'none',
-                  color: isActive ? brandPrimary : '#334155',
-                  background: isActive ? 'rgba(35, 49, 103, 0.05)' : 'transparent',
-                  fontWeight: isActive ? 700 : 500,
-                  fontSize: '13.5px',
-                  transition: 'all 0.15s',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {React.cloneElement(link.icon as React.ReactElement<any>, { style: { color: isActive ? brandPrimary : '#64748b' } })}
-                {link.name}
-              </Link>
-            );
-          })}
+          {/* Dashboard */}
+          <Link
+            to="/course-manager/dashboard"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 16px',
+              borderRadius: '12px',
+              textDecoration: 'none',
+              color: location.pathname === '/course-manager/dashboard' ? brandPrimary : '#334155',
+              background: location.pathname === '/course-manager/dashboard' ? 'rgba(35, 49, 103, 0.05)' : 'transparent',
+              fontWeight: location.pathname === '/course-manager/dashboard' ? 700 : 500,
+              fontSize: '13.5px',
+              transition: 'all 0.15s',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <LayoutDashboard size={17} style={{ color: location.pathname === '/course-manager/dashboard' ? brandPrimary : '#64748b' }} />
+            Dashboard
+          </Link>
+
+          {/* Career Timelines */}
+          <Link
+            to="/course-manager/community-feed"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 16px',
+              borderRadius: '12px',
+              textDecoration: 'none',
+              color: location.pathname.startsWith('/course-manager/community-feed') ? brandPrimary : '#334155',
+              background: location.pathname.startsWith('/course-manager/community-feed') ? 'rgba(35, 49, 103, 0.05)' : 'transparent',
+              fontWeight: location.pathname.startsWith('/course-manager/community-feed') ? 700 : 500,
+              fontSize: '13.5px',
+              transition: 'all 0.15s',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <Activity size={17} style={{ color: location.pathname.startsWith('/course-manager/community-feed') ? brandPrimary : '#64748b' }} />
+            Career Timelines
+          </Link>
+
+          {/* Courses Dropdown */}
+          <div ref={coursesDropdownRef} style={{ position: 'relative' }}>
+            <button
+              onClick={() => setCoursesDropdownOpen(!coursesDropdownOpen)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 16px',
+                borderRadius: '12px',
+                border: 'none',
+                background: (isCoursesActive || coursesDropdownOpen) ? 'rgba(35, 49, 103, 0.05)' : 'transparent',
+                color: (isCoursesActive || coursesDropdownOpen) ? brandPrimary : '#334155',
+                fontWeight: (isCoursesActive || coursesDropdownOpen) ? 700 : 500,
+                fontSize: '13.5px',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <BookOpen size={17} style={{ color: (isCoursesActive || coursesDropdownOpen) ? brandPrimary : '#64748b' }} />
+              Courses
+              <ChevronDown 
+                size={14} 
+                style={{ 
+                  transform: coursesDropdownOpen ? 'rotate(180deg)' : 'none', 
+                  transition: '0.2s',
+                  color: (isCoursesActive || coursesDropdownOpen) ? brandPrimary : '#64748b'
+                }} 
+              />
+            </button>
+
+            <AnimatePresence>
+              {coursesDropdownOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 6, scale: 0.97 }}
+                  transition={{ duration: 0.15 }}
+                  style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 8px)',
+                    left: 0,
+                    width: '260px',
+                    background: '#ffffff',
+                    borderRadius: '16px',
+                    boxShadow: '0 10px 40px rgba(15, 23, 42, 0.12)',
+                    border: '1px solid #e2e8f0',
+                    padding: '8px',
+                    zIndex: 10001
+                  }}
+                >
+                  {coursesDropdownItems.map((item) => {
+                    const isActive = location.pathname.startsWith(item.path);
+                    return (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        onClick={() => setCoursesDropdownOpen(false)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: '12px',
+                          padding: '10px 14px',
+                          borderRadius: '12px',
+                          textDecoration: 'none',
+                          color: isActive ? brandPrimary : '#1e293b',
+                          background: isActive ? 'rgba(35, 49, 103, 0.05)' : 'transparent',
+                          transition: 'all 0.15s',
+                        }}
+                        onMouseEnter={e => {
+                          if (!isActive) (e.currentTarget as HTMLElement).style.background = '#f8fafc';
+                        }}
+                        onMouseLeave={e => {
+                          if (!isActive) (e.currentTarget as HTMLElement).style.background = 'transparent';
+                        }}
+                      >
+                        <div style={{
+                          padding: '6px',
+                          borderRadius: '8px',
+                          background: isActive ? 'rgba(35, 49, 103, 0.08)' : '#f1f5f9',
+                          color: isActive ? brandPrimary : '#64748b',
+                          marginTop: '2px'
+                        }}>
+                          {item.icon}
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '13.5px', fontWeight: 700, lineHeight: 1.2, color: isActive ? brandPrimary : '#1e293b' }}>
+                            {item.name}
+                          </div>
+                          <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 500, marginTop: '2px' }}>
+                            {item.desc}
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Students */}
+          <Link
+            to="/course-manager/students"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 16px',
+              borderRadius: '12px',
+              textDecoration: 'none',
+              color: location.pathname.startsWith('/course-manager/students') ? brandPrimary : '#334155',
+              background: location.pathname.startsWith('/course-manager/students') ? 'rgba(35, 49, 103, 0.05)' : 'transparent',
+              fontWeight: location.pathname.startsWith('/course-manager/students') ? 700 : 500,
+              fontSize: '13.5px',
+              transition: 'all 0.15s',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <Users size={17} style={{ color: location.pathname.startsWith('/course-manager/students') ? brandPrimary : '#64748b' }} />
+            Students
+          </Link>
+
+          {/* Broadcast */}
+          <Link
+            to="/course-manager/posts"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 16px',
+              borderRadius: '12px',
+              textDecoration: 'none',
+              color: location.pathname.startsWith('/course-manager/posts') ? brandPrimary : '#334155',
+              background: location.pathname.startsWith('/course-manager/posts') ? 'rgba(35, 49, 103, 0.05)' : 'transparent',
+              fontWeight: location.pathname.startsWith('/course-manager/posts') ? 700 : 500,
+              fontSize: '13.5px',
+              transition: 'all 0.15s',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <Megaphone size={17} style={{ color: location.pathname.startsWith('/course-manager/posts') ? brandPrimary : '#64748b' }} />
+            Broadcast
+          </Link>
         </nav>
 
         {/* Right Area */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexShrink: 0, marginLeft: '12px' }}>
-          {(cmUser?.role === 'admin' || cmUser?.role === 'super_admin') && (
-             <button 
-               onClick={() => navigate('/admin/dashboard')}
-               style={{
-                 display: 'flex',
-                 alignItems: 'center',
-                 gap: '8px',
-                 padding: '8px 14px',
-                 borderRadius: '10px',
-                 border: '1px solid rgba(79, 70, 229, 0.2)',
-                 background: '#fff',
-                 color: brandPrimary,
-                 fontSize: '13px',
-                 fontWeight: 700,
-                 cursor: 'pointer',
-                 transition: 'all 0.2s'
-               }}
-               onMouseEnter={e => e.currentTarget.style.background = 'rgba(79, 70, 229, 0.02)'}
-               onMouseLeave={e => e.currentTarget.style.background = '#fff'}
-             >
-               <ArrowLeft size={16} /> <span className="desktop-nav-text">Back to Admin</span>
-             </button>
-          )}
 
           <div ref={notifRef} style={{ position: 'relative' }}>
              <div 
@@ -262,7 +445,7 @@ const CourseManagerLayout: React.FC = () => {
                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                 <span style={{ fontSize: '13px', fontWeight: n.is_read ? 600 : 700, color: '#334155' }}>{n.title}</span>
                                 <span style={{ fontSize: '10px', color: '#94a3b8', flexShrink: 0, marginLeft: '8px' }}>
-                                  {n.created_at ? new Date(n.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
+                                  {n.created_at ? formatTimeAgo(n.created_at) : ''}
                                 </span>
                              </div>
                              <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#64748b', lineHeight: 1.4 }}>{n.message}</p>
@@ -313,8 +496,13 @@ const CourseManagerLayout: React.FC = () => {
                     border: '1px solid #f1f5f9', padding: '6px', zIndex: 9999,
                   }}
                 >
-                  <Link to="/profile" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', textDecoration: 'none', color: '#334155', fontSize: '14px' }}> <User size={16} /> View Profile </Link>
-                  <Link to="/course-manager/settings" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', textDecoration: 'none', color: '#334155', fontSize: '14px' }}> <Settings size={16} /> Module Settings </Link>
+                  <Link 
+                    to="/course-manager/profile" 
+                    onClick={() => setProfileDropdownOpen(false)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', textDecoration: 'none', color: '#334155', fontSize: '14px', fontWeight: 600 }}
+                  > 
+                    <User size={16} /> View Profile 
+                  </Link>
                   <div style={{ height: '1px', background: '#f1f5f9', margin: '4px 8px' }} />
                   <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', width: '100%', textAlign: 'left', color: '#ef4444', fontSize: '14px', fontWeight: 600, border: 'none', background: 'none', cursor: 'pointer' }}> <LogOut size={16} /> Logout </button>
                 </motion.div>
@@ -339,14 +527,126 @@ const CourseManagerLayout: React.FC = () => {
                   <button onClick={() => setMobileOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}><X size={24} /></button>
                </div>
                <div style={{ flex: 1, overflowY: 'auto' }}>
-                  {navLinks.map(link => (
-                    <div key={link.path} style={{ marginBottom: '16px' }}>
-                      <Link to={link.path} onClick={() => setMobileOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 0', color: location.pathname.startsWith(link.path) ? brandPrimary : '#334155', textDecoration: 'none', fontWeight: location.pathname.startsWith(link.path) ? 700 : 500, fontSize: '14px' }}>
-                         {React.cloneElement(link.icon as React.ReactElement<any>, { style: { color: location.pathname.startsWith(link.path) ? brandPrimary : '#64748b' } })}
-                         {link.name}
-                      </Link>
+                  {/* Dashboard */}
+                  <div style={{ marginBottom: '12px' }}>
+                    <Link
+                      to="/course-manager/dashboard"
+                      onClick={() => setMobileOpen(false)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        padding: '10px 12px',
+                        borderRadius: '10px',
+                        color: location.pathname === '/course-manager/dashboard' ? brandPrimary : '#334155',
+                        background: location.pathname === '/course-manager/dashboard' ? 'rgba(35, 49, 103, 0.06)' : 'transparent',
+                        textDecoration: 'none',
+                        fontWeight: location.pathname === '/course-manager/dashboard' ? 700 : 500,
+                        fontSize: '14px'
+                      }}
+                    >
+                      <LayoutDashboard size={18} style={{ color: location.pathname === '/course-manager/dashboard' ? brandPrimary : '#64748b' }} />
+                      Dashboard
+                    </Link>
+                  </div>
+
+                  {/* Career Timelines */}
+                  <div style={{ marginBottom: '12px' }}>
+                    <Link
+                      to="/course-manager/community-feed"
+                      onClick={() => setMobileOpen(false)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        padding: '10px 12px',
+                        borderRadius: '10px',
+                        color: location.pathname.startsWith('/course-manager/community-feed') ? brandPrimary : '#334155',
+                        background: location.pathname.startsWith('/course-manager/community-feed') ? 'rgba(35, 49, 103, 0.06)' : 'transparent',
+                        textDecoration: 'none',
+                        fontWeight: location.pathname.startsWith('/course-manager/community-feed') ? 700 : 500,
+                        fontSize: '14px'
+                      }}
+                    >
+                      <Activity size={18} style={{ color: location.pathname.startsWith('/course-manager/community-feed') ? brandPrimary : '#64748b' }} />
+                      Career Timelines
+                    </Link>
+                  </div>
+
+                  {/* Courses Group */}
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '6px 12px' }}>
+                      Courses
                     </div>
-                  ))}
+                    {coursesDropdownItems.map(item => (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        onClick={() => setMobileOpen(false)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '12px',
+                          padding: '8px 12px',
+                          borderRadius: '10px',
+                          color: location.pathname.startsWith(item.path) ? brandPrimary : '#334155',
+                          background: location.pathname.startsWith(item.path) ? 'rgba(35, 49, 103, 0.06)' : 'transparent',
+                          textDecoration: 'none',
+                          fontWeight: location.pathname.startsWith(item.path) ? 700 : 500,
+                          fontSize: '13.5px'
+                        }}
+                      >
+                        {React.cloneElement(item.icon as React.ReactElement<any>, { style: { color: location.pathname.startsWith(item.path) ? brandPrimary : '#64748b' } })}
+                        {item.name}
+                      </Link>
+                    ))}
+                  </div>
+
+                  {/* Students */}
+                  <div style={{ marginBottom: '12px' }}>
+                    <Link
+                      to="/course-manager/students"
+                      onClick={() => setMobileOpen(false)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        padding: '10px 12px',
+                        borderRadius: '10px',
+                        color: location.pathname.startsWith('/course-manager/students') ? brandPrimary : '#334155',
+                        background: location.pathname.startsWith('/course-manager/students') ? 'rgba(35, 49, 103, 0.06)' : 'transparent',
+                        textDecoration: 'none',
+                        fontWeight: location.pathname.startsWith('/course-manager/students') ? 700 : 500,
+                        fontSize: '14px'
+                      }}
+                    >
+                      <Users size={18} style={{ color: location.pathname.startsWith('/course-manager/students') ? brandPrimary : '#64748b' }} />
+                      Students
+                    </Link>
+                  </div>
+
+                  {/* Broadcast */}
+                  <div style={{ marginBottom: '12px' }}>
+                    <Link
+                      to="/course-manager/posts"
+                      onClick={() => setMobileOpen(false)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        padding: '10px 12px',
+                        borderRadius: '10px',
+                        color: location.pathname.startsWith('/course-manager/posts') ? brandPrimary : '#334155',
+                        background: location.pathname.startsWith('/course-manager/posts') ? 'rgba(35, 49, 103, 0.06)' : 'transparent',
+                        textDecoration: 'none',
+                        fontWeight: location.pathname.startsWith('/course-manager/posts') ? 700 : 500,
+                        fontSize: '14px'
+                      }}
+                    >
+                      <Megaphone size={18} style={{ color: location.pathname.startsWith('/course-manager/posts') ? brandPrimary : '#64748b' }} />
+                      Broadcast
+                    </Link>
+                  </div>
                </div>
                <button onClick={handleLogout} style={{ marginTop: '20px', padding: '12px', background: '#fef2f2', color: '#ef4444', border: 'none', borderRadius: '10px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'center', cursor: 'pointer' }}>
                   <LogOut size={18} /> Logout
@@ -356,12 +656,13 @@ const CourseManagerLayout: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Main Content Area */}
-      <main style={{ flex: 1, overflowY: 'auto', background: '#f8fafc' }}>
-        <div style={{ padding: '32px', maxWidth: '1400px', margin: '0 auto' }}>
-          <Outlet />
-        </div>
-      </main>
+        {/* Main Content Area */}
+        <main style={{ flex: 1, overflowY: 'auto', background: '#f8fafc' }}>
+          <div style={{ padding: '32px', maxWidth: '1400px', margin: '0 auto' }}>
+            <Outlet />
+          </div>
+        </main>
+      </div>
 
       <style>{`
         @media (max-width: 1024px) {

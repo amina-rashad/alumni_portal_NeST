@@ -58,11 +58,13 @@ const RecommendationSetup: React.FC = () => {
       ]);
       
       if (recResp && recResp.data) {
-        setRecommendations(recResp.data);
+        const recList = Array.isArray(recResp.data) ? recResp.data : (recResp.data?.recommendations || []);
+        setRecommendations(recList);
       }
       
       if (courseResp && courseResp.data) {
-        setCourses(courseResp.data.map((c: any) => ({ 
+        const courseList = Array.isArray(courseResp.data) ? courseResp.data : (courseResp.data?.courses || []);
+        setCourses(courseList.map((c: any) => ({ 
           id: c.id?.toString() || Math.random().toString(), 
           title: c.title || 'Untitled Course' 
         })));

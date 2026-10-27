@@ -6,6 +6,7 @@ import {
   Plus, Activity, Calendar
 } from 'lucide-react';
 import { adminApi } from '../../services/api';
+import { formatTimeAgo } from '../../utils/dateUtils';
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -85,16 +86,7 @@ const AdminDashboard: React.FC = () => {
     { title: 'Applications', value: statsData.applications.toLocaleString(), trend: statsData.trends.applications, icon: FileText, color: "#f59e0b", bg: '#fffbeb' },
   ];
 
-  const formatTime = (iso: string) => {
-    if (iso === "Recently") return iso;
-    const date = new Date(iso);
-    const now = new Date();
-    const diff = Math.floor((now.getTime() - date.getTime()) / 60000); // mins
-    if (diff < 1) return 'Just now';
-    if (diff < 60) return `${diff}m ago`;
-    if (diff < 1440) return `${Math.floor(diff/60)}h ago`;
-    return date.toLocaleDateString();
-  };
+  const formatTime = (iso: string) => formatTimeAgo(iso, 'Recently');
 
   const totalPie = statsData.total_users > 0 ? statsData.total_users : 1;
   const p1 = statsData.alumni / totalPie;

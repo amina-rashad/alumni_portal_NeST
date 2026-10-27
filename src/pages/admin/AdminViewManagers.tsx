@@ -29,28 +29,37 @@ const AdminViewManagers: React.FC = () => {
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      // Use the dedicated managers endpoint as the primary source
-      const mgRes = await adminApi.getManagers();
       let combined: any[] = [];
 
-      if (mgRes.success && mgRes.data && (mgRes.data as any).managers) {
-        combined = (mgRes.data as any).managers;
+      // 1. Fetch managers from dedicated endpoint
+      try {
+        const mgRes = await adminApi.getManagers();
+        if (mgRes.success && mgRes.data && (mgRes.data as any).managers) {
+          combined = (mgRes.data as any).managers;
+        }
+      } catch (err) {
+        console.warn("getManagers failed:", err);
       }
 
-      // Super admins also see platform admins — fetch those separately
-      if (currentUser.role === 'super_admin') {
-        const allRes = await adminApi.getUsers();
+      // 2. Also fetch from getAllUsers so all staff & managers are in sync with user management
+      try {
+        const allRes = await adminApi.getAllUsers();
         if (allRes.success && allRes.data && allRes.data.users) {
-          const adminUsers = allRes.data.users.filter(
-            (u: any) => u.role === 'admin' || u.role === 'super_admin'
+          const managerRoles = ['job_recruiter', 'recruiter', 'event_manager', 'course_manager'];
+          if (currentUser.role === 'super_admin' || currentUser.role === 'admin') {
+            managerRoles.push('admin', 'super_admin');
+          }
+          const staffUsers = allRes.data.users.filter(
+            (u: any) => managerRoles.includes(u.role) || (u.user_type === 'Staff' && u.role !== 'user')
           );
-          // Merge without duplicates
-          const existingIds = new Set(combined.map((u: any) => u.id || u._id));
-          const newAdmins = adminUsers.filter(
-            (u: any) => !existingIds.has(u.id || u._id)
+          const existingIds = new Set(combined.map((u: any) => String(u.id || u._id)));
+          const additional = staffUsers.filter(
+            (u: any) => !existingIds.has(String(u.id || u._id))
           );
-          combined = [...combined, ...newAdmins];
+          combined = [...combined, ...additional];
         }
+      } catch (err) {
+        console.warn("getAllUsers fallback failed:", err);
       }
 
       setUsers(combined);
@@ -128,7 +137,7 @@ const AdminViewManagers: React.FC = () => {
   // Calculate Statistics
   const totalCount = users.length;
   const adminCount = users.filter(u => u.role === 'admin' || u.role === 'super_admin').length;
-  const recruiterCount = users.filter(u => u.role === 'job_recruiter').length;
+  const recruiterCount = users.filter(u => u.role === 'job_recruiter' || u.role === 'recruiter').length;
   const eventManagerCount = users.filter(u => u.role === 'event_manager').length;
   const courseManagerCount = users.filter(u => u.role === 'course_manager').length;
 
@@ -388,7 +397,7 @@ const AdminViewManagers: React.FC = () => {
               avatarBg = '#e0e7ff';
               avatarText = '#4338ca';
               roleIcon = <Shield size={16} />;
-            } else if (u.role === 'job_recruiter') {
+            } else if (u.role === 'job_recruiter' || u.role === 'recruiter') {
               roleLabel = 'Talent Recruiter';
               roleColor = '#065f46';
               roleBg = '#d1fae5';
@@ -472,17 +481,6 @@ const AdminViewManagers: React.FC = () => {
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
                     <span style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                       ID: {u.emp_id || 'N/A'}
-                    </span>
-                    <span style={{ 
-                      display: 'inline-flex', 
-                      alignItems: 'center', 
-                      gap: '4px', 
-                      fontSize: '11px', 
-                      fontWeight: 700, 
-                      color: u.is_active !== false ? '#10b981' : '#ef4444' 
-                    }}>
-                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: u.is_active !== false ? '#10b981' : '#ef4444', display: 'inline-block' }} />
-                      {u.is_active !== false ? 'Active' : 'Suspended'}
                     </span>
                   </div>
                 </div>
@@ -719,10 +717,10 @@ const AdminViewManagers: React.FC = () => {
                         cursor: 'pointer'
                       }}
                     >
-                      <option value="job_recruiter">Job Recruiter (Talent Hub)</option>
-                      <option value="event_manager">Event Manager (Engagements)</option>
-                      <option value="course_manager">Course Manager (L&D)</option>
-                      {isSuperAdmin && <option value="admin">Platform Admin (Full Access)</option>}
+                      <option value="job_recruiter">Recruiter</option>
+                      <option value="event_manager">Event Manager</option>
+                      <option value="course_manager">Course Manager</option>
+                      {isSuperAdmin && <option value="admin">Platform Admin</option>}
                     </select>
                   </div>
                 </div>

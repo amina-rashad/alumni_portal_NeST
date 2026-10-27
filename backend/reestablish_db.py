@@ -100,9 +100,7 @@ def main():
     print("🎉 Database successfully re-established in MongoDB!")
     print("=" * 50)
     print("\n📋 Active Admin/Super-Admin Accounts:")
-    print("─" * 45)
-    print("Super Admin:  shintosebastian@nestgroup.net / Shinto@30")
-    print("Admin User:   noblesibi@nestgroup.net / Noble@02")
+    print("Super Admin & Admin: amina.rashad@nestgroup.net / AdminPassword@123")
     print("─" * 45)
     print("All other demo/seeding users have also been reset.")
 

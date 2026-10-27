@@ -7,6 +7,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { adminApi } from '../../services/api';
 import toast from 'react-hot-toast';
+import { formatDateTime } from '../../utils/dateUtils';
 
 const AdminBulkUploadHistory: React.FC = () => {
   const navigate = useNavigate();
@@ -40,10 +41,10 @@ const AdminBulkUploadHistory: React.FC = () => {
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '20px' }}>
       <button 
-        onClick={() => navigate('/admin/users/bulk')}
+        onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/admin/users/bulk')}
         style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', marginBottom: '24px', fontWeight: 600 }}
       >
-        <ArrowLeft size={20} /> Back to Bulk Onboarding
+        <ArrowLeft size={20} /> Back
       </button>
 
       <div style={{ marginBottom: '32px' }}>
@@ -67,7 +68,7 @@ const AdminBulkUploadHistory: React.FC = () => {
                 <FileText size={18} color="#64748b" /> {log.filename}
               </div>
               <div style={{ fontSize: '13px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Calendar size={14} /> {new Date(log.timestamp).toLocaleString()}
+                <Calendar size={14} /> {formatDateTime(log.timestamp)}
               </div>
             </div>
 

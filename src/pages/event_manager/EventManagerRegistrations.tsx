@@ -38,7 +38,7 @@ const EventManagerRegistrations: React.FC = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Header Section */}
       <div>
-        <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#1e293b', margin: 0, fontFamily: "'Montserrat', sans-serif" }}>Participant Tracking</h1>
+        <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#1e293b', margin: 0, fontFamily: "'Inter', sans-serif" }}>Participant Tracking</h1>
         <p style={{ color: '#64748b', marginTop: '4px' }}>Review and manage student and alumni participation records.</p>
       </div>
 

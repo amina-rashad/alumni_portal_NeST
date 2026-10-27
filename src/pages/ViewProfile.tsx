@@ -5,7 +5,7 @@ import { jsPDF } from 'jspdf';
 import { 
   Edit3, Mail, Phone,
   Briefcase, Book, Award, 
-  Linkedin, Github, Twitter, Globe,
+  Linkedin, Github, Globe,
   CheckCircle2, Building, Info, Share2, GraduationCap, FileText, Download, ExternalLink, MoreHorizontal, Eye, Share, ArrowRight, Clock
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
@@ -345,7 +345,9 @@ const ViewProfile: React.FC = () => {
     );
   }
 
-  const initials = user.full_name ? user.full_name.charAt(0).toUpperCase() : 'U';
+  const displayName = user.full_name?.trim() || (user.email ? user.email.split('@')[0] : '');
+  const displayTitle = displayName ? (displayName.charAt(0).toUpperCase() + displayName.slice(1)) : '';
+  const initials = (displayName || 'U').charAt(0).toUpperCase();
 
   return (
     <div style={{ position: 'relative', minHeight: '100vh' }}>
@@ -429,17 +431,19 @@ const ViewProfile: React.FC = () => {
             
             <div style={{ paddingBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <h1 style={{ margin: 0, fontSize: '32px', fontWeight: 800, color: '#1e293b', letterSpacing: '-0.02em' }}>{user.full_name}</h1>
+                <h1 style={{ margin: 0, fontSize: '32px', fontWeight: 800, color: '#1e293b', letterSpacing: '-0.02em' }}>{user.full_name || displayTitle}</h1>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px', color: '#64748b', fontSize: '15px', fontWeight: 500 }}>
-                 <span><Building size={16} style={{ verticalAlign: 'middle', marginRight: '4px' }} /> {user.specialization || 'Professional'}</span>
-                 <span>•</span>
-                 <span>Batch of {user.batch || 'N/A'}</span>
-              </div>
+              {(user.specialization || user.batch) ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px', color: '#64748b', fontSize: '15px', fontWeight: 500 }}>
+                   {user.specialization && <span><Building size={16} style={{ verticalAlign: 'middle', marginRight: '4px' }} /> {user.specialization}</span>}
+                   {user.specialization && user.batch && <span>•</span>}
+                   {user.batch && <span>Batch of {user.batch}</span>}
+                </div>
+              ) : null}
             </div>
           </div>
 
-          <Link to="edit" style={{ 
+          <Link to="edit" state={{ from: '/profile' }} style={{ 
             display: 'flex', alignItems: 'center', gap: '10px', 
             padding: '12px 28px', background: '#1a2652', color: 'white', 
             borderRadius: '12px', textDecoration: 'none', fontWeight: 700,
@@ -560,7 +564,7 @@ const ViewProfile: React.FC = () => {
                 ) : (
                   <div style={{ textAlign: 'center', padding: '20px 0' }}>
                     <p style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: '15px' }}>No career milestones listed yet.</p>
-                    <Link to="/profile/edit" style={{ fontSize: '14px', color: '#c8102e', fontWeight: 700, textDecoration: 'none' }}>+ Add Experience</Link>
+                    <Link to="/profile/edit" state={{ from: '/profile' }} style={{ fontSize: '14px', color: '#c8102e', fontWeight: 700, textDecoration: 'none' }}>+ Add Experience</Link>
                   </div>
                 )}
               </div>
@@ -852,7 +856,7 @@ const ViewProfile: React.FC = () => {
                 <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#fff5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c8102e' }}><Mail size={18} /></div>
                 <div>
                   <div style={{ color: '#94a3b8', fontSize: '10px', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em' }}>Email Address</div>
-                  <div style={{ fontSize: '14px', color: '#475569', fontWeight: 500 }}>{user.email || 'melbin@google.com'}</div>
+                  <div style={{ fontSize: '14px', color: '#475569', fontWeight: 500 }}>{user.email || ''}</div>
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
@@ -866,7 +870,11 @@ const ViewProfile: React.FC = () => {
                 <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#fff5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c8102e' }}><GraduationCap size={18} /></div>
                 <div>
                   <div style={{ color: '#94a3b8', fontSize: '10px', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em' }}>Education</div>
-                  <div style={{ fontSize: '14px', color: '#475569', fontWeight: 500 }}>{user.specialization || 'Engineering'} - Batch of {user.batch || 'N/A'}</div>
+                  <div style={{ fontSize: '14px', color: '#475569', fontWeight: 500 }}>
+                    {user.specialization
+                      ? `${user.specialization}${user.batch ? ` - Batch of ${user.batch}` : ''}`
+                      : (user.batch ? `Batch of ${user.batch}` : 'Not specified')}
+                  </div>
                 </div>
               </div>
             </div>
@@ -874,11 +882,95 @@ const ViewProfile: React.FC = () => {
             <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '24px', paddingTop: '20px', borderTop: '1px solid #f1f5f9' }}>
                {user.linkedin_url && <a href={user.linkedin_url} target="_blank" rel="noopener noreferrer" style={{ color: '#0a66c2', transition: 'all 0.2s ease', display: 'inline-flex' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}><Linkedin size={22} fill="currentColor" /></a>}
                {user.github_url && <a href={user.github_url} target="_blank" rel="noopener noreferrer" style={{ color: '#24292e', transition: 'all 0.2s ease', display: 'inline-flex' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}><Github size={22} fill="currentColor" /></a>}
-               {user.twitter_url && <a href={user.twitter_url} target="_blank" rel="noopener noreferrer" style={{ color: '#1DA1F2', transition: 'all 0.2s ease', display: 'inline-flex' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}><Twitter size={22} fill="currentColor" /></a>}
                {user.portfolio_url && <a href={user.portfolio_url} target="_blank" rel="noopener noreferrer" style={{ color: '#c8102e', transition: 'all 0.2s ease', display: 'inline-flex' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}><Globe size={22} /></a>}
-               {!user.linkedin_url && !user.github_url && !user.twitter_url && !user.portfolio_url && (
+               {!user.linkedin_url && !user.github_url && !user.portfolio_url && (
                  <p style={{ margin: 0, color: '#94a3b8', fontStyle: 'italic', fontSize: '12px' }}>No social links added.</p>
                )}
+            </div>
+          </section>
+
+          {/* Candidate & Application Details Card */}
+          <section style={{ background: 'rgba(255, 255, 255, 0.7)', backdropFilter: 'blur(24px)', padding: '28px', borderRadius: '24px', border: '1px solid rgba(255, 255, 255, 0.6)', boxShadow: '0 10px 40px -10px rgba(0,0,0,0.08)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Briefcase size={18} color="#c8102e" /> Candidate Details
+              </h3>
+              <Link to="/profile/edit" state={{ from: '/profile' }} style={{ fontSize: '12px', fontWeight: 700, color: '#c8102e', textDecoration: 'none' }}>Edit</Link>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <div style={{ color: '#94a3b8', fontSize: '10px', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em' }}>Current Organisation</div>
+                <div style={{ fontSize: '14px', color: '#1e293b', fontWeight: 600 }}>{user.current_organisation || user.current_company || 'Not specified'}</div>
+              </div>
+
+              <div>
+                <div style={{ color: '#94a3b8', fontSize: '10px', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em' }}>Current Designation</div>
+                <div style={{ fontSize: '14px', color: '#1e293b', fontWeight: 600 }}>{user.current_designation || user.title || 'Not specified'}</div>
+              </div>
+
+              <div>
+                <div style={{ color: '#94a3b8', fontSize: '10px', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em' }}>Total Experience</div>
+                <div style={{ fontSize: '14px', color: '#1e293b', fontWeight: 600 }}>{user.total_experience ? `${user.total_experience} Years` : 'Fresher / Not specified'}</div>
+              </div>
+
+              <div>
+                <div style={{ color: '#94a3b8', fontSize: '10px', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em' }}>Current Location</div>
+                <div style={{ fontSize: '14px', color: '#1e293b', fontWeight: 600 }}>{user.current_location || user.location || 'Not specified'}</div>
+              </div>
+
+              <div>
+                <div style={{ color: '#94a3b8', fontSize: '10px', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em' }}>Preferred Work Location</div>
+                <div style={{ fontSize: '14px', color: '#1e293b', fontWeight: 600 }}>{user.preferred_location || 'Flexible / Not specified'}</div>
+              </div>
+
+              <div>
+                <div style={{ color: '#94a3b8', fontSize: '10px', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em' }}>Graduation Year</div>
+                <div style={{ fontSize: '14px', color: '#1e293b', fontWeight: 600 }}>{user.graduation_year || user.batch || 'Not specified'}</div>
+              </div>
+
+              {user.referral_source && (
+                <div style={{ paddingTop: '8px', borderTop: '1px solid #f1f5f9' }}>
+                  <div style={{ color: '#94a3b8', fontSize: '10px', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em' }}>Referral Source</div>
+                  <div style={{ fontSize: '13px', color: '#334155', fontWeight: 600 }}>{user.referral_source}</div>
+                  {user.referral_source_details && (
+                    <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>Details: {user.referral_source_details}</div>
+                  )}
+                </div>
+              )}
+
+              {user.tech_stacks && Array.isArray(user.tech_stacks) && user.tech_stacks.length > 0 && (
+                <div style={{ paddingTop: '8px', borderTop: '1px solid #f1f5f9' }}>
+                  <div style={{ color: '#94a3b8', fontSize: '10px', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em', marginBottom: '6px' }}>Interested Tech Stacks</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {user.tech_stacks.map((stack: string) => (
+                      <span key={stack} style={{ fontSize: '11px', fontWeight: 700, background: '#f1f5f9', color: '#1e293b', padding: '3px 8px', borderRadius: '6px' }}>
+                        {stack}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {user.interested_positions && Array.isArray(user.interested_positions) && user.interested_positions.length > 0 && (
+                <div style={{ paddingTop: '8px', borderTop: '1px solid #f1f5f9' }}>
+                  <div style={{ color: '#94a3b8', fontSize: '10px', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em', marginBottom: '6px' }}>Interested Positions in NeST</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {user.interested_positions.map((pos: string) => (
+                      <span key={pos} style={{ fontSize: '11px', fontWeight: 700, background: '#fee2e2', color: '#c8102e', padding: '3px 8px', borderRadius: '6px' }}>
+                        {pos}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {user.declaration_confirmed && (
+                <div style={{ paddingTop: '8px', borderTop: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <CheckCircle2 size={14} color="#16a34a" />
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#15803d' }}>Referral Declaration Confirmed</span>
+                </div>
+              )}
             </div>
           </section>
 

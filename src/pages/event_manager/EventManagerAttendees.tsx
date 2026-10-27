@@ -10,6 +10,7 @@ import { eventManagerApi } from '../../services/api';
 import { toast } from 'react-hot-toast';
 import StatusModal from '../../components/StatusModal';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { getLocalDateString } from '../../utils/dateUtils';
 
 interface Attendee {
   id: string;
@@ -556,7 +557,7 @@ const EventManagerAttendees: React.FC = () => {
       doc.text(`Page ${i} of ${pageCount} - NeST Alumni Portal Management`, 105, 290, { align: "center" });
     }
 
-    doc.save(`attendees_report_${new Date().toISOString().split('T')[0]}.pdf`);
+    doc.save(`attendees_report_${getLocalDateString()}.pdf`);
   };
 
   const isAttendanceAllowed = (dateStr: string, timeStr: string) => {
@@ -608,7 +609,7 @@ const EventManagerAttendees: React.FC = () => {
       {/* Header Section */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#1e293b', margin: 0, fontFamily: "'Montserrat', sans-serif" }}>Registration & Attendance</h1>
+          <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#1e293b', margin: 0, fontFamily: "'Inter', sans-serif" }}>Registration & Attendance</h1>
           {eventNameParam ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '8px' }}>
               <span style={{ 
@@ -674,9 +675,26 @@ const EventManagerAttendees: React.FC = () => {
       </div>
 
       {/* Table Section */}
-      <div style={{ background: '#fff', borderRadius: '24px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-        <div style={{ padding: '24px', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative', flex: 1, minWidth: '300px', display: 'flex', alignItems: 'center' }}>
+      <div style={{ 
+        background: '#fff', 
+        borderRadius: '24px', 
+        border: '1px solid #e2e8f0', 
+        minHeight: '620px',
+        display: 'flex',
+        flexDirection: 'column',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.02)'
+      }}>
+        <div style={{ 
+          padding: '20px 24px', 
+          borderBottom: '1px solid #e2e8f0', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between',
+          gap: '16px', 
+          flexWrap: 'wrap' 
+        }}>
+          {/* Search Bar */}
+          <div style={{ position: 'relative', flex: 1, minWidth: '280px', display: 'flex', alignItems: 'center' }}>
             <Search style={{ position: 'absolute', left: '16px', color: '#94a3b8', pointerEvents: 'none' }} size={18} />
             <input 
               type="text" 
@@ -685,7 +703,7 @@ const EventManagerAttendees: React.FC = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{ 
                 width: '100%', 
-                padding: '12px 16px 12px 48px', 
+                padding: '0 16px 0 46px', 
                 borderRadius: '14px', 
                 border: '1px solid #e2e8f0', 
                 outline: 'none', 
@@ -693,79 +711,161 @@ const EventManagerAttendees: React.FC = () => {
                 background: '#ffffff',
                 color: '#1e293b',
                 transition: 'all 0.2s',
-                height: '46px' // Explicit height for better alignment
+                height: '46px',
+                boxSizing: 'border-box'
               }} 
             />
           </div>
-          <div style={{ position: 'relative' }} ref={filterRef}>
-            <button 
-              onClick={() => setShowFilters(!showFilters)}
-              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 18px', borderRadius: '14px', border: '1px solid #e2e8f0', background: showFilters ? `${brandPrimary}10` : '#fff', color: showFilters ? brandPrimary : '#64748b', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
-            >
-              <Filter size={18} /> Filters
-            </button>
-            
+
+          {/* Action Buttons: Select All & Filters */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
             {filteredAttendees.length > 0 && (
               <button 
+                type="button"
                 onClick={toggleSelectAll}
                 style={{ 
-                  display: 'flex', 
+                  display: 'inline-flex', 
                   alignItems: 'center', 
+                  justifyContent: 'center',
                   gap: '8px', 
-                  padding: '12px 18px', 
+                  padding: '0 18px', 
+                  height: '46px',
                   borderRadius: '14px', 
                   border: `1px solid ${selectedAttendeeIds.size === filteredAttendees.length ? brandPrimary : '#e2e8f0'}`, 
-                  background: selectedAttendeeIds.size === filteredAttendees.length ? `${brandPrimary}10` : '#fff', 
-                  color: selectedAttendeeIds.size === filteredAttendees.length ? brandPrimary : '#64748b', 
+                  background: selectedAttendeeIds.size === filteredAttendees.length ? 'rgba(35, 49, 103, 0.08)' : '#fff', 
+                  color: selectedAttendeeIds.size === filteredAttendees.length ? brandPrimary : '#475569', 
                   fontWeight: 700, 
                   cursor: 'pointer', 
-                  transition: 'all 0.2s',
-                  fontSize: '13px'
+                  transition: 'all 0.2s ease',
+                  fontSize: '13px',
+                  boxSizing: 'border-box',
+                  whiteSpace: 'nowrap'
+                }}
+                onMouseEnter={e => {
+                  if (selectedAttendeeIds.size !== filteredAttendees.length) {
+                    e.currentTarget.style.borderColor = '#cbd5e1';
+                    e.currentTarget.style.background = '#f8fafc';
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (selectedAttendeeIds.size !== filteredAttendees.length) {
+                    e.currentTarget.style.borderColor = '#e2e8f0';
+                    e.currentTarget.style.background = '#fff';
+                  }
                 }}
               >
+                <div style={{
+                  width: '16px',
+                  height: '16px',
+                  borderRadius: '4px',
+                  border: `2px solid ${selectedAttendeeIds.size === filteredAttendees.length ? brandPrimary : '#94a3b8'}`,
+                  background: selectedAttendeeIds.size === filteredAttendees.length ? brandPrimary : 'transparent',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.15s ease'
+                }}>
+                  {selectedAttendeeIds.size === filteredAttendees.length && (
+                    <CheckCircle size={11} color="#fff" />
+                  )}
+                </div>
                 {selectedAttendeeIds.size === filteredAttendees.length ? 'Deselect All' : 'Select All'}
               </button>
             )}
 
-            <AnimatePresence>
-              {showFilters && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  style={{ 
-                    position: 'absolute', top: 'calc(100% + 12px)', right: 0, 
-                    background: '#fff', borderRadius: '16px', boxShadow: '0 10px 40px rgba(0,0,0,0.1)', 
-                    border: '1px solid #e2e8f0', padding: '16px', width: '260px', zIndex: 1000 
-                  }}
-                >
-                  <div style={{ marginBottom: '16px' }}>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>Attendance Status</label>
-                    <select 
-                      value={statusFilter} 
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      style={{ width: '100%', padding: '10px', borderRadius: '10px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '13px', background: '#f8fafc', color: '#334155', fontWeight: 500 }}
-                    >
-                      <option value="All">All Statuses</option>
-                      <option value="Attended">Attended</option>
-                      <option value="Not Attended">Not Attended</option>
-                    </select>
-                  </div>
-                  <div style={{ marginBottom: '8px' }}>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>Event Mode</label>
-                    <select 
-                      value={modeFilter} 
-                      onChange={(e) => setModeFilter(e.target.value)}
-                      style={{ width: '100%', padding: '10px', borderRadius: '10px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '13px', background: '#f8fafc', color: '#334155', fontWeight: 500 }}
-                    >
-                      <option value="All">All Modes</option>
-                      <option value="Online">Online</option>
-                      <option value="Offline">Offline</option>
-                    </select>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            <div style={{ position: 'relative' }} ref={filterRef}>
+              <button 
+                type="button"
+                onClick={() => setShowFilters(!showFilters)}
+                style={{ 
+                  display: 'inline-flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  gap: '8px', 
+                  padding: '0 18px', 
+                  height: '46px',
+                  borderRadius: '14px', 
+                  border: `1px solid ${(showFilters || statusFilter !== 'All' || modeFilter !== 'All') ? brandPrimary : '#e2e8f0'}`, 
+                  background: (showFilters || statusFilter !== 'All' || modeFilter !== 'All') ? 'rgba(35, 49, 103, 0.08)' : '#fff', 
+                  color: (showFilters || statusFilter !== 'All' || modeFilter !== 'All') ? brandPrimary : '#475569', 
+                  fontWeight: 700, 
+                  cursor: 'pointer', 
+                  transition: 'all 0.2s ease',
+                  fontSize: '13px',
+                  boxSizing: 'border-box',
+                  whiteSpace: 'nowrap'
+                }}
+                onMouseEnter={e => {
+                  if (!showFilters && statusFilter === 'All' && modeFilter === 'All') {
+                    e.currentTarget.style.borderColor = '#cbd5e1';
+                    e.currentTarget.style.background = '#f8fafc';
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (!showFilters && statusFilter === 'All' && modeFilter === 'All') {
+                    e.currentTarget.style.borderColor = '#e2e8f0';
+                    e.currentTarget.style.background = '#fff';
+                  }
+                }}
+              >
+                <Filter size={16} /> Filters
+                {(statusFilter !== 'All' || modeFilter !== 'All') && (
+                  <span style={{ 
+                    width: '7px', 
+                    height: '7px', 
+                    borderRadius: '50%', 
+                    background: brandPrimary 
+                  }} />
+                )}
+              </button>
+
+              <AnimatePresence>
+                {showFilters && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    style={{ 
+                      position: 'absolute', 
+                      top: 'calc(100% + 10px)', 
+                      right: 0, 
+                      background: '#fff', 
+                      borderRadius: '18px', 
+                      boxShadow: '0 12px 40px rgba(0,0,0,0.12)', 
+                      border: '1px solid #e2e8f0', 
+                      padding: '18px', 
+                      width: '260px', 
+                      zIndex: 1000 
+                    }}
+                  >
+                    <div style={{ marginBottom: '16px' }}>
+                      <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Attendance Status</label>
+                      <select 
+                        value={statusFilter} 
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '13px', background: '#f8fafc', color: '#1e293b', fontWeight: 600 }}
+                      >
+                        <option value="All">All Statuses</option>
+                        <option value="Attended">Attended</option>
+                        <option value="Not Attended">Not Attended</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Event Mode</label>
+                      <select 
+                        value={modeFilter} 
+                        onChange={(e) => setModeFilter(e.target.value)}
+                        style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '13px', background: '#f8fafc', color: '#1e293b', fontWeight: 600 }}
+                      >
+                        <option value="All">All Modes</option>
+                        <option value="Online">Online</option>
+                        <option value="Offline">Offline</option>
+                      </select>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
 
@@ -882,7 +982,7 @@ const EventManagerAttendees: React.FC = () => {
           )}
         </AnimatePresence>
 
-        <div style={{ overflowX: 'auto' }}>
+        <div style={{ overflowX: 'auto', flex: 1, minHeight: '460px', paddingBottom: '40px' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
               <tr style={{ background: '#f8fafc' }}>
@@ -930,8 +1030,16 @@ const EventManagerAttendees: React.FC = () => {
                   </td>
                 </tr>
               ) : filteredAttendees.length > 0 ? (
-                filteredAttendees.map((attendee) => (
-                  <tr key={attendee.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.2s', background: selectedAttendeeIds.has(attendee.id) ? `${brandPrimary}05` : 'transparent' }}>
+                filteredAttendees.map((attendee, index) => {
+                  const openUpwards = index > 0 && (index >= filteredAttendees.length - 2 || filteredAttendees.length <= 2);
+                  return (
+                  <tr key={attendee.id} style={{ 
+                    borderBottom: '1px solid #f1f5f9', 
+                    transition: 'background 0.2s', 
+                    background: selectedAttendeeIds.has(attendee.id) ? `${brandPrimary}05` : 'transparent',
+                    position: 'relative',
+                    zIndex: menuOpenId === attendee.id ? 50 : 1
+                  }}>
                   <td style={{ padding: '20px 24px' }}>
                     <div 
                       onClick={() => toggleSelectAttendee(attendee.id)}
@@ -994,7 +1102,7 @@ const EventManagerAttendees: React.FC = () => {
                   </td>
                   <td style={{ padding: '20px 24px' }}>
                     <div style={{ 
-                      display: 'flex', 
+                       display: 'flex', 
                       alignItems: 'center', 
                       gap: '6px', 
                       color: attendee.mode.toLowerCase() === 'online' ? '#10b981' : '#334155',
@@ -1053,13 +1161,20 @@ const EventManagerAttendees: React.FC = () => {
                         {menuOpenId === attendee.id && (
                           <motion.div 
                             ref={menuRef}
-                            initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                            initial={{ opacity: 0, scale: 0.95, y: openUpwards ? 10 : -10 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                            exit={{ opacity: 0, scale: 0.95, y: openUpwards ? 10 : -10 }}
                             style={{
-                              position: 'absolute', top: 'calc(100% + 8px)', right: 0,
-                              background: '#fff', borderRadius: '16px', boxShadow: '0 10px 40px rgba(0,0,0,0.12)',
-                              border: '1px solid #e2e8f0', width: '220px', padding: '8px', zIndex: 1000
+                              position: 'absolute', 
+                              [openUpwards ? 'bottom' : 'top']: 'calc(100% + 8px)', 
+                              right: 0,
+                              background: '#fff', 
+                              borderRadius: '16px', 
+                              boxShadow: '0 12px 40px rgba(0,0,0,0.15)',
+                              border: '1px solid #e2e8f0', 
+                              width: '220px', 
+                              padding: '8px', 
+                              zIndex: 1000
                             }}
                           >
                              {[
@@ -1086,7 +1201,7 @@ const EventManagerAttendees: React.FC = () => {
                                  icon: <Trash2 size={14} />, 
                                  action: () => handleRemoveRegistration(attendee), 
                                  danger: true 
-                               },
+                                },
                              ].map((item, i) => (
                                <button 
                                  key={i}
@@ -1114,7 +1229,8 @@ const EventManagerAttendees: React.FC = () => {
                     </div>
                   </td>
                 </tr>
-                ))
+                );
+              })
               ) : (
                 <tr>
                   <td colSpan={7} style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
@@ -1129,6 +1245,33 @@ const EventManagerAttendees: React.FC = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Table Footer */}
+        {!isLoading && filteredAttendees.length > 0 && (
+          <div style={{
+            padding: '16px 24px',
+            borderTop: '1px solid #f1f5f9',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: '#ffffff',
+            borderBottomLeftRadius: '24px',
+            borderBottomRightRadius: '24px',
+            fontSize: '13px',
+            color: '#64748b',
+            fontWeight: 500
+          }}>
+            <div>
+              Showing <span style={{ fontWeight: 700, color: '#1e293b' }}>{filteredAttendees.length}</span> participant{filteredAttendees.length === 1 ? '' : 's'}
+              {searchTerm && ` matching "${searchTerm}"`}
+            </div>
+            {selectedAttendeeIds.size > 0 && (
+              <div style={{ color: brandPrimary, fontWeight: 700, fontSize: '13px' }}>
+                {selectedAttendeeIds.size} participant{selectedAttendeeIds.size === 1 ? '' : 's'} selected
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Enhanced AI-Powered Email Modal */}

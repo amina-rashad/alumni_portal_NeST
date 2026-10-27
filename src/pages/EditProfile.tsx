@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   ArrowLeft, Save, User as UserIcon, Book, Building, 
   Phone, AlignLeft, ShieldCheck, CheckCircle2, 
-  FileText, UploadCloud, Edit3, X, Upload, Camera, Briefcase, Award, GraduationCap, Check
+  FileText, UploadCloud, Edit3, X, Upload, Camera, Briefcase, Award, GraduationCap, Check, AlertCircle
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { usersApi, setUser, getUser, type AuthUser } from '../services/api';
+import { TECH_STACK_OPTIONS, POSITION_OPTIONS } from '../components/ApplicationFormModal';
 import { AnimatePresence, motion } from 'framer-motion';
 import InlineResumeBuilder from './InlineResumeBuilder';
+import { validateName, validatePhone, validateLength, validateUrl } from '../utils/validation';
 
 const resizeImage = (file: File, maxWidth: number, maxHeight: number): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -78,6 +81,16 @@ const EditProfile: React.FC = () => {
     : location.pathname.startsWith('/recruiter')
     ? '/recruiter/profile'
     : '/profile';
+
+  const handleBack = () => {
+    if (location.state?.from) {
+      navigate(location.state.from);
+    } else if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate(profilePath);
+    }
+  };
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
@@ -95,8 +108,19 @@ const EditProfile: React.FC = () => {
     status: 'none', // 'open_to_work', 'hiring', 'none'
     linkedin_url: '',
     github_url: '',
-    twitter_url: '',
-    portfolio_url: ''
+    portfolio_url: '',
+    graduation_year: '',
+    current_organisation: '',
+    current_designation: '',
+    total_experience: '',
+    current_location: '',
+    preferred_location: '',
+    resume_drive_link: '',
+    referral_source: '',
+    referral_source_details: '',
+    tech_stacks: [] as string[],
+    interested_positions: [] as string[],
+    declaration_confirmed: false
   });
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
@@ -107,6 +131,49 @@ const EditProfile: React.FC = () => {
   const [activeOverlay, setActiveOverlay] = useState<'none' | 'experience' | 'education' | 'certificate'>('none');
   const [overlayData, setOverlayData] = useState<any>({});
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
+  const [highlightConsent, setHighlightConsent] = useState(false);
+
+  // Lock background scroll when any overlay modal is open
+  useEffect(() => {
+    if (activeOverlay !== 'none') {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prevOverflow;
+      };
+    }
+  }, [activeOverlay]);
+
+  const scrollToConsent = () => {
+    setMessage({
+      type: 'error',
+      text: 'Mandatory Consent is required to save your profile. Please review and check the agreement below.'
+    });
+    setHighlightConsent(true);
+    const element = document.getElementById('disclaimer-section');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => {
+        const checkbox = document.getElementById('disclaimer-checkbox');
+        checkbox?.focus();
+      }, 500);
+    }
+    setTimeout(() => {
+      setHighlightConsent(false);
+    }, 4500);
+  };
+
+  const handleSaveButtonClick = async (e?: React.MouseEvent | React.FormEvent) => {
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault();
+    }
+    if (saving) return;
+    if (!disclaimerAccepted) {
+      scrollToConsent();
+      return;
+    }
+    await handleSubmit(e);
+  };
 
   const handleResumeChange = useCallback((data: any) => {
     setResumeData(data);
@@ -144,9 +211,23 @@ const EditProfile: React.FC = () => {
             status: u.status || 'none',
             linkedin_url: u.linkedin_url || '',
             github_url: u.github_url || '',
-            twitter_url: u.twitter_url || '',
-            portfolio_url: u.portfolio_url || ''
+            portfolio_url: u.portfolio_url || '',
+            graduation_year: u.graduation_year || u.batch || '',
+            current_organisation: u.current_organisation || u.current_company || '',
+            current_designation: u.current_designation || u.title || '',
+            total_experience: u.total_experience || '',
+            current_location: u.current_location || u.location || '',
+            preferred_location: u.preferred_location || '',
+            resume_drive_link: u.resume_drive_link || u.resume_url || '',
+            referral_source: u.referral_source || '',
+            referral_source_details: u.referral_source_details || '',
+            tech_stacks: Array.isArray(u.tech_stacks) ? u.tech_stacks : [],
+            interested_positions: Array.isArray(u.interested_positions) ? u.interested_positions : [],
+            declaration_confirmed: Boolean(u.declaration_confirmed)
           }));
+          if (u.declaration_confirmed) {
+            setDisclaimerAccepted(true);
+          }
           setProfilePicture(u.profile_picture || null);
           setExperience(u.experience || []);
           setEducation(u.education || []);
@@ -154,24 +235,24 @@ const EditProfile: React.FC = () => {
           if (u.is_resume_created) setResumeOption('create');
           setResumeData(u.resume_data || null);
         } else {
-          // Mock data fallback if guest
           const u = getUser() as any;
           if (u) {
             setFormData(prev => ({
               ...prev,
-              full_name: u.full_name || 'Melbin',
+              full_name: u.full_name || u.name || '',
               bio: u.bio || '',
-              phone: u.phone || '+91 98765 43210',
-              batch: u.batch || '2023',
-              specialization: u.specialization || 'Software Engineer',
-              skills: Array.isArray(u.skills) ? u.skills.join(', ') : 'React, TypeScript',
-              status: u.status || 'open_to_work'
+              phone: u.phone || '',
+              batch: u.batch || '',
+              specialization: u.specialization || '',
+              skills: Array.isArray(u.skills) ? u.skills.join(', ') : (u.skills || ''),
+              status: u.status || 'none',
+              declaration_confirmed: Boolean(u.declaration_confirmed)
             }));
+            if (u.declaration_confirmed) {
+              setDisclaimerAccepted(true);
+            }
             setProfilePicture(u.profile_picture || null);
-            setCertificates(u.certificates || [
-              { id: '1', name: 'Cloud Architecture Professional', issuer: 'NeST Learning Portal', date: 'Oct 2023', url: '#', type: 'portal' },
-              { id: '2', name: 'React Advanced Patterns', issuer: 'Meta', date: 'Jan 2024', url: '#', type: 'uploaded' }
-            ]);
+            setCertificates(u.certificates || []);
           }
         }
       } catch (err) {
@@ -183,14 +264,62 @@ const EditProfile: React.FC = () => {
     fetchProfile();
   }, []);
 
+  const toggleTechStack = (tech: string) => {
+    setFormData(prev => {
+      const exists = prev.tech_stacks.includes(tech);
+      const updated = exists ? prev.tech_stacks.filter(t => t !== tech) : [...prev.tech_stacks, tech];
+      return { ...prev, tech_stacks: updated };
+    });
+  };
+
+  const togglePosition = (pos: string) => {
+    setFormData(prev => {
+      const exists = prev.interested_positions.includes(pos);
+      const updated = exists ? prev.interested_positions.filter(p => p !== pos) : [...prev.interested_positions, pos];
+      return { ...prev, interested_positions: updated };
+    });
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     setMessage({ type: '', text: '' });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault();
+    }
+
+    const nameErr = validateName(formData.full_name, 'Full name', 2, 80, true);
+    if (nameErr) {
+      setMessage({ type: 'error', text: nameErr });
+      return;
+    }
+
+    if (formData.phone) {
+      const phoneErr = validatePhone(formData.phone, false);
+      if (phoneErr) {
+        setMessage({ type: 'error', text: phoneErr });
+        return;
+      }
+    }
+
+    if (formData.bio && formData.bio.length > 500) {
+      setMessage({ type: 'error', text: 'Bio cannot exceed 500 characters.' });
+      return;
+    }
+
+    if (formData.linkedin_url) {
+      const urlErr = validateUrl(formData.linkedin_url, 'LinkedIn URL', false);
+      if (urlErr) { setMessage({ type: 'error', text: urlErr }); return; }
+    }
+
+    if (formData.github_url) {
+      const urlErr = validateUrl(formData.github_url, 'GitHub URL', false);
+      if (urlErr) { setMessage({ type: 'error', text: urlErr }); return; }
+    }
+
     setSaving(true);
     setMessage({ type: '', text: '' });
 
@@ -204,6 +333,7 @@ const EditProfile: React.FC = () => {
       const skillsArray = formData.skills.split(',').map(s => s.trim()).filter(s => s !== '');
       const updatePayload: any = { 
         ...formData, 
+        declaration_confirmed: disclaimerAccepted,
         skills: skillsArray,
         profile_picture: profilePicture,
         certificates: certificates,
@@ -257,7 +387,14 @@ const EditProfile: React.FC = () => {
           setUser({ ...currentUser, ...updatedUser });
         }
         
-        setTimeout(() => navigate(profilePath), 1500);
+        const returnDestination = location.state?.from || (window.history.length > 1 ? -1 : profilePath);
+        setTimeout(() => {
+          if (typeof returnDestination === 'number') {
+            navigate(-1);
+          } else {
+            navigate(returnDestination);
+          }
+        }, 1500);
       } else if (res.message === 'DocumentTooLarge') {
         setMessage({ type: 'error', text: 'Profile data is too large. Please reduce image sizes.' });
       } else {
@@ -316,7 +453,8 @@ const EditProfile: React.FC = () => {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <button 
-            onClick={() => navigate(profilePath)}
+            type="button"
+            onClick={handleBack}
             style={{ 
               background: '#f1f5f9', 
               border: 'none', 
@@ -340,13 +478,59 @@ const EditProfile: React.FC = () => {
           </div>
         </div>
         
-        <button 
-          onClick={handleSubmit}
-          disabled={saving || !disclaimerAccepted}
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', background: (!disclaimerAccepted || saving) ? '#94a3b8' : '#1a2652', color: 'white', border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: 700, cursor: (!disclaimerAccepted || saving) ? 'not-allowed' : 'pointer', boxShadow: (!disclaimerAccepted || saving) ? 'none' : '0 4px 12px rgba(26, 38, 82, 0.2)' }}
-        >
-          <Save size={18} /> {saving ? 'Saving...' : 'Save Changes'}
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {!disclaimerAccepted && (
+            <button
+              type="button"
+              onClick={scrollToConsent}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 14px',
+                background: '#fff1f2',
+                border: '1px solid #fecdd3',
+                borderRadius: '10px',
+                color: '#e11d48',
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                boxShadow: '0 1px 2px rgba(225, 29, 72, 0.05)'
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = '#ffe4e6'}
+              onMouseLeave={e => e.currentTarget.style.background = '#fff1f2'}
+              title="Consent required to activate Save Changes. Click to review agreement."
+            >
+              <AlertCircle size={15} color="#e11d48" />
+              <span>Consent Required to Save ↓</span>
+            </button>
+          )}
+
+          <button 
+            type="button"
+            onClick={handleSaveButtonClick}
+            disabled={saving}
+            title={!disclaimerAccepted ? 'Mandatory Consent required to save. Click to review.' : 'Save Changes'}
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '8px', 
+              padding: '12px 24px', 
+              background: saving ? '#94a3b8' : (!disclaimerAccepted ? '#64748b' : '#1a2652'), 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '12px', 
+              fontSize: '15px', 
+              fontWeight: 700, 
+              cursor: saving ? 'not-allowed' : 'pointer', 
+              boxShadow: (!disclaimerAccepted || saving) ? 'none' : '0 4px 12px rgba(26, 38, 82, 0.2)',
+              transition: 'all 0.2s'
+            }}
+          >
+            <Save size={18} /> {saving ? 'Saving...' : 'Save Changes'}
+          </button>
+        </div>
       </div>
       
       <div style={{ background: '#fff', padding: '40px', borderRadius: '32px', boxShadow: '0 8px 32px rgba(0,0,0,0.04)', border: '1px solid #f1f5f9' }}>
@@ -543,7 +727,7 @@ const EditProfile: React.FC = () => {
           {/* Social Links Section */}
           <section>
             <h3 style={{ margin: '0 0 20px', fontSize: '17px', fontWeight: 800, color: '#1e293b', borderLeft: '4px solid #c8102e', paddingLeft: '12px' }}>Social Profiles</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
               <div>
                 <label style={labelStyle}>LinkedIn URL</label>
                 <input name="linkedin_url" value={formData.linkedin_url} onChange={handleChange} style={inputStyle} placeholder="https://linkedin.com/in/..." />
@@ -551,10 +735,6 @@ const EditProfile: React.FC = () => {
               <div>
                 <label style={labelStyle}>GitHub URL</label>
                 <input name="github_url" value={formData.github_url} onChange={handleChange} style={inputStyle} placeholder="https://github.com/..." />
-              </div>
-              <div>
-                <label style={labelStyle}>Twitter URL</label>
-                <input name="twitter_url" value={formData.twitter_url} onChange={handleChange} style={inputStyle} placeholder="https://twitter.com/..." />
               </div>
               <div>
                 <label style={labelStyle}>Portfolio URL</label>
@@ -576,6 +756,126 @@ const EditProfile: React.FC = () => {
                 <p style={{ margin: 0, fontSize: '13px', color: '#64748b', lineHeight: 1.5 }}>
                   Your email address and employee ID are verified and cannot be changed directly. Please contact HR for updates.
                 </p>
+              </div>
+            </div>
+          </section>
+
+          {/* Candidate & Application Details Section */}
+          <section>
+            <h3 style={{ margin: '0 0 20px', fontSize: '17px', fontWeight: 800, color: '#1e293b', borderLeft: '4px solid #c8102e', paddingLeft: '12px' }}>Candidate Details</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              <div>
+                <label style={labelStyle}><Building size={16} color="#c8102e"/> Current Organisation</label>
+                <input name="current_organisation" value={formData.current_organisation} onChange={handleChange} style={inputStyle} placeholder="e.g. NeST Digital, TCS, Infosys" />
+              </div>
+              <div>
+                <label style={labelStyle}><Briefcase size={16} color="#c8102e"/> Current Designation</label>
+                <input name="current_designation" value={formData.current_designation} onChange={handleChange} style={inputStyle} placeholder="e.g. Full Stack Developer, QA Lead" />
+              </div>
+              <div>
+                <label style={labelStyle}><CheckCircle2 size={16} color="#c8102e"/> Total Years of Experience *</label>
+                <input name="total_experience" value={formData.total_experience} onChange={handleChange} style={inputStyle} placeholder="e.g. 2, 3.5, Fresher" />
+              </div>
+              <div>
+                <label style={labelStyle}><GraduationCap size={16} color="#c8102e"/> Year of Graduation</label>
+                <input name="graduation_year" value={formData.graduation_year} onChange={handleChange} style={inputStyle} placeholder="e.g. 2024" />
+              </div>
+              <div>
+                <label style={labelStyle}>Current Location *</label>
+                <input name="current_location" value={formData.current_location} onChange={handleChange} style={inputStyle} placeholder="e.g. Kochi, Kerala" />
+              </div>
+              <div>
+                <label style={labelStyle}>Preferred Work Location *</label>
+                <input name="preferred_location" value={formData.preferred_location} onChange={handleChange} style={inputStyle} placeholder="e.g. Kochi, Bangalore, Remote" />
+              </div>
+            </div>
+
+            <div style={{ marginTop: '20px' }}>
+              <label style={labelStyle}><FileText size={16} color="#c8102e"/> Resume Google Drive Link *</label>
+              <input name="resume_drive_link" value={formData.resume_drive_link} onChange={handleChange} style={inputStyle} placeholder="https://drive.google.com/file/d/..." />
+              <p style={{ margin: '6px 0 0', fontSize: '12px', color: '#64748b' }}>Make sure Google Drive link access is set to 'Anyone with the link can view'</p>
+            </div>
+
+            <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid #f1f5f9' }}>
+              <h4 style={{ margin: '0 0 14px', fontSize: '15px', fontWeight: 800, color: '#1e293b' }}>Referral Details</h4>
+              <label style={labelStyle}>Referral Source</label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '10px', marginTop: '10px', marginBottom: '16px' }}>
+                {[
+                  'Professional Network (Colleague/Vendor etc)',
+                  'Personal Network (Friend/Relative etc)',
+                  'Academic Network (Classmate/Alumni Network etc)',
+                  'Professional Platforms (LinkedIn/Industry Events etc)',
+                  'Other'
+                ].map((opt) => (
+                  <label key={opt} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#334155', cursor: 'pointer', background: '#f8fafc', padding: '10px 14px', borderRadius: '10px', border: formData.referral_source === opt ? '1.5px solid #c8102e' : '1px solid #e2e8f0' }}>
+                    <input 
+                      type="radio" 
+                      name="referral_source" 
+                      value={opt} 
+                      checked={formData.referral_source === opt} 
+                      onChange={handleChange}
+                      style={{ accentColor: '#c8102e' }}
+                    />
+                    {opt}
+                  </label>
+                ))}
+              </div>
+
+              <div>
+                <label style={labelStyle}>Details of the Referral source (Name of college/Industry Event)</label>
+                <input name="referral_source_details" value={formData.referral_source_details} onChange={handleChange} style={inputStyle} placeholder="e.g. Model Engineering College, Tech Con 2024" />
+              </div>
+            </div>
+
+            <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid #f1f5f9' }}>
+              <h4 style={{ margin: '0 0 14px', fontSize: '15px', fontWeight: 800, color: '#1e293b' }}>Tech Stacks & Positions Interested</h4>
+              
+              <label style={{ ...labelStyle, marginBottom: '8px' }}>Mention the Tech Stacks interested to apply</label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px', marginBottom: '20px' }}>
+                {TECH_STACK_OPTIONS.map((stack) => (
+                  <label key={stack} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#334155', cursor: 'pointer', background: '#f8fafc', padding: '8px 12px', borderRadius: '8px', border: formData.tech_stacks.includes(stack) ? '1.5px solid #c8102e' : '1px solid #e2e8f0' }}>
+                    <input 
+                      type="checkbox"
+                      checked={formData.tech_stacks.includes(stack)}
+                      onChange={() => toggleTechStack(stack)}
+                      style={{ accentColor: '#c8102e' }}
+                    />
+                    {stack}
+                  </label>
+                ))}
+              </div>
+
+              <label style={{ ...labelStyle, marginBottom: '8px' }}>Interested to apply for the selected positions in NeST</label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '8px', marginBottom: '20px' }}>
+                {POSITION_OPTIONS.map((pos) => (
+                  <label key={pos} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#334155', cursor: 'pointer', background: '#f8fafc', padding: '8px 12px', borderRadius: '8px', border: formData.interested_positions.includes(pos) ? '1.5px solid #c8102e' : '1px solid #e2e8f0' }}>
+                    <input 
+                      type="checkbox"
+                      checked={formData.interested_positions.includes(pos)}
+                      onChange={() => togglePosition(pos)}
+                      style={{ accentColor: '#c8102e' }}
+                    />
+                    {pos}
+                  </label>
+                ))}
+              </div>
+
+              <div style={{ padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', marginTop: '12px' }}>
+                <h5 style={{ margin: '0 0 8px', fontSize: '13px', fontWeight: 800, color: '#1e293b' }}>Declaration Confirmation</h5>
+                <ul style={{ margin: '0 0 12px', paddingLeft: '18px', fontSize: '12px', color: '#64748b', lineHeight: 1.6 }}>
+                  <li>The information provided is true to the best of my knowledge.</li>
+                  <li>I have obtained candidate consent before sharing their profile.</li>
+                  <li>The candidate is aware of this referral and interested in pursuing opportunities with the organization.</li>
+                </ul>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#1e293b', fontWeight: 700, cursor: 'pointer' }}>
+                  <input 
+                    type="checkbox"
+                    checked={formData.declaration_confirmed}
+                    onChange={(e) => setFormData(prev => ({ ...prev, declaration_confirmed: e.target.checked }))}
+                    style={{ accentColor: '#c8102e' }}
+                  />
+                  I Agree to the above terms
+                </label>
               </div>
             </div>
           </section>
@@ -801,124 +1101,234 @@ const EditProfile: React.FC = () => {
           </section>
 
           {/* Organizational Disclaimer Section */}
-          <section style={{ marginTop: '16px', paddingTop: '32px', borderTop: '1px solid #f1f5f9' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '16px', background: disclaimerAccepted ? '#f0fdf4' : '#fff1f1', borderRadius: '12px', border: `1px solid ${disclaimerAccepted ? '#bbf7d0' : '#fecaca'}`, transition: 'all 0.3s' }}>
-              <input 
-                type="checkbox" 
-                id="disclaimer-checkbox"
-                checked={disclaimerAccepted}
-                onChange={(e) => setDisclaimerAccepted(e.target.checked)}
-                style={{ marginTop: '4px', width: '20px', height: '20px', accentColor: '#c8102e', cursor: 'pointer', flexShrink: 0 }}
-              />
-              <label htmlFor="disclaimer-checkbox" style={{ fontSize: '14px', color: '#475569', lineHeight: 1.5, cursor: 'pointer', userSelect: 'none' }}>
-                <strong style={{ color: '#0f172a' }}>Mandatory Consent:</strong> I acknowledge and agree that my profile details may be used by the organization for internal purposes, including talent mapping, event organization, and professional networking within the portal.
-              </label>
+          <section id="disclaimer-section" style={{ marginTop: '16px', paddingTop: '32px', borderTop: '1px solid #f1f5f9' }}>
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: 'column',
+              gap: '16px',
+              padding: '20px', 
+              background: disclaimerAccepted ? '#f0fdf4' : (highlightConsent ? '#fff1f2' : '#fff5f5'), 
+              borderRadius: '16px', 
+              border: `2px solid ${disclaimerAccepted ? '#86efac' : (highlightConsent ? '#e11d48' : '#fca5a5')}`,
+              boxShadow: highlightConsent ? '0 0 0 4px rgba(225, 29, 72, 0.25), 0 8px 24px rgba(225, 29, 72, 0.15)' : (disclaimerAccepted ? '0 2px 8px rgba(34, 197, 94, 0.08)' : 'none'),
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' 
+            }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                <input 
+                  type="checkbox" 
+                  id="disclaimer-checkbox"
+                  checked={disclaimerAccepted}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setDisclaimerAccepted(checked);
+                    setFormData(prev => ({ ...prev, declaration_confirmed: checked }));
+                    if (checked) {
+                      setMessage({ type: 'success', text: 'Consent confirmed! You can now click "Save Changes".' });
+                    }
+                  }}
+                  style={{ marginTop: '4px', width: '22px', height: '22px', accentColor: '#c8102e', cursor: 'pointer', flexShrink: 0 }}
+                />
+                <label htmlFor="disclaimer-checkbox" style={{ fontSize: '14px', color: '#334155', lineHeight: 1.6, cursor: 'pointer', userSelect: 'none', flex: 1 }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontWeight: 800, color: '#0f172a', marginRight: '6px' }}>
+                    Mandatory Consent:
+                  </span>
+                  I acknowledge and agree that my profile details may be used by the organization for internal purposes, including talent mapping, event organization, and professional networking within the portal.
+                  {!disclaimerAccepted && (
+                    <span style={{ display: 'inline-block', marginLeft: '8px', padding: '2px 8px', borderRadius: '6px', background: '#ffe4e6', color: '#e11d48', fontSize: '11px', fontWeight: 700 }}>
+                      Required to Save
+                    </span>
+                  )}
+                </label>
+              </div>
+
+              {/* Bottom Quick Save Bar */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', borderTop: '1px dashed #e2e8f0', paddingTop: '16px', marginTop: '4px' }}>
+                <span style={{ fontSize: '13px', color: disclaimerAccepted ? '#16a34a' : '#e11d48', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  {disclaimerAccepted ? (
+                    <>
+                      <CheckCircle2 size={16} color="#16a34a" /> Ready to commit profile changes
+                    </>
+                  ) : (
+                    <>
+                      <AlertCircle size={16} color="#e11d48" /> Check the box above to enable saving
+                    </>
+                  )}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleSaveButtonClick}
+                  disabled={saving || !disclaimerAccepted}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '10px 22px',
+                    background: (!disclaimerAccepted || saving) ? '#94a3b8' : '#1a2652',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '10px',
+                    fontSize: '14px',
+                    fontWeight: 700,
+                    cursor: (!disclaimerAccepted || saving) ? 'not-allowed' : 'pointer',
+                    boxShadow: (!disclaimerAccepted || saving) ? 'none' : '0 4px 12px rgba(26, 38, 82, 0.2)',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <Save size={16} /> {saving ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
             </div>
           </section>
         </div>
       </div>
 
-      {/* --- ADD ITEM OVERLAYS --- */}
-      <AnimatePresence>
-        {activeOverlay !== 'none' && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
-            onClick={() => setActiveOverlay('none')}
-          >
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              style={{ background: 'white', width: '100%', maxWidth: '500px', borderRadius: '24px', padding: '32px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}
-              onClick={e => e.stopPropagation()}
+      {/* --- ADD ITEM OVERLAYS (PORTALED DIRECTLY TO BODY SO IT ALWAYS CENTERS IN VIEWPORT) --- */}
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {activeOverlay !== 'none' && (
+            <div 
+              style={{ 
+                position: 'fixed', 
+                inset: 0, 
+                zIndex: 999999, 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                padding: '20px',
+                overflowY: 'auto'
+              }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>
-                  {activeOverlay === 'experience' && 'Add Experience'}
-                  {activeOverlay === 'education' && 'Add Education'}
-                  {activeOverlay === 'certificate' && 'Add Certificate'}
-                </h3>
-                <button onClick={() => setActiveOverlay('none')} style={{ background: '#f1f5f9', border: 'none', borderRadius: '10px', padding: '8px', cursor: 'pointer', color: '#64748b' }}>
-                  <X size={20} />
-                </button>
-              </div>
+              {/* Backdrop */}
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                style={{ 
+                  position: 'fixed', 
+                  inset: 0, 
+                  background: 'rgba(15, 23, 42, 0.65)', 
+                  backdropFilter: 'blur(8px)',
+                  cursor: 'pointer'
+                }}
+                onClick={() => setActiveOverlay('none')}
+              />
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {activeOverlay === 'experience' && (
-                  <>
-                    <div>
-                      <label style={labelStyle}>Role Name</label>
-                      <input value={overlayData.role} onChange={e => setOverlayData({...overlayData, role: e.target.value})} style={inputStyle} placeholder="e.g. Senior Developer" />
-                    </div>
-                    <div>
-                      <label style={labelStyle}>Company</label>
-                      <input value={overlayData.company} onChange={e => setOverlayData({...overlayData, company: e.target.value})} style={inputStyle} placeholder="e.g. NeST Digital" />
-                    </div>
-                    <div>
-                      <label style={labelStyle}>Duration</label>
-                      <input value={overlayData.duration} onChange={e => setOverlayData({...overlayData, duration: e.target.value})} style={inputStyle} placeholder="e.g. Jan 2023 - Present" />
-                    </div>
-                  </>
-                )}
+              {/* Modal Card */}
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+                style={{ 
+                  position: 'relative',
+                  background: 'white', 
+                  width: '100%', 
+                  maxWidth: '500px', 
+                  maxHeight: '90vh',
+                  overflowY: 'auto',
+                  borderRadius: '24px', 
+                  padding: '32px', 
+                  boxShadow: '0 25px 60px -12px rgba(0, 0, 0, 0.35)',
+                  zIndex: 1,
+                  margin: 'auto'
+                }}
+                onClick={e => e.stopPropagation()}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                  <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>
+                    {activeOverlay === 'experience' && 'Add Experience'}
+                    {activeOverlay === 'education' && 'Add Education'}
+                    {activeOverlay === 'certificate' && 'Add Certificate'}
+                  </h3>
+                  <button 
+                    type="button"
+                    onClick={() => setActiveOverlay('none')} 
+                    style={{ background: '#f1f5f9', border: 'none', borderRadius: '10px', padding: '8px', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#e2e8f0'}
+                    onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
 
-                {activeOverlay === 'education' && (
-                  <>
-                    <div>
-                      <label style={labelStyle}>Degree / Course</label>
-                      <input value={overlayData.degree} onChange={e => setOverlayData({...overlayData, degree: e.target.value})} style={inputStyle} placeholder="e.g. B.Tech Computer Science" />
-                    </div>
-                    <div>
-                      <label style={labelStyle}>School / University</label>
-                      <input value={overlayData.school} onChange={e => setOverlayData({...overlayData, school: e.target.value})} style={inputStyle} placeholder="e.g. KTU University" />
-                    </div>
-                    <div>
-                      <label style={labelStyle}>Graduation Year</label>
-                      <input value={overlayData.year} onChange={e => setOverlayData({...overlayData, year: e.target.value})} style={inputStyle} placeholder="e.g. 2023" />
-                    </div>
-                  </>
-                )}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {activeOverlay === 'experience' && (
+                    <>
+                      <div>
+                        <label style={labelStyle}>Role Name</label>
+                        <input autoFocus value={overlayData.role || ''} onChange={e => setOverlayData({...overlayData, role: e.target.value})} style={inputStyle} placeholder="e.g. Senior Developer" />
+                      </div>
+                      <div>
+                        <label style={labelStyle}>Company</label>
+                        <input value={overlayData.company || ''} onChange={e => setOverlayData({...overlayData, company: e.target.value})} style={inputStyle} placeholder="e.g. NeST Digital" />
+                      </div>
+                      <div>
+                        <label style={labelStyle}>Duration</label>
+                        <input value={overlayData.duration || ''} onChange={e => setOverlayData({...overlayData, duration: e.target.value})} style={inputStyle} placeholder="e.g. Jan 2023 - Present" />
+                      </div>
+                    </>
+                  )}
 
-                {activeOverlay === 'certificate' && (
-                  <>
-                    <div>
-                      <label style={labelStyle}>Certificate Name</label>
-                      <input value={overlayData.name} onChange={e => setOverlayData({...overlayData, name: e.target.value})} style={inputStyle} placeholder="e.g. AWS Solutions Architect" />
-                    </div>
-                    <div>
-                      <label style={labelStyle}>Issuing Organization</label>
-                      <input value={overlayData.issuer} onChange={e => setOverlayData({...overlayData, issuer: e.target.value})} style={inputStyle} placeholder="e.g. Amazon Web Services" />
-                    </div>
-                  </>
-                )}
+                  {activeOverlay === 'education' && (
+                    <>
+                      <div>
+                        <label style={labelStyle}>Degree / Course</label>
+                        <input autoFocus value={overlayData.degree || ''} onChange={e => setOverlayData({...overlayData, degree: e.target.value})} style={inputStyle} placeholder="e.g. B.Tech Computer Science" />
+                      </div>
+                      <div>
+                        <label style={labelStyle}>School / University</label>
+                        <input value={overlayData.school || ''} onChange={e => setOverlayData({...overlayData, school: e.target.value})} style={inputStyle} placeholder="e.g. KTU University" />
+                      </div>
+                      <div>
+                        <label style={labelStyle}>Graduation Year</label>
+                        <input value={overlayData.year || ''} onChange={e => setOverlayData({...overlayData, year: e.target.value})} style={inputStyle} placeholder="e.g. 2023" />
+                      </div>
+                    </>
+                  )}
 
-                <button 
-                  onClick={() => {
-                    if (activeOverlay === 'experience') {
-                      setExperience([...experience, { ...overlayData, id: Math.random().toString(36).substr(2, 9) }]);
-                    } else if (activeOverlay === 'education') {
-                      setEducation([...education, { ...overlayData, id: Math.random().toString(36).substr(2, 9) }]);
-                    } else if (activeOverlay === 'certificate') {
-                      setCertificates([...certificates, { 
-                        ...overlayData, 
-                        id: Math.random().toString(36).substr(2, 9), 
-                        date: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-                        type: 'uploaded'
-                      }]);
-                    }
-                    setActiveOverlay('none');
-                  }}
-                  style={{ marginTop: '12px', width: '100%', padding: '14px', background: '#1a2652', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}
-                >
-                  Add to Profile
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                  {activeOverlay === 'certificate' && (
+                    <>
+                      <div>
+                        <label style={labelStyle}>Certificate Name</label>
+                        <input autoFocus value={overlayData.name || ''} onChange={e => setOverlayData({...overlayData, name: e.target.value})} style={inputStyle} placeholder="e.g. AWS Solutions Architect" />
+                      </div>
+                      <div>
+                        <label style={labelStyle}>Issuing Organization</label>
+                        <input value={overlayData.issuer || ''} onChange={e => setOverlayData({...overlayData, issuer: e.target.value})} style={inputStyle} placeholder="e.g. Amazon Web Services" />
+                      </div>
+                    </>
+                  )}
+
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      if (activeOverlay === 'experience') {
+                        setExperience([...experience, { ...overlayData, id: Math.random().toString(36).substr(2, 9) }]);
+                      } else if (activeOverlay === 'education') {
+                        setEducation([...education, { ...overlayData, id: Math.random().toString(36).substr(2, 9) }]);
+                      } else if (activeOverlay === 'certificate') {
+                        setCertificates([...certificates, { 
+                          ...overlayData, 
+                          id: Math.random().toString(36).substr(2, 9), 
+                          date: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+                          type: 'uploaded'
+                        }]);
+                      }
+                      setActiveOverlay('none');
+                    }}
+                    style={{ marginTop: '12px', width: '100%', padding: '14px', background: '#1a2652', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#283870'}
+                    onMouseLeave={e => e.currentTarget.style.background = '#1a2652'}
+                  >
+                    Add to Profile
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </motion.div>
   );
 };

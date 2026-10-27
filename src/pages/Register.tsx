@@ -4,6 +4,7 @@ import { User, Mail, Lock, Phone, GraduationCap, ChevronRight, ArrowLeft, Shield
 import { Link, useNavigate } from 'react-router-dom';
 import nestMainLogo from '../assets/nest_logo.png';
 import nestIcon from '../assets/nest_icon.png';
+import { validateEmail, validateName, validatePhone, validatePassword, validateRequired } from '../utils/validation';
 import './Auth.css';
 
 /* -- Alphanumeric CAPTCHA Generator -- */
@@ -140,7 +141,29 @@ const Register: React.FC = () => {
     e.preventDefault();
     setError('');
 
-    if (captchaInput !== captcha.code) {
+    // Field-level validations
+    const firstNameErr = validateName(formData.firstName, 'First name', 2, 50, true);
+    if (firstNameErr) { setError(firstNameErr); return; }
+
+    const lastNameErr = validateName(formData.lastName, 'Last name', 1, 50, true);
+    if (lastNameErr) { setError(lastNameErr); return; }
+
+    const emailErr = validateEmail(formData.email, true);
+    if (emailErr) { setError(emailErr); return; }
+
+    const passwordErr = validatePassword(formData.password);
+    if (passwordErr) { setError(passwordErr); return; }
+
+    const phoneErr = validatePhone(formData.phone, true);
+    if (phoneErr) { setError(phoneErr); return; }
+
+    const batchErr = validateRequired(formData.batch, 'Batch / Year');
+    if (batchErr) { setError(batchErr); return; }
+
+    const courseErr = validateRequired(formData.course, 'Specialization');
+    if (courseErr) { setError(courseErr); return; }
+
+    if (captchaInput.trim() !== captcha.code) {
       setError('Captcha code is incorrect.');
       refreshCaptcha();
       return;

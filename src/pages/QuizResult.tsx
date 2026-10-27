@@ -31,10 +31,10 @@ const QuizResult: React.FC = () => {
           animate={{ opacity: 1, x: 0 }}
         >
           <button 
-            onClick={() => navigate('/assessments/quiz')}
+            onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/assessments/quiz')}
             style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64748B', background: 'none', border: 'none', padding: 0.25, cursor: 'pointer', fontSize: '0.9rem', marginBottom: '1rem' }}
           >
-            <ArrowLeft size={16} /> Back to Quizzes
+            <ArrowLeft size={16} /> Back to Assessments
           </button>
           <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', marginBottom: '0.5rem' }}>
             Assessment <span style={{ color: '#d32f2f' }}>Complete</span>
@@ -101,7 +101,7 @@ const QuizResult: React.FC = () => {
              onClick={() => navigate('/assessments/quiz')}
              style={{ flex: 1, padding: '1.25rem', borderRadius: '20px', background: '#d32f2f', color: 'white', border: 'none', fontWeight: 800, fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', transition: 'all 0.2s' }}
           >
-            Take Another Quiz <ChevronRight size={20} />
+            Take Another Assessment <ChevronRight size={20} />
           </button>
         </div>
 

@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, BookOpen, Clock, Award, PlayCircle, CheckCircle2, ChevronDown, Search, Filter, BarChart3, Calendar, Star, ChevronRight, Loader2 } from 'lucide-react';
+import { ArrowLeft, BookOpen, Clock, Award, PlayCircle, CheckCircle2, Search, Filter, BarChart3, Calendar, Star, ChevronRight, Loader2, Lock } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { usersApi, coursesApi, getUser } from '../services/api';
 import { generateCourseCertificate } from '../utils/CertificateGenerator';
 import CertificateProgressButton from '../components/CertificateProgressButton';
 
-type CourseStatus = 'In Progress' | 'Completed' | 'Not Started';
+type CourseStatus = 'In Progress' | 'Completed';
 
 interface EnrolledCourse {
   id: string;
@@ -24,46 +24,12 @@ interface EnrolledCourse {
   completedLessons: number;
   nextLesson?: string;
   certificateAvailable?: boolean;
+  passingScore?: number;
 }
-
-const MOCK_COURSES: EnrolledCourse[] = [
-  {
-    id: 'ec-1',
-    courseId: '1',
-    title: 'Advanced Cloud Architecture & DevOps',
-    instructor: 'Dr. Rajesh Nair',
-    level: 'Advanced',
-    duration: '36 Hours',
-    progress: 72,
-    status: 'In Progress',
-    enrolledDate: '2026-02-10',
-    lastAccessed: '2026-03-25',
-    totalLessons: 18,
-    completedLessons: 13,
-    nextLesson: 'Kubernetes Orchestration at Scale'
-  },
-  {
-    id: 'ec-2',
-    courseId: '2',
-    title: 'Full Stack Development with React & Node',
-    instructor: 'Priya Sharma',
-    level: 'Intermediate',
-    duration: '48 Hours',
-    progress: 100,
-    status: 'Completed',
-    enrolledDate: '2025-12-01',
-    lastAccessed: '2026-02-28',
-    completedDate: '2026-02-28',
-    totalLessons: 24,
-    completedLessons: 24,
-    certificateAvailable: true
-  }
-];
 
 const STATUS_CONFIG: Record<CourseStatus, { color: string; bg: string; border: string; icon: React.ReactNode }> = {
   'In Progress': { color: '#1971c2', bg: '#e7f5ff', border: '#74c0fc', icon: <PlayCircle size={16} /> },
-  'Completed': { color: '#2b8a3e', bg: '#ebfbee', border: '#69db7c', icon: <CheckCircle2 size={16} /> },
-  'Not Started': { color: '#868e96', bg: '#f8f9fa', border: '#dee2e6', icon: <Clock size={16} /> }
+  'Completed': { color: '#2b8a3e', bg: '#ebfbee', border: '#69db7c', icon: <CheckCircle2 size={16} /> }
 };
 
 const LEVEL_COLORS: Record<string, { color: string; bg: string }> = {
@@ -72,12 +38,11 @@ const LEVEL_COLORS: Record<string, { color: string; bg: string }> = {
   'Advanced': { color: '#c92a2a', bg: '#fff5f5' }
 };
 
-const ALL_STATUSES: CourseStatus[] = ['In Progress', 'Completed', 'Not Started'];
+const ALL_STATUSES: CourseStatus[] = ['In Progress', 'Completed'];
 
 const MyCourses: React.FC = () => {
-  const [courses, setCourses] = useState<EnrolledCourse[]>(MOCK_COURSES);
+  const [courses, setCourses] = useState<EnrolledCourse[]>([]);
   const [loadingCourses, setLoadingCourses] = useState(true);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -96,21 +61,35 @@ const MyCourses: React.FC = () => {
         // Fetch Real Enrolled Courses
         const coursesRes = await coursesApi.getMyCourses();
         if (coursesRes.success && coursesRes.data && coursesRes.data.courses) {
-          const realCourses: EnrolledCourse[] = coursesRes.data.courses.map((c: any) => ({
-            id: `real-${c.id}`,
-            courseId: c.id,
-            title: c.title,
-            instructor: c.instructor || 'Lead Expert',
-            level: c.level || 'Standard',
-            duration: c.duration || 'Flexible',
-            progress: c.enrollment_info?.progress || 0,
-            status: (c.enrollment_info?.status || 'In Progress') as CourseStatus,
-            enrolledDate: c.enrollment_info?.enrolled_at || new Date().toISOString(),
-            lastAccessed: new Date().toISOString(),
-            totalLessons: c.curriculum?.length || 10,
-            completedLessons: Math.floor((c.enrollment_info?.progress || 0) / 10),
-            nextLesson: c.curriculum?.[0]?.title || 'Intro Module'
-          }));
+          const realCourses: EnrolledCourse[] = coursesRes.data.courses.map((c: any) => {
+            const totalLessons = Array.isArray(c.curriculum) ? c.curriculum.length : 0;
+            const progressVal = c.enrollment_info?.progress || 0;
+            const completedLessons = totalLessons > 0 ? Math.round((progressVal / 100) * totalLessons) : 0;
+            const nextLesson = (Array.isArray(c.curriculum) && c.curriculum.length > 0) ? c.curriculum[0]?.title : undefined;
+            const formattedDuration = c.duration 
+              ? (isNaN(Number(c.duration)) ? c.duration : `${c.duration} Hours`) 
+              : 'Flexible';
+            const hasPassed = Boolean(c.assessment_info?.has_passed);
+
+            return {
+              id: `real-${c.id}`,
+              courseId: c.id,
+              title: c.title,
+              instructor: c.instructor || 'Lead Expert',
+              level: c.level || 'Standard',
+              duration: formattedDuration,
+              progress: progressVal,
+              status: (hasPassed ? 'Completed' : 'In Progress') as CourseStatus,
+              enrolledDate: c.enrollment_info?.enrolled_at || new Date().toISOString(),
+              lastAccessed: new Date().toISOString(),
+              totalLessons: totalLessons,
+              completedLessons: completedLessons,
+              nextLesson: nextLesson,
+              certificateAvailable: hasPassed,
+              completedDate: c.assessment_info?.completed_at || c.enrollment_info?.completed_at || c.completed_at || new Date().toISOString(),
+              passingScore: c.assessment_info?.passing_score || 50
+            };
+          });
           
           // Sort by enrollment date (latest first)
           const sortedCourses = realCourses.sort((a, b) => 
@@ -118,9 +97,12 @@ const MyCourses: React.FC = () => {
           );
           
           setCourses(sortedCourses);
+        } else {
+          setCourses([]);
         }
       } catch (err) {
         console.error("Failed to fetch academy data:", err);
+        setCourses([]);
       } finally {
         setLoadingCourses(false);
       }
@@ -151,9 +133,17 @@ const MyCourses: React.FC = () => {
   };
 
   const getTimeAgo = (dateStr: string) => {
-    const diff = Date.now() - new Date(dateStr).getTime();
+    if (!dateStr) return 'Recently';
+    let cleanStr = String(dateStr).trim();
+    if (!cleanStr.endsWith('Z') && !/[+-]\d{2}(:?\d{2})?$/.test(cleanStr)) {
+      cleanStr += 'Z';
+    }
+    const parsedTime = new Date(cleanStr).getTime();
+    if (isNaN(parsedTime)) return 'Recently';
+
+    const diff = Date.now() - parsedTime;
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    if (days === 0) return 'Today';
+    if (days <= 0) return 'Today';
     if (days === 1) return 'Yesterday';
     if (days < 7) return `${days} days ago`;
     if (days < 30) return `${Math.floor(days / 7)} weeks ago`;
@@ -311,9 +301,8 @@ const MyCourses: React.FC = () => {
         <AnimatePresence mode="popLayout">
           {filteredCourses.length > 0 ? (
             filteredCourses.map((course, index) => {
-              const config = STATUS_CONFIG[course.status];
+              const config = STATUS_CONFIG[course.status] || STATUS_CONFIG['In Progress'];
               const levelConfig = LEVEL_COLORS[course.level] || { color: '#6c757d', bg: '#f8f9fa' };
-              const isExpanded = expandedId === course.id;
 
               return (
                 <motion.div
@@ -323,23 +312,37 @@ const MyCourses: React.FC = () => {
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.35, delay: index * 0.05 }}
                   layout
+                  onClick={() => {
+                    if (course.status === 'Completed') {
+                      navigate(`/courses/${course.courseId}`);
+                    } else {
+                      navigate(`/courses/${course.courseId}/play`);
+                    }
+                  }}
                   style={{
                     background: '#ffffff',
-                    border: `1px solid ${isExpanded ? config.border : '#e9ecef'}`,
+                    border: '1px solid #e9ecef',
                     borderRadius: '16px',
-                    padding: '1.5rem 1.8rem',
+                    padding: '1.6rem 2rem',
                     marginBottom: '1rem',
                     cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    boxShadow: isExpanded ? `0 8px 24px ${config.bg}` : '0 2px 6px rgba(0,0,0,0.02)'
+                    transition: 'all 0.25s ease',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
                   }}
-                  onClick={() => setExpandedId(isExpanded ? null : course.id)}
-                  onMouseEnter={(e) => { if (!isExpanded) { e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.06)'; e.currentTarget.style.borderColor = '#dee2e6'; } }}
-                  onMouseLeave={(e) => { if (!isExpanded) { e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.02)'; e.currentTarget.style.borderColor = '#e9ecef'; } }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.08)';
+                    e.currentTarget.style.borderColor = '#dee2e6';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.03)';
+                    e.currentTarget.style.borderColor = '#e9ecef';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
                 >
                   {/* Main Row */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
-                    <div style={{ flex: '1 1 300px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.25rem' }}>
+                    <div style={{ flex: '1 1 320px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
                         <span style={{
                           padding: '0.2rem 0.6rem',
@@ -358,7 +361,7 @@ const MyCourses: React.FC = () => {
                           <Clock size={12} /> {course.duration}
                         </span>
                       </div>
-                      <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#1a1a1a', margin: '0 0 0.5rem 0' }}>{course.title}</h3>
+                      <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0F172A', margin: '0 0 0.5rem 0' }}>{course.title}</h3>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#6c757d', fontSize: '0.85rem' }}>
                           <div style={{
@@ -374,38 +377,9 @@ const MyCourses: React.FC = () => {
                           <Calendar size={13} color="var(--primary)" /> Enrolled {formatDate(course.enrolledDate)}
                         </span>
                       </div>
-
-                      {/* Progress bar */}
-                      <div style={{ marginTop: '1rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-                          <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#4a4a4a' }}>
-                            {course.completedLessons}/{course.totalLessons} lessons
-                          </span>
-                          <span style={{ fontSize: '0.82rem', fontWeight: 700, color: course.progress === 100 ? '#2b8a3e' : 'var(--primary)' }}>
-                            {course.progress}%
-                          </span>
-                        </div>
-                        <div style={{
-                          width: '100%', height: '6px', backgroundColor: '#f1f3f5',
-                          borderRadius: '10px', overflow: 'hidden'
-                        }}>
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${course.progress}%` }}
-                            transition={{ duration: 1, delay: index * 0.1, ease: 'easeOut' }}
-                            style={{
-                              height: '100%',
-                              borderRadius: '10px',
-                              background: course.progress === 100
-                                ? 'linear-gradient(90deg, #2b8a3e, #40c057)'
-                                : 'linear-gradient(90deg, var(--primary), #e8536c)'
-                            }}
-                          />
-                        </div>
-                      </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
                       {/* Status Badge */}
                       <div style={{
                         display: 'flex',
@@ -423,187 +397,109 @@ const MyCourses: React.FC = () => {
                         {course.status}
                       </div>
 
-                      {/* Expand Toggle */}
-                      <motion.div
-                        animate={{ rotate: isExpanded ? 180 : 0 }}
-                        transition={{ duration: 0.2 }}
-                        style={{ color: '#adb5bd', display: 'flex' }}
+                      {/* Primary Continue / Review Button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (course.status === 'Completed') {
+                            navigate(`/courses/${course.courseId}`);
+                          } else {
+                            navigate(`/courses/${course.courseId}/play`);
+                          }
+                        }}
+                        style={{
+                          padding: '0.55rem 1.3rem',
+                          borderRadius: '10px',
+                          background: course.status === 'Completed' ? '#f8f9fa' : 'var(--primary)',
+                          border: `1px solid ${course.status === 'Completed' ? '#ced4da' : 'var(--primary)'}`,
+                          color: course.status === 'Completed' ? '#1a1a1a' : '#ffffff',
+                          fontSize: '0.85rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.4rem',
+                          transition: 'all 0.2s',
+                          boxShadow: course.status === 'Completed' ? 'none' : '0 4px 12px rgba(200, 16, 46, 0.25)'
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.9'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
                       >
-                        <ChevronDown size={20} />
-                      </motion.div>
+                        {course.status === 'Completed' ? <BookOpen size={15} /> : <PlayCircle size={15} />}
+                        {course.status === 'Completed' ? 'Review' : 'Continue'}
+                      </button>
+
+                      {/* Take Assessment Button if not yet completed */}
+                      {course.status !== 'Completed' && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/assessment/${course.courseId}`);
+                          }}
+                          style={{
+                            padding: '0.55rem 1.15rem',
+                            borderRadius: '10px',
+                            background: '#0F172A',
+                            border: '1px solid #0F172A',
+                            color: '#ffffff',
+                            fontSize: '0.85rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.4rem',
+                            transition: 'all 0.2s',
+                            boxShadow: '0 4px 12px rgba(15, 23, 42, 0.15)'
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.9'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
+                          title={`Attend assessment (Passing score: ${course.passingScore || 50}%) to complete course`}
+                        >
+                          <Award size={15} />
+                          Take Assessment
+                        </button>
+                      )}
+
+                      {/* Certificate Download Button if course assessment passed */}
+                      {course.certificateAvailable ? (
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <CertificateProgressButton 
+                            onGenerate={() => {
+                              const participantName = userProfile?.full_name || userProfile?.name || getUser()?.full_name || 'NeST Member';
+                              generateCourseCertificate(
+                                participantName,
+                                course.title,
+                                course.completedDate || new Date().toISOString()
+                              );
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/assessment/${course.courseId}`);
+                          }}
+                          title={`Certificate locked: Score >= ${course.passingScore || 50}% in assessment to unlock & complete course`}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.4rem',
+                            padding: '0.55rem 0.9rem',
+                            borderRadius: '10px',
+                            background: '#F1F5F9',
+                            color: '#94A3B8',
+                            fontSize: '0.8rem',
+                            fontWeight: 700,
+                            border: '1px dashed #CBD5E1',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <Lock size={13} /> Certificate Locked
+                        </div>
+                      )}
                     </div>
                   </div>
-
-                  {/* Expanded Details */}
-                  <AnimatePresence>
-                    {isExpanded && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.3 }}
-                        style={{ overflow: 'hidden' }}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <div style={{ borderTop: '1px solid #e9ecef', marginTop: '1.5rem', paddingTop: '1.5rem' }}>
-
-                          {/* Course Details Grid */}
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
-                            <div>
-                              <p style={{ fontSize: '0.78rem', fontWeight: 600, color: '#868e96', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.3rem' }}>Last Accessed</p>
-                              <p style={{ color: '#1a1a1a', fontWeight: 500, fontSize: '0.95rem' }}>{getTimeAgo(course.lastAccessed)}</p>
-                            </div>
-                            <div>
-                              <p style={{ fontSize: '0.78rem', fontWeight: 600, color: '#868e96', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.3rem' }}>Enrolled On</p>
-                              <p style={{ color: '#1a1a1a', fontWeight: 500, fontSize: '0.95rem' }}>{formatDate(course.enrolledDate)}</p>
-                            </div>
-                            {course.completedDate && (
-                              <div>
-                                <p style={{ fontSize: '0.78rem', fontWeight: 600, color: '#868e96', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.3rem' }}>Completed On</p>
-                                <p style={{ color: '#2b8a3e', fontWeight: 600, fontSize: '0.95rem' }}>{formatDate(course.completedDate)}</p>
-                              </div>
-                            )}
-                            <div>
-                              <p style={{ fontSize: '0.78rem', fontWeight: 600, color: '#868e96', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.3rem' }}>Total Duration</p>
-                              <p style={{ color: '#1a1a1a', fontWeight: 500, fontSize: '0.95rem' }}>{course.duration}</p>
-                            </div>
-                          </div>
-
-                          {/* Next Lesson Info */}
-                          {course.nextLesson && course.status !== 'Completed' && (
-                            <div style={{
-                              background: config.bg,
-                              border: `1px solid ${config.border}`,
-                              borderRadius: '10px',
-                              padding: '1rem 1.2rem',
-                              marginBottom: '1.5rem',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              flexWrap: 'wrap',
-                              gap: '0.5rem'
-                            }}>
-                              <div>
-                                <p style={{ fontSize: '0.78rem', fontWeight: 600, color: config.color, marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                  {course.status === 'Not Started' ? 'First Lesson' : 'Next Up'}
-                                </p>
-                                <p style={{ color: '#4a4a4a', fontSize: '0.95rem', fontWeight: 600, margin: 0 }}>
-                                  {course.nextLesson}
-                                </p>
-                              </div>
-                              <ChevronRight size={18} color={config.color} />
-                            </div>
-                          )}
-
-                          {/* Certificate Info */}
-                          {course.certificateAvailable && (
-                            <div style={{
-                              background: 'linear-gradient(135deg, #ebfbee 0%, #e7f5ff 100%)',
-                              border: '1px solid #69db7c',
-                              borderRadius: '10px',
-                              padding: '1rem 1.2rem',
-                              marginBottom: '1.5rem',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '0.75rem'
-                            }}>
-                              <Award size={22} color="#2b8a3e" />
-                              <div>
-                                <p style={{ fontSize: '0.82rem', fontWeight: 700, color: '#2b8a3e', margin: '0 0 0.15rem 0' }}>Certificate Earned!</p>
-                                <p style={{ color: '#4a4a4a', fontSize: '0.85rem', margin: 0 }}>Your professional certificate for this course is ready to download.</p>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Action Buttons */}
-                          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                            {course.status === 'Completed' ? (
-                              <>
-                                <button
-                                  onClick={() => navigate(`/courses/${course.courseId}`)}
-                                  style={{
-                                    padding: '0.6rem 1.2rem',
-                                    borderRadius: '8px',
-                                    background: '#ffffff',
-                                    border: '1px solid #ced4da',
-                                    color: '#4a4a4a',
-                                    fontSize: '0.88rem',
-                                    fontWeight: 600,
-                                    cursor: 'pointer',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '0.4rem',
-                                    transition: 'all 0.2s'
-                                  }}
-                                  onMouseEnter={(e) => { e.currentTarget.style.background = '#f8f9fa'; e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.color = 'var(--primary)'; }}
-                                  onMouseLeave={(e) => { e.currentTarget.style.background = '#ffffff'; e.currentTarget.style.borderColor = '#ced4da'; e.currentTarget.style.color = '#4a4a4a'; }}
-                                >
-                                  <BookOpen size={15} /> Review Course
-                                </button>
-                                {course.certificateAvailable && (
-                                  <CertificateProgressButton 
-                                    onGenerate={() => {
-                                      const participantName = userProfile?.full_name || userProfile?.name || getUser()?.full_name || 'NeST Member';
-                                      generateCourseCertificate(
-                                        participantName,
-                                        course.title,
-                                        course.completedDate || new Date().toLocaleDateString()
-                                      );
-                                    }}
-                                  />
-                                )}
-                              </>
-                            ) : (
-                              <>
-                                <button
-                                  onClick={() => navigate(`/courses/${course.courseId}/play`)}
-                                  style={{
-                                    padding: '0.6rem 1.2rem',
-                                    borderRadius: '8px',
-                                    background: 'var(--primary)',
-                                    border: '1px solid var(--primary)',
-                                    color: 'white',
-                                    fontSize: '0.88rem',
-                                    fontWeight: 600,
-                                    cursor: 'pointer',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '0.4rem',
-                                    transition: 'all 0.2s'
-                                  }}
-                                  onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.9'; }}
-                                  onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
-                                >
-                                  <PlayCircle size={15} /> {course.status === 'Not Started' ? 'Start Course' : 'Continue Learning'}
-                                </button>
-                                <button
-                                  onClick={() => navigate(`/courses/${course.courseId}`)}
-                                  style={{
-                                    padding: '0.6rem 1.2rem',
-                                    borderRadius: '8px',
-                                    background: '#ffffff',
-                                    border: '1px solid #ced4da',
-                                    color: '#4a4a4a',
-                                    fontSize: '0.88rem',
-                                    fontWeight: 600,
-                                    cursor: 'pointer',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '0.4rem',
-                                    transition: 'all 0.2s'
-                                  }}
-                                  onMouseEnter={(e) => { e.currentTarget.style.background = '#f8f9fa'; e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.color = 'var(--primary)'; }}
-                                  onMouseLeave={(e) => { e.currentTarget.style.background = '#ffffff'; e.currentTarget.style.borderColor = '#ced4da'; e.currentTarget.style.color = '#4a4a4a'; }}
-                                >
-                                  <BookOpen size={15} /> View Details
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
                 </motion.div>
               );
             })

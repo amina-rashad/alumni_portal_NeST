@@ -6,7 +6,7 @@ import {
   BarChart2,
   CheckCircle, Shield,
   Rocket, 
-  Calendar, Star, Target, Award, Zap, Globe
+  Calendar, Star, Target, Award, Zap, Globe, Briefcase
 } from 'lucide-react';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
@@ -19,6 +19,7 @@ import nestMainLogo from '../assets/nest_logo.png';
 import nestIcon from '../assets/nest_icon.png';
 import CinematicCTA from '../components/CinematicCTA';
 import LoginModal from '../components/LoginModal';
+import { eventsApi, jobsApi, usersApi, isAuthenticated } from '../services/api';
 
 
 /* -- Animated Counter -- */
@@ -410,12 +411,70 @@ const Home: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('#home');
   const [splashIndex, setSplashIndex] = useState(0);
-  const [selectedUserType, setSelectedUserType] = useState<number | null>(null);
   const [hoveredEvent, setHoveredEvent] = useState<number | null>(null);
+  const [realEvents, setRealEvents] = useState<any[]>([]);
+  const [realJobs, setRealJobs] = useState<any[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(true);
+  const [jobsLoading, setJobsLoading] = useState(true);
+  const [platformStats, setPlatformStats] = useState({
+    portalMembers: 0,
+    alumniNetwork: 0,
+    jobsPosted: 0,
+    coursesAvailable: 0,
+    matchAccuracy: 95
+  });
+  const [statsLoaded, setStatsLoaded] = useState(false);
   const splashImages = [splash1, splash2, splash3];
   const splashLabels = ['Corporate Excellence', 'Team Collaboration', 'Innovation at Work'];
 
   const appRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchLatestData = async () => {
+      try {
+        const eventsRes = await eventsApi.getAllEvents(1, 4, false, 'latest');
+        if (isMounted && eventsRes?.data?.events) {
+          setRealEvents(eventsRes.data.events.slice(0, 4));
+        }
+      } catch (err) {
+        console.error('Failed to fetch events on home:', err);
+      } finally {
+        if (isMounted) setEventsLoading(false);
+      }
+
+      try {
+        const jobsRes = await jobsApi.getAllJobs(1, 4);
+        if (isMounted && jobsRes?.data?.jobs) {
+          setRealJobs(jobsRes.data.jobs.slice(0, 4));
+        }
+      } catch (err) {
+        console.error('Failed to fetch jobs on home:', err);
+      } finally {
+        if (isMounted) setJobsLoading(false);
+      }
+
+      try {
+        const statsRes = await usersApi.getPublicStats();
+        if (isMounted && statsRes?.data) {
+          const d = statsRes.data;
+          setPlatformStats({
+            portalMembers: d.portal_members ?? 0,
+            alumniNetwork: d.alumni_network ?? (d.portal_members ?? 0),
+            jobsPosted: d.jobs_posted ?? (d.active_jobs ?? 0),
+            coursesAvailable: d.courses_available ?? 0,
+            matchAccuracy: d.match_accuracy ?? 95
+          });
+          setStatsLoaded(true);
+        }
+      } catch (err) {
+        console.error('Failed to fetch public platform stats:', err);
+      }
+    };
+
+    fetchLatestData();
+    return () => { isMounted = false; };
+  }, []);
 
   useEffect(() => {
     // Splash auto-rotate every 3s
@@ -465,7 +524,44 @@ const Home: React.FC = () => {
       setShowLoginModal(true);
       navigate('/', { replace: true });
     }
+    if (params.get('contact') === 'true') {
+      setTimeout(() => {
+        triggerContactHighlight();
+      }, 300);
+      navigate('/', { replace: true });
+    }
   }, [location, navigate]);
+
+  const [highlightContact, setHighlightContact] = useState(false);
+  const contactTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const triggerContactHighlight = () => {
+    const footerEl = document.getElementById('contact');
+    const detailsEl = document.getElementById('contact-details') || footerEl;
+
+    if (appRef.current && footerEl) {
+      appRef.current.scrollTo({
+        top: footerEl.offsetTop,
+        behavior: 'smooth'
+      });
+    } else if (detailsEl) {
+      detailsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    setHighlightContact(true);
+    if (contactTimeoutRef.current) clearTimeout(contactTimeoutRef.current);
+    contactTimeoutRef.current = setTimeout(() => {
+      setHighlightContact(false);
+    }, 4500);
+  };
+
+  useEffect(() => {
+    if (location.hash === '#contact') {
+      setTimeout(() => {
+        triggerContactHighlight();
+      }, 400);
+    }
+  }, [location.hash]);
 
   const navLinks = [
     { name: 'Home', href: '#home' },
@@ -474,7 +570,7 @@ const Home: React.FC = () => {
     { name: 'User Types', href: '#users' },
     { name: 'Events', href: '#events' },
     { name: 'Jobs', href: '#jobs' },
-    { name: 'Contact', href: '#contact' }
+    { name: 'Contact', href: '#contact', onClick: () => triggerContactHighlight() }
   ];
 
   return (
@@ -557,9 +653,20 @@ const Home: React.FC = () => {
           </a>
           <nav className="desktop-nav">
             <ul className="nav-list">
-              {navLinks.map((link) => (
+              {navLinks.map((link: any) => (
                 <li key={link.name}>
-                  <a href={link.href} className={`nav-link ${activeSection === link.href ? 'active' : ''}`}>{link.name}</a>
+                  <a 
+                    href={link.href} 
+                    onClick={(e) => {
+                      if (link.onClick) {
+                        e.preventDefault();
+                        link.onClick();
+                      }
+                    }}
+                    className={`nav-link ${activeSection === link.href ? 'active' : ''}`}
+                  >
+                    {link.name}
+                  </a>
                 </li>
               ))}
             </ul>
@@ -581,9 +688,25 @@ const Home: React.FC = () => {
             className="mobile-nav-overlay"
           >
             <ul className="mobile-nav-list">
-              {navLinks.map((link) => (
-                <li key={link.name} onClick={() => setMobileMenuOpen(false)}>
-                  <a href={link.href}>{link.name}</a>
+              {navLinks.map((link: any) => (
+                <li 
+                  key={link.name} 
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    if (link.onClick) link.onClick();
+                  }}
+                >
+                  <a 
+                    href={link.href}
+                    onClick={(e) => {
+                      if (link.onClick) {
+                        e.preventDefault();
+                        link.onClick();
+                      }
+                    }}
+                  >
+                    {link.name}
+                  </a>
                 </li>
               ))}
               <li><button onClick={() => { setMobileMenuOpen(false); setShowLoginModal(true); }} className="btn-navy mobile-btn" style={{ cursor: 'pointer', border: 'none', width: '100%', fontFamily: 'inherit' }}>LOGIN</button></li>
@@ -626,7 +749,7 @@ const Home: React.FC = () => {
             </motion.div>
             <p className="hero-subtitle">
               A centralized platform to maintain long-term relationships with alumni, interns,
-              trainees, and event participants — and identify the best candidates for your next opportunity.
+              trainees, applicants, IV students, and staff — and identify the best candidates for your next opportunity.
             </p>
             <div className="hero-actions">
               <a href="#about" className="btn-hero-primary">
@@ -673,9 +796,18 @@ const Home: React.FC = () => {
               {/* Stat badges overlaid */}
               <div className="splash-stat-badges">
                 {[
-                  { value: '5,000+', label: 'Alumni Network' },
-                  { value: '300+', label: 'Jobs Posted' },
-                  { value: '95%', label: 'Match Accuracy' },
+                  { 
+                    value: statsLoaded ? `${platformStats.alumniNetwork.toLocaleString()}+` : '...', 
+                    label: 'Alumni Network' 
+                  },
+                  { 
+                    value: statsLoaded ? `${platformStats.jobsPosted.toLocaleString()}+` : '...', 
+                    label: 'Jobs Posted' 
+                  },
+                  { 
+                    value: `${platformStats.matchAccuracy}%`, 
+                    label: 'Match Accuracy' 
+                  },
                 ].map((s, i) => (
                   <motion.div
                     key={i}
@@ -697,10 +829,10 @@ const Home: React.FC = () => {
       {/* -- Stats Bar -- */}
       <section className="stats-section">
         <div className="container stats-grid">
-          <Counter end={5000} suffix="+" label="Portal Members" />
-          <Counter end={120} suffix="+" label="Courses Available" />
-          <Counter end={300} suffix="+" label="Job Opportunities Posted" />
-          <Counter end={95} suffix="%" label="Candidate Match Accuracy" />
+          <Counter end={platformStats.portalMembers} suffix="+" label="Portal Members" />
+          <Counter end={platformStats.coursesAvailable} suffix="+" label="Courses Available" />
+          <Counter end={platformStats.jobsPosted} suffix="+" label="Job Opportunities Posted" />
+          <Counter end={platformStats.matchAccuracy} suffix="%" label="Candidate Match Accuracy" />
         </div>
       </section>
 
@@ -748,11 +880,11 @@ const Home: React.FC = () => {
           </motion.div>
           <div className="features-grid cinematic-grid">
             {[
-              { id: 'talent-tracking', img: '/placeholder.jpg', title: 'Talent Tracking', desc: 'Monitor skills, course completions, and engagement in real-time.' },
-              { id: 'job-management', img: '/placeholder.jpg', title: 'Job Management', desc: 'Streamline vacancies and identify top-tier matches instantly.' },
-              { id: 'learning-courses', img: '/placeholder.jpg', title: 'Learning & Courses', desc: 'Dynamic learning paths built for modern industrial excellence.' },
-              { id: 'assessments', img: '/placeholder.jpg', title: 'Assessments', desc: 'Advanced cognitive & skill testing with automated AI scoring.' },
-            ].map((f, i) => (
+              { id: 'talent-tracking', img: '/images/features/talent_tracking.jpg', title: 'Talent Tracking', desc: 'Monitor skills, course completions, and engagement in real-time.' },
+              { id: 'job-management', img: '/images/features/job_management.jpg', title: 'Job Management', desc: 'Streamline vacancies and identify top-tier matches instantly.' },
+              { id: 'learning-courses', img: '/images/features/learning_courses.jpg', title: 'Learning & Courses', desc: 'Dynamic learning paths built for modern industrial excellence.' },
+              { id: 'assessments', img: '/images/features/assessments.jpg', title: 'Assessments', desc: 'Advanced cognitive & skill testing with automated AI scoring.' },
+            ].slice(0, 4).map((f, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, scale: 0.9, y: 50 }}
@@ -761,7 +893,7 @@ const Home: React.FC = () => {
                 viewport={{ once: true, margin: "-50px" }}
                 className="cinematic-card"
               >
-                <Link to={`/platform-capabilities/${f.id}`} className="card-inner">
+                <div className="card-inner">
                   <div className="card-image-bg">
                     <img src={f.img} alt={f.title} />
                     <div className="card-overlay-gradient" />
@@ -772,12 +904,8 @@ const Home: React.FC = () => {
                       <h3>{f.title}</h3>
                     </div>
                     <p>{f.desc}</p>
-                    <div className="card-action-hint">
-                      <span>Explore Detail</span>
-                      <ArrowRight size={16} />
-                    </div>
                   </div>
-                </Link>
+                </div>
               </motion.div>
             ))}
           </div>
@@ -802,52 +930,54 @@ const Home: React.FC = () => {
             {[
               { 
                 id: 'alumni',
-                img: "/placeholder.jpg", 
+                img: "/images/users/alumni.jpg", 
                 title: 'Alumni', 
                 desc: 'Former employees & trainees',
                 color: '#C8102E'
               },
               { 
                 id: 'interns',
-                img: "/placeholder.jpg", 
+                img: "/images/users/interns.jpg", 
                 title: 'Interns', 
                 desc: 'Current & former interns',
                 color: '#1E4FA0'
               },
               { 
                 id: 'trainees',
-                img: "/placeholder.jpg", 
+                img: "/images/users/trainees.jpg", 
                 title: 'Trainees', 
                 desc: 'Skill-building participants',
                 color: '#10B981'
               },
               { 
                 id: 'iv-students',
-                img: "/placeholder.jpg", 
+                img: "/images/users/iv_students.jpg", 
                 title: 'IV Students', 
                 desc: 'Industrial Visit visitors',
                 color: '#F59E0B'
+              },
+              { 
+                id: 'applicants',
+                img: "/images/users/applicants.jpg", 
+                title: 'Applicants', 
+                desc: 'Job & career opportunity seekers',
+                color: '#8B5CF6'
               },
             ].map((u, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 50, filter: 'blur(10px)' }}
                 whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                whileTap={{ scale: 0.95 }}
                 transition={{ 
                   duration: 0.8, 
                   delay: i * 0.1,
                   ease: [0.16, 1, 0.3, 1] 
                 }}
                 viewport={{ once: true, margin: "-50px" }}
-                className={`gradient-border-wrapper ${selectedUserType === i ? 'active' : ''}`}
-                onClick={() => {
-                  setSelectedUserType(i);
-                  setTimeout(() => navigate(`/user-type-overview/${u.id}`), 400);
-                }}
-                style={{ '--primary': u.color } as any}
+                className="gradient-border-wrapper"
+                style={{ '--primary': u.color, cursor: 'default' } as any}
               >
-                <div className={`user-card-premium ${selectedUserType === i ? 'active' : ''}`}>
+                <div className="user-card-premium" style={{ cursor: 'default' }}>
                   <div className="user-card-image-wrapper">
                     <img 
                       src={u.img} 
@@ -856,17 +986,11 @@ const Home: React.FC = () => {
                     />
                   </div>
                   <div className="user-card-content">
-                    <h3 style={{ color: selectedUserType === i ? u.color : '#111827' }}>
+                    <h3 style={{ color: '#111827' }}>
                       {u.title}
                     </h3>
                     <p>{u.desc}</p>
                   </div>
-                  {selectedUserType === i && (
-                    <div 
-                      className="user-card-active-indicator"
-                      style={{ backgroundColor: u.color }}
-                    />
-                  )}
                 </div>
               </motion.div>
             ))}
@@ -906,97 +1030,118 @@ const Home: React.FC = () => {
             gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', 
             gap: '24px' 
           }}>
-            {[
-              { icon: <Zap size={20} strokeWidth={2.5} />, title: 'Annual Tech Summit 2025', desc: 'A flagship 2-day conference featuring keynotes from industry leaders, panel discussions, and live demos from NeST alumni working at FAANG companies.', meta: 'May 15–16 • Kochi', iconType: 'lightning' },
-              { icon: <Rocket size={20} strokeWidth={2.5} />, title: 'Innovation Hackathon', desc: 'A 48-hour hackathon where alumni and current students team up to solve real-world industry challenges with prizes worth ₹5,00,000.', meta: 'June 8–10 • Virtual + Onsite', iconType: 'rocket' },
-              { icon: <Users size={20} strokeWidth={2.5} />, title: 'Mentorship Mixer', desc: 'An intimate networking session connecting fresh graduates with experienced alumni mentors across domains like AI, cloud, and product management.', meta: 'Apr 20 • Bangalore', highlight: true, iconType: 'users' },
-              { icon: <Award size={20} strokeWidth={2.5} />, title: 'Career Fair & Recruitment Drive', desc: 'An exclusive recruitment drive with 30+ partner companies offering direct interviews and referrals to NeST alumni and trainees.', meta: 'Jul 5 • Hybrid', iconType: 'award' },
-            ].map((event, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: i * 0.15 }}
-                viewport={{ once: true, margin: "-50px" }}
-                onMouseEnter={() => setHoveredEvent(i)}
-                onMouseLeave={() => setHoveredEvent(null)}
-                style={{ 
-                  background: 'rgba(15, 23, 42, 0.4)', 
-                  backdropFilter: 'blur(12px)',
-                  borderRadius: '18px', 
-                  padding: '24px',
-                  border: event.highlight ? '1px solid rgba(200, 16, 46, 0.4)' : '1px solid rgba(255, 255, 255, 0.08)',
-                  boxShadow: event.highlight ? '0 15px 30px rgba(200,16,46,0.12)' : '0 8px 20px rgba(0,0,0,0.15)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  textAlign: 'left',
-                  transition: 'all 0.3s ease',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  cursor: 'pointer',
-                  transform: hoveredEvent === i ? 'translateY(-4px)' : 'none'
-                }}
-              >
-                <CardMicroEffects isHovered={hoveredEvent === i} highlight={event.highlight} />
-                
-                <div style={{ 
-                  width: '44px',
-                  height: '44px',
-                  borderRadius: '12px',
-                  backgroundColor: event.highlight ? 'var(--primary)' : 'rgba(255, 255, 255, 0.06)',
-                  color: event.highlight ? '#ffffff' : 'var(--primary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: '18px',
-                  position: 'relative',
-                  zIndex: 10
-                }}>
-                  {event.icon}
-                </div>
-                
-                <h3 style={{ 
-                  fontSize: '1.12rem', 
-                  fontWeight: 800, 
-                  color: event.highlight ? '#ff4d6d' : '#ffffff', 
-                  marginBottom: '8px',
-                  lineHeight: 1.3,
-                  position: 'relative',
-                  zIndex: 10
-                }}>
-                  {event.title}
-                </h3>
-                
-                <p style={{ 
-                  fontSize: '0.86rem', 
-                  color: '#94a3b8', 
-                  lineHeight: 1.5,
-                  marginBottom: '18px',
-                  flexGrow: 1,
-                  position: 'relative',
-                  zIndex: 10
-                }}>
-                  {event.desc}
-                </p>
+            {realEvents.map((event, i) => {
+              const icons = [
+                <Zap key="0" size={20} strokeWidth={2.5} />,
+                <Rocket key="1" size={20} strokeWidth={2.5} />,
+                <Users key="2" size={20} strokeWidth={2.5} />,
+                <Award key="3" size={20} strokeWidth={2.5} />
+              ];
+              const isHighlight = i === 0;
+              const dateMeta = `${event.date || 'Upcoming'}${event.location ? ` • ${event.location}` : ''}${event.mode ? ` (${event.mode})` : ''}`;
 
-                <div style={{ 
-                  marginTop: '0.5rem', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '0.5rem', 
-                  color: '#cbd5e1', 
-                  fontSize: '0.8rem', 
-                  fontWeight: 600,
-                  paddingTop: '14px',
-                  borderTop: '1px solid rgba(255,255,255,0.08)',
-                  position: 'relative',
-                  zIndex: 10
-                }}>
-                  <Calendar size={12} style={{ color: 'var(--primary)' }} /> {event.meta}
-                </div>
-              </motion.div>
-            ))}
+              return (
+                <motion.div
+                  key={event.id || event._id || i}
+                  initial={{ opacity: 0, y: 40 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: i * 0.15 }}
+                  viewport={{ once: true, margin: "-50px" }}
+                  onMouseEnter={() => setHoveredEvent(i)}
+                  onMouseLeave={() => setHoveredEvent(null)}
+                  onClick={() => {
+                    if (isAuthenticated()) {
+                      navigate('/events');
+                    } else {
+                      setShowLoginModal(true);
+                    }
+                  }}
+                  style={{ 
+                    background: 'rgba(15, 23, 42, 0.4)', 
+                    backdropFilter: 'blur(12px)',
+                    borderRadius: '18px', 
+                    padding: '24px',
+                    border: isHighlight ? '1px solid rgba(200, 16, 46, 0.4)' : '1px solid rgba(255, 255, 255, 0.08)',
+                    boxShadow: isHighlight ? '0 15px 30px rgba(200,16,46,0.12)' : '0 8px 20px rgba(0,0,0,0.15)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    textAlign: 'left',
+                    transition: 'all 0.3s ease',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    cursor: 'pointer',
+                    transform: hoveredEvent === i ? 'translateY(-4px)' : 'none'
+                  }}
+                >
+                  <CardMicroEffects isHovered={hoveredEvent === i} highlight={isHighlight} />
+                  
+                  <div style={{ 
+                    width: '44px',
+                    height: '44px',
+                    borderRadius: '12px',
+                    backgroundColor: isHighlight ? 'var(--primary)' : 'rgba(255, 255, 255, 0.06)',
+                    color: isHighlight ? '#ffffff' : 'var(--primary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '18px',
+                    position: 'relative',
+                    zIndex: 10
+                  }}>
+                    {icons[i % icons.length]}
+                  </div>
+                  
+                  <h3 style={{ 
+                    fontSize: '1.12rem', 
+                    fontWeight: 800, 
+                    color: isHighlight ? '#ff4d6d' : '#ffffff', 
+                    marginBottom: '8px',
+                    lineHeight: 1.3,
+                    position: 'relative',
+                    zIndex: 10
+                  }}>
+                    {event.title}
+                  </h3>
+                  
+                  <p style={{ 
+                    fontSize: '0.86rem', 
+                    color: '#94a3b8', 
+                    lineHeight: 1.5,
+                    marginBottom: '18px',
+                    flexGrow: 1,
+                    position: 'relative',
+                    zIndex: 10
+                  }}>
+                    {event.description || 'Join fellow NeST community members and industry leaders in this exciting upcoming session.'}
+                  </p>
+
+                  <div style={{ 
+                    marginTop: '0.5rem', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '0.5rem', 
+                    color: '#cbd5e1', 
+                    fontSize: '0.8rem', 
+                    fontWeight: 600,
+                    paddingTop: '14px',
+                    borderTop: '1px solid rgba(255,255,255,0.08)',
+                    position: 'relative',
+                    zIndex: 10
+                  }}>
+                    <Calendar size={12} style={{ color: 'var(--primary)' }} /> {dateMeta}
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
+
+          {!eventsLoading && realEvents.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '40px 20px', color: '#94a3b8', background: 'rgba(15, 23, 42, 0.4)', borderRadius: '18px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+              <Calendar size={36} style={{ color: 'var(--primary)', margin: '0 auto 12px', opacity: 0.8 }} />
+              <h4 style={{ color: '#fff', fontSize: '18px', margin: '0 0 6px' }}>No Upcoming Events</h4>
+              <p style={{ margin: 0, fontSize: '14px' }}>Check back soon! New events added by event managers and admins will appear here automatically.</p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -1021,119 +1166,150 @@ const Home: React.FC = () => {
             gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', 
             gap: '24px' 
           }}>
-            {[
-              { icon: <Globe size={20} strokeWidth={2.5} />, title: 'Senior Software Engineer', company: 'NeST Digital — Engineering', location: 'Kochi, Kerala', desc: 'Architect and develop enterprise-grade web applications using React, Java, and Spring Boot for NeST Digital\'s product engineering division.', tags: ['Full-time', '3–5 yrs', 'Internal Hiring'] },
-              { icon: <BarChart2 size={20} strokeWidth={2.5} />, title: 'AI / ML Engineer', company: 'NeST Digital — Data & AI', location: 'Trivandrum, Kerala', desc: 'Design and deploy machine learning models and intelligent automation pipelines for NeST Digital\'s smart manufacturing and IoT solutions.', tags: ['Full-time', '2–4 yrs', 'Internal Hiring'] },
-              { icon: <Target size={20} strokeWidth={2.5} />, title: 'HR Business Partner', company: 'NeST Digital — People & Culture', location: 'Kochi, Kerala', desc: 'Drive talent strategy, employee engagement, and organizational development initiatives across NeST Digital\'s engineering teams.', highlight: true, tags: ['Full-time', '4–7 yrs', 'Internal Hiring'] },
-              { icon: <Shield size={20} strokeWidth={2.5} />, title: 'Cloud Infrastructure Lead', company: 'NeST Digital — IT Infrastructure', location: 'CSEZ, Kakkanad', desc: 'Lead the cloud migration strategy and manage hybrid infrastructure across AWS and Azure for NeST Digital\'s enterprise clients.', tags: ['Full-time', '5+ yrs', 'Internal Hiring'] },
-            ].map((job, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: i * 0.15 }}
-                viewport={{ once: true, margin: "-50px" }}
-                style={{ 
-                  background: '#ffffff', 
-                  borderRadius: '18px', 
-                  padding: '24px',
-                  border: job.highlight ? '2px solid rgba(200,16,46,0.1)' : '1px solid #f0f0f0',
-                  boxShadow: job.highlight ? '0 15px 30px rgba(200,16,46,0.12)' : '0 8px 20px rgba(0,0,0,0.15)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                <div style={{ 
-                  width: '44px',
-                  height: '44px',
-                  borderRadius: '12px',
-                  backgroundColor: job.highlight ? 'var(--primary)' : 'rgba(200,16,46,0.08)',
-                  color: job.highlight ? '#ffffff' : 'var(--primary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: '18px'
-                }}>
-                  {job.icon}
-                </div>
-                
-                <h3 style={{ 
-                  fontSize: '1.12rem', 
-                  fontWeight: 800, 
-                  color: job.highlight ? 'var(--primary)' : '#1a1a1a', 
-                  marginBottom: '6px',
-                  lineHeight: 1.3
-                }}>
-                  {job.title}
-                </h3>
+            {realJobs.map((job, i) => {
+              const icons = [
+                <Globe key="0" size={20} strokeWidth={2.5} />,
+                <BarChart2 key="1" size={20} strokeWidth={2.5} />,
+                <Target key="2" size={20} strokeWidth={2.5} />,
+                <Shield key="3" size={20} strokeWidth={2.5} />
+              ];
+              const isHighlight = i === 0;
+              const expTag = job.experience_level || (job.experience ? (typeof job.experience === 'string' && job.experience.includes('yr') ? job.experience : `${job.experience} yrs`) : null);
+              const tags = [
+                job.type || null,
+                expTag,
+                job.department || (job.salary ? job.salary : null)
+              ].filter(Boolean) as string[];
 
-                <div style={{ 
-                  fontSize: '0.82rem', 
-                  fontWeight: 700, 
-                  color: 'var(--primary)', 
-                  marginBottom: '6px'
-                }}>
-                  {job.company}
-                </div>
+              return (
+                <motion.div
+                  key={job.id || job._id || i}
+                  initial={{ opacity: 0, y: 40 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: i * 0.15 }}
+                  viewport={{ once: true, margin: "-50px" }}
+                  onClick={() => {
+                    if (isAuthenticated()) {
+                      navigate('/jobs');
+                    } else {
+                      setShowLoginModal(true);
+                    }
+                  }}
+                  style={{ 
+                    background: '#ffffff', 
+                    borderRadius: '18px', 
+                    padding: '24px',
+                    border: isHighlight ? '2px solid rgba(200,16,46,0.1)' : '1px solid #f0f0f0',
+                    boxShadow: isHighlight ? '0 15px 30px rgba(200,16,46,0.12)' : '0 8px 20px rgba(0,0,0,0.15)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    transition: 'all 0.3s ease',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <div style={{ 
+                    width: '44px',
+                    height: '44px',
+                    borderRadius: '12px',
+                    backgroundColor: isHighlight ? 'var(--primary)' : 'rgba(200,16,46,0.08)',
+                    color: isHighlight ? '#ffffff' : 'var(--primary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '18px'
+                  }}>
+                    {icons[i % icons.length]}
+                  </div>
+                  
+                  <h3 style={{ 
+                    fontSize: '1.12rem', 
+                    fontWeight: 800, 
+                    color: isHighlight ? 'var(--primary)' : '#1a1a1a', 
+                    marginBottom: '6px',
+                    lineHeight: 1.3
+                  }}>
+                    {job.title}
+                  </h3>
 
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '4px', 
-                  color: '#94a3b8', 
-                  fontSize: '0.78rem', 
-                  fontWeight: 600,
-                  marginBottom: '12px'
-                }}>
-                  <MapPin size={12} /> {job.location}
-                </div>
-                
-                <p style={{ 
-                  fontSize: '0.86rem', 
-                  color: '#666', 
-                  lineHeight: 1.5,
-                  marginBottom: '18px',
-                  flexGrow: 1
-                }}>
-                  {job.desc}
-                </p>
+                  <div style={{ 
+                    fontSize: '0.82rem', 
+                    fontWeight: 700, 
+                    color: 'var(--primary)', 
+                    marginBottom: '6px'
+                  }}>
+                    {job.company || 'NeST Digital'}
+                  </div>
 
-                <div style={{ 
-                  display: 'flex', 
-                  flexWrap: 'wrap', 
-                  gap: '6px',
-                  paddingTop: '14px',
-                  borderTop: '1px solid #f0f0f0'
-                }}>
-                  {job.tags.map((tag, j) => (
-                    <span 
-                      key={j}
-                      style={{ 
-                        fontSize: '0.7rem', 
-                        background: tag === 'Internal Hiring' ? '#ECFDF5' : (tag.includes('yrs') ? '#F3F4F6' : '#FEF2F2'),
-                        color: tag === 'Internal Hiring' ? '#065F46' : (tag.includes('yrs') ? '#374151' : '#991B1B'),
-                        padding: '3px 10px', 
-                        borderRadius: '99px', 
-                        fontWeight: 700,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px'
-                      }}
-                    >
-                      {tag === 'Internal Hiring' && <Star size={10} />}
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </motion.div>
-            ))}
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '4px', 
+                    color: '#94a3b8', 
+                    fontSize: '0.78rem', 
+                    fontWeight: 600,
+                    marginBottom: '12px'
+                  }}>
+                    <MapPin size={12} /> {job.location || 'Kochi, Kerala'}
+                  </div>
+                  
+                  <p style={{ 
+                    fontSize: '0.86rem', 
+                    color: '#666', 
+                    lineHeight: 1.5,
+                    marginBottom: '18px',
+                    flexGrow: 1
+                  }}>
+                    {job.description}
+                  </p>
+
+                  <div style={{ 
+                    display: 'flex', 
+                    flexWrap: 'wrap', 
+                    gap: '6px',
+                    paddingTop: '14px',
+                    borderTop: '1px solid #f0f0f0'
+                  }}>
+                    {tags.map((tag, j) => {
+                      const isGreen = tag === 'Internal Hiring' || tag.includes('₹') || tag.toLowerCase().includes('entry');
+                      const isNeutral = tag.includes('yr') || tag.toLowerCase().includes('level');
+                      return (
+                        <span 
+                          key={j}
+                          style={{ 
+                            fontSize: '0.7rem', 
+                            background: isGreen ? '#ECFDF5' : (isNeutral ? '#F3F4F6' : '#FEF2F2'),
+                            color: isGreen ? '#065F46' : (isNeutral ? '#374151' : '#991B1B'),
+                            padding: '3px 10px', 
+                            borderRadius: '99px', 
+                            fontWeight: 700,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          {tag === 'Internal Hiring' && <Star size={10} />}
+                          {tag}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
+
+          {!jobsLoading && realJobs.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '40px 20px', color: '#64748b', background: '#ffffff', borderRadius: '18px', border: '1px solid #f0f0f0' }}>
+              <Briefcase size={36} style={{ color: 'var(--primary)', margin: '0 auto 12px', opacity: 0.8 }} />
+              <h4 style={{ color: '#1a1a1a', fontSize: '18px', margin: '0 0 6px' }}>No Active Openings</h4>
+              <p style={{ margin: 0, fontSize: '14px' }}>New career opportunities posted by recruiters or administrators will appear here.</p>
+            </div>
+          )}
         </div>
       </section>
 
       {/* -- CTA -- */}
-      <CinematicCTA />
+      <CinematicCTA onContactClick={() => triggerContactHighlight()} />
 
       {/* -- Footer -- */}
       <footer id="contact" className="footer">
@@ -1167,12 +1343,45 @@ const Home: React.FC = () => {
               <li><a href="#">FAQ</a></li>
             </ul>
           </div>
-          <div className="footer-contact">
-            <h4>Contact Us</h4>
+          <div 
+            id="contact-details"
+            className={`footer-contact ${highlightContact ? 'contact-highlight-pulse' : ''}`}
+            style={{
+              transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+              borderRadius: '16px',
+              padding: '16px 20px',
+              border: highlightContact ? '2px solid #ff4d6d' : '2px solid transparent',
+              background: highlightContact ? 'rgba(200, 16, 46, 0.16)' : 'transparent',
+              boxShadow: highlightContact ? '0 0 35px rgba(200, 16, 46, 0.6), inset 0 0 15px rgba(200, 16, 46, 0.2)' : 'none',
+              transform: highlightContact ? 'scale(1.04)' : 'scale(1)',
+              position: 'relative'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <h4 style={{ margin: 0, color: highlightContact ? '#ff4d6d' : 'inherit' }}>Contact Us</h4>
+              {highlightContact && (
+                <span style={{ 
+                  fontSize: '11px', 
+                  fontWeight: 800, 
+                  letterSpacing: '0.04em', 
+                  background: '#c8102e', 
+                  color: '#ffffff', 
+                  padding: '3px 10px', 
+                  borderRadius: '99px',
+                  boxShadow: '0 2px 10px rgba(200, 16, 46, 0.5)'
+                }}>
+                  Support Channel
+                </span>
+              )}
+            </div>
             <ul>
-              <li><MapPin size={18} /> NeST Digital, Plot No. 2, <br />CSEZ, Kakkanad, Kochi, Kerala</li>
-              <li><Phone size={18} /> +91 484 2413100</li>
-              <li><Mail size={18} /> info@nestdigital.io</li>
+              <li><MapPin size={18} /> NeST Tech Park, NeST Valley, Near Infopark,<br />Infopark P.O, Kakkanad, Kochi, Kerala – 682042</li>
+              <li>
+                <Phone size={18} /> 
+                <a href="tel:+914844203333" style={{ color: 'inherit', textDecoration: 'none' }}>
+                  +91-484-4203333
+                </a>
+              </li>
             </ul>
           </div>
         </div>

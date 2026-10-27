@@ -8,9 +8,11 @@ import {
   Activity, Check, Trash2, Clock, Megaphone
 } from 'lucide-react';
 import nestMainLogo from '../../assets/nest_logo.png';
-import { getUser, authApi, notificationsApi, type AuthUser } from '../../services/api';
+import { getUser, authApi, notificationsApi, usersApi, type AuthUser } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
 import UserAvatar from '../../components/UserAvatar';
+import AdminSidebar from '../../components/AdminSidebar';
+import { formatTimeAgo } from '../../utils/dateUtils';
 
 const AdminLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -40,6 +42,21 @@ const AdminLayout: React.FC = () => {
       setAdminUser(currentUser);
       fetchNotifications();
     }
+    // Synchronize latest role and profile data from server
+    usersApi.getProfile().then((res) => {
+      if (res.success && res.data) {
+        const u = (res.data as any).user || (res.data as any).profile || res.data;
+        if (u) {
+          const merged = { ...(currentUser || {}), ...u };
+          setAdminUser(merged);
+          try {
+            localStorage.setItem('user', JSON.stringify(merged));
+          } catch (e) {
+            // ignore
+          }
+        }
+      }
+    }).catch(() => {});
   }, [location.pathname]);
 
   useEffect(() => {
@@ -77,27 +94,7 @@ const AdminLayout: React.FC = () => {
     }
   };
 
-  const formatTime = (iso: string) => {
-    if (!iso) return 'Just now';
-    const date = new Date(iso);
-    const now = new Date();
-    const diffMins = Math.floor((now.getTime() - date.getTime()) / 60000);
-    
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    
-    const diffHours = Math.floor(diffMins / 60);
-    if (diffHours < 24) return `${diffHours}h ago`;
-    
-    const diffDays = Math.floor(diffHours / 24);
-    if (diffDays < 30) return `${diffDays}d ago`;
-    
-    const diffMonths = Math.floor(diffDays / 30);
-    if (diffMonths < 12) return `${diffMonths}mo ago`;
-    
-    const diffYears = Math.floor(diffDays / 365);
-    return `${diffYears}y ago`;
-  };
+  const formatTime = (iso: string) => formatTimeAgo(iso, 'Just now');
 
   const handleLogout = () => {
     authApi.logout();
@@ -108,7 +105,7 @@ const AdminLayout: React.FC = () => {
     switch (role) {
       case 'super_admin': return 'Super Admin';
       case 'admin': return 'System Admin';
-      case 'job_recruiter': return 'Job Recruiter';
+      case 'job_recruiter': return 'Recruiter';
       case 'event_manager': return 'Event Manager';
       case 'course_manager': return 'Course Manager';
       default: return 'Administrator';
@@ -119,19 +116,14 @@ const AdminLayout: React.FC = () => {
     { name: 'Platform Insights', path: '/admin/dashboard', icon: <LayoutDashboard size={20} />, roles: ['super_admin', 'admin'] },
     { name: 'Super Admin', path: '/admin/super-dashboard', icon: <Shield size={20} />, roles: ['super_admin'] },
     { name: 'User Management', path: '/admin/users', icon: <Users size={20} />, roles: ['super_admin', 'admin'] },
-    { name: 'Add New Manager', path: '/admin/add-manager', icon: <UserPlus size={20} />, roles: ['super_admin', 'admin'] },
     { name: 'Active Managers', path: '/admin/view-managers', icon: <Users size={20} />, roles: ['super_admin', 'admin'] },
     { name: 'Intern Management', path: '/admin/interns', icon: <GraduationCap size={20} />, roles: ['super_admin', 'admin'] },
     { name: 'IV Students', path: '/admin/iv-students', icon: <School size={20} />, roles: ['super_admin', 'admin'] },
     { name: 'Certification', path: '/admin/certification', icon: <Award size={20} />, roles: ['super_admin', 'admin'] },
-    { name: 'Job Management', path: '/recruiter/dashboard', icon: <Briefcase size={20} />, roles: ['super_admin', 'admin', 'job_recruiter'] },
-    { name: 'Applications', path: '/recruiter/applications', icon: <FileText size={20} />, roles: ['super_admin', 'admin', 'job_recruiter'] },
-    { name: 'Career Timelines', path: '/admin/activity', icon: <Activity size={20} />, roles: ['super_admin', 'admin'] },
     { name: 'Broadcast Post', path: '/admin/posts', icon: <Megaphone size={20} />, roles: ['super_admin', 'admin'] },
+    { name: 'Job Management', path: '/recruiter/overview', icon: <Briefcase size={20} />, roles: ['super_admin', 'admin', 'job_recruiter'] },
     { name: 'Event Management', path: '/event-manager/dashboard', icon: <Calendar size={20} />, roles: ['super_admin', 'admin', 'event_manager'] },
     { name: 'Course Management', path: '/course-manager/dashboard', icon: <BookOpen size={20} />, roles: ['super_admin', 'admin', 'course_manager'] },
-    { name: 'System Roles', path: '/admin/roles', icon: <Shield size={20} />, roles: ['super_admin'] },
-    { name: 'Settings', path: '/admin/settings', icon: <Settings size={20} />, roles: ['super_admin', 'admin'] },
   ];
 
   const menuItems = allMenuItems.filter(item =>
@@ -143,147 +135,13 @@ const AdminLayout: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', height: '100vh', background: '#f8fafc', overflow: 'hidden', fontFamily: "'Inter', sans-serif" }}>
-      {/* Sidebar - MATCHING LOGO NAVY */}
-      <motion.div
-        initial={{ width: 260 }}
-        animate={{ width: sidebarOpen ? 260 : 80 }}
-        transition={{ duration: 0.3, ease: 'easeInOut' }}
-        style={{
-          background: nestNavy, /* EXACT LOGO NAVY MATCH */
-          display: 'flex',
-          flexDirection: 'column',
-          zIndex: 100,
-          color: '#e2e8f0',
-          boxShadow: '4px 0 10px rgba(0,0,0,0.05)'
-        }}
-      >
-        <div style={{
-          padding: '20px 16px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: sidebarOpen ? 'space-between' : 'center',
-          gap: '12px',
-          borderBottom: '1px solid rgba(255,255,255,0.08)'
-        }}>
-          {sidebarOpen ? (
-            <>
-              <div style={{
-                background: 'rgba(255, 255, 255, 0.95)',
-                backdropFilter: 'blur(10px)',
-                WebkitBackdropFilter: 'blur(10px)',
-                borderRadius: '12px',
-                padding: '6px 12px',
-                display: 'flex',
-                alignItems: 'center',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-                border: '1px solid rgba(255,255,255,0.2)',
-                flex: 1
-              }}>
-                <img src={nestMainLogo} alt="NeST DIGITAL" style={{ height: '28px' }} />
-              </div>
-              <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.15)',
-                  backdropFilter: 'blur(10px)',
-                  WebkitBackdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                  cursor: 'pointer',
-                  color: '#fff',
-                  padding: '10px',
-                  borderRadius: '12px',
-                  display: 'flex',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-                }}
-                className="sidebar-toggle-btn"
-              >
-                <X size={18} />
-              </button>
-            </>
-          ) : (
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              style={{
-                background: 'rgba(255, 255, 255, 0.15)',
-                backdropFilter: 'blur(10px)',
-                WebkitBackdropFilter: 'blur(10px)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                cursor: 'pointer',
-                color: '#fff',
-                padding: '12px',
-                borderRadius: '14px',
-                display: 'flex',
-                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-              }}
-              className="sidebar-toggle-btn-closed"
-            >
-              <Menu size={20} />
-            </button>
-          )}
-        </div>
-
-        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 0' }} className="admin-sidebar-scroll">
-          {menuItems.map((item, index) => {
-            const isActive = location.pathname.startsWith(item.path);
-            return (
-          <Link
-            key={index}
-            to={item.path}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              padding: sidebarOpen ? '12px 24px' : '12px 0',
-              textDecoration: 'none',
-              color: isActive ? '#fff' : 'rgba(255, 255, 255, 0.7)',
-              background: isActive ? 'rgba(255, 255, 255, 0.12)' : 'transparent',
-              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-              margin: sidebarOpen ? '2px 12px' : '2px 8px',
-              borderRadius: '12px',
-              justifyContent: sidebarOpen ? 'flex-start' : 'center',
-              position: 'relative'
-            }}
-          >
-            <span style={{
-              marginRight: sidebarOpen ? '16px' : '0',
-              color: isActive ? '#fff' : 'inherit',
-              display: 'flex',
-              transition: 'all 0.3s'
-            }}>{item.icon}</span>
-            {sidebarOpen && (
-              <>
-                <span style={{ fontSize: '14px', fontWeight: isActive ? 700 : 400, flex: 1, letterSpacing: '0.01em' }}>{item.name}</span>
-                {isActive && (
-                  <motion.div layoutId="activeInd" style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#fff', boxShadow: '0 0 10px rgba(255,255,255,0.5)' }} />
-                )}
-              </>
-            )}
-          </Link>
-        )
-      })}
-    </div>
-
-    <div style={{ padding: '24px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-      <button
-        onClick={handleLogout}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          color: 'rgba(255, 255, 255, 0.65)',
-          background: 'none',
-          border: 'none',
-          padding: '10px 0',
-          cursor: 'pointer',
-          justifyContent: sidebarOpen ? 'flex-start' : 'center',
-          width: '100%',
-          gap: '16px'
-        }}
-      >
-        <LogOut size={20} />
-        {sidebarOpen && <span style={{ fontSize: '14px', fontWeight: 500 }}>Logout</span>}
-      </button>
-    </div>
-  </motion.div>
+      <AdminSidebar
+        isOpen={sidebarOpen}
+        onToggle={() => setSidebarOpen(!sidebarOpen)}
+        userRole={adminUser?.role}
+        currentPath={location.pathname}
+        onLogout={handleLogout}
+      />
 
   {/* Main Content Area */}
   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>

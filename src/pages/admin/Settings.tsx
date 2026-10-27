@@ -94,16 +94,16 @@ const Settings: React.FC = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
              <div style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '24px' }}>
               <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#1e293b', marginBottom: '8px' }}>Learning & Assessment</h3>
-              <p style={{ color: '#64748b', fontSize: '14px', fontWeight: 500 }}>Configure quiz logic and course availability.</p>
+              <p style={{ color: '#64748b', fontSize: '14px', fontWeight: 500 }}>Configure assessment logic and course availability.</p>
             </div>
             
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px', marginBottom: '16px' }}>
                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <label style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Min. Quiz Pass Percentage</label>
+                  <label style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Min. Assessment Pass Percentage</label>
                   <input type="number" defaultValue="75" style={{ padding: '14px 20px', borderRadius: '14px', border: '1px solid #e2e8f0', background: 'rgba(26, 38, 82, 0.05)', fontSize: '14px', outline: 'none', fontWeight: 700, color: nestNavy }} />
                </div>
                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <label style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Max. Quiz Retakes</label>
+                  <label style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Max. Assessment Retakes</label>
                   <input type="number" defaultValue="3" style={{ padding: '14px 20px', borderRadius: '14px', border: '1px solid #e2e8f0', background: 'rgba(26, 38, 82, 0.05)', fontSize: '14px', outline: 'none', fontWeight: 700, color: nestNavy }} />
                </div>
             </div>

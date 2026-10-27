@@ -5,10 +5,10 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   Home, Activity, Bell, User, Users, Briefcase,
   BookOpen, Edit3, Award, Calendar, MessageSquare,
-  Settings, LogOut, ChevronDown, Menu, X
+  LogOut, ChevronDown, Menu, X
 } from 'lucide-react';
 import nestMainLogo from '../assets/nest_logo.png';
-import { getUser, authApi, notificationsApi, type AuthUser } from '../services/api';
+import { getUser, authApi, notificationsApi, type AuthUser, isDirectApplicant, usersApi, isAuthenticated } from '../services/api';
 import UserAvatar from '../components/UserAvatar';
 import '../App.css';
 
@@ -180,11 +180,11 @@ const MobileMenu: React.FC<MobileMenuProps & { menuGroups: NavGroup[] }> = ({ ac
         {user && (
           <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#c8102e', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '16px' }}>
-              {user.full_name?.charAt(0).toUpperCase() || 'U'}
+              {(user.full_name?.trim() || user.email?.trim() || 'U').charAt(0).toUpperCase()}
             </div>
             <div>
-              <div style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>{user.full_name}</div>
-              <div style={{ fontSize: '12px', color: '#64748b' }}>{user.user_type}</div>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>{user.full_name || (user.email ? user.email.split('@')[0] : 'User')}</div>
+              {user.user_type ? <div style={{ fontSize: '12px', color: '#64748b' }}>{user.user_type}</div> : null}
             </div>
           </div>
         )}
@@ -249,47 +249,67 @@ const MainLayout: React.FC = () => {
   const navigate = useNavigate();
   const [user, setUserData] = useState<AuthUser | null>(null);
 
-  const menuGroups: NavGroup[] = [
-    {
-      section: 'Insights', icon: <Home size={17} />,
-      items: [
-        { name: 'Insights Overview', path: '/dashboard',          icon: <Home size={15} /> },
-        { name: 'Career Timelines',  path: '/dashboard/activity',  icon: <Activity size={15} /> },
+  const effectiveUser = user || (getUser() as unknown as AuthUser);
+  const isDirect = isDirectApplicant(effectiveUser);
+
+  const menuGroups: NavGroup[] = isDirect
+    ? [
+        {
+          section: 'Insights', icon: <Home size={17} />,
+          items: [
+            { name: 'Insights Overview', path: '/dashboard', icon: <Home size={15} /> },
+          ]
+        },
+        {
+          section: 'Jobs', icon: <Briefcase size={17} />,
+          items: [
+            { name: 'Job Listings',      path: '/jobs',              icon: <Briefcase size={15} /> },
+            { name: 'My Applications',   path: '/jobs/applications', icon: <Briefcase size={15} /> },
+            { name: 'Recommended Jobs',  path: '/jobs/recommended',  icon: <Briefcase size={15} /> },
+          ]
+        },
       ]
-    },
-    {
-      section: 'Jobs', icon: <Briefcase size={17} />,
-      items: [
-        { name: 'Job Listings',      path: '/jobs',              icon: <Briefcase size={15} /> },
-        { name: 'My Applications',   path: '/jobs/applications', icon: <Briefcase size={15} /> },
-        { name: 'Recommended Jobs',  path: '/jobs/recommended',  icon: <Briefcase size={15} /> },
-      ]
-    },
-    {
-      section: 'Learning', icon: <BookOpen size={17} />,
-      items: [
-        { name: 'Courses',    path: '/courses',           icon: <BookOpen size={15} /> },
-        { name: 'My Courses', path: '/courses/my-courses',icon: <BookOpen size={15} /> },
-        { name: 'Quizzes',   path: '/assessments/quiz',      icon: <Edit3 size={15} /> },
-        { name: 'Performance Analysis', path: '/assessments/analytics', icon: <Activity size={15} /> },
-      ]
-    },
-    ...(user?.user_type?.toLowerCase() === 'industrial student' ? [
-      {
-        section: 'Certificates', icon: <Award size={17} />,
-        items: [
-          { name: 'My Certificates', path: '/iv-certificates', icon: <Award size={15} /> },
-        ]
-      }
-    ] : []),
-    {
-      section: 'Events', icon: <Calendar size={17} />,
-      items: [
-        { name: 'Events Listing', path: '/events',           icon: <Calendar size={15} /> },
-        { name: 'My Events',      path: '/events/my-events', icon: <Calendar size={15} /> },
-      ]
-    },
-  ];
+    : [
+        {
+          section: 'Insights', icon: <Home size={17} />,
+          items: [
+            { name: 'Insights Overview', path: '/dashboard',          icon: <Home size={15} /> },
+            { name: 'Career Timelines',  path: '/dashboard/activity',  icon: <Activity size={15} /> },
+          ]
+        },
+        {
+          section: 'Jobs', icon: <Briefcase size={17} />,
+          items: [
+            { name: 'Job Listings',      path: '/jobs',              icon: <Briefcase size={15} /> },
+            { name: 'My Applications',   path: '/jobs/applications', icon: <Briefcase size={15} /> },
+            { name: 'Recommended Jobs',  path: '/jobs/recommended',  icon: <Briefcase size={15} /> },
+          ]
+        },
+        {
+          section: 'Learning', icon: <BookOpen size={17} />,
+          items: [
+            { name: 'Courses',    path: '/courses',           icon: <BookOpen size={15} /> },
+            { name: 'My Courses', path: '/courses/my-courses',icon: <BookOpen size={15} /> },
+            { name: 'Assessments', path: '/assessments/quiz',      icon: <Edit3 size={15} /> },
+            { name: 'Performance Analysis', path: '/assessments/analytics', icon: <Activity size={15} /> },
+          ]
+        },
+        ...(['industrial student', 'iv student', 'iv students'].includes(effectiveUser?.user_type?.toLowerCase()?.trim() || '') ? [
+          {
+            section: 'Certificates', icon: <Award size={17} />,
+            items: [
+              { name: 'My Certificates', path: '/iv-certificates', icon: <Award size={15} /> },
+            ]
+          }
+        ] : []),
+        {
+          section: 'Events', icon: <Calendar size={17} />,
+          items: [
+            { name: 'Events Listing', path: '/events',           icon: <Calendar size={15} /> },
+            { name: 'My Events',      path: '/events/my-events', icon: <Calendar size={15} /> },
+          ]
+        },
+      ];
 
   const [openGroup, setOpenGroup] = useState<NavGroup | null>(null);
   const [dropdownRect, setDropdownRect] = useState<DOMRect | null>(null);
@@ -319,8 +339,28 @@ const MainLayout: React.FC = () => {
   };
 
   useEffect(() => {
+    if (!isAuthenticated()) {
+      navigate('/login', { replace: true });
+      return;
+    }
     const currentUser = getUser() as unknown as AuthUser;
     if (currentUser) setUserData(currentUser);
+
+    // Synchronize latest profile flags from server to ensure accurate direct applicant menus
+    usersApi.getProfile().then((res) => {
+      if (res.success && res.data) {
+        const u = (res.data as any).user || (res.data as any).profile || res.data;
+        if (u) {
+          const merged = { ...(currentUser || {}), ...u };
+          setUserData(merged);
+          try {
+            localStorage.setItem('user', JSON.stringify(merged));
+          } catch (e) {
+            // ignore
+          }
+        }
+      }
+    }).catch(() => {});
   }, [location.pathname]);
 
   // Close everything on path change
@@ -506,17 +546,19 @@ const MainLayout: React.FC = () => {
             >
               <UserAvatar
                 src={user?.profile_picture}
-                name={user?.full_name}
+                name={user?.full_name || (user?.email ? user.email.split('@')[0] : 'User')}
                 status={user?.status || (user?.user_type === 'Intern' ? 'open_to_work' : undefined)}
                 size={36}
                 bgColor="#c8102e"
               />
               <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1, userSelect: 'none' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>{user?.full_name || 'Guest'}</span>
+                  <span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>{user?.full_name || (user?.email ? user.email.split('@')[0] : 'User')}</span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                  <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 500 }}>{user?.user_type || 'User'}</span>
+                  {user?.user_type ? (
+                    <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 500 }}>{user.user_type}</span>
+                  ) : null}
                   {(user?.status === 'open_to_work' || (!user?.status && user?.user_type === 'Intern')) && (
                     <span style={{ fontSize: '10px', color: '#16a34a', fontWeight: 800, letterSpacing: '0.3px', textTransform: 'uppercase' }}>Open to Work</span>
                   )}
@@ -549,9 +591,6 @@ const MainLayout: React.FC = () => {
                 >
                   <Link to="/profile" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', textDecoration: 'none', color: '#334155', fontSize: '14px', transition: '0.15s' }} onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                     View Profile
-                  </Link>
-                  <Link to="/settings" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', textDecoration: 'none', color: '#334155', fontSize: '14px', transition: '0.15s' }} onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                    Account Settings
                   </Link>
                   <div style={{ height: '1px', background: '#f1f5f9', margin: '4px 8px' }} />
                   <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', width: '100%', textAlign: 'left', color: '#ef4444', fontSize: '14px', fontWeight: 600, transition: '0.15s' }} onMouseEnter={e => (e.currentTarget.style.background = '#fff1f1')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
@@ -621,17 +660,7 @@ const MainLayout: React.FC = () => {
           margin: '0 auto',
           width: '100%'
         }}>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={location.pathname}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.2 }}
-            >
-              <Outlet />
-            </motion.div>
-          </AnimatePresence>
+          <Outlet />
         </div>
       </div>
 

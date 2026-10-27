@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
-import { Briefcase, MapPin, DollarSign, Calendar, Eye, Trash2, Edit, Plus, Search, Filter, MoreVertical, Signal, CheckCircle, Clock, Users, ChevronDown } from 'lucide-react';
+import { Briefcase, MapPin, DollarSign, Calendar, Eye, Trash2, Edit, Plus, Search, Filter, MoreVertical, Signal, CheckCircle, Clock, Users, ChevronDown, Power } from 'lucide-react';
 import { recruiterApi } from '../../services/api';
 import { Link } from 'react-router-dom';
 
@@ -47,25 +47,25 @@ const RecruiterJobs: React.FC = () => {
         try {
             const response = await recruiterApi.deleteJob(id);
             if (response.success) {
-                setJobs(prev => prev.filter(j => j.id !== id));
+                setJobs(prev => prev.filter(j => (j.id ?? j._id)?.toString() !== id.toString()));
+            } else {
+                alert(response.message || 'Failed to delete job');
             }
         } catch (error) {
             console.error('Error deleting job:', error);
+            alert('Failed to delete job');
         }
     }
   };
 
   const handleToggleStatus = async (id: string, currentStatus: boolean) => {
-    const actionText = currentStatus ? 'close' : 'reopen';
-    if (window.confirm(`Are you sure you want to ${actionText} this job role?`)) {
-        try {
-            const response = await recruiterApi.updateJob(id, { is_active: !currentStatus });
-            if (response.success) {
-                setJobs(prev => prev.map(j => j.id === id ? { ...j, is_active: !currentStatus } : j));
-            }
-        } catch (error) {
-            console.error('Error toggling job status:', error);
-        }
+    try {
+      const response = await recruiterApi.updateJob(id, { is_active: !currentStatus });
+      if (response.success) {
+        setJobs(prev => prev.map(j => j.id === id ? { ...j, is_active: !currentStatus } : j));
+      }
+    } catch (error) {
+      console.error('Error toggling job status:', error);
     }
   };
 
@@ -115,6 +115,12 @@ const RecruiterJobs: React.FC = () => {
           background: #0f172a;
           transform: translateY(-2px);
         }
+        details summary::-webkit-details-marker {
+          display: none;
+        }
+        details summary {
+          list-style: none;
+        }
       `}</style>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '40px' }}>
@@ -140,11 +146,22 @@ const RecruiterJobs: React.FC = () => {
         padding: '12px', 
         borderRadius: '16px',
         border: '1px solid #e2e8f0',
-        boxShadow: '0 4px 15px rgba(0,0,0,0.02)'
+        boxShadow: '0 4px 15px rgba(0,0,0,0.02)',
+        alignItems: 'center'
       }}>
         <div 
           className="search-wrapper"
-          style={{ position: 'relative', flex: 1, border: '1px solid #e2e8f0', borderRadius: '12px', transition: 'all 0.2s' }}
+          style={{ 
+            position: 'relative', 
+            flex: 1, 
+            height: '46px',
+            border: '1px solid #e2e8f0', 
+            borderRadius: '14px', 
+            transition: 'all 0.2s',
+            display: 'flex',
+            alignItems: 'center',
+            boxSizing: 'border-box'
+          }}
         >
           <Search style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={18} />
           <input
@@ -154,19 +171,32 @@ const RecruiterJobs: React.FC = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
             style={{
               width: '100%',
-              padding: '12px 12px 12px 48px',
-              borderRadius: '12px',
+              height: '100%',
+              padding: '0 16px 0 48px',
+              borderRadius: '14px',
               border: 'none',
               background: '#ffffff',
               outline: 'none',
               fontSize: '14px',
-              color: '#1e293b'
+              color: '#1e293b',
+              boxSizing: 'border-box'
             }}
           />
         </div>
         <button style={{ 
-          padding: '0 20px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#fff', color: '#64748b', 
-          cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, fontSize: '14px'
+          height: '46px',
+          padding: '0 20px', 
+          borderRadius: '14px', 
+          border: '1px solid #e2e8f0', 
+          background: '#fff', 
+          color: '#64748b', 
+          cursor: 'pointer', 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '8px', 
+          fontWeight: 600, 
+          fontSize: '14px',
+          boxSizing: 'border-box'
         }}>
           <Filter size={18} /> Refine
         </button>
@@ -187,9 +217,9 @@ const RecruiterJobs: React.FC = () => {
           animate="visible"
           style={{ 
             display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', 
+            gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', 
             gap: '30px',
-            alignItems: 'start'
+            alignItems: 'stretch'
           }}
         >
           <AnimatePresence>
@@ -198,62 +228,84 @@ const RecruiterJobs: React.FC = () => {
                 <motion.div
                   key={job.id}
                   variants={itemVariants}
-                  whileHover={{ scale: 1.05, translateY: -10 }}
+                  whileHover={{ scale: 1.02, translateY: -6 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   layout
                   className="luxury-card"
                   style={{ 
-                    padding: '30px', 
+                    padding: '28px', 
                     display: 'flex', 
                     flexDirection: 'column', 
-                    background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.9) 0%, rgba(26, 38, 82, 0.08) 100%)',
+                    height: '100%',
+                    boxSizing: 'border-box',
+                    background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(26, 38, 82, 0.05) 100%)',
                     backdropFilter: 'blur(12px)',
-                    border: '1px solid rgba(255, 255, 255, 0.5)',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '24px',
                     position: 'relative',
-                    overflow: 'hidden'
+                    overflow: 'hidden',
+                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.04)'
                   }}
                 >
-                  <div style={{ position: 'absolute', top: 0, right: 0, padding: '12px' }}>
+                  <div style={{ position: 'absolute', top: 0, right: 0, padding: '16px' }}>
                      <span style={{ 
-                        background: job.is_active ? 'rgba(16, 185, 129, 0.1)' : '#f1f5f9', 
-                        color: job.is_active ? '#059669' : '#64748b', 
-                        padding: '4px 12px', borderRadius: '100px', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase' 
+                        background: job.is_active ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', 
+                        color: job.is_active ? '#059669' : '#dc2626', 
+                        border: job.is_active ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid rgba(239, 68, 68, 0.25)',
+                        padding: '4px 12px', borderRadius: '100px', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase',
+                        display: 'inline-flex', alignItems: 'center', gap: '5px'
                      }}>
-                        {job.is_active ? 'Active' : 'Closed'}
+                        <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: job.is_active ? '#10b981' : '#ef4444' }} />
+                        {job.is_active ? 'Active' : 'Inactive'}
                      </span>
                   </div>
 
                   <div style={{ 
-                      width: '60px', height: '60px', background: 'rgba(26, 38, 82, 0.05)', borderRadius: '18px', 
+                      width: '56px', height: '56px', background: 'rgba(26, 38, 82, 0.05)', borderRadius: '16px', 
                       display: 'flex', alignItems: 'center', justifyContent: 'center', color: nestNavy, marginBottom: '20px',
                       border: '1px solid rgba(26, 38, 82, 0.05)'
                   }}>
-                    <Briefcase size={30} />
+                    <Briefcase size={28} />
                   </div>
                   
-                  <div style={{ flex: 1 }}>
-                    <h3 style={{ fontSize: '20px', fontWeight: 900, color: '#111827', margin: '0 0 16px 0', lineHeight: 1.3 }}>{job.title}</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                    <h3 style={{ 
+                      fontSize: '20px', 
+                      fontWeight: 900, 
+                      color: '#111827', 
+                      margin: '0 0 16px 0', 
+                      lineHeight: '26px',
+                      height: '52px',
+                      minHeight: '52px',
+                      maxHeight: '52px',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden'
+                    }}>
+                      {job.title}
+                    </h3>
                     
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#475569', fontSize: '14px', fontWeight: 600 }}>
-                        <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#475569', fontSize: '14px', fontWeight: 600, height: '28px' }}>
+                        <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                             <MapPin size={14} color={nestRed} />
                         </div>
-                        {job.location}
+                        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{job.location}</span>
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#475569', fontSize: '14px', fontWeight: 600 }}>
-                        <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#475569', fontSize: '14px', fontWeight: 600, height: '28px' }}>
+                        <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                             <DollarSign size={14} color="#10b981" />
                         </div>
-                        {job.salary || 'Market Rate'}
+                        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{job.salary || 'Market Rate'}</span>
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#94a3b8', fontSize: '13px', fontWeight: 500 }}>
-                        <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#94a3b8', fontSize: '13px', fontWeight: 500, height: '28px' }}>
+                        <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                             <Calendar size={14} />
                         </div>
-                        Posted on {new Date(job.createdAt).toLocaleDateString()}
+                        <span>Posted on {new Date(job.createdAt).toLocaleDateString()}</span>
                       </div>
                     </div>
 
@@ -262,13 +314,14 @@ const RecruiterJobs: React.FC = () => {
                         <summary style={{ 
                             fontSize: '12px', fontWeight: 800, color: nestNavy, cursor: 'pointer', 
                             listStyle: 'none', display: 'flex', alignItems: 'center', gap: '6px',
-                            background: 'rgba(26, 38, 82, 0.05)', padding: '8px 12px', borderRadius: '8px', width: 'fit-content'
+                            background: 'rgba(26, 38, 82, 0.05)', padding: '0 14px', borderRadius: '10px', width: 'fit-content',
+                            height: '34px', boxSizing: 'border-box'
                         }}>
                              <ChevronDown size={14} /> More Details
                         </summary>
                         <div style={{ 
-                            marginTop: '16px', padding: '16px', background: 'rgba(255,255,255,0.4)', 
-                            borderRadius: '12px', border: '1px solid rgba(255,255,255,0.5)', fontSize: '13px'
+                            marginTop: '16px', padding: '16px', background: '#f8fafc', 
+                            borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '13px'
                         }}>
                             <p style={{ margin: '0 0 12px 0', color: '#1e293b', fontWeight: 600, lineHeight: 1.6, textAlign: 'justify' }}>{job.description}</p>
                             
@@ -299,66 +352,114 @@ const RecruiterJobs: React.FC = () => {
                     </details>
 
                     <div style={{ 
-                        display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(26, 38, 82, 0.03)', 
-                        padding: '10px 14px', borderRadius: '12px', marginBottom: '24px' 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '10px', 
+                        background: 'rgba(26, 38, 82, 0.04)', 
+                        padding: '0 16px', 
+                        borderRadius: '14px', 
+                        height: '46px',
+                        boxSizing: 'border-box',
+                        marginBottom: '20px' 
                     }}>
-                    <Users size={16} color={nestNavy} />
-                    <span style={{ fontSize: '13px', fontWeight: 800, color: nestNavy }}>{job.application_count} Applicants</span>
+                      <Users size={18} color={nestNavy} />
+                      <span style={{ fontSize: '14px', fontWeight: 800, color: nestNavy }}>{job.application_count} Applicants</span>
                     </div>
-                  </div>
-                  
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '10px' }}>
-                    <Link to={`/recruiter/applications?job=${encodeURIComponent(job.title)}`} style={{ textDecoration: 'none' }}>
-                      <button style={{ 
-                          width: '100%',
-                          padding: '12px', borderRadius: '12px', border: 'none', background: nestNavy, 
-                          color: '#fff', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '13px',
-                          boxShadow: '0 4px 12px rgba(26, 38, 82, 0.15)'
-                      }}>
-                        <Users size={16} /> Manage Candidates
-                      </button>
-                    </Link>
-                    
-                    <button 
-                      onClick={() => handleToggleStatus(job.id, job.is_active)}
-                      style={{ 
-                          width: '100%',
-                          padding: '12px', borderRadius: '12px', 
-                          background: job.is_active ? 'rgba(239, 68, 68, 0.08)' : 'rgba(16, 185, 129, 0.08)',
-                          border: job.is_active ? '1px solid rgba(239, 68, 68, 0.2)' : '1px solid rgba(16, 185, 129, 0.2)',
-                          color: job.is_active ? '#ef4444' : '#10b981', 
-                          fontWeight: 800, cursor: 'pointer', 
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '13px',
-                          transition: 'all 0.2s'
-                      }}
-                    >
-                      {job.is_active ? <CheckCircle size={16} /> : <Clock size={16} />}
-                      {job.is_active ? 'Close Job Role' : 'Reopen Job Role'}
-                    </button>
-                    
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '10px' }}>
-                        <Link to={`/recruiter/jobs/edit/${job.id}`} style={{ textDecoration: 'none', flex: 1 }}>
-                          <button style={{ 
-                              width: '100%',
-                              padding: '12px', borderRadius: '12px', 
-                              background: 'rgba(26, 38, 82, 0.08)',
-                              backdropFilter: 'blur(10px)',
-                              border: '1px solid rgba(26, 38, 82, 0.2)',
-                              color: nestNavy, fontWeight: 800, cursor: 'pointer', 
-                              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '13px',
-                              transition: 'all 0.2s'
-                          }}>
-                            <Edit size={16} /> Edit Listing
-                          </button>
-                        </Link>
-                        <button 
-                            onClick={() => handleDelete(job.id)}
-                            style={{ 
-                            width: '45px', height: '45px', borderRadius: '12px', border: '1px solid #fee2e2', background: '#fff', 
-                            color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
+
+                    {/* Standardized Bottom Action Buttons Box */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: 'auto' }}>
+                      <Link to={`/recruiter/applications?job=${encodeURIComponent(job.title)}`} style={{ textDecoration: 'none' }}>
+                        <button style={{ 
+                            width: '100%',
+                            height: '46px',
+                            padding: '0 16px',
+                            borderRadius: '14px', 
+                            border: 'none', 
+                            background: nestNavy, 
+                            color: '#fff', 
+                            fontWeight: 800, 
+                            cursor: 'pointer', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center', 
+                            gap: '8px', 
+                            fontSize: '13px',
+                            boxShadow: '0 4px 12px rgba(26, 38, 82, 0.15)',
+                            transition: 'all 0.2s',
+                            boxSizing: 'border-box'
                         }}>
-                          <Trash2 size={18} />
+                          <Users size={16} /> Manage Candidates
                         </button>
+                      </Link>
+                      
+                      <button 
+                        onClick={() => handleToggleStatus(job.id, job.is_active)}
+                        style={{ 
+                            width: '100%',
+                            height: '46px',
+                            padding: '0 16px',
+                            borderRadius: '14px', 
+                            background: job.is_active ? 'rgba(239, 68, 68, 0.08)' : 'rgba(16, 185, 129, 0.08)',
+                            border: job.is_active ? '1px solid rgba(239, 68, 68, 0.2)' : '1px solid rgba(16, 185, 129, 0.2)',
+                            color: job.is_active ? '#ef4444' : '#10b981', 
+                            fontWeight: 800, 
+                            cursor: 'pointer', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center', 
+                            gap: '8px', 
+                            fontSize: '13px',
+                            transition: 'all 0.2s',
+                            boxSizing: 'border-box'
+                        }}
+                      >
+                        {job.is_active ? <Power size={16} /> : <CheckCircle size={16} />}
+                        {job.is_active ? 'Turn Inactive' : 'Turn Active'}
+                      </button>
+                      
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 46px', gap: '10px', alignItems: 'center' }}>
+                          <Link to={`/recruiter/jobs/edit/${job.id}`} style={{ textDecoration: 'none', display: 'block' }}>
+                            <button style={{ 
+                                width: '100%',
+                                height: '46px',
+                                padding: '0 16px',
+                                borderRadius: '14px', 
+                                background: 'rgba(26, 38, 82, 0.08)',
+                                backdropFilter: 'blur(10px)',
+                                border: '1px solid rgba(26, 38, 82, 0.2)',
+                                color: nestNavy, 
+                                fontWeight: 800, 
+                                cursor: 'pointer', 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                justifyContent: 'center', 
+                                gap: '8px', 
+                                fontSize: '13px',
+                                transition: 'all 0.2s',
+                                boxSizing: 'border-box'
+                            }}>
+                              <Edit size={16} /> Edit Listing
+                            </button>
+                          </Link>
+                          <button 
+                              onClick={() => handleDelete(job.id)}
+                              style={{ 
+                                width: '46px', 
+                                height: '46px', 
+                                borderRadius: '14px', 
+                                border: '1px solid #fee2e2', 
+                                background: '#fff', 
+                                color: '#ef4444', 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                justifyContent: 'center', 
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                                boxSizing: 'border-box'
+                          }}>
+                            <Trash2 size={18} />
+                          </button>
+                      </div>
                     </div>
                   </div>
                 </motion.div>

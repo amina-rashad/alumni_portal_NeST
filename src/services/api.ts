@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // --- CONFIG ---
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://192.168.220.9:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5001/api';
 
 // --- HELPERS ---
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -31,7 +31,27 @@ export const getUser = (): Record<string, unknown> | null => {
   const stored = localStorage.getItem('user');
   if (!stored || stored === 'undefined' || stored === '[object Object]') return null;
   try {
-    return JSON.parse(stored);
+    const user = JSON.parse(stored);
+    if (user && typeof user === 'object') {
+      const role = String(user.role || '').toLowerCase().trim();
+      const isAdminRole = ['admin', 'super_admin', 'recruiter', 'event_manager', 'course_manager'].includes(role);
+      const isInstitutionalType = user.user_type && ['staff', 'alumni', 'student', 'intern', 'industrial student', 'iv student', 'iv students'].includes(String(user.user_type).toLowerCase().trim());
+      const hasAdminTracking = !!(user.created_by || user.is_admin_created || user.created_by_admin || user.emp_id || user.student_id);
+
+      // Auto-heal legacy stale added_by_admin flag in localStorage for direct applicants
+      if (!isAdminRole && !isInstitutionalType && !hasAdminTracking) {
+        if (user.added_by_admin === true || user.not_added_by_admin !== true) {
+          user.added_by_admin = false;
+          user.not_added_by_admin = true;
+          try {
+            localStorage.setItem('user', JSON.stringify(user));
+          } catch {
+            // ignore
+          }
+        }
+      }
+    }
+    return user;
   } catch {
     return null;
   }
@@ -77,14 +97,21 @@ async function apiRequest<T = any>(
       headers,
     });
 
-    // Handle 401 — try refresh token
-    if (response.status === 401 && getRefreshToken()) {
+    // Handle 401 — try refresh token for protected endpoints (NOT login/auth endpoints)
+    const isAuthEndpoint = endpoint.includes('/auth/login') || endpoint.includes('/auth/send-otp') || endpoint.includes('/auth/register');
+    if (response.status === 401 && !isAuthEndpoint && getRefreshToken()) {
       const refreshed = await refreshAccessToken();
       if (refreshed) {
         headers['Authorization'] = `Bearer ${getAccessToken()}`;
         const retryResponse = await fetch(fullUrl, { ...options, headers });
         if (!retryResponse.ok) {
-           return { success: false, message: `Server error: ${retryResponse.status}` };
+           const retryText = await retryResponse.text();
+           try {
+             const retryJson = JSON.parse(retryText);
+             return { success: false, message: retryJson.message || `Server error: ${retryResponse.status}` };
+           } catch {
+             return { success: false, message: `Server error: ${retryResponse.status}` };
+           }
         }
         return await retryResponse.json();
       } else {
@@ -161,7 +188,67 @@ export interface AuthUser {
   role: string;
   profile_picture?: string | null;
   status?: string;
+  added_by_admin?: boolean;
+  not_added_by_admin?: boolean;
+  is_admin_created?: boolean;
+  emp_id?: string;
+  student_id?: string;
+  college?: string;
 }
+
+export const isDirectApplicant = (user: any): boolean => {
+  if (!user) return false;
+
+  // Administrative and portal management roles are always staff/admin
+  const role = String(user.role || '').toLowerCase().trim();
+  if (['admin', 'super_admin', 'recruiter', 'job_recruiter', 'event_manager', 'course_manager'].includes(role)) {
+    return false;
+  }
+
+  // Check normalized user_type
+  const userType = String(user.user_type || '').toLowerCase().trim();
+
+  // If user_type is explicitly Applicant (both direct registrations and admin-added applicants)
+  if (userType === 'applicant' || userType === 'applicants') {
+    return true;
+  }
+
+  // Institutional user types configured and assigned by admin retain their full designated access
+  if ([
+    'staff',
+    'alumni',
+    'intern',
+    'interns',
+    'trainee',
+    'trainees',
+    'industrial student',
+    'industrial students',
+    'iv student',
+    'iv students',
+    'student',
+    'students'
+  ].includes(userType)) {
+    return false;
+  }
+
+  // Institutional identity codes (Employee ID or Student ID) belong to institution-added users
+  if (user.emp_id || user.student_id) {
+    return false;
+  }
+
+  // If added by admin with a designated role, they are not an applicant
+  if (
+    user.added_by_admin === true ||
+    user.created_by ||
+    user.is_admin_created ||
+    user.created_by_admin
+  ) {
+    return false;
+  }
+
+  // Direct users without designated institutional type default to Applicant
+  return true;
+};
 
 export interface AuthData {
   user: AuthUser;
@@ -182,13 +269,13 @@ export const authApi = {
       body: JSON.stringify(payload),
     }),
 
-  sendOtp: (email: string) =>
+  sendOtp: (email: string, full_name?: string, auth_provider?: string) =>
     apiRequest('/auth/send-otp', {
       method: 'POST',
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email, full_name, auth_provider }),
     }),
 
-  loginWithOtp: (payload: { email: string; otp: string }) =>
+  loginWithOtp: (payload: { email: string; otp: string; auth_provider?: string }) =>
     apiRequest<AuthData>('/auth/login-otp', {
       method: 'POST',
       body: JSON.stringify(payload),
@@ -208,6 +295,16 @@ export const authApi = {
 // --- USERS API ---
 export const usersApi = {
   getCommunityStats: () => apiRequest('/users/community-stats', { method: 'GET' }),
+  getPublicStats: () => apiRequest<{
+    portal_members: number;
+    alumni_network: number;
+    jobs_posted: number;
+    total_jobs: number;
+    active_jobs: number;
+    courses_available: number;
+    total_applications: number;
+    match_accuracy: number;
+  }>('/users/public-stats', { method: 'GET' }),
   
   getProfile: () =>
     apiRequest('/users/me', { method: 'GET' }),
@@ -254,11 +351,14 @@ export const coursesApi = {
   updateCourse: (courseId: string, data: any) =>
     apiRequest(`/admin/courses/${courseId}`, { method: 'PATCH', body: JSON.stringify(data) }),
 
-  enrollCourse: (courseId: string) =>
-    apiRequest(`/assessments/enroll/${courseId}`, { method: 'POST' }),
+  enrollCourse: (courseId: string, data?: any) =>
+    apiRequest(`/assessments/enroll/${courseId}`, { method: 'POST', body: data ? JSON.stringify(data) : undefined }),
 
   deleteCourse: (courseId: string) =>
     apiRequest(`/admin/courses/${courseId}`, { method: 'DELETE' }),
+
+  getPerformanceAnalytics: () =>
+    apiRequest('/assessments/performance-analytics', { method: 'GET' }),
 };
 
 // ── Jobs API ──
@@ -274,14 +374,14 @@ export const jobsApi = {
 // ── Events API ──
 
 export const eventsApi = {
-  getAllEvents: (page: number = 1, limit: number = 5, upcomingOnly: boolean = false) =>
-    apiRequest(`/events?page=${page}&limit=${limit}&upcoming_only=${upcomingOnly}`, { method: 'GET' }),
+  getAllEvents: (page: number = 1, limit: number = 5, upcomingOnly: boolean = false, sort?: string) =>
+    apiRequest(`/events?page=${page}&limit=${limit}&upcoming_only=${upcomingOnly}${sort ? `&sort=${sort}` : ''}`, { method: 'GET' }),
 
   getEventById: (eventId: string) =>
     apiRequest(`/events/${eventId}`, { method: 'GET' }),
 
-  registerForEvent: (eventId: string) =>
-    apiRequest(`/events/${eventId}/register`, { method: 'POST' }),
+  registerForEvent: (eventId: string, data?: any) =>
+    apiRequest(`/events/${eventId}/register`, { method: 'POST', body: data ? JSON.stringify(data) : undefined }),
 
   getMyEvents: () =>
     apiRequest<{ events: any[] }>('/events/my-events', { method: 'GET' }),
@@ -361,31 +461,73 @@ export const courseManagerAPI = {
   },
   getStats: () =>
     apiRequest<{ stats: any }>('/course-manager/stats', { method: 'GET' }),
+  getCourse: (id: string | number) => apiRequest<{ course: any }>(`/courses/${id}`, { method: 'GET' }),
   createCourse: (data: any) => apiRequest('/admin/courses', { method: 'POST', body: JSON.stringify(data) }),
   updateCourse: (id: string | number, data: any) => apiRequest(`/admin/courses/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteCourse: (id: string | number) => apiRequest(`/admin/courses/${id}`, { method: 'DELETE' }),
   fetchStudents: async () => {
     return apiRequest('/course-manager/students', { method: 'GET' });
   },
-  fetchCertificates: () =>
-    apiRequest<{ certificates: any[] }>('/course-manager/certificates', { method: 'GET' }),
+  fetchCertificates: (courseId?: string, status?: string) => {
+    const params = new URLSearchParams();
+    if (courseId && courseId !== 'all') params.append('course_id', courseId);
+    if (status && status !== 'All Records') params.append('status', status);
+    const qs = params.toString();
+    return apiRequest<{ certificates: any[] }>(`/course-manager/certificates${qs ? `?${qs}` : ''}`, { method: 'GET' });
+  },
+  issueCertificate: (payload: { enrollment_id?: string; user_id?: string; course_id?: string; grade?: string; id?: string }) =>
+    apiRequest<{ message: string; data?: any }>('/course-manager/certificates/issue', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }),
+  bulkIssueCertificates: (courseId?: string) =>
+    apiRequest<{ message: string; data?: any }>('/course-manager/certificates/bulk-issue', {
+      method: 'POST',
+      body: JSON.stringify({ course_id: courseId || 'all' })
+    }),
   updateCertificateStatus: (enrollmentId: string, status: string) =>
     apiRequest(`/course-manager/certificates/${enrollmentId}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
-  fetchSubmissions: async () => {
-    return apiRequest('/course-manager/assessments/pending', { method: 'GET' });
+  fetchCourseAssessments: (courseId?: string) =>
+    apiRequest<{ assessments: any[] }>(`/course-manager/course-assessments${courseId && courseId !== 'all' ? `?course_id=${courseId}` : ''}`, { method: 'GET' }),
+  saveCourseAssessment: (data: any) =>
+    apiRequest<{ message: string; data?: any }>('/course-manager/course-assessments', { method: 'POST', body: JSON.stringify(data) }),
+  deleteCourseAssessment: (assessmentId: string) =>
+    apiRequest<{ message: string }>(`/course-manager/course-assessments/${assessmentId}`, { method: 'DELETE' }),
+  fetchSubmissions: async (courseId?: string, status?: string) => {
+    const params = new URLSearchParams();
+    if (courseId && courseId !== 'all') params.append('course_id', courseId);
+    if (status && status !== 'All') params.append('status', status);
+    const qs = params.toString();
+    return apiRequest<{ submissions: any[]; pending_assessments: any[] }>(`/course-manager/assessments/submissions${qs ? `?${qs}` : ''}`, { method: 'GET' });
   },
   updateSubmissionStatus: (id: string, action: string, stage: number = 2) => 
     apiRequest(`/course-manager/assessments/${id}/review`, { 
       method: 'PATCH', 
       body: JSON.stringify({ action, stage }) 
-    })
+    }),
+  evaluateSubmission: (id: string, payload: { action: 'Approved' | 'Rejected'; score?: number; feedback?: string; stage?: number }) =>
+    apiRequest<{ message: string; data?: any }>(`/course-manager/assessments/${id}/evaluate`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }),
+  sendStudentEmail: (data: { email: string; subject: string; message: string; course?: string }) =>
+    apiRequest<{ success: boolean; message: string }>('/course-manager/students/email', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+  getCourseParticipants: (courseId: string | number) =>
+    apiRequest<{ course: any; participants: any[] }>(`/course-manager/courses/${courseId}/participants`, { method: 'GET' }),
+  resetStudentAttempts: (studentId: string, courseId: string) =>
+    apiRequest<{ success: boolean; message: string }>(`/course-manager/students/${studentId}/courses/${courseId}/reset-attempts`, { method: 'POST' })
 };
 
 // ── Social API ──
 
 export const socialApi = {
-  getFeed: (page: number = 1, perPage: number = 20) =>
-    apiRequest<{ posts: any[]; total: number }>(`/social/feed?page=${page}&per_page=${perPage}&t=${Date.now()}`, { method: 'GET', cache: 'no-store' }),
+  getFeed: (page: number = 1, perPage: number = 20, officialOnly?: boolean) => {
+    const filterParam = officialOnly ? '&official_only=true' : '';
+    return apiRequest<{ posts: any[]; total: number }>(`/social/feed?page=${page}&per_page=${perPage}${filterParam}&t=${Date.now()}`, { method: 'GET', cache: 'no-store' });
+  },
 
   getMyPosts: () =>
     apiRequest<{ posts: any[] }>('/social/my-posts', { method: 'GET' }),
@@ -404,6 +546,9 @@ export const socialApi = {
 
   updatePost: (postId: string, data: { content: string; image_url?: string; video_url?: string }) =>
     apiRequest(`/social/posts/${postId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+
+  getPostById: (postId: string) =>
+    apiRequest<{ post: any }>(`/social/posts/${postId}`, { method: 'GET' }),
 };
 
 // ── Assessments API ──
@@ -431,12 +576,15 @@ export const applicationsApi = {
   
   getMyApplications: () =>
     apiRequest('/applications/me'),
+
+  withdrawApplication: (id: string) =>
+    apiRequest<{ message?: string }>(`/applications/${id}`, { method: 'DELETE' }),
 };
 
 // --- MOCK / HELPER APIS (To support legacy UI) ---
 export const reminderAPI = {
-  fetchAlerts: async () => ({ success: true, data: [] }),
-  sendReminder: async (id: string) => ({ success: true })
+  fetchAlerts: () => apiRequest<{ data: any[] }>('/reminders/alerts', { method: 'GET' }),
+  sendReminder: (id: string) => apiRequest('/reminders/send', { method: 'POST', body: JSON.stringify({ id }) })
 };
 
 export const forumAPI = {
@@ -502,6 +650,14 @@ export const adminApi = {
 
   createUser: (data: any) => 
     apiRequest('/admin/users', { method: 'POST', body: JSON.stringify(data) }),
+
+  checkEmailExists: (email: string) =>
+    apiRequest<{
+      valid_format: boolean;
+      exists: boolean;
+      message: string;
+      existing_user?: { full_name: string; role: string; user_type: string };
+    }>(`/admin/check-email?email=${encodeURIComponent(email)}`, { method: 'GET' }),
 
   getInterns: () => 
     apiRequest<{ users: any[] }>('/admin/users?type=Intern'),
@@ -584,11 +740,36 @@ export const recruiterApi = {
   getApplications: () => 
     apiRequest<{ applications: any[] }>('/recruiter/applications'),
 
-  updateApplicationStatus: (appId: string, data: { status: string, interviewDate?: string, notes?: string }) =>
+  updateApplicationStatus: (appId: string, data: { 
+    status: string, 
+    interviewDate?: string, 
+    notes?: string,
+    send_email?: boolean,
+    email_subject?: string,
+    email_candidate_note?: string,
+    interview_time?: string,
+    interview_location?: string
+  }) =>
     apiRequest(`/recruiter/applications/${appId}/status`, { 
         method: 'PATCH', 
         body: JSON.stringify(data) 
     }),
+
+  sendApplicationEmail: (appId: string, data: {
+    subject?: string,
+    message?: string,
+    status?: string,
+    interview_date?: string,
+    interview_time?: string,
+    interview_location?: string
+  }) =>
+    apiRequest<{ success: boolean, message: string, email_sent: boolean, email_log: any }>(`/recruiter/applications/${appId}/send-email`, {
+        method: 'POST',
+        body: JSON.stringify(data)
+    }),
+
+  markApplicationViewed: (appId: string) =>
+    apiRequest(`/recruiter/applications/${appId}/view`, { method: 'POST' }),
 
   getMyJobs: () => 
     apiRequest<{ jobs: any[] }>('/recruiter/jobs'),
@@ -633,6 +814,11 @@ export const recruiterApi = {
     apiRequest('/recruiter/broadcast-mail', {
       method: 'POST',
       body: JSON.stringify(data)
+    }),
+
+  getMailHistory: () =>
+    apiRequest('/recruiter/mail-history', {
+      method: 'GET'
     }),
 };
 

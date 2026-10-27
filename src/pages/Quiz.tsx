@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowLeft, Clock, HelpCircle, 
   CheckCircle2, ChevronRight, Play,
-  Star, Zap, ShieldCheck, Award, Loader2
+  Star, Zap, ShieldCheck, Award, Loader2, BookOpen,
+  Lock, RotateCcw, AlertCircle
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { coursesApi, usersApi } from '../services/api';
@@ -27,12 +28,7 @@ interface Assessment {
   description: string;
 }
 
-const MOCK_ASSESSMENTS: Assessment[] = [
-  { id: '1', title: 'React Performance Mastery', category: 'Frontend', difficulty: 'Expert', timeLimit: 20, questionsCount: 15, points: 500, description: 'Deep dive into specialized hooks, virtualization, and rendering optimizations in React 18.' },
-  { id: '2', title: 'Go Backend Architecture', category: 'Backend', difficulty: 'Intermediate', timeLimit: 15, questionsCount: 10, points: 300, description: 'Evaluate your knowledge of Go concurrency patterns, middleware design, and gRPC implementations.' },
-  { id: '3', title: 'Cybersecurity Fundamentals', category: 'Security', difficulty: 'Beginner', timeLimit: 10, questionsCount: 10, points: 200, description: 'Essential security principles including OWASP Top 10, encryption, and safe coding practices.' },
-  { id: '4', title: 'AI & Machine Learning Ops', category: 'AI/ML', difficulty: 'Intermediate', timeLimit: 25, questionsCount: 20, points: 400, description: 'MLOps best practices, model monitoring, and deployment strategies using the NeST AI stack.' },
-];
+
 
 const MOCK_QUESTIONS: Question[] = [
   { id: 'q1', text: 'Which hook should be used for expensive calculations to prevent unnecessary re-renders?', options: ['useEffect', 'useMemo', 'useCallback', 'useReducer'], correctAnswer: 1 },
@@ -84,7 +80,7 @@ const Quiz: React.FC = () => {
   const handleStartQuiz = (course: any) => {
     // If it's a 5-stage assessment, navigate to AssessmentCenter
     // Otherwise if it's just a simple quiz, handle it here (mocked for now)
-    navigate(`/assessment/${course.id}`);
+    navigate(`/assessment/${course.id}`, { state: { from: '/assessments/quiz' } });
   };
 
   const formatTime = (seconds: number) => {
@@ -102,12 +98,9 @@ const Quiz: React.FC = () => {
     );
   }
 
-  // Calculate stats
-  const completedCount = assessments.filter(a => a.enrollment_info?.status === 'Completed').length;
-  const inProgressCount = assessments.filter(a => a.enrollment_info?.status === 'In Progress').length;
-  const avgProgress = assessments.length > 0 
-    ? Math.round(assessments.reduce((acc, curr) => acc + (curr.enrollment_info?.progress || 0), 0) / assessments.length)
-    : 0;
+  // Calculate stats based on assessment completion and passing status
+  const completedCount = assessments.filter(a => a.assessment_info?.has_passed || a.enrollment_info?.status === 'Completed').length;
+  const inProgressCount = assessments.filter(a => !(a.assessment_info?.has_passed || a.enrollment_info?.status === 'Completed')).length;
 
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto', paddingBottom: '5rem' }}>
@@ -195,7 +188,7 @@ const Quiz: React.FC = () => {
                       marginBottom: '1.5rem',
                       boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
                     }}>
-                      Quiz & Assessments
+                      Assessments & Evaluations
                     </span>
                     <h1 style={{ fontSize: '3.2rem', fontWeight: 900, color: '#ffffff', letterSpacing: '-0.03em', lineHeight: 1.1, margin: 0 }}>
                       Assessment<br />
@@ -234,7 +227,7 @@ const Quiz: React.FC = () => {
               {[
                 { label: 'Completed', count: completedCount, subtext: 'Assessments finished', icon: CheckCircle2, color: '#10B981' },
                 { label: 'In Progress', count: inProgressCount, subtext: 'Assessments in progress', icon: Clock, color: '#6366F1' },
-                { label: 'Avg. Progress', count: `${avgProgress}%`, subtext: "Keep going, you've got this!", icon: Zap, color: '#F59E0B' },
+                { label: 'Total Enrolled', count: assessments.length, subtext: 'Active academic tracks', icon: BookOpen, color: '#F59E0B' },
               ].map((stat, i) => (
                 <motion.div 
                   key={i} 
@@ -298,16 +291,51 @@ const Quiz: React.FC = () => {
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(480px, 1fr))', gap: '1.5rem' }}>
                 {assessments.map((course) => {
-                  const isCompleted = course.enrollment_info?.status === 'Completed';
-                  const currentStage = course.assessment_info?.current_stage || 1;
-                  const progress = course.enrollment_info?.progress || 0;
-                  
+                  const assessInfo = course.assessment_info || {};
+                  const hasAttended = Boolean(assessInfo.has_attended);
+                  const hasPassed = Boolean(assessInfo.has_passed);
+                  const userScore = assessInfo.score;
+                  const passingScore = assessInfo.passing_score ?? 70;
+                  const canDownload = Boolean(assessInfo.can_download_certificate ?? hasPassed);
+                  const attemptsCount = assessInfo.attempts_count ?? (hasAttended ? 1 : 0);
+                  const maxAttempts = assessInfo.max_attempts ?? 3;
+                  const attemptsLeft = assessInfo.attempts_left !== undefined 
+                    ? assessInfo.attempts_left 
+                    : Math.max(0, maxAttempts - attemptsCount);
+                  const canRetake = assessInfo.can_retake !== undefined 
+                    ? assessInfo.can_retake 
+                    : (attemptsLeft > 0);
+                  const isLocked = !hasPassed && hasAttended && !canRetake;
+
+                  // Status badge styling & text
+                  let badgeText = 'Assessment Pending';
+                  let badgeBg = '#fffbeb';
+                  let badgeColor = '#b45309';
+                  let badgeBorder = '1px solid #fde68a';
+
+                  if (hasPassed) {
+                    badgeText = `Passed (${userScore}%)`;
+                    badgeBg = '#f0fdf4';
+                    badgeColor = '#16a34a';
+                    badgeBorder = '1px solid #bbf7d0';
+                  } else if (isLocked) {
+                    badgeText = `Attempts Exhausted (${attemptsCount}/${maxAttempts})`;
+                    badgeBg = '#fef2f2';
+                    badgeColor = '#991b1b';
+                    badgeBorder = '1px solid #fecaca';
+                  } else if (hasAttended) {
+                    badgeText = `Failed (${userScore}%)`;
+                    badgeBg = '#fef2f2';
+                    badgeColor = '#dc2626';
+                    badgeBorder = '1px solid #fecaca';
+                  }
+
                   return (
                     <motion.div
                       key={course.id}
                       className="luxury-card"
                       whileHover={{ y: -4, boxShadow: '0 20px 40px rgba(0,0,0,0.08)' }}
-                      style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', border: '1px solid #E2E8F0' }}
+                      style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', border: '1px solid #E2E8F0', borderRadius: '20px', background: '#ffffff' }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div>
@@ -315,11 +343,15 @@ const Quiz: React.FC = () => {
                           <h3 style={{ margin: '0.5rem 0', fontSize: '1.4rem', fontWeight: 800, color: '#0F172A' }}>{course.title}</h3>
                         </div>
                         <div style={{ 
-                          background: isCompleted ? '#f0fdf4' : '#fffbeb',
-                          color: isCompleted ? '#16a34a' : '#92400E',
-                          padding: '0.4rem 1rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700 
+                          background: badgeBg,
+                          color: badgeColor,
+                          border: badgeBorder,
+                          padding: '0.4rem 1rem', 
+                          borderRadius: '8px', 
+                          fontSize: '0.8rem', 
+                          fontWeight: 700 
                         }}>
-                          {isCompleted ? 'Completed' : `Stage ${currentStage}`}
+                          {badgeText}
                         </div>
                       </div>
                       
@@ -327,49 +359,71 @@ const Quiz: React.FC = () => {
                         {course.description || "Continue your assessment for this course to earn your official NeST Digital certification."}
                       </p>
                       
-                      <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64748B', fontSize: '0.9rem' }}>
                           <Clock size={16} /> {course.duration || 'Flexible'}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64748B', fontSize: '0.9rem' }}>
-                          <ShieldCheck size={16} /> Progress: {progress}%
+                          <BookOpen size={16} /> {course.level || 'Professional Track'}
                         </div>
-                        {isCompleted && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#10B981', fontSize: '0.9rem', fontWeight: 700 }}>
-                            <Award size={16} /> Certified
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: isLocked ? '#dc2626' : '#64748B', fontSize: '0.9rem', fontWeight: 600 }}>
+                          <RotateCcw size={16} /> Attempts: {attemptsCount} / {maxAttempts}
+                        </div>
+                        {hasPassed ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#16a34a', fontSize: '0.9rem', fontWeight: 700 }}>
+                            <CheckCircle2 size={16} /> Certified (Score: {userScore}%)
+                          </div>
+                        ) : hasAttended ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#dc2626', fontSize: '0.9rem', fontWeight: 600 }}>
+                            <AlertCircle size={16} /> Min Pass Required: {passingScore}%
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64748B', fontSize: '0.9rem', fontWeight: 600 }}>
+                            <Award size={16} /> Pass Required: {passingScore}%
                           </div>
                         )}
                       </div>
 
-                      <div style={{ display: 'flex', gap: '1rem', marginTop: 'auto' }}>
+                      <div style={{ display: 'flex', gap: '1rem', marginTop: 'auto', alignItems: 'center' }}>
                         <button 
                           onClick={() => handleStartQuiz(course)}
                           style={{ 
                             flex: 1,
-                            background: isCompleted ? '#F8FAFC' : '#0F172A', 
-                            color: isCompleted ? '#0F172A' : 'white', 
+                            background: hasPassed ? '#F8FAFC' : (isLocked ? '#fef2f2' : '#0F172A'), 
+                            color: hasPassed ? '#0F172A' : (isLocked ? '#991b1b' : 'white'), 
                             padding: '1rem', 
                             borderRadius: '12px', 
-                            border: isCompleted ? '1px solid #E2E8F0' : 'none', 
+                            border: hasPassed ? '1px solid #E2E8F0' : (isLocked ? '1px solid #fecaca' : 'none'), 
                             fontWeight: 700, 
                             display: 'flex', 
                             alignItems: 'center', 
                             justifyContent: 'center', 
                             gap: '0.5rem',
-                            cursor: 'pointer'
+                            cursor: 'pointer',
+                            transition: 'all 0.2s'
                           }}
                         >
-                          {isCompleted ? <><CheckCircle2 size={18} /> Review Assessment</> : <><Play size={18} fill="currentColor" /> Resume Assessment</>}
+                          {hasPassed ? (
+                            <><CheckCircle2 size={18} /> Review Assessment</>
+                          ) : isLocked ? (
+                            <><Lock size={18} /> View Results (Limit Reached)</>
+                          ) : hasAttended ? (
+                            <><RotateCcw size={18} /> Retake Assessment ({attemptsLeft} left)</>
+                          ) : (
+                            <><Play size={18} fill="currentColor" /> Attend Assessment</>
+                          )}
                         </button>
                         
-                        {isCompleted && (
+                        {/* Certificate Download Button: strictly locked until assessment attended & passed >= passingScore */}
+                        {canDownload ? (
                           <button 
                             onClick={() => {
                               if (!user) return alert("Profile loading...");
+                              const compDate = assessInfo.completed_at || course.completed_at || course.enrollment_info?.completed_at || new Date().toISOString();
                               generateCourseCertificate(
                                 user.full_name || 'NeST Member',
                                 course.title,
-                                new Date().toLocaleDateString()
+                                compDate
                               );
                             }}
                             style={{ 
@@ -382,10 +436,39 @@ const Quiz: React.FC = () => {
                               display: 'flex', 
                               alignItems: 'center', 
                               gap: '0.5rem',
-                              cursor: 'pointer'
+                              cursor: 'pointer',
+                              boxShadow: '0 4px 14px rgba(211, 47, 47, 0.3)',
+                              transition: 'all 0.2s'
                             }}
+                            onMouseEnter={e => (e.currentTarget.style.opacity = '0.9')}
+                            onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
                           >
                             <Award size={18} /> Download
+                          </button>
+                        ) : (
+                          <button 
+                            disabled
+                            title={
+                              hasAttended 
+                                ? `Certificate Blocked: You scored ${userScore}%. A minimum passing score of ${passingScore}% set by the course manager is required.` 
+                                : `Certificate Blocked: You must attend the assessment and score at least ${passingScore}% to unlock this certificate.`
+                            }
+                            style={{ 
+                              background: '#F1F5F9', 
+                              color: '#94A3B8', 
+                              padding: '1rem 1.25rem', 
+                              borderRadius: '12px', 
+                              border: '1.5px dashed #CBD5E1', 
+                              fontWeight: 700, 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '0.5rem',
+                              cursor: 'not-allowed',
+                              opacity: 0.85
+                            }}
+                          >
+                            <Lock size={16} />
+                            {hasAttended ? `Locked (${userScore}% / ${passingScore}%)` : `Locked (${passingScore}% Req.)`}
                           </button>
                         )}
                       </div>
