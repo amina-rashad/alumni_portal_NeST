@@ -106,6 +106,58 @@ const EventsListing: React.FC = () => {
       animate={{ opacity: 1 }}
       style={{ maxWidth: '1100px', margin: '0 auto', padding: '2rem 1rem', fontFamily: '"Inter", sans-serif' }}
     >
+      <style>{`
+        .mosaic-hero-container {
+          display: flex;
+          gap: 2rem;
+          height: 500px;
+        }
+        .mosaic-side-cards {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 2rem;
+        }
+        .event-list-card {
+          background: #ffffff;
+          border-radius: 1.5rem;
+          overflow: hidden;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+          border: 1px solid #f1f5f9;
+          display: flex;
+          flex-direction: row;
+          transition: all 0.3s;
+        }
+        .event-card-img-wrapper {
+          width: 220px;
+          flex-shrink: 0;
+          position: relative;
+        }
+        @media (max-width: 850px) {
+          .mosaic-hero-container {
+            flex-direction: column !important;
+            height: auto !important;
+          }
+          .mosaic-hero-container > div:first-child {
+            min-height: 320px !important;
+            flex: none !important;
+          }
+          .mosaic-side-cards > div {
+            min-height: 220px !important;
+            flex: none !important;
+          }
+        }
+        @media (max-width: 768px) {
+          .event-list-card {
+            flex-direction: column !important;
+          }
+          .event-card-img-wrapper {
+            width: 100% !important;
+            height: 200px !important;
+          }
+        }
+      `}</style>
+
       {/* Staggered Mosaic Featured Events Section */}
       <div style={{ marginBottom: '4rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2.5rem' }}>
@@ -117,7 +169,7 @@ const EventsListing: React.FC = () => {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '2rem', height: '500px' }}>
+        <div className="mosaic-hero-container">
           {/* Main Hero Event Card */}
           <motion.div 
             initial={{ opacity: 0, y: 50 }}
@@ -157,7 +209,7 @@ const EventsListing: React.FC = () => {
             </motion.div>
           </motion.div>
 
-          <div style={{ flex: '1', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          <div className="mosaic-side-cards">
             {/* Side Card 1 */}
             <motion.div 
               initial={{ opacity: 0, x: 50 }}
@@ -262,18 +314,9 @@ const EventsListing: React.FC = () => {
             <motion.div
               key={event.id}
               whileHover={{ x: 10 }}
-              style={{ 
-                background: '#ffffff', 
-                borderRadius: '1.5rem', 
-                overflow: 'hidden', 
-                boxShadow: '0 4px 15px rgba(0,0,0,0.03)', 
-                border: '1px solid #f1f5f9', 
-                display: 'flex', 
-                flexDirection: 'row', 
-                transition: 'all 0.3s'
-              }}
+              className="event-list-card"
             >
-              <div style={{ width: '220px', flexShrink: 0, position: 'relative' }}>
+              <div className="event-card-img-wrapper">
                  <img src={event.cover_image || "/placeholder.jpg"} alt={event.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
 

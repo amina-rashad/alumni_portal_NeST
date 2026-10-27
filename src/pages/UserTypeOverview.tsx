@@ -161,6 +161,20 @@ const UserTypeOverview: React.FC = () => {
 
   return (
     <div style={{ backgroundColor: '#ffffff', minHeight: '100vh', color: '#111827', fontFamily: '"Outfit", sans-serif', overflowX: 'hidden' }}>
+      <style>{`
+        .usertype-split-grid {
+          display: grid;
+          grid-template-columns: 1.2fr 0.8fr;
+          gap: 80px;
+          align-items: start;
+        }
+        @media (max-width: 992px) {
+          .usertype-split-grid {
+            grid-template-columns: 1fr !important;
+            gap: 40px !important;
+          }
+        }
+      `}</style>
 
       {/* ── Header ── */}
       <header className={`header ${isScrolled ? 'header-scrolled' : 'header-glass'}`}>
@@ -289,7 +303,7 @@ const UserTypeOverview: React.FC = () => {
       {/* ── Detailed Info Narrative ── */}
       <section style={{ padding: '60px 0 100px' }}>
         <div className="container">
-          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '80px', alignItems: 'start' }}>
+          <div className="usertype-split-grid">
 
             <motion.div {...pageTransition} transition={{ delay: 0.2 }}>
               <h2 style={{ fontSize: '2.8rem', fontWeight: 800, marginBottom: '24px', letterSpacing: '-0.02em' }}>Everything you need to know</h2>

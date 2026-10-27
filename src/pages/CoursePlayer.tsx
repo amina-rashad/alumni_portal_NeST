@@ -215,6 +215,19 @@ const CoursePlayer: React.FC = () => {
       color: 'white',
       fontFamily: '"Inter", sans-serif'
     }}>
+      <style>{`
+        @media (max-width: 992px) {
+          .course-player-sidebar {
+            position: fixed !important;
+            top: 64px !important;
+            left: 0 !important;
+            bottom: 0 !important;
+            z-index: 999 !important;
+            box-shadow: 10px 0 30px rgba(0,0,0,0.6) !important;
+            max-width: 85vw !important;
+          }
+        }
+      `}</style>
       {/* Top Header Bar */}
       <header style={{ 
         height: '64px', 
@@ -273,12 +286,13 @@ const CoursePlayer: React.FC = () => {
       </header>
 
       {/* Main Content Area */}
-      <div style={{ display: 'flex', flex: 1 }}>
+      <div style={{ display: 'flex', flex: 1, position: 'relative' }}>
         
         {/* Sidebar: Course Content */}
         <AnimatePresence initial={false}>
           {sidebarOpen && (
             <motion.aside 
+              className="course-player-sidebar"
               initial={{ width: 0, opacity: 0 }}
               animate={{ width: 380, opacity: 1 }}
               exit={{ width: 0, opacity: 0 }}
