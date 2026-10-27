@@ -8,8 +8,9 @@ import {
   MoreHorizontal, FileText, ArrowRight,
   BrainCircuit, BookOpen, Heart, ShieldCheck, Sparkles, X, Play, CheckCircle2
 } from 'lucide-react';
-import { getUser, coursesApi, jobsApi, eventsApi, type AuthUser, studentAPI, socialApi } from '../services/api';
+import { getUser, coursesApi, jobsApi, eventsApi, type AuthUser, studentAPI, socialApi, isDirectApplicant } from '../services/api';
 import { useNavigate } from 'react-router-dom';
+import { formatDateOnly, formatTimeAgo } from '../utils/dateUtils';
 
 // Premium Job Backgrounds
 import architectBg from '../assets/jobs/software_architect.png';
@@ -21,75 +22,7 @@ import dataEngineerBg from '../assets/jobs/data_engineer.png';
 import bannerImg from '../assets/dashboard_banner.png';
 import alumniStoriesBg from '../assets/alumni_stories_bg.png';
 
-// --- MOCK DATA ---
-const dummyJobs = [
-  { id: 'd1', title: 'Principal Software Architect', company: 'NeST Digital', location: 'Trivandrum, KL', salary: '₹35L - ₹50L', logo: 'https://nestdigital.io/wp-content/uploads/2022/04/nest-digital-logo.png', type: 'Full-time', tags: ['Engineering', 'Leadership'], backgroundImage: architectBg },
-  { id: 'd2', title: 'Senior AI Research Engineer', company: 'NeST AI Labs', location: 'Kochi, KL', salary: '₹30L - ₹45L', logo: 'https://nestdigital.io/wp-content/uploads/2022/04/nest-digital-logo.png', type: 'Hybrid', tags: ['AI/ML', 'Research'], backgroundImage: aiBg },
-  { id: 'd3', title: 'Infrastructure Security Lead', company: 'NeST CyberSec', location: 'Bangalore, KA', salary: '₹32L - ₹48L', logo: 'https://nestdigital.io/wp-content/uploads/2022/04/nest-digital-logo.png', type: 'Full-time', tags: ['Security', 'Cloud'], backgroundImage: cyberBg },
-  { id: 'd4', title: 'Product Experience Designer', company: 'NeST Digital', location: 'Remote', salary: '₹25L - ₹38L', logo: 'https://nestdigital.io/wp-content/uploads/2022/04/nest-digital-logo.png', type: 'Remote', tags: ['UI/UX', 'Design'], backgroundImage: designerBg },
-  { id: 'd5', title: 'DevOps & Site Reliability Engineer', company: 'NeST Digital', location: 'Trivandrum, KL', salary: '₹28L - ₹42L', logo: 'https://nestdigital.io/wp-content/uploads/2022/04/nest-digital-logo.png', type: 'Full-time', tags: ['DevOps', 'Cloud'], backgroundImage: devopsBg },
-  { id: 'd6', title: 'Data Platform Engineer', company: 'NeST DataOps', location: 'Chennai, TN', salary: '₹26L - ₹40L', logo: 'https://nestdigital.io/wp-content/uploads/2022/04/nest-digital-logo.png', type: 'Hybrid', tags: ['Big Data', 'Analytics'], backgroundImage: dataEngineerBg }
-];
 
-const feed = [
-  {
-    id: 1,
-    author: { name: 'NeST Alumni Association', title: 'Official Network Portal', avatar: 'https://ui-avatars.com/api/?name=NeST+Alumni&background=0F172A&color=fff' },
-    time: '2h ago',
-    content: 'We are thrilled to announce the upcoming Global Alumni Meet 2026. Join us in celebrating a decade of engineering excellence! 🎉 Register now in the Events tab to secure your spot. #NeSTAlumni #TechLeadership',
-    likes: 342,
-    comments: 45,
-    isOfficial: true
-  },
-  {
-    id: 2,
-    author: { name: 'Dr. Sarah Jenkins', title: 'Data Science Director at TechCorp | Batch of 2018', avatar: 'https://i.pravatar.cc/150?img=5' },
-    time: '5h ago',
-    content: 'Excited to share that my team has successfully launched our new AI analytics platform! The foundational engineering principles I learned during my time at NeST were instrumental to this success. Let\'s connect! 🤖💡',
-    likes: 128,
-    comments: 24,
-    image: '/placeholder.jpg'
-  },
-  {
-    id: 4,
-    author: { name: 'Alex Rivera', title: 'Tech Lead @ Google | Batch of 2015', avatar: 'https://ui-avatars.com/api/?name=Alex+Rivera&background=0F172A&color=fff' },
-    content: 'Mentoring NeST interns has been the most rewarding part of my year. The talent emerging from this portal is world-class. #Mentorship #NextGen',
-    likes: 89,
-    comments: 12
-  },
-  {
-    id: 5,
-    author: { name: 'Priya Sharma', title: 'Senior Architect @ Amazon | Batch of 2017', avatar: 'https://ui-avatars.com/api/?name=Priya+Sharma&background=EF4444&color=fff' },
-    content: 'Just published my first book on Cloud Infrastructure! The solid foundation I built during my years at NeST made this possible. Proud to be an alum.',
-    likes: 215,
-    comments: 34
-  },
-  {
-    id: 6,
-    author: { name: 'Marcus Chen', title: 'Product Manager @ Tesla | Batch of 2019', avatar: 'https://ui-avatars.com/api/?name=Marcus+Chen&background=10B981&color=fff' },
-    content: 'Excited to be back on campus for the upcoming hackathon. Can\'t wait to see what the next generation is building! See you all there.',
-    likes: 167,
-    comments: 19
-  },
-];
-
-const recommendations = [
-  { name: 'Priya Sharma', title: 'Product Manager @ Google', avatar: 'https://i.pravatar.cc/150?img=9', mutual: 12 },
-  { name: 'Michael Chen', title: 'Senior DevOps Engineer', avatar: 'https://i.pravatar.cc/150?img=12', mutual: 8 },
-  { name: 'Emily Davis', title: 'UX Research Lead @ Meta', avatar: 'https://i.pravatar.cc/150?img=1', mutual: 24 }
-];
-
-const dummyEvents = [
-  { id: 'd1', title: '.Net Development Workshop', date: 'Apr 29', time: '10:30 AM IST', attendees_count: 24, color: '#0F172A', category: 'Workshop' },
-  { id: 'd2', title: 'Career Fair: NeST Job Connect', date: 'Sep 20', time: '10:00 AM IST', attendees_count: 156, color: '#3B82F6', category: 'Career Fair' },
-  { id: 'd3', title: 'Annual Alumni Tech Summit 2026', date: 'Oct 15', time: '09:00 AM IST', attendees_count: 450, color: '#10B981', category: 'Summit' },
-  { id: 'd4', title: 'AI & Machine Learning Masterclass', date: 'Nov 02', time: '01:00 PM IST', attendees_count: 128, color: '#F59E0B', category: 'Masterclass' }
-];
-
-const quizzes = [
-  { id: 1, title: 'React Performance Masterclass', questions: 15, difficulty: 'Advanced', time: '20 mins', color: '#10B981' },
-  { id: 2, title: 'Cloud Architecture Essentials', questions: 10, difficulty: 'Intermediate', time: '15 mins', color: '#8B5CF6' }
-];
 
 // --- ANIMATION VARIANTS ---
 const smoothSpring = { type: 'spring' as const, stiffness: 100, damping: 20, mass: 1 };
@@ -115,6 +48,8 @@ const itemVariants: Variants = {
 
 const Dashboard: React.FC = () => {
   const [user, setUserData] = useState<AuthUser | null>(null);
+  const effectiveUser = user || (getUser() as unknown as AuthUser);
+  const isDirect = isDirectApplicant(effectiveUser);
   const [courses, setCourses] = useState<any[]>([]);
   const [jobs, setJobs] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
@@ -125,21 +60,32 @@ const Dashboard: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [insightIndex, setInsightIndex] = useState(0);
   const [selectedJob, setSelectedJob] = useState<any>(null);
+  const [selectedInsight, setSelectedInsight] = useState<any | null>(null);
   const [feedPosts, setFeedPosts] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchFeed = async () => {
       try {
-        const res = await socialApi.getFeed(1, 5);
+        const res = await socialApi.getFeed(1, 10, isDirect ? true : undefined);
         if (res.success && res.data) {
-          setFeedPosts((res.data as any).posts || []);
+          const rawPosts = (res.data as any).posts || [];
+          const filtered = isDirect
+            ? rawPosts.filter((p: any) => {
+                const role = String(p.author_role || '').toLowerCase();
+                const type = String(p.author_type || '').toLowerCase();
+                return p.is_official === true || 
+                  ['admin', 'super_admin', 'recruiter', 'job_recruiter'].includes(role) || 
+                  ['staff', 'admin', 'recruiter'].includes(type);
+              })
+            : rawPosts;
+          setFeedPosts(filtered);
         }
       } catch (err) {
         console.error('Dashboard Feed Error:', err);
       }
     };
     fetchFeed();
-  }, []);
+  }, [isDirect]);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [isCarouselPaused, setIsCarouselPaused] = useState(false);
@@ -175,8 +121,17 @@ const Dashboard: React.FC = () => {
           studentAPI.fetchMyQueries()
         ]);
 
-        if (courseRes.success) setCourses(courseRes.data.courses);
-        if (jobRes.success) setJobs(jobRes.data.jobs);
+        if (courseRes.success && courseRes.data?.courses) {
+          setCourses(courseRes.data.courses);
+        } else {
+          setCourses([]);
+        }
+
+        if (jobRes.success && jobRes.data?.jobs) {
+          setJobs(jobRes.data.jobs.filter((j: any) => j.is_active !== false));
+        } else {
+          setJobs([]);
+        }
 
         if (eventRes.success && eventRes.data && (eventRes.data as any).events) {
           const rawEvents = (eventRes.data as any).events;
@@ -189,14 +144,7 @@ const Dashboard: React.FC = () => {
               // Format date if it's ISO or YYYY-MM-DD
               let displayDate = e.date;
               if (e.date && (e.date.includes('-') || e.date.includes('/'))) {
-                try {
-                  const dateObj = new Date(e.date);
-                  if (!isNaN(dateObj.getTime())) {
-                    displayDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                  }
-                } catch (err) {
-                  displayDate = e.date;
-                }
+                displayDate = formatDateOnly(e.date, e.date);
               }
 
               return {
@@ -220,36 +168,13 @@ const Dashboard: React.FC = () => {
       } catch (err) {
         console.error("Dashboard data load error", err);
         setEvents([]);
+        setCourses([]);
+        setJobs([]);
       } finally {
         setIsLoadingExtras(false);
       }
     };
 
-    // Fetch live jobs and filter by user profile + NeST focus
-    const fetchJobs = async () => {
-      try {
-        const res = await jobsApi.getAllJobs();
-        const data = res.data as any;
-        let filteredJobs = [];
-
-        if (res.success && data && data.jobs && data.jobs.length > 0) {
-          filteredJobs = data.jobs.filter((j: any) =>
-            j.company.toLowerCase().includes('nest') ||
-            (user && j.title.toLowerCase().includes(user.full_name.split(' ')[0].toLowerCase())) // Mock profile matching
-          );
-        }
-
-        if (filteredJobs.length === 0) {
-          setJobs([]);
-        } else {
-          setJobs(filteredJobs);
-        }
-      } catch (err) {
-        console.error("Failed to load jobs", err);
-        setJobs([]);
-      }
-    };
-    fetchJobs();
     fetchAllData();
   }, []);
 
@@ -351,7 +276,7 @@ const Dashboard: React.FC = () => {
                 <span style={{ fontWeight: 800, color: '#334155', letterSpacing: '0.12em', fontSize: '0.8rem', textTransform: 'uppercase' }}>Dashboard Overview</span>
               </div>
               <h1 style={{ fontSize: '3.8rem', fontWeight: 900, color: '#0F172A', lineHeight: 1.1, marginBottom: '1.2rem', letterSpacing: '-0.02em' }}>
-                Welcome back,<br />
+                Welcome,<br />
                 <span style={{ color: '#EF4444' }}>{user ? user.full_name.split(' ')[0] : 'Amina'}</span>
               </h1>
               <p style={{ fontSize: '1.2rem', color: '#64748B', lineHeight: 1.6, maxWidth: '480px', fontWeight: 500, margin: 0 }}>
@@ -534,6 +459,7 @@ const Dashboard: React.FC = () => {
         <div style={{ maxWidth: '1400px', margin: '0 auto', width: '100%', padding: '4rem 2rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
           {/* FEATURED NETWORK EVENTS */}
+          {!isDirect && (
           <motion.section
             className="glowing-event-section"
             variants={sectionVariants}
@@ -555,20 +481,42 @@ const Dashboard: React.FC = () => {
           >
             <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 2rem', position: 'relative', zIndex: 2 }}>
               {/* Header inside the dark section */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '3rem' }}>
-                <div style={{ border: '1px solid rgba(255,255,255,0.2)', padding: '10px', borderRadius: '12px', display: 'flex', color: '#fff' }}>
-                  <Calendar size={22} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
+                <div 
+                  onClick={() => navigate('/events')}
+                  style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }}
+                >
+                  <div style={{ border: '1px solid rgba(255,255,255,0.2)', padding: '10px', borderRadius: '12px', display: 'flex', color: '#fff' }}>
+                    <Calendar size={22} />
+                  </div>
+                  <h2 style={{ 
+                    margin: 0, 
+                    fontSize: '2.4rem', 
+                    fontWeight: 400, 
+                    color: '#FFFFFF', 
+                    letterSpacing: '0.02em',
+                    fontFamily: '"Outfit", "Inter", sans-serif' 
+                  }}>
+                    Featured Network Events
+                  </h2>
                 </div>
-                <h2 style={{ 
-                  margin: 0, 
-                  fontSize: '2.4rem', 
-                  fontWeight: 400, 
-                  color: '#FFFFFF', 
-                  letterSpacing: '0.02em',
-                  fontFamily: '"Outfit", "Inter", sans-serif' 
-                }}>
-                  Featured Network Events
-                </h2>
+                <button 
+                  onClick={() => navigate('/events')} 
+                  className="btn-premium" 
+                  style={{ 
+                    border: '1px solid rgba(255,255,255,0.2)', 
+                    background: 'rgba(255,255,255,0.08)', 
+                    color: '#FFFFFF', 
+                    fontWeight: 700, 
+                    padding: '10px 24px', 
+                    borderRadius: '999px', 
+                    fontSize: '0.95rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  Browse All
+                </button>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem' }}>
@@ -578,7 +526,7 @@ const Dashboard: React.FC = () => {
                       key={i}
                       variants={itemVariants}
                       whileHover={{ y: -8, transition: { duration: 0.3 } }}
-                      onClick={() => navigate(event.id ? `/events/${event.id}` : '/events')}
+                      onClick={() => navigate('/events')}
                       className="premium-border-card"
                       style={{
                         borderRadius: '28px',
@@ -645,6 +593,21 @@ const Dashboard: React.FC = () => {
                               }}>
                                 <CheckCircle2 size={16} /> Registered
                               </div>
+                            ) : (event.is_active === false || event.is_over || (event.max_attendees > 0 && event.attendees_count >= event.max_attendees)) ? (
+                              <div style={{ 
+                                padding: '8px 18px', 
+                                borderRadius: '12px', 
+                                background: 'rgba(239, 68, 68, 0.1)', 
+                                color: '#ef4444', 
+                                border: '1px solid rgba(239, 68, 68, 0.25)',
+                                fontWeight: 800, 
+                                fontSize: '0.85rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px'
+                              }}>
+                                Inactive
+                              </div>
                             ) : (
                               <button
                                 onClick={(e) => {
@@ -686,6 +649,7 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
           </motion.section>
+          )}
 
           <style>{`
             @keyframes border-flow {
@@ -810,7 +774,10 @@ const Dashboard: React.FC = () => {
             style={{ marginBottom: '0' }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div 
+                onClick={() => navigate('/jobs')}
+                style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }}
+              >
                 <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '10px', borderRadius: '14px', display: 'flex' }}>
                   <Briefcase size={22} color="#ef4444" />
                 </div>
@@ -825,117 +792,123 @@ const Dashboard: React.FC = () => {
                   Job Recommendations
                 </h2>
               </div>
-              <button onClick={() => navigate('/jobs')} className="btn-premium" style={{ border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#0F172A', fontWeight: 700, padding: '10px 24px', borderRadius: '999px', fontSize: '0.95rem' }}>
+              <button onClick={() => navigate('/jobs')} className="btn-premium" style={{ border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#0F172A', fontWeight: 700, padding: '10px 24px', borderRadius: '999px', fontSize: '0.95rem', cursor: 'pointer' }}>
                 Explore All
               </button>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.25rem' }}>
-              {jobs.slice(0, 6).map((job, i) => (
-                <motion.div
-                  key={i}
-                  variants={itemVariants}
-                  whileHover="hover"
-                  onClick={() => navigate(`/jobs/${job.id || job._id}`)}
-                  className="premium-border-card dark"
-                  style={{
-                    height: '230px',
-                    cursor: 'pointer',
-                    borderRadius: '24px',
-                    overflow: 'hidden',
-                    position: 'relative',
-                  }}
-                >
-                  <div className="premium-card-inner" style={{
-                    height: '100%',
-                    width: '100%',
-                    padding: '1.5rem',
-                    background: '#0F172A',
-                    borderRadius: '22px',
-                    position: 'relative',
-                    zIndex: 2,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                  }}>
-                    {/* UNIQUE STUNNING TRANSITION OVERLAYS */}
-                    <motion.div
-                      variants={{
-                        hover: { scale: 1.08 }
-                      }}
-                      transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                      style={{ position: 'absolute', inset: 0, zIndex: 0 }}
-                    >
-                      <img src={job.backgroundImage || architectBg} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.4 }} alt="" />
-                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15, 23, 42, 0.98) 0%, rgba(15, 23, 42, 0.4) 100%)' }} />
-                    </motion.div>
-
-                    {/* Sweeping Shine Effect */}
-                    <motion.div
-                      variants={{
-                        hover: { left: '150%', transition: { duration: 0.8, ease: "easeInOut" } }
-                      }}
-                      style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: '-150%',
-                        width: '100%',
-                        height: '100%',
-                        background: 'linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.12) 50%, transparent 70%)',
-                        zIndex: 2,
-                        pointerEvents: 'none'
-                      }}
-                    />
-
-
-                  {/* Border Glow Effect */}
+              {jobs.length > 0 ? (
+                jobs.slice(0, 6).map((job, i) => (
                   <motion.div
-                    variants={{
-                      hover: { opacity: 1 }
-                    }}
-                    initial={{ opacity: 0 }}
+                    key={job.id || job._id || i}
+                    variants={itemVariants}
+                    whileHover="hover"
+                    onClick={() => navigate(`/jobs/${job.id || job._id}`)}
+                    className="premium-border-card dark"
                     style={{
-                      position: 'absolute',
-                      inset: 0,
-                      border: '2px solid #EF4444',
+                      height: '230px',
+                      cursor: 'pointer',
                       borderRadius: '24px',
-                      zIndex: 3,
-                      pointerEvents: 'none',
-                      boxShadow: 'inset 0 0 15px rgba(239, 68, 68, 0.2)'
+                      overflow: 'hidden',
+                      position: 'relative',
                     }}
-                  />
-
-                  <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <span style={{
-                      background: 'rgba(239, 68, 68, 0.12)',
-                      color: '#EF4444',
-                      padding: '4px 12px',
-                      borderRadius: '8px',
-                      fontSize: '0.65rem',
-                      fontWeight: 900,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.08em',
-                      border: '1px solid rgba(239, 68, 68, 0.2)'
+                  >
+                    <div className="premium-card-inner" style={{
+                      height: '100%',
+                      width: '100%',
+                      padding: '1.5rem',
+                      background: '#0F172A',
+                      borderRadius: '22px',
+                      position: 'relative',
+                      zIndex: 2,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
                     }}>
-                      NeST Internal
-                    </span>
-                  </div>
+                      {/* UNIQUE STUNNING TRANSITION OVERLAYS */}
+                      <motion.div
+                        variants={{
+                          hover: { scale: 1.08 }
+                        }}
+                        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                        style={{ position: 'absolute', inset: 0, zIndex: 0 }}
+                      >
+                        <img src={job.backgroundImage || architectBg} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.4 }} alt="" />
+                        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15, 23, 42, 0.98) 0%, rgba(15, 23, 42, 0.4) 100%)' }} />
+                      </motion.div>
 
+                      {/* Sweeping Shine Effect */}
+                      <motion.div
+                        variants={{
+                          hover: { left: '150%', transition: { duration: 0.8, ease: "easeInOut" } }
+                        }}
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: '-150%',
+                          width: '100%',
+                          height: '100%',
+                          background: 'linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.12) 50%, transparent 70%)',
+                          zIndex: 2,
+                          pointerEvents: 'none'
+                        }}
+                      />
 
-                  <div style={{ position: 'relative', zIndex: 4 }}>
-                    <h4 style={{ margin: '0 0 0.6rem', fontSize: '1.4rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', lineHeight: 1.2 }}>{job.title}</h4>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '0.9rem', color: '#cbd5e1', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Users size={16} color="#ef4444" /> {job.company}
-                      </span>
-                      <span style={{ fontSize: '0.9rem', color: '#cbd5e1', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <MapPin size={16} color="#ef4444" /> {job.location}
-                      </span>
+                      {/* Border Glow Effect */}
+                      <motion.div
+                        variants={{
+                          hover: { opacity: 1 }
+                        }}
+                        initial={{ opacity: 0 }}
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          border: '2px solid #EF4444',
+                          borderRadius: '24px',
+                          zIndex: 3,
+                          pointerEvents: 'none',
+                          boxShadow: 'inset 0 0 15px rgba(239, 68, 68, 0.2)'
+                        }}
+                      />
+
+                      <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <span style={{
+                          background: 'rgba(239, 68, 68, 0.12)',
+                          color: '#EF4444',
+                          padding: '4px 12px',
+                          borderRadius: '8px',
+                          fontSize: '0.65rem',
+                          fontWeight: 900,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.08em',
+                          border: '1px solid rgba(239, 68, 68, 0.2)'
+                        }}>
+                          {job.type || 'Full-time'}
+                        </span>
+                      </div>
+
+                      <div style={{ position: 'relative', zIndex: 4 }}>
+                        <h4 style={{ margin: '0 0 0.6rem', fontSize: '1.4rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', lineHeight: 1.2 }}>{job.title}</h4>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '0.9rem', color: '#cbd5e1', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <Users size={16} color="#ef4444" /> {job.company || 'NeST Digital'}
+                          </span>
+                          <span style={{ fontSize: '0.9rem', color: '#cbd5e1', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <MapPin size={16} color="#ef4444" /> {job.location || 'Remote'}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  </motion.div>
+                ))
+              ) : (
+                <div style={{ gridColumn: 'span 3', textAlign: 'center', padding: '3.5rem', background: '#0F172A', borderRadius: '24px', border: '2px dashed rgba(255,255,255,0.1)' }}>
+                  <Briefcase size={44} color="#94a3b8" style={{ marginBottom: '1rem', opacity: 0.6 }} />
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ffffff', marginBottom: '0.5rem' }}>No Active Job Openings</h3>
+                  <p style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 600, maxWidth: '340px', margin: '0 auto', fontSize: '0.9rem' }}>New opportunities posted by recruiters will appear live here.</p>
                 </div>
-              </motion.div>
-              ))}
+              )}
             </div>
           </motion.section>
 
@@ -969,9 +942,11 @@ const Dashboard: React.FC = () => {
                     Community Insights
                   </h2>
                 </div>
-                <button onClick={() => navigate('/dashboard/activity')} style={{ border: '1px solid #e2e8f0', background: '#ffffff', color: '#0d2046', fontWeight: 800, padding: '12px 32px', borderRadius: '999px', fontSize: '1rem', cursor: 'pointer', transition: 'all 0.3s ease' }}>
-                  Career Timelines
-                </button>
+                {!isDirect && (
+                  <button onClick={() => navigate('/dashboard/activity')} style={{ border: '1px solid #e2e8f0', background: '#ffffff', color: '#0d2046', fontWeight: 800, padding: '12px 32px', borderRadius: '999px', fontSize: '1rem', cursor: 'pointer', transition: 'all 0.3s ease' }}>
+                    Career Timelines
+                  </button>
+                )}
               </div>
 
               {/* HORIZONTAL CARDS CONTAINER */}
@@ -1000,7 +975,13 @@ const Dashboard: React.FC = () => {
                       <motion.div
                         key={i}
                         whileHover={{ y: -10, transition: { duration: 0.4 } }}
-                        onClick={() => navigate('/dashboard/activity')}
+                        onClick={() => {
+                          if (isDirect) {
+                            setSelectedInsight(post);
+                          } else {
+                            navigate('/dashboard/activity');
+                          }
+                        }}
                         onMouseEnter={() => setIsCarouselPaused(true)}
                         onMouseLeave={() => setIsCarouselPaused(false)}
                         style={{
@@ -1023,7 +1004,7 @@ const Dashboard: React.FC = () => {
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                             alt="" 
                           />
-                          {post.author_type === 'Admin' && (
+                          {(post.author_type === 'Admin' || post.author_role === 'Admin' || post.author_role === 'Recruiter' || post.is_official) && (
                             <div style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', background: '#fff', color: '#ef4444', padding: '6px 16px', borderRadius: '99px', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                               OFFICIAL
                             </div>
@@ -1062,7 +1043,11 @@ const Dashboard: React.FC = () => {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              navigate('/dashboard/activity');
+                              if (isDirect) {
+                                setSelectedInsight(post);
+                              } else {
+                                navigate('/dashboard/activity');
+                              }
                             }}
                             style={{ background: 'none', border: 'none', color: '#3b82f6', fontWeight: 800, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', padding: 0 }}
                           >
@@ -1102,6 +1087,7 @@ const Dashboard: React.FC = () => {
           </motion.section>
 
           {/* 3. ADVANCED LEARNING */}
+          {!isDirect && (
           <motion.section
             variants={sectionVariants}
             initial="hidden"
@@ -1109,7 +1095,10 @@ const Dashboard: React.FC = () => {
             viewport={{ once: true, margin: "-10%" }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div 
+                onClick={() => navigate('/courses')}
+                style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }}
+              >
                 <div style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.2)', padding: '10px', borderRadius: '14px', display: 'flex' }}>
                   <Award size={22} color="#3b82f6" />
                 </div>
@@ -1124,179 +1113,128 @@ const Dashboard: React.FC = () => {
                   Advanced Learning
                 </h2>
               </div>
-              <button onClick={() => navigate('/learning')} className="btn-premium" style={{ border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#0F172A', fontWeight: 700, padding: '10px 24px', borderRadius: '999px', fontSize: '0.95rem' }}>
+              <button onClick={() => navigate('/courses')} className="btn-premium" style={{ border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#0F172A', fontWeight: 700, padding: '10px 24px', borderRadius: '999px', fontSize: '0.95rem', cursor: 'pointer' }}>
                 Browse All
               </button>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem' }}>
-              {[
-                {
-                  id: 'c1',
-                  title: 'React & Next.js Masterclass',
-                  desc: 'Build production-grade applications with server components, streaming SSR, and advanced patterns.',
-                  image: '/featured_images/career_growth_3d_card_1777327661219.png',
-                  level: 'Advanced',
-                  duration: '12 Weeks',
-                  rating: 4.9,
-                  students: 2840,
-                  progress: 65,
-                  color: '#3B82F6',
-                  instructor: 'Dr. Sarah Chen'
-                },
-                {
-                  id: 'c2',
-                  title: 'AI & Deep Learning with Python',
-                  desc: 'Master neural networks, transformers, and generative AI using PyTorch and TensorFlow.',
-                  image: '/featured_images/generative_ai_3d_card_1777327602189.png',
-                  level: 'Expert',
-                  duration: '16 Weeks',
-                  rating: 4.8,
-                  students: 3560,
-                  progress: 0,
-                  color: '#8B5CF6',
-                  instructor: 'Prof. James Liu'
-                },
-                {
-                  id: 'c3',
-                  title: 'Cloud Architecture on AWS',
-                  desc: 'Design resilient, scalable cloud infrastructure with hands-on labs and real-world case studies.',
-                  image: '/featured_images/data_science_3d_card_1777327642533.png',
-                  level: 'Intermediate',
-                  duration: '10 Weeks',
-                  rating: 4.7,
-                  students: 1920,
-                  progress: 30,
-                  color: '#F59E0B',
-                  instructor: 'Ananya Patel'
-                },
-                {
-                  id: 'c4',
-                  title: 'Cybersecurity & Ethical Hacking',
-                  desc: 'Learn penetration testing, threat modeling, and zero-trust security frameworks from industry experts.',
-                  image: '/featured_images/it_certifications_3d_card_1777327623657.png',
-                  level: 'Advanced',
-                  duration: '14 Weeks',
-                  rating: 4.9,
-                  students: 2150,
-                  progress: 0,
-                  color: '#10B981',
-                  instructor: 'Marcus Rivera'
-                }
-              ].map((course, i) => (
-                <motion.div
-                  key={course.id}
-                  variants={itemVariants}
-                  whileHover={{
-                    y: -10,
-                    scale: 1.02,
-                    boxShadow: '0px 4px 8px rgba(15, 23, 42, 0.02), 0px 8px 16px rgba(15, 23, 42, 0.03), 0px 16px 24px rgba(15, 23, 42, 0.04), 0px 24px 32px rgba(15, 23, 42, 0.05), 0px 32px 48px rgba(15, 23, 42, 0.06), 0px 48px 80px rgba(15, 23, 42, 0.08)',
-                    transition: { duration: 0.35, ease: [0.16, 1, 0.3, 1] }
-                  }}
-                  style={{
-                    cursor: 'pointer',
-                    borderRadius: '20px',
-                    overflow: 'hidden',
-                    background: '#fff',
-                    border: '1px solid rgba(0,0,0,0.06)',
-                    boxShadow: '0px 2px 4px rgba(15, 23, 42, 0.015), 0px 4px 8px rgba(15, 23, 42, 0.02), 0px 8px 16px rgba(15, 23, 42, 0.025), 0px 16px 24px rgba(15, 23, 42, 0.03), 0px 24px 32px rgba(15, 23, 42, 0.035), 0px 32px 48px rgba(15, 23, 42, 0.04)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    transition: 'box-shadow 0.3s ease, border-color 0.3s ease'
-                  }}
-                  onClick={() => navigate(`/learning/course/${course.id}`)}
-                >
-                  {/* Image Header */}
-                  <div style={{ height: '180px', position: 'relative', overflow: 'hidden' }}>
-                    <img
-                      src={course.image}
-                      alt={course.title}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.6s ease' }}
-                    />
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15, 23, 42, 0.85) 0%, rgba(15, 23, 42, 0.1) 50%, transparent 100%)' }} />
+              {courses.length > 0 ? (
+                courses.slice(0, 4).map((course, i) => {
+                  const courseId = course.id || course._id;
+                  const colors = ['#3B82F6', '#8B5CF6', '#F59E0B', '#10B981'];
+                  const color = colors[i % colors.length];
+                  return (
+                    <motion.div
+                      key={courseId || i}
+                      variants={itemVariants}
+                      whileHover={{
+                        y: -10,
+                        scale: 1.02,
+                        boxShadow: '0px 16px 32px rgba(15, 23, 42, 0.08)',
+                        transition: { duration: 0.35, ease: [0.16, 1, 0.3, 1] }
+                      }}
+                      style={{
+                        cursor: 'pointer',
+                        borderRadius: '20px',
+                        overflow: 'hidden',
+                        background: '#fff',
+                        border: '1px solid rgba(0,0,0,0.06)',
+                        boxShadow: '0px 2px 4px rgba(15, 23, 42, 0.015), 0px 4px 8px rgba(15, 23, 42, 0.02), 0px 8px 16px rgba(15, 23, 42, 0.025), 0px 16px 24px rgba(15, 23, 42, 0.03)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        transition: 'box-shadow 0.3s ease, border-color 0.3s ease'
+                      }}
+                      onClick={() => navigate(courseId ? `/courses/${courseId}` : '/courses')}
+                    >
+                      {/* Image Header */}
+                      <div style={{ height: '180px', position: 'relative', overflow: 'hidden' }}>
+                        <img
+                          src={course.thumbnail || course.image || '/placeholder.jpg'}
+                          alt={course.title}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.6s ease' }}
+                        />
+                        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15, 23, 42, 0.85) 0%, rgba(15, 23, 42, 0.1) 50%, transparent 100%)' }} />
 
-                    {/* Level Badge */}
-                    <div style={{
-                      position: 'absolute', top: '12px', right: '12px',
-                      background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
-                      padding: '5px 14px', borderRadius: '99px',
-                      color: '#fff', fontSize: '0.65rem', fontWeight: 800,
-                      textTransform: 'uppercase', letterSpacing: '0.08em',
-                      border: '1px solid rgba(255,255,255,0.2)'
-                    }}>
-                      {course.level}
-                    </div>
-
-                    {/* Rating overlay */}
-                    <div style={{
-                      position: 'absolute', bottom: '12px', left: '14px',
-                      display: 'flex', alignItems: 'center', gap: '6px'
-                    }}>
-                      <div style={{ display: 'flex', gap: '2px' }}>
-                        {[1, 2, 3, 4, 5].map(s => (
-                          <Star key={s} size={12} fill={s <= Math.floor(course.rating) ? '#FBBF24' : 'transparent'} color="#FBBF24" />
-                        ))}
-                      </div>
-                      <span style={{ color: '#fff', fontSize: '0.75rem', fontWeight: 800 }}>{course.rating}</span>
-                      <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem', fontWeight: 600 }}>({course.students.toLocaleString()})</span>
-                    </div>
-                  </div>
-
-                  {/* Card Content */}
-                  <div style={{ padding: '1.4rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                    <h4 style={{ margin: '0 0 0.5rem', fontSize: '1.05rem', fontWeight: 800, color: '#0F172A', lineHeight: 1.3 }}>
-                      {course.title}
-                    </h4>
-                    <p style={{ margin: '0 0 1rem', fontSize: '0.8rem', color: '#64748B', lineHeight: 1.6, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', flex: 1 }}>
-                      {course.desc}
-                    </p>
-
-                    {/* Instructor */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
-                      <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: `linear-gradient(135deg, ${course.color}, ${course.color}88)`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '0.6rem', fontWeight: 900 }}>
-                        {course.instructor.split(' ').map(n => n[0]).join('')}
-                      </div>
-                      <span style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 600 }}>{course.instructor}</span>
-                    </div>
-
-                    {/* Progress Bar (if enrolled) */}
-                    {course.progress > 0 && (
-                      <div style={{ marginBottom: '1rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                          <span style={{ fontSize: '0.7rem', color: '#94A3B8', fontWeight: 700 }}>Progress</span>
-                          <span style={{ fontSize: '0.7rem', color: course.color, fontWeight: 800 }}>{course.progress}%</span>
+                        {/* Level Badge */}
+                        <div style={{
+                          position: 'absolute', top: '12px', right: '12px',
+                          background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+                          padding: '5px 14px', borderRadius: '99px',
+                          color: '#fff', fontSize: '0.65rem', fontWeight: 800,
+                          textTransform: 'uppercase', letterSpacing: '0.08em',
+                          border: '1px solid rgba(255,255,255,0.2)'
+                        }}>
+                          {course.level || 'Intermediate'}
                         </div>
-                        <div style={{ height: '4px', borderRadius: '99px', background: '#F1F5F9', overflow: 'hidden' }}>
-                          <motion.div
-                            initial={{ width: 0 }}
-                            whileInView={{ width: `${course.progress}%` }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: 0.3 + i * 0.1 }}
-                            style={{ height: '100%', borderRadius: '99px', background: `linear-gradient(90deg, ${course.color}, ${course.color}CC)` }}
-                          />
+
+                        {/* Rating overlay */}
+                        <div style={{
+                          position: 'absolute', bottom: '12px', left: '14px',
+                          display: 'flex', alignItems: 'center', gap: '6px'
+                        }}>
+                          <div style={{ display: 'flex', gap: '2px' }}>
+                            {[1, 2, 3, 4, 5].map(s => (
+                              <Star key={s} size={12} fill="#FBBF24" color="#FBBF24" />
+                            ))}
+                          </div>
+                          <span style={{ color: '#fff', fontSize: '0.75rem', fontWeight: 800 }}>{course.rating || 4.9}</span>
                         </div>
                       </div>
-                    )}
 
-                    {/* Footer */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '1rem', borderTop: '1px solid #F1F5F9' }}>
-                      <span style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <Clock size={13} color={course.color} /> {course.duration}
-                      </span>
-                      <span style={{
-                        fontSize: '0.75rem', fontWeight: 800, color: '#fff',
-                        background: course.progress > 0 ? course.color : '#0F172A',
-                        padding: '6px 16px', borderRadius: '99px',
-                        display: 'flex', alignItems: 'center', gap: '5px'
-                      }}>
-                        {course.progress > 0 ? 'Continue' : 'Enroll'} <ArrowRight size={12} />
-                      </span>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
+                      {/* Card Content */}
+                      <div style={{ padding: '1.4rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                        <h4 style={{ margin: '0 0 0.5rem', fontSize: '1.05rem', fontWeight: 800, color: '#0F172A', lineHeight: 1.3 }}>
+                          {course.title}
+                        </h4>
+                        <p style={{ margin: '0 0 1rem', fontSize: '0.8rem', color: '#64748B', lineHeight: 1.6, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', flex: 1 }}>
+                          {course.description || course.desc || 'Explore practical modular curricula and domain mastery.'}
+                        </p>
+
+                        {/* Instructor */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
+                          <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: `linear-gradient(135deg, ${color}, ${color}88)`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '0.6rem', fontWeight: 900 }}>
+                            {(course.instructor || 'NeST Expert').split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                          </div>
+                          <span style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 600 }}>{course.instructor || 'NeST Expert'}</span>
+                        </div>
+
+                        {/* Footer */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '1rem', borderTop: '1px solid #F1F5F9' }}>
+                          <span style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            <Clock size={13} color={color} /> {course.duration || 'Flexible'}
+                          </span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(courseId ? `/courses/${courseId}` : '/courses');
+                            }}
+                            style={{
+                              fontSize: '0.75rem', fontWeight: 800, color: '#fff',
+                              background: '#0F172A',
+                              padding: '6px 16px', borderRadius: '99px',
+                              display: 'flex', alignItems: 'center', gap: '5px',
+                              border: 'none',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Explore <ArrowRight size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })
+              ) : (
+                <div style={{ gridColumn: 'span 4', textAlign: 'center', padding: '3.5rem', background: '#f8fafc', borderRadius: '24px', border: '2px dashed #e2e8f0' }}>
+                  <Award size={44} color="#94a3b8" style={{ marginBottom: '1rem', opacity: 0.6 }} />
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0F172A', marginBottom: '0.5rem' }}>No Courses Available</h3>
+                  <p style={{ color: '#64748b', fontWeight: 600, maxWidth: '340px', margin: '0 auto', fontSize: '0.9rem' }}>Curriculum and tracks created by Course Managers will appear live here.</p>
+                </div>
+              )}
             </div>
           </motion.section>
+          )}
 
 
 
@@ -1346,6 +1284,140 @@ const Dashboard: React.FC = () => {
                       <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => navigate(`/jobs/${selectedJob.id}`)} style={{ background: '#ef4444', color: '#0F172A', border: 'none', padding: '1.2rem 3rem', borderRadius: '16px', fontWeight: 800, fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 10px 20px rgba(239, 68, 68, 0.3)' }}>Apply for Opportunity</motion.button>
                       <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setSelectedJob(null)} style={{ background: 'rgba(255,255,255,0.05)', color: '#0F172A', border: '1px solid rgba(255,255,255,0.2)', padding: '1.2rem 2rem', borderRadius: '16px', fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', backdropFilter: 'blur(10px)' }}>Close Detail</motion.button>
                     </div>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Direct Applicant Insight Full View Modal */}
+          <AnimatePresence>
+            {selectedInsight && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                style={{
+                  position: 'fixed',
+                  inset: 0,
+                  zIndex: 9999,
+                  background: 'rgba(5, 13, 30, 0.7)',
+                  backdropFilter: 'blur(12px)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '2rem'
+                }}
+                onClick={() => setSelectedInsight(null)}
+              >
+                <motion.div
+                  initial={{ scale: 0.95, y: 20, opacity: 0 }}
+                  animate={{ scale: 1, y: 0, opacity: 1 }}
+                  exit={{ scale: 0.95, y: 20, opacity: 0 }}
+                  transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                  style={{
+                    background: '#ffffff',
+                    width: '100%',
+                    maxWidth: '640px',
+                    borderRadius: '24px',
+                    overflow: 'hidden',
+                    boxShadow: '0 25px 60px rgba(0,0,0,0.25)',
+                    position: 'relative',
+                    maxHeight: '90vh',
+                    display: 'flex',
+                    flexDirection: 'column'
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {/* Close button */}
+                  <button
+                    onClick={() => setSelectedInsight(null)}
+                    style={{
+                      position: 'absolute',
+                      top: '16px',
+                      right: '16px',
+                      background: 'rgba(255, 255, 255, 0.9)',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '50%',
+                      width: '36px',
+                      height: '36px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      zIndex: 20,
+                      color: '#0f172a'
+                    }}
+                  >
+                    <X size={18} />
+                  </button>
+
+                  {/* Header Image if available */}
+                  {selectedInsight.image_url && (
+                    <div style={{ height: '220px', width: '100%', overflow: 'hidden', position: 'relative' }}>
+                      <img
+                        src={selectedInsight.image_url}
+                        alt=""
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                      {(selectedInsight.is_official || selectedInsight.author_role === 'Admin' || selectedInsight.author_role === 'Recruiter' || selectedInsight.author_type === 'Admin') && (
+                        <span style={{ position: 'absolute', bottom: '16px', left: '20px', background: '#c8102e', color: '#ffffff', padding: '4px 12px', borderRadius: '99px', fontSize: '11px', fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                          Official Announcement
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Content Body */}
+                  <div style={{ padding: '24px 28px', overflowY: 'auto' }}>
+                    {/* Author Meta */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '18px' }}>
+                      <img
+                        src={selectedInsight.author_picture || `https://ui-avatars.com/api/?name=${selectedInsight.author_name}&background=random`}
+                        style={{ width: '44px', height: '44px', borderRadius: '50%', border: '2px solid #e2e8f0' }}
+                        alt=""
+                      />
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>{selectedInsight.author_name}</h4>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontSize: '12px', fontWeight: 700, color: '#c8102e' }}>
+                            {selectedInsight.author_role || selectedInsight.author_type || 'Official'}
+                          </span>
+                          {selectedInsight.created_at && (
+                            <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+                              • {formatTimeAgo(selectedInsight.created_at)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Post Text */}
+                    <p style={{ margin: 0, fontSize: '15px', lineHeight: 1.7, color: '#334155', whiteSpace: 'pre-line' }}>
+                      {selectedInsight.content}
+                    </p>
+                  </div>
+
+                  {/* Footer */}
+                  <div style={{ padding: '16px 28px', borderTop: '1px solid #f1f5f9', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b', fontSize: '13px', fontWeight: 600 }}>
+                      <ThumbsUp size={16} /> {selectedInsight.likes_count || 0} Likes
+                    </div>
+                    <button
+                      onClick={() => setSelectedInsight(null)}
+                      style={{
+                        padding: '8px 20px',
+                        background: '#1a2652',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '10px',
+                        fontWeight: 700,
+                        fontSize: '13px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Close
+                    </button>
                   </div>
                 </motion.div>
               </motion.div>

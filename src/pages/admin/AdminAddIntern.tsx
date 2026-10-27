@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { adminApi } from '../../services/api';
 import nestIcon from '../../assets/nest_icon.png';
+import { validateEmail, validateName, validatePhone, validateRequired } from '../../utils/validation';
 
 const AdminAddIntern: React.FC = () => {
   const navigate = useNavigate();
@@ -31,7 +32,45 @@ const AdminAddIntern: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const nameErr = validateName(formData.full_name, 'Full name', 2, 80, true);
+    if (nameErr) {
+      setPopupMessage({ type: 'error', text: nameErr });
+      setShowPopup(true);
+      return;
+    }
+
+    const emailErr = validateEmail(formData.email, true);
+    if (emailErr) {
+      setPopupMessage({ type: 'error', text: emailErr });
+      setShowPopup(true);
+      return;
+    }
+
+    const phoneErr = validatePhone(formData.phone, false);
+    if (phoneErr) {
+      setPopupMessage({ type: 'error', text: phoneErr });
+      setShowPopup(true);
+      return;
+    }
+
     setIsSubmitting(true);
+
+    // Verify email duplicate before creating intern account
+    try {
+      const emailCheck = await adminApi.checkEmailExists(formData.email.trim().toLowerCase());
+      if (emailCheck.success && emailCheck.data?.exists) {
+        setPopupMessage({ 
+          type: 'error', 
+          text: emailCheck.data.message || 'This email address is already registered in the system. Duplicate emails are not allowed.' 
+        });
+        setShowPopup(true);
+        setIsSubmitting(false);
+        return;
+      }
+    } catch (err) {
+      console.error('Error validating intern email uniqueness:', err);
+    }
 
     // Mapping to API expectations while sending extra data
     const apiPayload = {
@@ -118,7 +157,7 @@ const AdminAddIntern: React.FC = () => {
       {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <button
-            onClick={() => navigate('/admin/interns')}
+            onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/admin/interns')}
             style={{
               display: 'flex',
               alignItems: 'center',

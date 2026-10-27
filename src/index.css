@@ -20,7 +20,7 @@
   --card-border: rgba(255, 255, 255, 0.1);
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
-  font-family: 'Montserrat', sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.5;
   font-weight: 400;
   color-scheme: dark;
@@ -47,6 +47,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   overflow-x: hidden;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 a {
@@ -73,7 +74,7 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: 'Montserrat', sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-weight: 700;
 }
 
@@ -114,7 +115,44 @@ section {
   scrollbar-color: #c1c9d4 transparent;
 }
 
-/* -- Native Date/Time Picker Fixes -- */
+/* -- Native Form Controls & Placeholder Visibility Fixes -- */
+input,
+textarea,
+select {
+  color-scheme: light;
+  color: #1e293b;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #94a3b8 !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: #94a3b8;
+}
+
+input::-webkit-input-placeholder,
+textarea::-webkit-input-placeholder {
+  color: #94a3b8 !important;
+  -webkit-text-fill-color: #94a3b8;
+}
+
+input:-moz-placeholder,
+textarea:-moz-placeholder {
+  color: #94a3b8 !important;
+  opacity: 1 !important;
+}
+
+input::-moz-placeholder,
+textarea::-moz-placeholder {
+  color: #94a3b8 !important;
+  opacity: 1 !important;
+}
+
+input:-ms-input-placeholder,
+textarea:-ms-input-placeholder {
+  color: #94a3b8 !important;
+}
+
 input[type="date"],
 input[type="time"] {
   color-scheme: light !important;
@@ -184,13 +222,4 @@ input[type="time"] {
 .progress-button.completed .progress-fill {
   width: 100%;
   background: transparent;
-}
-
-input[type="date"]::-webkit-calendar-picker-indicator,
-input[type="time"]::-webkit-calendar-picker-indicator {
-  display: none !important;
-  -webkit-appearance: none !important;
-  opacity: 0 !important;
-  width: 0 !important;
-  height: 0 !important;
 }

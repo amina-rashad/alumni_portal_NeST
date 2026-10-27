@@ -54,7 +54,7 @@ const AccountSettings: React.FC = () => {
         <aside style={{ borderRadius: '8px', border: '1px solid transparent', overflow: 'hidden', height: 'fit-content', position: 'sticky', top: '24px', transition: 'all 0.4s' }}>
           <div style={{ padding: '24px 24px 16px' }}>
             <button 
-              onClick={() => navigate('/dashboard')}
+              onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/dashboard')}
               style={{ background: 'none', border: 'none', color: '#c8102e', fontWeight: 600, fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '24px' }}
             >
               <ArrowLeft size={16} /> Back to NeST

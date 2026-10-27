@@ -4,11 +4,13 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   LayoutDashboard, Calendar, Users, BarChart3, Settings, 
-  LogOut, Bell, Menu, X, ChevronDown, UserCheck, ArrowLeft, ImagePlus, Activity
+  LogOut, Bell, Menu, X, ChevronDown, UserCheck, ArrowLeft, ImagePlus, Activity, Megaphone, User
 } from 'lucide-react';
 import nestMainLogo from '../../assets/nest_logo.png';
 import { getUser, authApi, notificationsApi, type AuthUser } from '../../services/api';
 import UserAvatar from '../../components/UserAvatar';
+import AdminSidebar from '../../components/AdminSidebar';
+import { formatTimeAgo } from '../../utils/dateUtils';
 
 /* ─────────────────────────── types ─────────────────────────── */
 interface NavItem { name: string; path: string; icon: React.ReactNode }
@@ -149,7 +151,8 @@ const NavButton: React.FC<NavButtonProps> = ({ group, activePath, isOpen, onClic
 const EventManagerLayout: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [managerUser, setManagerUser] = useState<AuthUser | null>(null);
+  const [managerUser, setManagerUser] = useState<AuthUser | null>(() => getUser() as unknown as AuthUser);
+  const [adminSidebarOpen, setAdminSidebarOpen] = useState(true);
   const [openGroup, setOpenGroup] = useState<NavGroup | null>(null);
   const [dropdownRect, setDropdownRect] = useState<DOMRect | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -229,45 +232,80 @@ const EventManagerLayout: React.FC = () => {
   };
 
   const brandPrimary = '#233167';
+  const isAdmin = managerUser?.role === 'admin' || managerUser?.role === 'super_admin';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#f8fafc', overflow: 'hidden', fontFamily: "'Montserrat', sans-serif" }}>
+    <div style={{ display: 'flex', height: '100vh', background: '#f8fafc', overflow: 'hidden', fontFamily: "'Inter', sans-serif" }}>
 
-      {/* ── TOP NAV ── */}
-      <header style={{
-        height: '66px',
-        background: '#ffffff',
-        borderBottom: '1px solid #e2e8f0',
-        display: 'flex',
-        alignItems: 'center',
-        padding: '0 24px',
-        gap: '16px',
-        zIndex: 1000,
-        flexShrink: 0,
-        boxShadow: '0 1px 8px rgba(35, 49, 103, 0.04)',
-        position: 'relative',
-      }}>
+      {/* ── ADMIN SIDEBAR (Visible when admin/super_admin is viewing Event Manager) ── */}
+      {isAdmin && (
+        <AdminSidebar
+          isOpen={adminSidebarOpen}
+          onToggle={() => setAdminSidebarOpen(!adminSidebarOpen)}
+          userRole={managerUser?.role}
+          currentPath={location.pathname}
+          onLogout={handleLogout}
+        />
+      )}
 
-        {/* Logo Container */}
-        <Link to="/event-manager/dashboard" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0 }}>
-          <div style={{
-            background: '#fff',
-            borderRadius: '0px',
-            padding: '4px 0',
-            display: 'flex',
-            alignItems: 'center',
-            borderRight: '1px solid #e2e8f0',
-            paddingRight: '16px'
-          }}>
-            <img src={nestMainLogo} alt="NeST Digital" style={{ height: '28px', objectFit: 'contain' }} />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', marginLeft: '12px' }}>
-            <span style={{ fontSize: '15px', fontWeight: 900, color: '#1e1b4b', letterSpacing: '0.01em', lineHeight: 1, textTransform: 'uppercase' }}>Event Manager</span>
-          </div>
-        </Link>
+      {/* ── MAIN WORKSPACE CONTENT ── */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', minWidth: 0 }}>
+        {/* ── TOP NAV ── */}
+        <header style={{
+          height: '66px',
+          background: '#ffffff',
+          borderBottom: '1px solid #e2e8f0',
+          display: 'flex',
+          alignItems: 'center',
+          padding: '0 24px',
+          gap: '16px',
+          zIndex: 1000,
+          flexShrink: 0,
+          boxShadow: '0 1px 8px rgba(35, 49, 103, 0.04)',
+          position: 'relative',
+        }}>
 
-        {/* Divider */}
-        <div style={{ width: '1px', height: '24px', background: '#e2e8f0', flexShrink: 0, margin: '0 4px' }} />
+          {/* Logo / Workspace Indicator */}
+          {isAdmin ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, marginRight: '8px' }}>
+              <span style={{
+                fontSize: '11px',
+                fontWeight: 800,
+                background: '#1a2652',
+                color: '#ffffff',
+                padding: '6px 12px',
+                borderRadius: '8px',
+                letterSpacing: '0.04em',
+                textTransform: 'uppercase',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}>
+                <Calendar size={13} />
+                EVENT WORKSPACE
+              </span>
+            </div>
+          ) : (
+            <Link to="/event-manager/dashboard" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0 }}>
+              <div style={{
+                background: '#fff',
+                borderRadius: '0px',
+                padding: '4px 0',
+                display: 'flex',
+                alignItems: 'center',
+                borderRight: '1px solid #e2e8f0',
+                paddingRight: '16px'
+              }}>
+                <img src={nestMainLogo} alt="NeST Digital" style={{ height: '28px', objectFit: 'contain' }} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', marginLeft: '12px' }}>
+                <span style={{ fontSize: '15px', fontWeight: 900, color: '#1e1b4b', letterSpacing: '0.01em', lineHeight: 1, textTransform: 'uppercase' }}>Event Manager</span>
+              </div>
+            </Link>
+          )}
+
+          {/* Divider */}
+          <div style={{ width: '1px', height: '24px', background: '#e2e8f0', flexShrink: 0, margin: '0 4px' }} />
 
         {/* Desktop Nav */}
         <nav 
@@ -383,30 +421,8 @@ const EventManagerLayout: React.FC = () => {
               whiteSpace: 'nowrap',
             }}
           >
-            <ImagePlus size={17} style={{ color: location.pathname.startsWith('/event-manager/posts') ? brandPrimary : '#64748b' }} />
-            Posts
-          </Link>
-
-
-          <Link
-            to="/event-manager/settings"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '8px 16px',
-              borderRadius: '12px',
-              textDecoration: 'none',
-              color: location.pathname.startsWith('/event-manager/settings') ? brandPrimary : '#334155',
-              background: location.pathname.startsWith('/event-manager/settings') ? 'rgba(35, 49, 103, 0.05)' : 'transparent',
-              fontWeight: location.pathname.startsWith('/event-manager/settings') ? 700 : 500,
-              fontSize: '13.5px',
-              transition: 'all 0.15s',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            <Settings size={17} style={{ color: location.pathname.startsWith('/event-manager/settings') ? brandPrimary : '#64748b' }} />
-            Settings
+            <Megaphone size={17} style={{ color: location.pathname.startsWith('/event-manager/posts') ? brandPrimary : '#64748b' }} />
+            Broadcast
           </Link>
         </nav>
 
@@ -429,29 +445,6 @@ const EventManagerLayout: React.FC = () => {
 
         {/* Right Area */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexShrink: 0, marginLeft: '12px' }}>
-          {(managerUser?.role === 'admin' || managerUser?.role === 'super_admin') && (
-             <button 
-               onClick={() => navigate('/admin/dashboard')}
-               style={{
-                 display: 'flex',
-                 alignItems: 'center',
-                 gap: '8px',
-                 padding: '8px 14px',
-                 borderRadius: '10px',
-                 border: '1px solid rgba(79, 70, 229, 0.2)',
-                 background: '#fff',
-                 color: brandPrimary,
-                 fontSize: '13px',
-                 fontWeight: 700,
-                 cursor: 'pointer',
-                 transition: 'all 0.2s'
-               }}
-               onMouseEnter={e => e.currentTarget.style.background = 'rgba(79, 70, 229, 0.02)'}
-               onMouseLeave={e => e.currentTarget.style.background = '#fff'}
-             >
-               <ArrowLeft size={16} /> <span className="desktop-nav-text">Back to Admin</span>
-             </button>
-          )}
 
           <div ref={notifRef} style={{ position: 'relative' }}>
              <div 
@@ -526,7 +519,7 @@ const EventManagerLayout: React.FC = () => {
                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                 <span style={{ fontSize: '13px', fontWeight: n.is_read ? 600 : 700, color: '#334155' }}>{n.title}</span>
                                 <span style={{ fontSize: '10px', color: '#94a3b8', flexShrink: 0, marginLeft: '8px' }}>
-                                  {n.created_at ? new Date(n.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
+                                  {n.created_at ? formatTimeAgo(n.created_at) : ''}
                                 </span>
                              </div>
                              <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#64748b', lineHeight: 1.4 }}>{n.message}</p>
@@ -578,8 +571,13 @@ const EventManagerLayout: React.FC = () => {
                     border: '1px solid #f1f5f9', padding: '6px', zIndex: 9999,
                   }}
                 >
-                  <Link to="/event-manager/profile" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', textDecoration: 'none', color: '#334155', fontSize: '14px' }}> <Users size={16} /> View Profile </Link>
-                  <Link to="/event-manager/settings" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', textDecoration: 'none', color: '#334155', fontSize: '14px' }}> <Settings size={16} /> Module Settings </Link>
+                  <Link 
+                    to="/event-manager/profile" 
+                    onClick={() => setProfileDropdownOpen(false)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', textDecoration: 'none', color: '#334155', fontSize: '14px', fontWeight: 600 }}
+                  > 
+                    <User size={16} /> View Profile 
+                  </Link>
                   <div style={{ height: '1px', background: '#f1f5f9', margin: '4px 8px' }} />
                   <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', width: '100%', textAlign: 'left', color: '#ef4444', fontSize: '14px', fontWeight: 600, border: 'none', background: 'none', cursor: 'pointer' }}> <LogOut size={16} /> Logout </button>
                 </motion.div>
@@ -628,17 +626,10 @@ const EventManagerLayout: React.FC = () => {
                     </Link>
                   </div>
                   <div style={{ marginBottom: '16px' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Content</div>
+                    <div style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Broadcast</div>
                     <Link to="/event-manager/posts" onClick={() => setMobileOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 0', color: location.pathname.startsWith('/event-manager/posts') ? brandPrimary : '#334155', textDecoration: 'none', fontWeight: location.pathname.startsWith('/event-manager/posts') ? 700 : 500, fontSize: '14px' }}>
-                       <ImagePlus size={17} style={{ color: location.pathname.startsWith('/event-manager/posts') ? brandPrimary : '#64748b' }} />
-                       Posts
-                    </Link>
-                  </div>
-                  <div style={{ marginBottom: '16px' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Tools</div>
-                    <Link to="/event-manager/settings" onClick={() => setMobileOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 0', color: location.pathname.startsWith('/event-manager/settings') ? brandPrimary : '#334155', textDecoration: 'none', fontWeight: location.pathname.startsWith('/event-manager/settings') ? 700 : 500, fontSize: '14px' }}>
-                       <Settings size={17} style={{ color: location.pathname.startsWith('/event-manager/settings') ? brandPrimary : '#64748b' }} />
-                       Settings
+                       <Megaphone size={17} style={{ color: location.pathname.startsWith('/event-manager/posts') ? brandPrimary : '#64748b' }} />
+                       Broadcast
                     </Link>
                   </div>
                </div>
@@ -650,12 +641,13 @@ const EventManagerLayout: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Main Content Area */}
-      <main style={{ flex: 1, overflowY: 'auto', background: '#f8fafc' }}>
-        <div style={{ padding: '32px', maxWidth: '1400px', margin: '0 auto' }}>
-          <Outlet />
-        </div>
-      </main>
+        {/* Main Content Area */}
+        <main style={{ flex: 1, overflowY: 'auto', background: '#f8fafc' }}>
+          <div style={{ padding: '32px', maxWidth: '1400px', margin: '0 auto' }}>
+            <Outlet />
+          </div>
+        </main>
+      </div>
 
       <style>{`
         @media (max-width: 1024px) {

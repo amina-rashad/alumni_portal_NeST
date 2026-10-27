@@ -74,7 +74,8 @@ const ReminderCenter: React.FC = () => {
     setIsLoading(true);
     try {
       const response = await reminderAPI.fetchAlerts();
-      setAlerts(response.data);
+      const alertList = Array.isArray(response.data) ? response.data : ((response.data as any)?.alerts || []);
+      setAlerts(alertList);
     } catch (err) {
       toast.error('Failed to load reminders');
     } finally {
@@ -145,28 +146,28 @@ const ReminderCenter: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <SummaryCard 
           label="Attendance Alerts" 
-          value="12" 
+          value={alerts.filter(a => a.type === 'Low Attendance').length.toString()} 
           icon={Users} 
           color="bg-red-500" 
           description="Students currently below the 75% mandatory threshold."
         />
         <SummaryCard 
           label="Upcoming Exams" 
-          value="24" 
+          value={alerts.filter(a => a.type === 'Upcoming Assessment').length.toString()} 
           icon={GraduationCap} 
           color="bg-blue-500" 
           description="Assessments due in the next 48 hours requiring prep."
         />
         <SummaryCard 
           label="Inactive Users" 
-          value="8" 
+          value={alerts.filter(a => a.type === 'Inactive Student' || a.severity === 'High').length.toString()} 
           icon={UserX} 
           color="bg-orange-500" 
           description="Students who haven't logged in for over 7 consecutive days."
         />
         <SummaryCard 
           label="Course Lags" 
-          value="15" 
+          value={alerts.filter(a => a.type === 'Pending Completion' || a.severity === 'Low').length.toString()} 
           icon={Info} 
           color="bg-indigo-500" 
           description="Enrolled students lagging behind their assigned schedule."

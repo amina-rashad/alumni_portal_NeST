@@ -21,28 +21,99 @@ def manager_or_admin_required(fn):
     def wrapper(*args, **kwargs):
         user_id = get_jwt_identity()
         db = get_db()
-        user = db["users"].find_one({"_id": ObjectId(user_id)})
-        if not user or user.get("role") not in ("event_manager", "admin", "super_admin"):
+        user = None
+        try:
+            user = db["users"].find_one({"_id": ObjectId(user_id)})
+        except Exception:
+            pass
+        if not user:
+            user = db["users"].find_one({"$or": [{"email": str(user_id).strip().lower()}, {"emp_id": str(user_id)}]})
+        role = (user.get("role") or "").strip().lower() if user else ""
+        if not user or (role not in ("event_manager", "admin", "super_admin") and user.get("user_type") != "Staff"):
             return jsonify({"success": False, "message": "Manager or Admin privileges required."}), 403
         return fn(*args, **kwargs)
     return wrapper
 
-def _serialize_event(e: dict) -> dict:
+def is_event_past(date_str, time_str=""):
+    if not date_str:
+        return False
+    try:
+        now = datetime.now(timezone.utc)
+        hours = 23
+        minutes = 59
+        if time_str:
+            time_part = time_str.strip()
+            import re
+            match = re.match(r"(\d+):(\d+)\s*(AM|PM)?", time_part, re.IGNORECASE)
+            if match:
+                hours = int(match.group(1))
+                minutes = int(match.group(2))
+                ampm = match.group(3)
+                if ampm:
+                    if ampm.upper() == "PM" and hours < 12:
+                        hours += 12
+                    elif ampm.upper() == "AM" and hours == 12:
+                        hours = 0
+        if "/" in date_str:
+            parts = [int(p) for p in date_str.strip().split("/")]
+            if parts[0] > 1000:
+                year, month, day = parts
+            else:
+                day, month, year = parts
+        elif "-" in date_str:
+            parts = [int(p) for p in date_str.strip().split("-")]
+            if parts[0] > 1000:
+                year, month, day = parts
+            else:
+                day, month, year = parts
+        else:
+            today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            return date_str < today
+
+        event_dt = datetime(year, month, day, hours, minutes, 59, tzinfo=timezone.utc)
+        return event_dt < now
+    except Exception as err:
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        return date_str < today
+
+def _serialize_event(e: dict, user_id: str = None) -> dict:
+    attendees = e.get("attendees", [])
+    attendees_count = len(attendees)
+    max_attendees = e.get("max_attendees", 0)
+    date_val = e.get("date", "")
+    time_val = e.get("time", "")
+    
+    is_over = is_event_past(date_val, time_val)
+    is_full = max_attendees > 0 and attendees_count >= max_attendees
+    
+    is_registered = False
+    if user_id:
+        is_registered = any(str(a) == str(user_id) for a in attendees)
+
+    # Inactive if date exceeded, or max capacity reached for non-participants, or explicitly inactive
+    is_active = e.get("is_active", True)
+    if is_over:
+        is_active = False
+    elif is_full and not is_registered:
+        is_active = False
+
     return {
         "id": str(e["_id"]),
         "title": e.get("title", ""),
         "description": e.get("description", ""),
-        "date": e.get("date", ""),
-        "time": e.get("time", ""),
+        "date": date_val,
+        "time": time_val,
         "location": e.get("location", "Virtual"),
         "category": e.get("category", "General"),
-        "attendees_count": len(e.get("attendees", [])),
-        "max_attendees": e.get("max_attendees", 0),
-        "is_registered": False, # Will be set conditionally
+        "attendees_count": attendees_count,
+        "max_attendees": max_attendees,
+        "is_registered": is_registered,
         "organizer": e.get("organizer", "NeST Alumni Association"),
         "cover_image": e.get("cover_image", ""),
         "mode": e.get("mode", "Offline"),
-        "is_active": e.get("is_active", True),
+        "is_active": is_active,
+        "is_full": is_full,
+        "is_over": is_over,
         "issued_certificates": [str(uid) for uid in e.get("issued_certificates", [])]
     }
 
@@ -161,34 +232,6 @@ def get_event_manager_stats():
             ]
         }
     }), 200
-
-def is_event_past(date_str, time_str=""):
-    if not date_str:
-        return False
-    try:
-        now = datetime.now(timezone.utc)
-        hours = 0
-        minutes = 0
-        if time_str:
-            time_part = time_str.strip()
-            import re
-            match = re.match(r"(\d+):(\d+)\s*(AM|PM)?", time_part, re.IGNORECASE)
-            if match:
-                hours = int(match.group(1))
-                minutes = int(match.group(2))
-                ampm = match.group(3)
-                if ampm:
-                    if ampm.upper() == "PM" and hours < 12:
-                        hours += 12
-                    elif ampm.upper() == "AM" and hours == 12:
-                        hours = 0
-        year, month, day = map(int, date_str.split("-"))
-        event_dt = datetime(year, month, day, hours, minutes, tzinfo=timezone.utc)
-        return event_dt < now
-    except Exception as err:
-        print(f"Error parsing event date/time: {err}")
-        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-        return date_str < today
 
 @events_bp.route("/manager/upcoming", methods=["GET"])
 @jwt_required()
@@ -367,27 +410,48 @@ def remove_registration():
 
 @events_bp.route("", methods=["GET"])
 @events_bp.route("/", methods=["GET"])
-@jwt_required()
+@jwt_required(optional=True)
 def list_events():
-    """List events with smart chronological sorting: Upcoming first, Past at bottom."""
+    """List events with smart chronological sorting: Upcoming first, Past at bottom, or latest/newest."""
     page = request.args.get("page", 1, type=int)
     limit = request.args.get("limit", 10, type=int)
     skip = (page - 1) * limit
     upcoming_only = request.args.get("upcoming_only", "false").lower() == "true"
+    sort_param = request.args.get("sort", "").lower()
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
     db = get_db()
     user_id = get_jwt_identity()
     
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    
+    # Check if user is staff (event_manager, admin, super_admin)
+    user = None
+    if user_id:
+        try:
+            user = db["users"].find_one({"_id": ObjectId(user_id)})
+        except Exception:
+            pass
+        if not user:
+            user = db["users"].find_one({"$or": [{"email": str(user_id).strip().lower()}, {"emp_id": str(user_id)}]})
+    role = (user.get("role") or "").strip().lower() if user else ""
+    is_staff = user and (role in ("event_manager", "admin", "super_admin") or user.get("user_type") == "Staff")
+
     # Aggregation for smart sorting and pagination
     pipeline = []
+    match_conditions = {}
+    if not is_staff:
+        match_conditions["is_active"] = {"$ne": False}
     if upcoming_only:
-        pipeline.append({"$match": {"date": {"$gte": today}}})
+        match_conditions["$or"] = [
+            {"date": {"$gte": today}},
+            {"date": ""},
+            {"date": {"$exists": False}}
+        ]
+    if match_conditions:
+        pipeline.append({"$match": match_conditions})
         
+    sort_dict = {"createdAt": -1, "_id": -1} if sort_param in ("latest", "newest") else {"date": 1}
     pipeline.extend([
-        # Sort strictly by date ascending
-        {"$sort": {"date": 1}},
+        {"$sort": sort_dict},
         {"$facet": {
             "metadata": [{"$count": "total"}],
             "data": [{"$skip": skip}, {"$limit": limit}]
@@ -400,9 +464,7 @@ def list_events():
     
     events_list = []
     for e in events_raw:
-        event = _serialize_event(e)
-        if "attendees" in e and any(str(a) == user_id for a in e["attendees"]):
-            event["is_registered"] = True
+        event = _serialize_event(e, user_id)
         events_list.append(event)
 
     return jsonify({
@@ -472,6 +534,52 @@ def register_for_event(event_id):
     if max_attendees > 0 and len(current_attendees) >= max_attendees:
         return jsonify({"success": False, "message": "This event has reached its maximum capacity."}), 400
     res = db["events"].update_one({"_id": oid}, {"$addToSet": {"attendees": u_oid}})
+
+    # Update user profile in MongoDB so future applications reuse these details
+    data = request.get_json(silent=True) or {}
+    user_updates = {}
+    candidate_keys = [
+        "full_name", "phone", "graduation_year", "batch",
+        "current_organisation", "current_company", "current_designation", "title",
+        "total_experience", "current_location", "location", "preferred_location",
+        "resume_drive_link", "resume_url", "resume_name", "referral_source", "referral_source_details", "tech_stacks", "interested_positions", "declaration_confirmed",
+        "specialization"
+    ]
+    for key in candidate_keys:
+        val = data.get(key)
+        if val is not None and str(val).strip():
+            user_updates[key] = str(val).strip()
+
+    # Sync aliases
+    if "graduation_year" in user_updates and not user_updates.get("batch"):
+        user_updates["batch"] = user_updates["graduation_year"]
+    if "batch" in user_updates and not user_updates.get("graduation_year"):
+        user_updates["graduation_year"] = user_updates["batch"]
+    if "current_organisation" in user_updates and not user_updates.get("current_company"):
+        user_updates["current_company"] = user_updates["current_organisation"]
+    if "current_company" in user_updates and not user_updates.get("current_organisation"):
+        user_updates["current_organisation"] = user_updates["current_company"]
+    if "current_designation" in user_updates and not user_updates.get("title"):
+        user_updates["title"] = user_updates["current_designation"]
+    if "current_location" in user_updates and not user_updates.get("location"):
+        user_updates["location"] = user_updates["current_location"]
+    if "resume_drive_link" in user_updates and not user_updates.get("resume_url"):
+        user_updates["resume_url"] = user_updates["resume_drive_link"]
+
+    linkedin_val = data.get("linkedin_url") or data.get("linkedin")
+    if linkedin_val:
+        user_updates["linkedin_url"] = str(linkedin_val).strip()
+    if data.get("full_name"):
+        user_updates["full_name"] = str(data["full_name"]).strip()
+    elif data.get("firstName") or data.get("lastName"):
+        composed_name = f"{data.get('firstName', '')} {data.get('lastName', '')}".strip()
+        if composed_name:
+            user_updates["full_name"] = composed_name
+
+    if user_updates:
+        user_updates["updated_at"] = datetime.now(timezone.utc)
+        db["users"].update_one({"_id": u_oid}, {"$set": user_updates})
+
     try:
         from .notifications import create_notification
         registrant = db["users"].find_one({"_id": u_oid})
@@ -487,6 +595,8 @@ def register_for_event(event_id):
 # ── Create Event ──
 
 @events_bp.route("/create", methods=["POST"])
+@events_bp.route("", methods=["POST"], strict_slashes=False)
+@events_bp.route("/", methods=["POST"], strict_slashes=False)
 @jwt_required()
 @manager_or_admin_required
 def create_event():
@@ -497,10 +607,18 @@ def create_event():
     if not data or not data.get("title"):
         return jsonify({"success": False, "message": "Event title is required."}), 400
         
+    raw_date = str(data.get("date", "")).strip()
+    if raw_date:
+        import re
+        dmy_match = re.match(r"^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$", raw_date)
+        if dmy_match:
+            d, m, y = dmy_match.groups()
+            raw_date = f"{y}-{m.zfill(2)}-{d.zfill(2)}"
+
     event_doc = {
         "title": data.get("title"),
         "description": data.get("description", ""),
-        "date": data.get("date", ""),
+        "date": raw_date,
         "time": data.get("time", ""),
         "location": data.get("location", "Virtual"),
         "category": data.get("category", "Networking & Mixer"),
@@ -577,6 +695,14 @@ def update_event(event_id):
     if not update_data:
         return jsonify({"success": False, "message": "No valid fields to update."}), 400
 
+    if "is_active" in update_data and update_data["is_active"]:
+        existing = db["events"].find_one({"_id": eid})
+        if existing and is_event_past(existing.get("date", ""), existing.get("time", "")):
+            return jsonify({
+                "success": False,
+                "message": "Cannot activate an event whose date has already passed."
+            }), 400
+
     result = db["events"].update_one(
         {"_id": eid},
         {"$set": update_data}
@@ -596,18 +722,27 @@ def update_event(event_id):
 @jwt_required()
 @manager_or_admin_required
 def delete_event(event_id):
-    """Delete an event."""
+    """Delete an event and its related records."""
     db = get_db()
     
     try:
         eid = ObjectId(event_id)
+        result = db["events"].delete_one({"$or": [{"_id": eid}, {"_id": str(event_id)}]})
     except Exception:
-        return jsonify({"success": False, "message": "Invalid event ID format."}), 400
+        result = db["events"].delete_one({"_id": str(event_id)})
 
-    result = db["events"].delete_one({"_id": eid})
-    
     if result.deleted_count == 0:
         return jsonify({"success": False, "message": "Event not found."}), 404
+
+    try:
+        db["event_registrations"].delete_many({"$or": [{"event_id": ObjectId(event_id)}, {"event_id": str(event_id)}]})
+    except Exception:
+        db["event_registrations"].delete_many({"event_id": str(event_id)})
+
+    try:
+        db["event_bookmarks"].delete_many({"$or": [{"event_id": ObjectId(event_id)}, {"event_id": str(event_id)}]})
+    except Exception:
+        db["event_bookmarks"].delete_many({"event_id": str(event_id)})
         
     return jsonify({
         "success": True,
@@ -721,3 +856,4 @@ def event_manager_broadcast_mail():
         "message": f"Message delivered to {email_count} email(s) and {notif_count} in-app notification(s).",
         "data": {"email_count": email_count, "notif_count": notif_count}
     }), 200
+

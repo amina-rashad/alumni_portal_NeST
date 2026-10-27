@@ -2,12 +2,13 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Award, Search, RefreshCw, CheckCircle2, Clock,
-  School, GraduationCap, BookOpen, Download, Eye, ChevronRight, X
+  School, GraduationCap, BookOpen, Download, Eye, ChevronRight, X, Calendar
 } from 'lucide-react';
 import { adminApi } from '../../services/api';
 import UserAvatar from '../../components/UserAvatar';
 import toast from 'react-hot-toast';
 import { generateCourseCertificate, getIVCertificatePDF } from '../../utils/CertificateGenerator';
+import { formatDateOnly } from '../../utils/dateUtils';
 
 /* ──────────────────────────── Types ──────────────────────────── */
 interface OverviewData {
@@ -57,6 +58,24 @@ const AdminCertification: React.FC = () => {
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [selectedUserEmail, setSelectedUserEmail] = useState<string | null>(null);
 
+  /* ── Date Picker Modal State ── */
+  const [dateModal, setDateModal] = useState<{
+    isOpen: boolean;
+    certId: string;
+    certType: 'iv' | 'course';
+    certTitle: string;
+    user: any;
+    isReissue: boolean;
+  }>({
+    isOpen: false,
+    certId: '',
+    certType: 'iv',
+    certTitle: '',
+    user: null,
+    isReissue: false
+  });
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+
   /* ── Fetch ── */
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -105,7 +124,7 @@ const AdminCertification: React.FC = () => {
 
     Object.values(groups).forEach(g => {
       // 1. IV
-      if (g.userType === 'Industrial Student') {
+      if (['Industrial Student', 'IV Student', 'Industrial Visit Student'].includes(g.userType || '')) {
         const ivItem = (overview?.iv || []).find(item => item.email.toLowerCase().trim() === g.email);
         if (ivItem) {
           g.certificates.push({
@@ -172,21 +191,70 @@ const AdminCertification: React.FC = () => {
   }, [groupedUsers, selectedUserEmail]);
 
   /* ── Actions ── */
-  const handleIssueIV = async (userId: string, s: any) => {
-    setActionLoading(`iv-${userId}`);
-    try {
-      const student = { name: s.full_name, email: s.email, college: s.college || 'N/A', batch: s.batch || 'N/A', date: new Date().toISOString().split('T')[0] };
-      const res = await adminApi.bulkIssueIVCertificates([student]);
-      if (res.success) {
-        toast.success(`IV certificate issued to ${s.full_name}`);
-        await fetchData();
-      } else {
-        toast.error(res.message || 'Failed to issue certificate');
+  const openDateModal = (cert: any, user: any, isReissue = false) => {
+    let initialDate = new Date().toISOString().split('T')[0];
+    if (cert.rawData?.date) {
+      const raw = String(cert.rawData.date).trim();
+      if (raw.includes('T')) initialDate = raw.split('T')[0];
+      else if (raw.includes(' ')) initialDate = raw.split(' ')[0];
+      else initialDate = raw;
+    } else if (cert.issuedAt) {
+      const raw = String(cert.issuedAt).trim();
+      if (raw.includes('T')) initialDate = raw.split('T')[0];
+    }
+    setSelectedDate(initialDate);
+    setDateModal({
+      isOpen: true,
+      certId: cert.id,
+      certType: cert.type,
+      certTitle: cert.title,
+      user,
+      isReissue
+    });
+  };
+
+  const handleConfirmIssueWithDate = async () => {
+    if (!dateModal.user) return;
+    const { certId, certType, user, isReissue } = dateModal;
+    setDateModal(prev => ({ ...prev, isOpen: false }));
+
+    if (certType === 'iv') {
+      setActionLoading(`iv-${certId}`);
+      try {
+        const student = {
+          name: user.full_name,
+          email: user.email,
+          college: user.college || 'N/A',
+          batch: user.batch || 'N/A',
+          date: selectedDate
+        };
+        const res = await adminApi.bulkIssueIVCertificates([student]);
+        if (res.success) {
+          toast.success(`IV certificate ${isReissue ? 'date updated' : 'issued'} with date ${selectedDate}`);
+          await fetchData();
+        } else {
+          toast.error(res.message || 'Failed to issue certificate');
+        }
+      } catch {
+        toast.error('Error issuing certificate');
+      } finally {
+        setActionLoading(null);
       }
-    } catch {
-      toast.error('Error issuing certificate');
-    } finally {
-      setActionLoading(null);
+    } else if (certType === 'course') {
+      setActionLoading(`course-${certId}`);
+      try {
+        const res = await adminApi.generateCourseCertificate(certId);
+        if (res.success) {
+          toast.success(`Course certificate generated for ${user.full_name}`);
+          await fetchData();
+        } else {
+          toast.error(res.message || 'Failed to generate certificate');
+        }
+      } catch {
+        toast.error('Error generating certificate');
+      } finally {
+        setActionLoading(null);
+      }
     }
   };
 
@@ -464,7 +532,7 @@ const AdminCertification: React.FC = () => {
                                 </span>
                                 {isIssued && cert.issuedAt && (
                                   <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>
-                                    • Issued on {new Date(cert.issuedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                    • Issued on {formatDateOnly(cert.issuedAt)}
                                   </span>
                                 )}
                               </div>
@@ -478,13 +546,14 @@ const AdminCertification: React.FC = () => {
                                 <button
                                   onClick={() => {
                                     if (cert.type === 'iv') {
-                                      const doc = getIVCertificatePDF(selectedUser.full_name, selectedUser.batch || '2024', cert.issuedAt || new Date().toISOString().split('T')[0]);
+                                      const dateToUse = cert.rawData?.date || cert.issuedAt || new Date().toISOString().split('T')[0];
+                                      const doc = getIVCertificatePDF(selectedUser.full_name, selectedUser.batch || '2024', dateToUse);
                                       window.open(doc.output('bloburl'), '_blank');
                                     } else if (cert.type === 'course') {
                                       generateCourseCertificate(
                                         selectedUser.full_name,
                                         cert.rawData.course_name,
-                                        cert.issuedAt ? new Date(cert.issuedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+                                        cert.rawData?.date || cert.issuedAt || new Date().toISOString().split('T')[0]
                                       );
                                     }
                                   }}
@@ -502,31 +571,28 @@ const AdminCertification: React.FC = () => {
                                 
                                 <button
                                   disabled={isBusy}
-                                  onClick={() => {
-                                    if (cert.type === 'iv') handleIssueIV(cert.id, selectedUser);
-                                    else if (cert.type === 'course') handleGenerateCourse(cert.id, selectedUser.full_name, cert.rawData.course_name);
-                                  }}
+                                  onClick={() => openDateModal(cert, selectedUser, true)}
                                   style={{
                                     display: 'inline-flex', alignItems: 'center', gap: '6px',
-                                    padding: '9px 16px', background: '#fff', color: '#64748b',
+                                    padding: '9px 14px', background: '#fff', color: '#64748b',
                                     border: '1px solid #e2e8f0', borderRadius: '10px', fontWeight: 700, fontSize: '13px',
                                     cursor: isBusy ? 'wait' : 'pointer', transition: 'all 0.2s', opacity: isBusy ? 0.7 : 1
                                   }}
+                                  title="Change the date displayed on this certificate"
                                 >
                                   {isBusy ? (
                                     <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} />
                                   ) : (
-                                    'Re-issue'
+                                    <>
+                                      <Calendar size={14} /> Change Date
+                                    </>
                                   )}
                                 </button>
                               </>
                             ) : (
                               <button
                                 disabled={isBusy}
-                                onClick={() => {
-                                  if (cert.type === 'iv') handleIssueIV(cert.id, selectedUser);
-                                  else if (cert.type === 'course') handleGenerateCourse(cert.id, selectedUser.full_name, cert.rawData.course_name);
-                                }}
+                                onClick={() => openDateModal(cert, selectedUser, false)}
                                 style={{
                                   display: 'inline-flex', alignItems: 'center', gap: '6px',
                                   padding: '10px 18px', background: nestRed, color: '#fff',
@@ -544,7 +610,9 @@ const AdminCertification: React.FC = () => {
                                 {isBusy ? (
                                   <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} />
                                 ) : (
-                                  cert.type === 'course' ? 'Generate' : 'Issue Certificate'
+                                  <>
+                                    <Award size={15} /> Issue Certificate
+                                  </>
                                 )}
                               </button>
                             )}
@@ -560,6 +628,142 @@ const AdminCertification: React.FC = () => {
         </div>
 
       </div>
+
+      {/* Date Chooser Modal */}
+      <AnimatePresence>
+        {dateModal.isOpen && (
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.5)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 99999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px'
+          }}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              style={{
+                background: '#ffffff',
+                borderRadius: '24px',
+                width: '100%',
+                maxWidth: '460px',
+                boxShadow: '0 20px 50px rgba(0,0,0,0.2)',
+                border: '1px solid #e2e8f0',
+                overflow: 'hidden'
+              }}
+            >
+              {/* Modal Header */}
+              <div style={{
+                padding: '24px',
+                borderBottom: '1px solid #f1f5f9',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                background: '#f8fafc'
+              }}>
+                <div>
+                  <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#1e293b', margin: '0 0 4px 0' }}>
+                    {dateModal.isReissue ? 'Update Certificate Date' : 'Issue Certificate'}
+                  </h3>
+                  <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>
+                    Select the official date to appear on the certificate
+                  </p>
+                </div>
+                <button
+                  onClick={() => setDateModal(prev => ({ ...prev, isOpen: false }))}
+                  style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div style={{ background: '#f8fafc', padding: '14px 16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Recipient</div>
+                  <div style={{ fontSize: '15px', fontWeight: 800, color: '#1a2652' }}>{dateModal.user?.full_name}</div>
+                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>{dateModal.certTitle}</div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '8px' }}>
+                    Certificate Display Date
+                  </label>
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      borderRadius: '12px',
+                      border: '1px solid #cbd5e1',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      color: '#1e293b',
+                      background: '#ffffff',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                  <p style={{ fontSize: '12px', color: '#94a3b8', margin: '6px 0 0 0' }}>
+                    * Only this date will be printed on the certificate. No time will be included.
+                  </p>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div style={{
+                padding: '16px 24px',
+                background: '#f8fafc',
+                borderTop: '1px solid #f1f5f9',
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: '12px'
+              }}>
+                <button
+                  type="button"
+                  onClick={() => setDateModal(prev => ({ ...prev, isOpen: false }))}
+                  style={{
+                    padding: '10px 18px',
+                    borderRadius: '10px',
+                    border: '1px solid #cbd5e1',
+                    background: '#ffffff',
+                    color: '#64748b',
+                    fontWeight: 700,
+                    fontSize: '13px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmIssueWithDate}
+                  style={{
+                    padding: '10px 22px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: '#1a2652',
+                    color: '#ffffff',
+                    fontWeight: 800,
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(26, 38, 82, 0.2)'
+                  }}
+                >
+                  {dateModal.isReissue ? 'Update Date' : 'Confirm & Issue'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <style>{`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }

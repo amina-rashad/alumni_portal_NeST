@@ -8,6 +8,7 @@ import {
   BookOpen
 } from 'lucide-react';
 import { coursesApi } from '../services/api';
+import StatusModal from '../components/StatusModal';
 
 const CourseDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -15,6 +16,18 @@ const CourseDetails: React.FC = () => {
   const [course, setCourse] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isEnrolled, setIsEnrolled] = useState(false);
+  const [enrolling, setEnrolling] = useState(false);
+
+  // Status Modal State
+  const [modalConfig, setModalConfig] = useState({
+    isOpen: false,
+    type: 'success' as 'success' | 'error' | 'info' | 'warning',
+    title: '',
+    message: '',
+    confirmText: 'Okay',
+    showConfirmOnly: true,
+    onConfirm: undefined as (() => void) | undefined
+  });
 
   useEffect(() => {
     const fetchCourseAndStatus = async () => {
@@ -47,7 +60,7 @@ const CourseDetails: React.FC = () => {
     return (
       <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center p-6">
         <div className="w-16 h-16 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-4" />
-        <p className="text-slate-400 font-black uppercase tracking-[0.2em] text-[10px]">Retrieving Curriculum...</p>
+        <p className="text-slate-400 font-black uppercase tracking-[0.2em] text-[10px]">Loading Course Details...</p>
       </div>
     );
   }
@@ -64,12 +77,7 @@ const CourseDetails: React.FC = () => {
     );
   }
 
-  const curriculum = [
-    { title: 'Architectural Foundations & Theory', duration: '45m', type: 'Theory' },
-    { title: 'Industry Best Practices at NeST', duration: '1h 20m', type: 'Standards' },
-    { title: 'Real-world Implementation Lab', duration: '2h 15m', type: 'Practical' },
-    { title: 'Scalability & Performance Tuning', duration: '3h 10m', type: 'Advanced' },
-  ];
+
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc', paddingBottom: '5rem', overflowX: 'hidden', fontFamily: '"Inter", sans-serif', margin: '-28px -32px 0 -32px' }}>
@@ -79,6 +87,28 @@ const CourseDetails: React.FC = () => {
         <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(200, 16, 46, 0.15) 0%, transparent 70%)', filter: 'blur(80px)', pointerEvents: 'none' }} />
         
         <div style={{ maxWidth: '1200px', margin: '0 auto', position: 'relative', zIndex: 10 }}>
+          <button 
+            onClick={() => navigate(-1)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: 'rgba(255, 255, 255, 0.1)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              color: '#fff',
+              borderRadius: '12px',
+              padding: '8px 16px',
+              fontWeight: 700,
+              fontSize: '13px',
+              cursor: 'pointer',
+              marginBottom: '2rem',
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+          >
+            <ArrowLeft size={16} /> Back to Courses
+          </button>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '4rem', alignItems: 'start' }}>
             <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }}>
               <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', alignItems: 'center' }}>
@@ -98,33 +128,83 @@ const CourseDetails: React.FC = () => {
               <div style={{ marginBottom: '2.5rem' }}>
                 <button 
                   onClick={async () => {
-                    try {
-                      if (id && !isEnrolled) {
-                        await coursesApi.enrollCourse(id);
-                        setIsEnrolled(true);
-                      }
-                      if (course.links && course.links.length > 0 && course.links[0]) {
+                    if (!id || enrolling) return;
+                    if (isEnrolled) {
+                      if (course?.links && course.links.length > 0 && course.links[0]) {
                         let targetLink = course.links[0];
                         if (!targetLink.startsWith('http://') && !targetLink.startsWith('https://')) {
                           targetLink = 'https://' + targetLink;
                         }
                         window.open(targetLink, '_blank');
+                      } else {
+                        navigate(`/courses/${id}/play`);
                       }
-                    } catch (err) {
-                      console.error('Enrollment failed:', err);
+                      return;
+                    }
+
+                    setEnrolling(true);
+                    try {
+                      const res = await coursesApi.enrollCourse(id);
+                      if (res.success) {
+                        setIsEnrolled(true);
+                        setModalConfig({
+                          isOpen: true,
+                          type: 'success',
+                          title: 'Enrollment Successful!',
+                          message: `You have successfully enrolled in "${course?.title || 'this course'}". You can now start learning immediately!`,
+                          confirmText: 'Start Learning',
+                          showConfirmOnly: true,
+                          onConfirm: () => {
+                            setModalConfig(prev => ({ ...prev, isOpen: false }));
+                            if (course?.links && course.links.length > 0 && course.links[0]) {
+                              let targetLink = course.links[0];
+                              if (!targetLink.startsWith('http://') && !targetLink.startsWith('https://')) {
+                                targetLink = 'https://' + targetLink;
+                              }
+                              window.open(targetLink, '_blank');
+                            } else {
+                              navigate(`/courses/${id}/play`);
+                            }
+                          }
+                        });
+                      } else {
+                        setModalConfig({
+                          isOpen: true,
+                          type: 'error',
+                          title: 'Enrollment Failed',
+                          message: res.message || 'Unable to enroll in this course. Please try again later.',
+                          confirmText: 'OK',
+                          showConfirmOnly: true,
+                          onConfirm: undefined
+                        });
+                      }
+                    } catch (err: any) {
+                      setModalConfig({
+                        isOpen: true,
+                        type: 'error',
+                        title: 'Enrollment Error',
+                        message: err.message || 'An unexpected error occurred while enrolling.',
+                        confirmText: 'OK',
+                        showConfirmOnly: true,
+                        onConfirm: undefined
+                      });
+                    } finally {
+                      setEnrolling(false);
                     }
                   }}
+                  disabled={enrolling}
                   style={{ 
                     padding: '1.2rem 3.5rem', borderRadius: '3rem', 
                     background: isEnrolled ? '#10b981' : '#3b82f6', 
                     color: 'white', border: 'none', fontWeight: 900, fontSize: '1.2rem', 
-                    cursor: 'pointer', boxShadow: isEnrolled ? '0 20px 40px rgba(16, 185, 129, 0.2)' : '0 20px 40px rgba(59, 130, 246, 0.3)',
+                    cursor: enrolling ? 'wait' : 'pointer',
+                    boxShadow: isEnrolled ? '0 20px 40px rgba(16, 185, 129, 0.2)' : '0 20px 40px rgba(59, 130, 246, 0.3)',
                     display: 'flex', alignItems: 'center', gap: '12px',
                     transition: 'all 0.3s ease',
                     marginBottom: '2rem'
                   }}
                 >
-                  {isEnrolled ? 'Enrolled' : 'Enroll Now'} <ChevronRight size={24} />
+                  {enrolling ? 'Enrolling...' : isEnrolled ? 'Enrolled • View Course' : 'Enroll Now'} <ChevronRight size={24} />
                 </button>
 
                 <div style={{ display: 'flex', gap: '2.5rem', alignItems: 'center' }}>
@@ -212,7 +292,7 @@ const CourseDetails: React.FC = () => {
           )}
         </div>
 
-        {course.curriculum && course.curriculum.length > 0 && (
+        {course.curriculum && Array.isArray(course.curriculum) && course.curriculum.length > 0 && (
           <>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                <h3 style={{ fontSize: '1.8rem', fontWeight: 900, color: '#0d2046', margin: 0, letterSpacing: '-0.02em' }}>Curriculum Schedule</h3>
@@ -234,6 +314,12 @@ const CourseDetails: React.FC = () => {
                          <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Lesson {idx + 1}</span>
                          <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#cbd5e1' }}></div>
                          <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>{item.duration || '45m'}</span>
+                         {item.type && (
+                           <>
+                             <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#cbd5e1' }}></div>
+                             <span style={{ fontSize: '0.75rem', color: '#c8102e', fontWeight: 800, textTransform: 'uppercase' }}>{item.type}</span>
+                           </>
+                         )}
                       </div>
                     </div>
                   </div>
@@ -246,6 +332,17 @@ const CourseDetails: React.FC = () => {
           </>
         )}
       </div>
+
+      <StatusModal
+        isOpen={modalConfig.isOpen}
+        onClose={() => setModalConfig({ ...modalConfig, isOpen: false })}
+        type={modalConfig.type}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        confirmText={modalConfig.confirmText}
+        showConfirmOnly={modalConfig.showConfirmOnly}
+        onConfirm={modalConfig.onConfirm}
+      />
     </div>
   );
 };

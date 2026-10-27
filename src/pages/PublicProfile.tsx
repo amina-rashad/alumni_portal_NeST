@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { 
   Mail, Phone,
   Briefcase, Award, 
-  Linkedin, Github, Twitter, Globe,
+  Linkedin, Github, Globe,
   CheckCircle2, Building, GraduationCap, FileText, Download, ArrowLeft, Loader2, Clock
 } from 'lucide-react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
@@ -354,7 +354,6 @@ const PublicProfile: React.FC = () => {
             <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '30px', paddingTop: '24px', borderTop: '1px solid #f1f5f9' }}>
                {user.linkedin_url && <a href={user.linkedin_url} target="_blank" rel="noopener noreferrer" style={{ color: '#94a3b8', transition: '0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#1a2652'}><Linkedin size={20} /></a>}
                {user.github_url && <a href={user.github_url} target="_blank" rel="noopener noreferrer" style={{ color: '#94a3b8', transition: '0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#000'}><Github size={20} /></a>}
-               {user.twitter_url && <a href={user.twitter_url} target="_blank" rel="noopener noreferrer" style={{ color: '#94a3b8', transition: '0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#1DA1F2'}><Twitter size={20} /></a>}
                {user.portfolio_url && <a href={user.portfolio_url} target="_blank" rel="noopener noreferrer" style={{ color: '#94a3b8', transition: '0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#c8102e'}><Globe size={20} /></a>}
             </div>
           </section>

@@ -10,7 +10,7 @@ import random
 import string
 
 import bcrypt
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, current_app
 from flask_jwt_extended import (
     create_access_token,
     create_refresh_token,
@@ -26,7 +26,7 @@ auth_bp = Blueprint("auth", __name__)
 # ── Validation Helpers ──
 
 EMAIL_REGEX = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
-VALID_USER_TYPES = ["Alumni", "Intern", "Trainee", "Industrial Student", "Event Participant"]
+VALID_USER_TYPES = ["Alumni", "Intern", "Trainee", "Industrial Student", "IV Student", "Event Participant", "Applicant"]
 
 
 def _validate_registration(data: dict) -> list[str]:
@@ -68,6 +68,32 @@ def _validate_registration(data: dict) -> list[str]:
         errors.append("Specialization / Department is required.")
 
     return errors
+
+PORTAL_STAFF_ROLES = ("admin", "super_admin", "recruiter", "event_manager", "course_manager")
+
+
+def _is_user_added_by_admin(user: dict) -> bool:
+    """Check if the user is an institutional member (not an applicant)."""
+    if not user:
+        return False
+    user_type = str(user.get("user_type") or "").strip().lower()
+    if user_type in ("applicant", "applicants"):
+        return False
+    if user.get("role") in PORTAL_STAFF_ROLES:
+        return True
+    return bool(
+        user.get("added_by_admin") or
+        user.get("created_by") or
+        user.get("created_by_admin") or
+        user.get("is_admin_created") or
+        user.get("student_id") or
+        user.get("emp_id") or
+        user_type in (
+            "staff", "alumni", "student", "students", "intern", "interns",
+            "trainee", "trainees", "industrial student", "industrial students",
+            "iv student", "iv students"
+        )
+    )
 
 
 # ── Register ──
@@ -128,7 +154,14 @@ def register():
     user_id = str(result.inserted_id)
 
     # Generate tokens
-    access_token = create_access_token(identity=user_id)
+    access_token = create_access_token(
+        identity=user_id,
+        additional_claims={
+            "role": user_doc["role"],
+            "email": user_doc["email"],
+            "user_type": user_doc["user_type"]
+        }
+    )
     refresh_token = create_refresh_token(identity=user_id)
 
     return jsonify({
@@ -141,6 +174,8 @@ def register():
                 "email": user_doc["email"],
                 "user_type": user_doc["user_type"],
                 "role": user_doc["role"],
+                "added_by_admin": _is_user_added_by_admin(user_doc),
+                "not_added_by_admin": not _is_user_added_by_admin(user_doc),
             },
             "access_token": access_token,
             "refresh_token": refresh_token,
@@ -226,16 +261,35 @@ def send_otp():
         return jsonify({"success": False, "message": "Email is required."}), 400
 
     email = data["email"].strip().lower()
+    full_name = data.get("full_name", "").strip()
+    auth_provider = data.get("auth_provider", "email").strip().lower()
     
     db = get_db()
     users = db["users"]
     user = users.find_one({"email": email})
     
+    now = datetime.now(timezone.utc)
+    
     if not user:
-        return jsonify({
-            "success": False,
-            "message": "No account found with this email address."
-        }), 404
+        # In the initial profile only add the email; rest will be updated later when applying for jobs, events, courses
+        user_doc = {
+            "email": email,
+            "user_type": "Applicant",
+            "role": "user",
+            "is_active": True,
+            "status": "Approved",
+            "auth_provider": auth_provider,
+            "created_at": now,
+            "updated_at": now,
+            "last_login": None,
+        }
+        res = users.insert_one(user_doc)
+        user = user_doc
+        user["_id"] = res.inserted_id
+    else:
+        # Update auth_provider if logging in via Google
+        if auth_provider == "google":
+            users.update_one({"_id": user["_id"]}, {"$set": {"auth_provider": "google"}})
 
     # Check if active
     if not user.get("is_active", True):
@@ -244,15 +298,29 @@ def send_otp():
             "message": "Your account has been deactivated. Please contact support."
         }), 403
 
-    now = datetime.now(timezone.utc)
-    
-    # Rate Limiting: Prevent resend within 30 seconds
+    # Rate Limiting: Prevent generating a brand new code within 30 seconds
     last_requested = user.get("last_otp_requested_at")
     if last_requested:
         if last_requested.tzinfo is None:
             last_requested = last_requested.replace(tzinfo=timezone.utc)
         
         if now - last_requested < timedelta(seconds=30):
+            # Check if active unexpired OTP exists in database
+            stored_otp = user.get("otp_code")
+            otp_expires_at = user.get("otp_expires_at")
+            if stored_otp and otp_expires_at:
+                if otp_expires_at.tzinfo is None:
+                    otp_expires_at = otp_expires_at.replace(tzinfo=timezone.utc)
+                if now < otp_expires_at:
+                    print(f"\n==========================================")
+                    print(f" [OTP ACTIVE] Valid code already exists for {email}: {stored_otp}")
+                    print(f"==========================================\n")
+                    return jsonify({
+                        "success": True,
+                        "message": "A verification code was recently sent. Please enter the code received in your email.",
+                        "data": {"email": email, "reused": True}
+                    }), 200
+
             return jsonify({
                 "success": False,
                 "message": "Please wait at least 30 seconds before requesting a new code."
@@ -261,8 +329,12 @@ def send_otp():
     # Generate a random 6-digit OTP
     otp = "".join(random.choices(string.digits, k=6))
     
-    # Set expiration time (e.g., 5 minutes from now)
+    # Set expiration time (5 minutes from now)
     expires_at = now + timedelta(minutes=5)
+
+    print(f"\n==========================================")
+    print(f" [OTP DISPATCH] Verification code for {email}: {otp}")
+    print(f"==========================================\n")
 
     # Store OTP in the database, reset failed attempts, update last requested time
     users.update_one(
@@ -278,14 +350,15 @@ def send_otp():
     )
 
     # Send the OTP via email
+    recipient_name = user.get("full_name") or email.split("@")[0].capitalize()
     subject = "Your NeST Digital NDA Connect Verification Code"
-    body = f"Hello {user.get('full_name', 'User')},\n\nNDA Connect\nYour verification code is: {otp}\n\nThis OTP is valid for 5 minutes.\n\nIf you did not request this code, please ignore this email."
+    body = f"Hello {recipient_name},\n\nNDA Connect\nYour verification code is: {otp}\n\nThis OTP is valid for 5 minutes.\n\nIf you did not request this code, please ignore this email."
     
     html_body = f"""
     <html>
       <body style="font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0; padding: 20px;">
         <h2 style="color: #c8102e; margin-bottom: 24px;">NDA Connect</h2>
-        <p>Hello <strong>{user.get('full_name', 'User')}</strong>,</p>
+        <p>Hello <strong>{recipient_name}</strong>,</p>
         <p>Your verification code is:</p>
         <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; text-align: center; margin: 24px 0;">
           <span style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #1e293b;">{otp}</span>
@@ -299,20 +372,24 @@ def send_otp():
     </html>
     """
     
+    email_sent = False
     try:
         email_sent = send_email(email, subject, body, html_body=html_body)
-    except ValueError as e:
-        if user.get("role") not in ["admin", "super_admin"]:
+    except Exception as e:
+        print(f"[OTP WARNING] SMTP Exception: {e}")
+        if user.get("role") not in ["admin", "super_admin"] and not (current_app.config.get("DEBUG") or current_app.debug):
             return jsonify({
                 "success": False,
                 "message": "SMTP Configuration Error: " + str(e)
             }), 500
-        email_sent = False
     
     if not email_sent:
         if user.get("role") in ["admin", "super_admin"]:
             # Bypass email sending failure for admins so they can use the master code
             pass
+        elif current_app.config.get("DEBUG") or current_app.debug:
+            # In debug/development mode, allow fallback with terminal code
+            print(f"[OTP NOTICE] Email delivery not confirmed; code available in server log: {otp}")
         else:
             return jsonify({
                 "success": False,
@@ -356,8 +433,8 @@ def login_otp():
             "message": "User not found."
         }), 404
 
-    # Master bypass for Admins in case of email system failure
-    is_master_bypass = (otp == "123456" and user.get("role") in ["admin", "super_admin"])
+    # Master bypass for Admins or during development (FLASK_DEBUG=1)
+    is_master_bypass = (otp == "123456" and (user.get("role") in ["admin", "super_admin"] or current_app.debug))
 
     if not is_master_bypass:
         # Verify OTP
@@ -420,29 +497,54 @@ def login_otp():
 
     user_id = str(user["_id"])
 
-    # Update last login timestamp
+    # Update last login timestamp, verification status, and store in MongoDB
+    update_data = {
+        "last_login": datetime.now(timezone.utc),
+        "is_email_verified": True,
+        "is_verified": True,
+        "updated_at": datetime.now(timezone.utc)
+    }
+    if not user.get("status") or user.get("status") == "none":
+        update_data["status"] = "Approved"
+
+    auth_provider = data.get("auth_provider")
+    if auth_provider:
+        update_data["auth_provider"] = auth_provider
+
     users.update_one(
         {"_id": user["_id"]},
-        {"$set": {"last_login": datetime.now(timezone.utc)}}
+        {"$set": update_data}
     )
 
+    # Reload fresh document from DB
+    user = users.find_one({"_id": user["_id"]})
+
     # Generate tokens
-    access_token = create_access_token(identity=user_id)
+    access_token = create_access_token(
+        identity=user_id,
+        additional_claims={
+            "role": user.get("role", "user"),
+            "email": user.get("email"),
+            "user_type": user.get("user_type", "")
+        }
+    )
     refresh_token = create_refresh_token(identity=user_id)
 
     return jsonify({
         "success": True,
-        "message": "Login successful! Welcome back.",
+        "message": "Login successful! Welcome.",
         "data": {
             "user": {
                 "id": user_id,
-                "full_name": user["full_name"],
-                "email": user["email"],
-                "user_type": user["user_type"],
+                "full_name": user.get("full_name") or user.get("email", "").split("@")[0].capitalize(),
+                "email": user.get("email"),
+                "user_type": user.get("user_type", ""),
                 "role": user.get("role", "user"),
                 "profile_picture": user.get("profile_picture"),
                 "skills": user.get("skills", []),
                 "status": user.get("status", "none"),
+                "added_by_admin": _is_user_added_by_admin(user),
+                "not_added_by_admin": not _is_user_added_by_admin(user),
             },
             "access_token": access_token,
             "refresh_token": refresh_token,
@@ -488,13 +590,15 @@ def verify_token():
         "data": {
             "user": {
                 "id": str(user["_id"]),
-                "full_name": user["full_name"],
-                "email": user["email"],
-                "user_type": user["user_type"],
+                "full_name": user.get("full_name", ""),
+                "email": user.get("email", ""),
+                "user_type": user.get("user_type", ""),
                 "role": user.get("role", "user"),
                 "profile_picture": user.get("profile_picture"),
                 "skills": user.get("skills", []),
                 "status": user.get("status", "none"),
+                "added_by_admin": _is_user_added_by_admin(user),
+                "not_added_by_admin": not _is_user_added_by_admin(user),
             }
         }
     }), 200

@@ -1,570 +1,513 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  TrendingUp, Award, Target, 
-  BarChart3, Activity,
-  Zap, Users,
-  ChevronRight, Sparkles, History, Info, BookOpen, Calendar, Trophy, Medal, Shield
+  Award, CheckCircle2, AlertCircle, 
+  BookOpen, ChevronRight, ArrowLeft
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { usersApi } from '../services/api';
+import { Link, useNavigate } from 'react-router-dom';
+import { coursesApi } from '../services/api';
+import { generateCourseCertificate } from '../utils/CertificateGenerator';
 
-const DEFAULT_SKILLS_DATA = [
-  { name: 'React', level: 92, category: 'Frontend' },
-  { name: 'Go', level: 78, category: 'Backend' },
-  { name: 'System Design', level: 85, category: 'Architecture' },
-  { name: 'Cloud Ops', level: 65, category: 'Infrastructure' },
-  { name: 'Security', level: 72, category: 'General' },
-  { name: 'Cybernetics', level: 58, category: 'Innovation' },
-];
+interface AssessmentRecord {
+  id: string;
+  course_id: string;
+  course_title: string;
+  assessment_title: string;
+  score: number;
+  passing_score: number;
+  passed: boolean;
+  status: string;
+  feedback: string;
+  correct_count: number;
+  total_questions: number;
+  date: string;
+}
 
-const DEFAULT_USER_POINTS = {
-  total: 2450,
-  level: "Gold",
-  nextLevel: "Platinum",
-  progressToNext: 65, // percentage
-  pointsToNext: 1550,
-  recentActivities: [
-    { id: 1, type: 'Course Completion', name: 'Advanced Cloud Architecture', points: 500, date: '2026-03-24', icon: <BookOpen size={18} /> },
-    { id: 2, type: 'Referral', name: 'Referred John Doe (Batch of 2018)', points: 1000, date: '2026-03-20', icon: <Users size={18} /> },
-    { id: 3, type: 'Event Participation', name: 'Tech Conclave 2026', points: 200, date: '2026-03-15', icon: <Calendar size={18} /> },
-    { id: 4, type: 'Community Activity', name: 'Answered 5 forum questions', points: 150, date: '2026-03-10', icon: <Zap size={18} /> },
-    { id: 5, type: 'Daily Check-in', name: '7-day streak bonus', points: 50, date: '2026-03-08', icon: <TrendingUp size={18} /> },
-  ],
-  waysToEarn: [
-    { title: 'Refer an Alumni', points: 1000, desc: 'Help your batchmates find the community.', icon: <Users size={18} /> },
-    { title: 'Complete a Certification', points: 500, desc: 'Finish any of our professional courses.', icon: <Award size={18} /> },
-    { title: 'Speak at an Event', points: 2000, desc: 'Share your expertise with the network.', icon: <TrendingUp size={18} /> },
-    { title: 'Mentorship Session', points: 300, desc: 'Conduct a 1-hour session for juniors.', icon: <Users size={18} /> },
-  ]
-};
+interface PerformanceData {
+  level: string;
+  grade: string;
+  title: string;
+  description: string;
+  badge_color: string;
+  average_score: number;
+  assessments_taken: number;
+  assessments_passed: number;
+  pass_rate: string;
+  courses_enrolled: number;
+  courses_completed: number;
+  completion_rate: string;
+}
 
 const PerformanceAnalysis: React.FC = () => {
-  const [hoveredWay, setHoveredWay] = useState<number | null>(null);
-  const [skillsData, setSkillsData] = useState(DEFAULT_SKILLS_DATA);
-  const [userPoints, setUserPoints] = useState(DEFAULT_USER_POINTS);
-  const [stats, setStats] = useState({
-    xp: '15.4K',
-    assessments: '12',
-    rank: 'Top 5%',
-    network: '450+'
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState('Learner');
+  const [performance, setPerformance] = useState<PerformanceData>({
+    level: 'Not Evaluated',
+    grade: '—',
+    title: 'Getting Started',
+    description: 'No assessments completed yet.',
+    badge_color: '#64748b',
+    average_score: 0,
+    assessments_taken: 0,
+    assessments_passed: 0,
+    pass_rate: '0%',
+    courses_enrolled: 0,
+    courses_completed: 0,
+    completion_rate: '0%'
   });
+  const [assessments, setAssessments] = useState<AssessmentRecord[]>([]);
 
   useEffect(() => {
+    let isMounted = true;
+
     const loadData = async () => {
       try {
-        const res = await usersApi.getProfile();
-        const data = res.data as any;
-        if (res.success && data && data.user) {
-          const u = data.user;
-          
-          const expCount = (u.experience || []).length;
-          const eduCount = (u.education || []).length;
-          const certCount = (u.certificates || []).length;
-          const calculatedXp = (expCount * 5000 + eduCount * 3000 + certCount * 1000 + 2450) / 1000;
-          
-          setStats({
-            xp: calculatedXp > 0 ? `${calculatedXp.toFixed(1)}K` : '0',
-            assessments: certCount.toString(),
-            rank: calculatedXp > 15 ? 'Top 1%' : calculatedXp > 5 ? 'Top 5%' : 'Top 25%',
-            network: u.batch ? `${parseInt(u.batch.toString().slice(-2)) * 10}+` : '150+'
-          });
+        setLoading(true);
+        const res = await coursesApi.getPerformanceAnalytics();
 
-          // Sync points based on XP
-          const totalPoints = calculatedXp * 1000;
-          let level = "Bronze";
-          let nextLevel = "Silver";
-          let pointsToNext = 5000 - totalPoints;
-          let progressToNext = (totalPoints / 5000) * 100;
-          
-          if (totalPoints > 15000) {
-            level = "Platinum";
-            nextLevel = "Diamond";
-            progressToNext = ((totalPoints - 15000) / 10000) * 100;
-            pointsToNext = 25000 - totalPoints;
-          } else if (totalPoints > 5000) {
-            level = "Gold";
-            nextLevel = "Platinum";
-            progressToNext = ((totalPoints - 5000) / 10000) * 100;
-            pointsToNext = 15000 - totalPoints;
+        if (res.success && res.data) {
+          const d = res.data as any;
+          if (!isMounted) return;
+
+          if (d.user && d.user.name) {
+            setUserName(d.user.name);
           }
-
-          setUserPoints(prev => ({
-            ...prev,
-            total: totalPoints,
-            level,
-            nextLevel,
-            progressToNext: Math.min(100, Math.round(progressToNext)),
-            pointsToNext: Math.max(0, pointsToNext)
-          }));
-
-          if (u.skills && u.skills.length > 0) {
-            const mappedSkills = u.skills.map((skill: string, index: number) => ({
-               name: skill,
-               level: Math.max(40, 95 - index * 5),
-               category: 'Technical'
-            }));
-            setSkillsData(mappedSkills.slice(0, 8));
+          if (d.performance) {
+            setPerformance(d.performance);
+          }
+          if (Array.isArray(d.assessments)) {
+            setAssessments(d.assessments);
           }
         }
       } catch (err) {
-        console.error("Failed to load profile for analytics", err);
+        console.error('Failed to load performance data:', err);
+      } finally {
+        if (isMounted) setLoading(false);
       }
     };
+
     loadData();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: '1rem' }}>
+        <div style={{ width: '44px', height: '44px', border: '4px solid #e2e8f0', borderTop: '4px solid #0d2046', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        <p style={{ color: '#64748b', fontWeight: 600, fontSize: '0.95rem' }}>Loading performance records...</p>
+        <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
   return (
-    <div style={{ maxWidth: '1400px', margin: '0 auto', paddingBottom: '5rem', fontFamily: '"Inter", "Montserrat", sans-serif' }}>
+    <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '2.5rem 1rem 5rem', fontFamily: '"Inter", "Montserrat", sans-serif' }}>
       
-      {/* ── Page Header (Minimal Luxury) ── */}
-      <section style={{ 
-        marginBottom: '4rem', 
-        padding: '3rem 0',
-        position: 'relative',
-        overflow: 'hidden',
-        borderBottom: '1px solid rgba(15, 23, 42, 0.04)'
-      }}>
-        {/* Subtle Luxury Radial Glow */}
-        <div style={{ 
-          position: 'absolute', 
-          top: '-50%', 
-          left: '0', 
-          width: '600px', 
-          height: '600px', 
-          background: 'radial-gradient(circle, rgba(200,16,46,0.03) 0%, transparent 70%)', 
-          zIndex: 0,
-          filter: 'blur(80px)'
-        }} />
-
-        <motion.div 
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: 'easeOut' }}
-          style={{ position: 'relative', zIndex: 1 }}
+      {/* ── Top Navigation / Back ── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem' }}>
+        <button
+          onClick={() => navigate('/assessments/quiz')}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            background: '#ffffff',
+            border: '1px solid #e2e8f0',
+            color: '#0f172a',
+            borderRadius: '12px',
+            padding: '8px 16px',
+            fontWeight: 700,
+            fontSize: '13px',
+            cursor: 'pointer',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+            transition: 'all 0.2s ease'
+          }}
         >
-          <h1 style={{ 
-            fontSize: '3.8rem', 
-            fontWeight: 900, 
-            color: '#0F172A', 
-            letterSpacing: '-0.04em', 
-            marginBottom: '1rem',
-            lineHeight: 1.1 
+          <ArrowLeft size={16} /> Back to Quizzes & Assessments
+        </button>
+
+        <span style={{
+          background: '#f1f5f9',
+          color: '#475569',
+          padding: '6px 14px',
+          borderRadius: '20px',
+          fontSize: '12px',
+          fontWeight: 700
+        }}>
+          Learner: {userName}
+        </span>
+      </div>
+
+      {/* ── Page Header ── */}
+      <div style={{ marginBottom: '2.5rem' }}>
+        <h1 style={{ fontSize: '2.4rem', fontWeight: 900, color: '#0d2046', margin: '0 0 0.5rem 0', letterSpacing: '-0.02em' }}>
+          Performance <span style={{ color: '#d32f2f' }}>Level</span>
+        </h1>
+        <p style={{ margin: 0, color: '#64748b', fontSize: '1.05rem', lineHeight: 1.5 }}>
+          Official overview of your academic evaluation standing, assessment competency, and course achievements.
+        </p>
+      </div>
+
+      {/* ── Main Performance Level Hero Card ── */}
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        style={{
+          background: 'linear-gradient(135deg, #0d2046 0%, #1e3a8a 100%)',
+          borderRadius: '1.75rem',
+          padding: '2.5rem',
+          color: 'white',
+          marginBottom: '2.5rem',
+          boxShadow: '0 12px 30px rgba(13, 32, 70, 0.15)',
+          position: 'relative',
+          overflow: 'hidden'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '2rem', position: 'relative', zIndex: 2 }}>
+          
+          <div style={{ maxWidth: '580px' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(255, 255, 255, 0.15)', padding: '6px 14px', borderRadius: '20px', marginBottom: '1rem', backdropFilter: 'blur(8px)' }}>
+              <span style={{
+                width: '10px',
+                height: '10px',
+                borderRadius: '50%',
+                backgroundColor: performance.badge_color || '#10b981',
+                boxShadow: `0 0 8px ${performance.badge_color || '#10b981'}`
+              }} />
+              <span style={{ fontSize: '13px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Performance Level: {performance.level}
+              </span>
+            </div>
+
+            <h2 style={{ fontSize: '2rem', fontWeight: 900, margin: '0 0 0.75rem 0', color: '#ffffff', letterSpacing: '-0.02em' }}>
+              {performance.title}
+            </h2>
+
+            <p style={{ margin: 0, fontSize: '1.05rem', color: '#cbd5e1', lineHeight: 1.6 }}>
+              {performance.description}
+            </p>
+          </div>
+
+          {/* Performance Grade Circle */}
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '140px',
+            height: '140px',
+            borderRadius: '50%',
+            background: 'rgba(255, 255, 255, 0.12)',
+            border: '2px solid rgba(255, 255, 255, 0.25)',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.2)',
+            backdropFilter: 'blur(10px)',
+            flexShrink: 0
           }}>
-            Performance <span style={{ 
-              color: '#c8102e', 
-              position: 'relative',
-              display: 'inline-block'
-            }}>
-              Analysis
-              <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: '100%' }}
-                transition={{ delay: 1, duration: 1, ease: 'easeInOut' }}
-                style={{ 
-                  position: 'absolute', 
-                  bottom: '12px', 
-                  left: 0, 
-                  height: '4px', 
-                  background: 'rgba(200, 16, 46, 0.1)', 
-                  zIndex: -1,
-                  borderRadius: '2px'
-                }}
-              />
+            <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#93c5fd', marginBottom: '2px' }}>
+              GRADE
             </span>
-          </h1>
-          
-          <p style={{ 
-            color: '#64748B', 
-            fontSize: '1.15rem', 
-            maxWidth: '600px', 
-            lineHeight: 1.6,
-            fontWeight: 500,
-            letterSpacing: '-0.01em'
+            <span style={{ fontSize: '3.2rem', fontWeight: 900, color: '#ffffff', lineHeight: 1 }}>
+              {performance.grade}
+            </span>
+            <span style={{ fontSize: '11px', fontWeight: 700, color: '#cbd5e1', marginTop: '4px' }}>
+              {performance.average_score}% Avg
+            </span>
+          </div>
+
+        </div>
+
+        {/* Ambient background accent */}
+        <div style={{
+          position: 'absolute',
+          right: '-50px',
+          bottom: '-50px',
+          width: '250px',
+          height: '250px',
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%)',
+          pointerEvents: 'none'
+        }} />
+      </motion.div>
+
+      {/* ── Key Performance Metrics Grid ── */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+        gap: '1.25rem',
+        marginBottom: '3rem'
+      }}>
+        
+        {/* Metric 1: Average Score */}
+        <div style={{
+          background: '#ffffff',
+          padding: '1.75rem',
+          borderRadius: '1.25rem',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 2px 10px rgba(0, 0, 0, 0.02)'
+        }}>
+          <span style={{ fontSize: '12px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Average Assessment Score
+          </span>
+          <p style={{
+            margin: '8px 0 4px 0',
+            fontSize: '2.2rem',
+            fontWeight: 900,
+            color: performance.average_score >= 75 ? '#16a34a' : (performance.average_score > 0 ? '#0d2046' : '#64748b')
           }}>
-            Comprehensive overview of your technical growth and community contributions within the NeST Digital ecosystem.
+            {performance.average_score}%
           </p>
-
-          {/* Minimal Accent Line */}
-          <motion.div 
-            initial={{ scaleX: 0 }}
-            animate={{ scaleX: 1 }}
-            transition={{ delay: 0.5, duration: 1.2, ease: 'circOut' }}
-            style={{ 
-              width: '80px', 
-              height: '3px', 
-              background: '#c8102e', 
-              marginTop: '2.5rem',
-              borderRadius: '2px',
-              transformOrigin: 'left'
-            }}
-          />
-        </motion.div>
-      </section>
-
-      {/* ── Top Level Stats ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
-        {[
-          { label: 'Total Career XP', value: stats.xp, icon: Zap, color: '#F59E0B' },
-          { label: 'Assessments Passed', value: stats.assessments, icon: Target, color: '#10B981' },
-          { label: 'Rank Percentile', value: stats.rank, icon: Award, color: '#6366F1' },
-          { label: 'Network Reach', value: stats.network, icon: Users, color: '#3B82F6' },
-        ].map((kpi, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
-            className="luxury-card"
-            style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}
-          >
-            <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: `${kpi.color}10`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '0.5rem' }}>
-              <kpi.icon size={22} color={kpi.color} />
-            </div>
-            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{kpi.label}</span>
-            <span style={{ fontSize: '1.8rem', fontWeight: 800, color: '#0F172A' }}>{kpi.value}</span>
-          </motion.div>
-        ))}
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: '2rem', marginBottom: '3rem' }}>
-        
-        {/* ── Left Column: Skills and Points Balance ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          
-          {/* Points Balance Card (High Fidelity) */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            style={{ 
-              background: 'linear-gradient(135deg, #0d2046 0%, #1e293b 100%)', 
-              color: 'white', 
-              padding: '2.5rem', 
-              borderRadius: '2rem', 
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-              position: 'relative',
-              overflow: 'hidden'
-            }}
-          >
-            <div style={{ position: 'absolute', top: '-10%', right: '-10%', width: '150px', height: '150px', background: 'rgba(255,255,255,0.05)', borderRadius: '50%' }}></div>
-            <div style={{ position: 'absolute', bottom: '-20%', left: '-5%', width: '100px', height: '100px', background: 'rgba(255,255,255,0.03)', borderRadius: '50%' }}></div>
-            
-            <div style={{ position: 'relative', zIndex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', opacity: 0.8, marginBottom: '0.5rem' }}>
-                <Zap size={16} fill="white" />
-                <span style={{ fontSize: '0.875rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Current Points Balance</span>
-              </div>
-              
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem', marginBottom: '2rem' }}>
-                <motion.h2 
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  style={{ fontSize: '4.5rem', fontWeight: 900, margin: 0, letterSpacing: '-0.02em' }}
-                >
-                  {userPoints.total.toLocaleString()}
-                </motion.h2>
-                <span style={{ fontSize: '1.25rem', fontWeight: 700, opacity: 0.6 }}>POINTS</span>
-              </div>
-
-              <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '1.25rem', padding: '1.5rem', border: '1px solid rgba(255,255,255,0.1)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Award size={18} color="#facc15" />
-                    <span style={{ fontWeight: 800, fontSize: '1rem' }}>{userPoints.level} Rank</span>
-                  </div>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 600, opacity: 0.6 }}>{userPoints.progressToNext}% to {userPoints.nextLevel}</span>
-                </div>
-                
-                <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', marginBottom: '0.5rem' }}>
-                  <motion.div 
-                    initial={{ width: 0 }}
-                    animate={{ width: `${userPoints.progressToNext}%` }}
-                    transition={{ duration: 1.5, ease: 'easeOut' }}
-                    style={{ height: '100%', width: `${userPoints.progressToNext}%`, background: '#c8102e', borderRadius: '4px', boxShadow: '0 0 10px rgba(200, 16, 46, 0.5)' }}
-                  ></motion.div>
-                </div>
-                <p style={{ margin: 0, fontSize: '0.75rem', opacity: 0.6, fontWeight: 500 }}>
-                  Earn {userPoints.pointsToNext.toLocaleString()} more points to reach {userPoints.nextLevel} status.
-                </p>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Skill Proficiency Matrix */}
-          <div className="luxury-card" style={{ padding: '2.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
-              <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>Skill Mastery Matrix</h2>
-              <div style={{ fontSize: '0.85rem', color: '#64748B', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}>
-                <BarChart3 size={18} /> Technical Proficiency
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
-              {skillsData.map((skill, index) => (
-                <div key={index}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
-                    <span style={{ fontWeight: 700, color: '#475569', fontSize: '1rem' }}>
-                      {skill.name} <span style={{ fontWeight: 400, color: '#94A3B8', fontSize: '0.85rem', marginLeft: '0.5rem' }}>• {skill.category}</span>
-                    </span>
-                    <span style={{ fontWeight: 800, color: '#0F172A', fontSize: '1rem' }}>{skill.level}%</span>
-                  </div>
-                  <div style={{ height: '10px', background: '#F1F5F9', borderRadius: '10px', overflow: 'hidden' }}>
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      animate={{ width: `${skill.level}%` }}
-                      transition={{ duration: 1, ease: 'easeOut', delay: 0.2 + index * 0.1 }}
-                      style={{ 
-                        height: '100%', 
-                        width: `${skill.level}%`,
-                        background: skill.level > 80 ? 'linear-gradient(90deg, #c8102e, #ef4444)' : 'linear-gradient(90deg, #334155, #64748B)', 
-                        borderRadius: '10px' 
-                      }} 
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 500 }}>
+            {performance.assessments_taken > 0 ? 'Across evaluated assessments' : 'No assessments taken yet'}
+          </span>
         </div>
 
-        {/* ── Right Column: Ways to Earn and Activities ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          
-          {/* Recent Activity Chart */}
-          <div className="luxury-card" style={{ padding: '2rem' }}>
-            <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0F172A', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-              <Activity size={20} color="#c8102e" /> Engagement Velocity
-            </h3>
-            
-            <div style={{ position: 'relative', height: '140px', display: 'flex', alignItems: 'flex-end', gap: '12px', paddingBottom: '1.5rem', borderBottom: '1px solid #F1F5F9' }}>
-              {[60, 45, 80, 55, 90, 75, 40, 85, 30].map((h, i) => (
-                <motion.div 
-                  key={i}
-                  initial={{ height: 0 }}
-                  animate={{ height: `${h}%` }}
-                  transition={{ delay: 0.5 + i * 0.05 }}
-                  style={{ flex: 1, background: i === 4 ? '#c8102e' : '#E2E8F0', borderRadius: '6px' }} 
-                />
-              ))}
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1rem' }}>
-              <span style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 800 }}>JAN</span>
-              <span style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 800 }}>JUN</span>
-            </div>
-            
-            <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.9rem', color: '#64748B', fontWeight: 500 }}>Course completion rate</span>
-                <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#10B981' }}>+12%</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.9rem', color: '#64748B', fontWeight: 500 }}>Learning velocity</span>
-                <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0F172A' }}>High</span>
-              </div>
-            </div>
-          </div>
+        {/* Metric 2: Assessments Passed */}
+        <div style={{
+          background: '#ffffff',
+          padding: '1.75rem',
+          borderRadius: '1.25rem',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 2px 10px rgba(0, 0, 0, 0.02)'
+        }}>
+          <span style={{ fontSize: '12px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Assessments Passed
+          </span>
+          <p style={{ margin: '8px 0 4px 0', fontSize: '2.2rem', fontWeight: 900, color: '#0d2046' }}>
+            {performance.assessments_passed} / {performance.assessments_taken}
+          </p>
+          <span style={{ fontSize: '13px', color: '#16a34a', fontWeight: 700 }}>
+            {performance.pass_rate} Pass Rate
+          </span>
+        </div>
 
-          {/* Ways to Earn */}
+        {/* Metric 3: Completed Courses */}
+        <div style={{
+          background: '#ffffff',
+          padding: '1.75rem',
+          borderRadius: '1.25rem',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 2px 10px rgba(0, 0, 0, 0.02)'
+        }}>
+          <span style={{ fontSize: '12px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Completed Courses
+          </span>
+          <p style={{ margin: '8px 0 4px 0', fontSize: '2.2rem', fontWeight: 900, color: '#0d2046' }}>
+            {performance.courses_completed} / {performance.courses_enrolled}
+          </p>
+          <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 500 }}>
+            Completed of total enrolled courses
+          </span>
+        </div>
+
+        {/* Metric 4: Academic Standing */}
+        <div style={{
+          background: '#ffffff',
+          padding: '1.75rem',
+          borderRadius: '1.25rem',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 2px 10px rgba(0, 0, 0, 0.02)'
+        }}>
+          <span style={{ fontSize: '12px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Academic Standing
+          </span>
+          <p style={{
+            margin: '8px 0 4px 0',
+            fontSize: '1.5rem',
+            fontWeight: 900,
+            color: performance.assessments_passed > 0 ? '#16a34a' : '#64748b'
+          }}>
+            {performance.assessments_passed > 0 ? 'Verified & Approved' : 'In Progress'}
+          </p>
+          <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 500 }}>
+            NeST Module Evaluation
+          </span>
+        </div>
+
+      </div>
+
+      {/* ── Evaluated Assessments List ── */}
+      <div style={{
+        background: '#ffffff',
+        borderRadius: '1.5rem',
+        border: '1px solid #e2e8f0',
+        padding: '2.5rem',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.02)'
+      }}>
+        
+        <div style={{ marginBottom: '2rem' }}>
+          <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f172a', margin: '0 0 6px 0' }}>
+            Evaluated Course Assessments
+          </h3>
+          <p style={{ margin: 0, color: '#64748b', fontSize: '0.95rem' }}>
+            Your assessment results, scores, and feedback recorded by Course Management.
+          </p>
+        </div>
+
+        {assessments.length > 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#0d2046', margin: 0, display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-              <Sparkles size={22} color="#c8102e" /> Community Growth
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {userPoints.waysToEarn.map((way, idx) => (
-                <motion.div
-                  key={idx}
-                  onMouseEnter={() => setHoveredWay(idx)}
-                  onMouseLeave={() => setHoveredWay(null)}
-                  whileHover={{ x: 5, boxShadow: '0 8px 15px -3px rgba(0, 0, 0, 0.05)' }}
-                  style={{
-                    background: 'white',
-                    padding: '1.25rem',
-                    borderRadius: '1.5rem',
-                    border: '1px solid #f1f5f9',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '1.25rem'
-                  }}
-                >
-                  <div style={{ 
-                    background: hoveredWay === idx ? '#c8102e' : '#f8fafc', 
-                    color: hoveredWay === idx ? 'white' : '#c8102e',
-                    padding: '0.8rem', 
-                    borderRadius: '1rem',
-                    transition: 'all 0.2s ease'
-                  }}>
-                    {way.icon}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <h4 style={{ margin: '0 0 0.15rem 0', fontSize: '1rem', fontWeight: 800, color: '#1e293b' }}>{way.title}</h4>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#c8102e', fontWeight: 800, fontSize: '0.9rem' }}>
-                      <Zap size={15} fill="#c8102e" />
-                      +{way.points} pts
-                    </div>
-                  </div>
-                  <ChevronRight size={18} color="#CBD5E1" />
-                </motion.div>
-              ))}
-            </div>
-          </div>
-
-          {/* Level Benefits Snippet */}
-          <div className="luxury-card" style={{ padding: '1.75rem', border: '1px dashed #E2E8F0', background: '#F8FAFC' }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0d2046', marginBottom: '1.25rem' }}>{userPoints.level} Rank Benefits</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-              {[
-                { title: 'Meetups', icon: <Users size={14} /> },
-                { title: 'Early Access', icon: <Zap size={14} /> },
-                { title: 'Premium Job', icon: <Medal size={14} /> },
-                { title: 'Discounts', icon: <Shield size={14} /> }
-              ].map((benefit, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.6rem', borderRadius: '0.75rem', backgroundColor: 'white', border: '1px solid #F1F5F9' }}>
-                  <div style={{ color: '#c8102e', display: 'flex' }}>{benefit.icon}</div>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>{benefit.title}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '2rem' }}>
-        
-        {/* ── Transaction History ── */}
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="luxury-card"
-          style={{ padding: '2.5rem' }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
-            <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0F172A', margin: 0, display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-              <History size={22} color="#c8102e" /> Point History
-            </h3>
-            <button style={{ 
-              background: 'none', 
-              border: 'none', 
-              color: '#3b82f6', 
-              fontWeight: 700, 
-              fontSize: '0.9rem', 
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.3rem'
-            }}>
-              View Full Statement <ChevronRight size={18} />
-            </button>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', background: '#f1f5f9', borderRadius: '1.5rem', overflow: 'hidden', border: '1px solid #f1f5f9' }}>
-            {userPoints.recentActivities.map((activity, idx) => (
-              <motion.div
-                key={activity.id}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.1 * idx }}
-                whileHover={{ backgroundColor: '#fcfcfc' }}
-                style={{ 
-                  background: 'white', 
-                  padding: '1.5rem 1.75rem', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'space-between',
-                  transition: 'background-color 0.2s'
+            {assessments.map((item) => (
+              <div
+                key={item.id}
+                style={{
+                  padding: '1.75rem',
+                  borderRadius: '1.25rem',
+                  border: `1.5px solid ${item.passed ? '#bbf7d0' : '#fecaca'}`,
+                  background: item.passed ? '#f0fdf4' : '#fef2f2',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1rem'
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-                  <div style={{ color: '#0d2046', opacity: 0.5 }}>{activity.icon}</div>
-                  <div>
-                    <h5 style={{ margin: '0 0 0.2rem 0', fontSize: '1.05rem', fontWeight: 700, color: '#1e293b' }}>{activity.name}</h5>
-                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 600 }}>{activity.type}</span>
-                      <span style={{ width: '4px', height: '4px', background: '#cbd5e1', borderRadius: '50%' }}></span>
-                      <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 600 }}>{new Date(activity.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+                  
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{
+                      width: '42px',
+                      height: '42px',
+                      borderRadius: '50%',
+                      background: item.passed ? '#dcfce7' : '#fee2e2',
+                      color: item.passed ? '#16a34a' : '#dc2626',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}>
+                      {item.passed ? <CheckCircle2 size={24} /> : <AlertCircle size={24} />}
+                    </div>
+                    <div>
+                      <h4 style={{ margin: '0 0 3px 0', fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
+                        {item.course_title}
+                      </h4>
+                      <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>
+                        Multiple Choice Assessment • Evaluated on {item.date}
+                      </span>
                     </div>
                   </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ textAlign: 'right' }}>
+                      <span style={{
+                        fontSize: '1.6rem',
+                        fontWeight: 900,
+                        color: item.passed ? '#15803d' : '#dc2626'
+                      }}>
+                        {item.score}%
+                      </span>
+                      <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 700 }}>
+                        Passing: {item.passing_score}%
+                      </div>
+                    </div>
+
+                    <span style={{
+                      padding: '6px 14px',
+                      borderRadius: '20px',
+                      fontSize: '12px',
+                      fontWeight: 800,
+                      background: item.passed ? '#dcfce7' : '#fee2e2',
+                      color: item.passed ? '#15803d' : '#b91c1c'
+                    }}>
+                      {item.status || (item.passed ? 'Approved' : 'Rejected')}
+                    </span>
+                  </div>
+
                 </div>
-                <div style={{ textAlign: 'right' }}>
-                  <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#22c55e' }}>+{activity.points}</span>
-                  <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Points</div>
+
+                {/* Course Manager Feedback */}
+                {item.feedback && (
+                  <div style={{
+                    padding: '12px 16px',
+                    borderRadius: '10px',
+                    background: '#ffffff',
+                    border: '1px solid rgba(0,0,0,0.06)',
+                    fontSize: '14px',
+                    color: '#334155',
+                    lineHeight: 1.5
+                  }}>
+                    <strong>Course Manager Feedback:</strong> {item.feedback}
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '10px', flexWrap: 'wrap' }}>
+                  {item.passed && (
+                    <button
+                      onClick={() => generateCourseCertificate(userName, item.course_title, item.date)}
+                      style={{
+                        background: '#d32f2f',
+                        color: 'white',
+                        border: 'none',
+                        padding: '9px 18px',
+                        borderRadius: '10px',
+                        fontWeight: 700,
+                        fontSize: '13px',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <Award size={16} /> Certificate
+                    </button>
+                  )}
+
+                  <Link
+                    to={`/assessment/${item.course_id}`}
+                    style={{
+                      background: '#0d2046',
+                      color: 'white',
+                      textDecoration: 'none',
+                      padding: '9px 18px',
+                      borderRadius: '10px',
+                      fontWeight: 700,
+                      fontSize: '13px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    View Evaluation Breakdown <ChevronRight size={14} />
+                  </Link>
                 </div>
-              </motion.div>
+
+              </div>
             ))}
           </div>
-        </motion.div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          {/* Recommended Path Card */}
-          <div className="luxury-card" style={{ padding: '2rem', background: '#0F172A', color: 'white', position: 'relative', overflow: 'hidden', height: 'fit-content' }}>
-             <div style={{ position: 'absolute', top: '-10px', right: '-10px', opacity: 0.15 }}>
-               <TrendingUp size={120} color="white" />
-             </div>
-             <div style={{ position: 'relative', zIndex: 1 }}>
-               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.5rem' }}>
-                 <div style={{ padding: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '10px' }}>
-                   <Trophy size={20} color="#FACC15" />
-                 </div>
-                 <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0 }}>Strategic Next Step</h3>
-               </div>
-               <p style={{ fontSize: '0.95rem', color: '#94A3B8', marginBottom: '1.75rem', lineHeight: 1.6 }}>
-                 Based on your current tech stack and community engagement, we recommend the <strong>Advanced LLM Fine-tuning</strong> certification.
-               </p>
-               <Link 
-                 to="/courses"
-                 style={{ 
-                   width: '100%', 
-                   padding: '1rem', 
-                   borderRadius: '12px', 
-                   background: '#c8102e', 
-                   color: 'white', 
-                   border: 'none', 
-                   fontWeight: 800, 
-                   fontSize: '0.9rem',
-                   cursor: 'pointer',
-                   display: 'flex',
-                   alignItems: 'center',
-                   justifyContent: 'center',
-                   gap: '0.6rem',
-                   textDecoration: 'none',
-                   transition: '0.2s'
-                 }}
-                 onMouseEnter={e => e.currentTarget.style.background = '#b71c1c'}
-                 onMouseLeave={e => e.currentTarget.style.background = '#c8102e'}
-               >
-                 View Recommended Course <ChevronRight size={18} />
-               </Link>
-             </div>
+        ) : (
+          <div style={{ textAlign: 'center', padding: '3rem 1rem', background: '#f8fafc', borderRadius: '1rem', border: '1px dashed #cbd5e1' }}>
+            <BookOpen size={40} color="#94a3b8" style={{ margin: '0 auto 1rem auto' }} />
+            <h4 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.4rem' }}>
+              No Assessments Completed Yet
+            </h4>
+            <p style={{ color: '#64748b', fontSize: '0.95rem', maxWidth: '450px', margin: '0 auto 1.5rem auto' }}>
+              Enroll in a course and complete the multiple choice evaluation to establish your performance record.
+            </p>
+            <Link
+              to="/courses"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: '#0d2046',
+                color: 'white',
+                padding: '10px 22px',
+                borderRadius: '10px',
+                textDecoration: 'none',
+                fontWeight: 700,
+                fontSize: '13px'
+              }}
+            >
+              Explore Course Catalog
+            </Link>
           </div>
+        )}
 
-          {/* Pro Tip Card */}
-          <div style={{ padding: '2rem', borderRadius: '2rem', backgroundColor: '#FFFBEB', border: '1px solid #FEF3C7', display: 'flex', gap: '1.25rem' }}>
-            <div style={{ color: '#D97706', marginTop: '4px' }}><Info size={24} /></div>
-            <div>
-              <p style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#92400E', marginBottom: '0.4rem' }}>Optimizing Results</p>
-              <p style={{ margin: 0, fontSize: '0.9rem', color: '#B45309', lineHeight: 1.5, opacity: 0.9 }}>
-                Mentorship sessions for juniors yield a <strong style={{ color: '#92400E' }}>2.5x higher</strong> engagement score compared to standard forum activity.
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
 
-      <style>{`
-        .luxury-card {
-           background: #ffffff;
-           border-radius: 2rem;
-           border: 1px solid rgba(226, 232, 240, 0.8);
-           box-shadow: 0 4px 25px rgba(0, 0, 0, 0.04);
-           transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
-        }
-        .luxury-card:hover {
-          box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
-          transform: translateY(-4px);
-        }
-      `}</style>
     </div>
   );
 };

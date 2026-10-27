@@ -2,13 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ImagePlus, Send, X, Loader2,
-  CheckCircle2, Trash2, Clock, MessageSquare, Video as VideoIcon, Megaphone
+  CheckCircle2, Trash2, Clock, MessageSquare, Video as VideoIcon, Megaphone,
+  Edit2, Save
 } from 'lucide-react';
 import { socialApi } from '../../services/api';
 import StatusModal from '../../components/StatusModal';
+import AutoPlayVideo from '../../components/AutoPlayVideo';
 
 interface Post {
   id: string;
+  _id?: string;
   content: string;
   image_url?: string;
   video_url?: string;
@@ -31,6 +34,9 @@ const AdminPosts: React.FC = () => {
   const [myPosts, setMyPosts] = useState<Post[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [tick, setTick] = useState(0);
 
   // Modal state
@@ -139,7 +145,7 @@ const AdminPosts: React.FC = () => {
     try {
       const res = await socialApi.deletePost(postId);
       if (res.success) {
-        setMyPosts(prev => prev.filter(p => p.id !== postId));
+        setMyPosts(prev => prev.filter(p => (p.id ?? p._id)?.toString() !== postId.toString()));
         setModalConfig({
           isOpen: true,
           type: 'success',
@@ -175,22 +181,71 @@ const AdminPosts: React.FC = () => {
     }
   };
 
+  const handleEditClick = (post: Post) => {
+    setEditingId(post.id);
+    setEditContent(post.content);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditContent('');
+  };
+
+  const handleSaveEdit = async (postId: string) => {
+    if (!editContent.trim()) return;
+    setIsSavingEdit(true);
+    try {
+      const res = await socialApi.updatePost(postId, { content: editContent });
+      if (res.success) {
+        setMyPosts(prev => prev.map(p => p.id === postId ? { ...p, content: editContent } : p));
+        setEditingId(null);
+        setEditContent('');
+      } else {
+        setModalConfig({
+          isOpen: true,
+          type: 'error',
+          title: 'Update Failed',
+          message: res.message || 'Could not update the post. Please try again.',
+          confirmText: 'Okay',
+          showConfirmOnly: true,
+          onConfirm: closeModal,
+        });
+      }
+    } catch (err) {
+      setModalConfig({
+        isOpen: true,
+        type: 'error',
+        title: 'Network Error',
+        message: 'Something went wrong. Please check your connection and try again.',
+        confirmText: 'Okay',
+        showConfirmOnly: true,
+        onConfirm: closeModal,
+      });
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
   const timeAgo = (dateStr: string) => {
     if (!dateStr) return 'Just now';
     
-    let normalizedDate = dateStr;
-    if (!dateStr.endsWith('Z') && !dateStr.includes('+') && !dateStr.includes('-')) {
-      normalizedDate += 'Z';
+    let cleanStr = String(dateStr).trim();
+    if (!cleanStr.endsWith('Z') && !/[+-]\d{2}(:?\d{2})?$/.test(cleanStr)) {
+      cleanStr += 'Z';
     }
     
-    const diff = Date.now() - new Date(normalizedDate).getTime();
+    const parsedTime = new Date(cleanStr).getTime();
+    if (isNaN(parsedTime)) return 'Just now';
+
+    const diff = Date.now() - parsedTime;
+    if (diff < 60000) return 'Just now';
     const mins = Math.floor(diff / 60000);
-    if (mins < 1) return 'Just now';
     if (mins < 60) return `${mins}m ago`;
     const hrs = Math.floor(mins / 60);
     if (hrs < 24) return `${hrs}h ago`;
     const days = Math.floor(hrs / 24);
-    return `${days}d ago`;
+    if (days < 30) return `${days}d ago`;
+    return new Date(cleanStr).toLocaleDateString();
   };
 
   return (
@@ -372,35 +427,35 @@ const AdminPosts: React.FC = () => {
       </div>
 
       {/* Broadcast History */}
-      <div style={{ marginTop: '24px', paddingTop: '40px', borderTop: '1px solid rgba(226, 232, 240, 0.8)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
+      <div style={{ marginTop: '20px', paddingTop: '40px', borderTop: '2px solid #f1f5f9' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <div>
-            <h3 style={{ fontSize: '24px', fontWeight: 900, color: '#111827', margin: 0, letterSpacing: '-0.02em' }}>My Broadcast History</h3>
-            <p style={{ color: '#64748b', fontSize: '14px', margin: '4px 0 0' }}>Manage all official updates and announcements you have broadcasted.</p>
+            <h3 style={{ fontSize: '22px', fontWeight: 800, color: '#1e293b', margin: 0 }}>My Broadcast History</h3>
+            <p style={{ color: '#64748b', fontSize: '14px', margin: '4px 0 0' }}>Manage and track all updates you've shared with the community.</p>
           </div>
-          <div style={{ background: 'rgba(200, 16, 46, 0.08)', color: nestRed, padding: '8px 20px', borderRadius: '30px', fontSize: '14px', fontWeight: 800 }}>
+          <div style={{ background: `${nestNavy}10`, color: nestNavy, padding: '8px 16px', borderRadius: '12px', fontSize: '14px', fontWeight: 700 }}>
             {myPosts.length} {myPosts.length === 1 ? 'Broadcast' : 'Broadcasts'}
           </div>
         </div>
 
         {loadingPosts ? (
-          <div style={{ textAlign: 'center', padding: '4rem', color: '#94a3b8' }}>
-            <Loader2 size={32} className="spin" style={{ margin: '0 auto 12px' }} />
-            <p style={{ fontWeight: 600 }}>Loading broadcast records...</p>
+          <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
+            <Loader2 size={28} className="spin" style={{ margin: '0 auto 12px' }} />
+            <p style={{ fontWeight: 600 }}>Loading your broadcasts...</p>
           </div>
         ) : myPosts.length === 0 ? (
           <div style={{ 
             textAlign: 'center', 
-            padding: '4rem 2rem', 
-            background: '#fff', 
+            padding: '3rem', 
+            background: '#f8fafc', 
             borderRadius: '24px', 
-            border: '1px solid rgba(226, 232, 240, 0.8)' 
+            border: '1px solid #f1f5f9' 
           }}>
-            <Megaphone size={40} style={{ color: '#cbd5e1', marginBottom: '16px' }} />
-            <p style={{ color: '#94a3b8', fontWeight: 700, margin: 0 }}>You have not published any broadcasts yet.</p>
+            <MessageSquare size={32} style={{ color: '#cbd5e1', marginBottom: '12px' }} />
+            <p style={{ color: '#94a3b8', fontWeight: 600, margin: 0 }}>You haven't broadcasted anything yet.</p>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <AnimatePresence>
               {myPosts.map(post => (
                 <motion.div
@@ -411,86 +466,145 @@ const AdminPosts: React.FC = () => {
                   layout
                   style={{ 
                     background: 'white', 
-                    borderRadius: '24px', 
-                    padding: '30px', 
-                    border: '1px solid rgba(226, 232, 240, 0.8)',
-                    boxShadow: '0 4px 15px rgba(0,0,0,0.01)'
+                    borderRadius: '20px', 
+                    padding: '24px', 
+                    border: '1px solid #e2e8f0',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '24px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ background: '#c8102e', color: 'white', display: 'inline-block', padding: '4px 12px', borderRadius: '6px', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '16px' }}>MANAGEMENT BROADCAST</div>
-                      <p style={{ 
-                        color: '#1e293b', 
-                        fontSize: '16px', 
-                        lineHeight: 1.6, 
-                        margin: '0 0 16px',
-                        wordBreak: 'break-word',
-                        fontWeight: 500
-                      }}>
-                        {post.content}
-                      </p>
-
-                      {post.image_url && (
-                        <div style={{ borderRadius: '16px', overflow: 'hidden', maxWidth: '500px', marginBottom: '16px', border: '1px solid #f1f5f9' }}>
-                          <img 
-                            src={post.image_url} 
-                            alt="Broadcast attachment" 
-                            style={{ 
-                              width: '100%', 
-                              height: 'auto',
-                              maxHeight: '300px',
-                              objectFit: 'cover'
-                            }} 
-                          />
-                        </div>
+                      {editingId === post.id ? (
+                        <textarea 
+                          value={editContent}
+                          onChange={(e) => setEditContent(e.target.value)}
+                          style={{ 
+                            width: '100%', 
+                            minHeight: '120px', 
+                            padding: '16px', 
+                            borderRadius: '12px', 
+                            border: '1px solid #cbd5e1', 
+                            fontSize: '15px', 
+                            resize: 'vertical',
+                            outline: 'none',
+                            lineHeight: 1.6,
+                            fontFamily: 'inherit',
+                            marginBottom: '12px'
+                          }}
+                        />
+                      ) : (
+                        <p style={{ 
+                          color: '#1e293b', 
+                          fontSize: '15px', 
+                          lineHeight: 1.6, 
+                          margin: '0 0 12px',
+                          wordBreak: 'break-word'
+                        }}>
+                          {post.content}
+                        </p>
                       )}
 
-                      {post.video_url && (
-                        <div style={{ borderRadius: '16px', overflow: 'hidden', maxWidth: '500px', marginBottom: '16px', background: '#000' }}>
-                          <video 
+                      {post.image_url && !editingId && (
+                        <img 
+                          src={post.image_url} 
+                          alt="Broadcast attachment" 
+                          style={{ 
+                            width: '100%', 
+                            maxHeight: '250px', 
+                            objectFit: 'cover', 
+                            borderRadius: '12px', 
+                            marginBottom: '12px' 
+                          }} 
+                        />
+                      )}
+
+                      {post.video_url && !editingId && (
+                        <div style={{ width: '100%', maxHeight: '250px', borderRadius: '12px', overflow: 'hidden', marginBottom: '12px' }}>
+                          <AutoPlayVideo 
                             src={post.video_url} 
-                            controls
-                            style={{ 
-                              width: '100%', 
-                              height: 'auto',
-                              maxHeight: '300px'
-                            }} 
+                            maxHeight="250px"
+                            style={{ borderRadius: '12px', width: '100%' }} 
                           />
                         </div>
                       )}
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '20px', fontSize: '13px', color: '#94a3b8', fontWeight: 700 }}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <Clock size={15} color={nestNavy} /> {timeAgo(post.created_at)}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '13px', color: '#94a3b8', fontWeight: 600 }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Clock size={14} /> {timeAgo(post.created_at)}
                         </span>
-                        <span>❤️ {post.likes_count} Likes</span>
+                        <span>❤️ {post.likes_count}</span>
                       </div>
                     </div>
 
-                    <button
-                      onClick={() => promptDelete(post.id)}
-                      disabled={deletingId === post.id}
-                      title="Delete broadcast"
-                      style={{ 
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: '44px',
-                        height: '44px',
-                        background: deletingId === post.id ? '#fecaca' : '#fef2f2',
-                        color: '#ef4444',
-                        border: 'none',
-                        borderRadius: '14px',
-                        cursor: deletingId === post.id ? 'not-allowed' : 'pointer',
-                        transition: '0.2s',
-                        flexShrink: 0
-                      }}
-                      onMouseEnter={e => { if (deletingId !== post.id) e.currentTarget.style.background = '#fecaca'; }}
-                      onMouseLeave={e => { if (deletingId !== post.id) e.currentTarget.style.background = '#fef2f2'; }}
-                    >
-                      {deletingId === post.id ? <Loader2 size={20} className="spin" /> : <Trash2 size={20} />}
-                    </button>
+                    <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                      {editingId === post.id ? (
+                        <>
+                          <button
+                            onClick={handleCancelEdit}
+                            title="Cancel"
+                            style={{ 
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              width: '40px', height: '40px', background: '#f1f5f9', color: '#64748b',
+                              border: 'none', borderRadius: '12px', cursor: 'pointer', transition: '0.2s',
+                            }}
+                          >
+                            <X size={18} />
+                          </button>
+                          <button
+                            onClick={() => handleSaveEdit(post.id)}
+                            disabled={isSavingEdit || !editContent.trim()}
+                            title="Save Edit"
+                            style={{ 
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              width: '40px', height: '40px', background: '#ecfdf5', color: '#10b981',
+                              border: 'none', borderRadius: '12px', cursor: 'pointer', transition: '0.2s',
+                              opacity: (!editContent.trim() || isSavingEdit) ? 0.5 : 1
+                            }}
+                          >
+                            {isSavingEdit ? <Loader2 size={18} className="spin" /> : <Save size={18} />}
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => handleEditClick(post)}
+                            title="Edit broadcast"
+                            style={{ 
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              width: '40px', height: '40px', background: '#f8fafc', color: '#64748b',
+                              border: '1px solid #e2e8f0', borderRadius: '12px', cursor: 'pointer', transition: '0.2s',
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
+                            onMouseLeave={e => e.currentTarget.style.background = '#f8fafc'}
+                          >
+                            <Edit2 size={18} />
+                          </button>
+                          <button
+                            onClick={() => promptDelete(post.id)}
+                            disabled={deletingId === post.id}
+                            title="Delete broadcast"
+                            style={{ 
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              width: '40px',
+                              height: '40px',
+                              background: deletingId === post.id ? '#fecaca' : '#fef2f2',
+                              color: '#ef4444',
+                              border: 'none',
+                              borderRadius: '12px',
+                              cursor: deletingId === post.id ? 'not-allowed' : 'pointer',
+                              transition: '0.2s',
+                              flexShrink: 0
+                            }}
+                            onMouseEnter={e => { if (deletingId !== post.id) e.currentTarget.style.background = '#fecaca'; }}
+                            onMouseLeave={e => { if (deletingId !== post.id) e.currentTarget.style.background = '#fef2f2'; }}
+                          >
+                            {deletingId === post.id ? <Loader2 size={18} className="spin" /> : <Trash2 size={18} />}
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </motion.div>
               ))}

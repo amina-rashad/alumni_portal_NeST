@@ -11,6 +11,7 @@ import StatusModal from '../../components/StatusModal';
 
 interface Post {
   id: string;
+  _id?: string;
   content: string;
   image_url?: string;
   likes_count: number;
@@ -123,7 +124,7 @@ const RecruiterPost: React.FC = () => {
     try {
       const res = await socialApi.deletePost(postId);
       if (res.success) {
-        setMyPosts(prev => prev.filter(p => p.id !== postId));
+        setMyPosts(prev => prev.filter(p => (p.id ?? p._id)?.toString() !== postId.toString()));
         setModalConfig({
           isOpen: true,
           type: 'success',
@@ -160,14 +161,23 @@ const RecruiterPost: React.FC = () => {
   };
 
   const timeAgo = (dateStr: string) => {
-    const diff = Date.now() - new Date(dateStr).getTime();
+    if (!dateStr) return 'Just now';
+    let cleanStr = String(dateStr).trim();
+    if (!cleanStr.endsWith('Z') && !/[+-]\d{2}(:?\d{2})?$/.test(cleanStr)) {
+      cleanStr += 'Z';
+    }
+    const parsedTime = new Date(cleanStr).getTime();
+    if (isNaN(parsedTime)) return 'Just now';
+
+    const diff = Date.now() - parsedTime;
+    if (diff < 60000) return 'Just now';
     const mins = Math.floor(diff / 60000);
-    if (mins < 1) return 'Just now';
     if (mins < 60) return `${mins}m ago`;
     const hrs = Math.floor(mins / 60);
     if (hrs < 24) return `${hrs}h ago`;
     const days = Math.floor(hrs / 24);
-    return `${days}d ago`;
+    if (days < 30) return `${days}d ago`;
+    return new Date(cleanStr).toLocaleDateString();
   };
 
   return (

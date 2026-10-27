@@ -20,7 +20,7 @@ const QuizInstructions: React.FC = () => {
           animate={{ opacity: 1, x: 0 }}
         >
           <button 
-            onClick={() => navigate('/assessments/quiz')}
+            onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/assessments/quiz')}
             style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64748B', background: 'none', border: 'none', padding: 0.25, cursor: 'pointer', fontSize: '0.9rem', marginBottom: '1rem' }}
           >
             <ArrowLeft size={16} /> Cancel and Exit

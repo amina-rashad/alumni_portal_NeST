@@ -78,29 +78,9 @@ const CM_Dashboard: React.FC = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#1e293b', margin: '0 0 8px 0' }}>Academic Governance</h1>
-          <p style={{ margin: 0, color: '#64748b', fontWeight: 500 }}>Global oversight of academic tracks and learner progression.</p>
+          <p style={{ margin: 0, color: '#64748b', fontWeight: 500 }}>Global oversight of academic tracks, enrollments, and certifications.</p>
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
-          <button 
-            onClick={() => navigate('/course-manager/community-feed')}
-            style={{
-              padding: '12px 24px',
-              borderRadius: '14px',
-              background: '#fff',
-              color: '#1e293b',
-              border: '1px solid #e2e8f0',
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              transition: 'all 0.3s ease'
-            }}
-            onMouseOver={(e) => { e.currentTarget.style.borderColor = brandPrimary; }}
-            onMouseOut={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; }}
-          >
-            <Activity size={18} color="#DC2626" /> Career Timelines
-          </button>
           <button 
             onClick={() => navigate('/course-manager/courses/create')}
             style={{
@@ -124,10 +104,38 @@ const CM_Dashboard: React.FC = () => {
 
       {/* Stats Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px' }}>
-        <StatCard title="Active Courses" value={stats?.total_courses?.toString() || "0"} change="+3" icon={<BookOpen size={24} />} color={brandPrimary} loading={isLoading} />
-        <StatCard title="Learner Enrollments" value={stats?.active_enrollments?.toLocaleString() || "0"} change="+12.4%" icon={<Users size={24} />} color="#0ea5e9" loading={isLoading} />
-        <StatCard title="Pending Assessments" value={stats?.pending_reviews?.toString() || "0"} change="+5" icon={<ClipboardCheck size={24} />} color="#f59e0b" loading={isLoading} />
-        <StatCard title="Credentials Issued" value={stats?.certificates_issued?.toString() || "0"} change="+24" icon={<Award size={24} />} color="#10b981" loading={isLoading} />
+        <StatCard 
+          title="Active Courses" 
+          value={(stats?.active_courses ?? stats?.total_courses ?? 0).toString()} 
+          change={stats?.courses_change || "+0"} 
+          icon={<BookOpen size={24} />} 
+          color={brandPrimary} 
+          loading={isLoading} 
+        />
+        <StatCard 
+          title="Learner Enrollments" 
+          value={(stats?.total_enrollments ?? stats?.active_enrollments ?? 0).toLocaleString()} 
+          change={stats?.enrollments_change || "+0%"} 
+          icon={<Users size={24} />} 
+          color="#0ea5e9" 
+          loading={isLoading} 
+        />
+        <StatCard 
+          title="Pending Assessments" 
+          value={(stats?.pending_reviews ?? 0).toString()} 
+          change={stats?.pending_change || "0"} 
+          icon={<ClipboardCheck size={24} />} 
+          color="#f59e0b" 
+          loading={isLoading} 
+        />
+        <StatCard 
+          title="Credentials Issued" 
+          value={(stats?.certificates_issued ?? 0).toString()} 
+          change={stats?.certs_change || "0"} 
+          icon={<Award size={24} />} 
+          color="#10b981" 
+          loading={isLoading} 
+        />
       </div>
 
       {/* Main Content Sections */}
@@ -148,25 +156,32 @@ const CM_Dashboard: React.FC = () => {
                 <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }}></div>
                 <span style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.8 }}>Live Platform Health</span>
               </div>
-              <h2 style={{ fontSize: '32px', fontWeight: 800, margin: '0 0 16px 0', lineHeight: 1.2 }}>Platform Engagement is at <span style={{ color: '#10b981' }}>Peak Velocity.</span></h2>
+              <h2 style={{ fontSize: '32px', fontWeight: 800, margin: '0 0 16px 0', lineHeight: 1.2 }}>
+                {stats?.headline || 'Platform Engagement is '}
+                <span style={{ color: '#10b981' }}>{stats?.headline_highlight || (stats?.active_enrollments > 0 ? 'Active.' : 'Ready.')}</span>
+              </h2>
               <p style={{ margin: 0, opacity: 0.7, fontSize: '16px', fontWeight: 500, maxWidth: '500px', lineHeight: 1.6 }}>
-                Daily active learners have increased by 14.2% compared to last week. Average course completion time is down by 4 days.
+                {stats?.description || (stats?.total_courses > 0 ? `${stats.total_courses} course${stats.total_courses > 1 ? 's' : ''} available. Awaiting learner enrollments.` : 'Academic course governance and progression analytics.')}
               </p>
               
               <div style={{ display: 'flex', gap: '32px', marginTop: '40px' }}>
                 <div>
                   <div style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', opacity: 0.6, marginBottom: '8px' }}>Active Streak</div>
-                  <div style={{ fontSize: '24px', fontWeight: 800 }}>84% <TrendingUp size={18} color="#10b981" /></div>
+                  <div style={{ fontSize: '24px', fontWeight: 800 }}>
+                    {stats?.active_streak ?? '0%'} {stats?.active_streak && stats.active_streak !== '0%' && <TrendingUp size={18} color="#10b981" />}
+                  </div>
                 </div>
                 <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)' }}></div>
                 <div>
                   <div style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', opacity: 0.6, marginBottom: '8px' }}>Session Depth</div>
-                  <div style={{ fontSize: '24px', fontWeight: 800 }}>42 min <Star size={18} color="#f59e0b" fill="#f59e0b" /></div>
+                  <div style={{ fontSize: '24px', fontWeight: 800 }}>
+                    {stats?.session_depth ?? '0 min'} {stats?.session_depth && stats.session_depth !== '0 min' && <Star size={18} color="#f59e0b" fill="#f59e0b" />}
+                  </div>
                 </div>
               </div>
 
               <button 
-                onClick={() => navigate('/course-manager/performance')}
+                onClick={() => navigate('/course-manager/students')}
                 style={{
                   marginTop: '40px',
                   padding: '14px 28px',
@@ -248,25 +263,30 @@ const CM_Dashboard: React.FC = () => {
               <Bell size={18} color={brandPrimary} /> Governance Alerts
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              {[
-                { title: '8 Course Proposals', desc: 'Awaiting curriculum verification', time: '2h ago', icon: <BookOpen size={14} />, color: '#c8102e' },
-                { title: '14 Forum Threads', desc: 'Moderation required in React track', time: '5h ago', icon: <MessageSquare size={14} />, color: '#0ea5e9' },
-                { title: '32 Achievements', desc: 'Unlocked by students in Python core', time: '12h ago', icon: <Trophy size={14} />, color: '#f59e0b' }
-              ].map((alert, i) => (
-                <div key={i} style={{ display: 'flex', gap: '16px' }}>
-                  <div style={{ padding: '10px', borderRadius: '12px', background: `${alert.color}08`, color: alert.color, height: 'fit-content' }}>
-                    {alert.icon}
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#1e293b', marginBottom: '2px' }}>{alert.title}</div>
-                    <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 500, marginBottom: '4px' }}>{alert.desc}</div>
-                    <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>{alert.time}</div>
-                  </div>
+              {stats?.governance_alerts && stats.governance_alerts.length > 0 ? (
+                stats.governance_alerts.map((alert: any, i: number) => {
+                  const icon = alert.type === 'assessment' ? <ClipboardCheck size={14} /> : alert.type === 'student' ? <Users size={14} /> : <Award size={14} />;
+                  return (
+                    <div key={i} style={{ display: 'flex', gap: '16px' }}>
+                      <div style={{ padding: '10px', borderRadius: '12px', background: `${alert.color}12`, color: alert.color, height: 'fit-content' }}>
+                        {icon}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '14px', fontWeight: 700, color: '#1e293b', marginBottom: '2px' }}>{alert.title}</div>
+                        <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 500, marginBottom: '4px' }}>{alert.desc}</div>
+                        <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>{alert.time}</div>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: '13px', padding: '12px 0' }}>
+                  No active governance alerts
                 </div>
-              ))}
+              )}
             </div>
             <button 
-              onClick={() => navigate('/course-manager/reminders')}
+              onClick={() => navigate('/course-manager/assessments')}
               style={{ width: '100%', marginTop: '32px', padding: '12px', borderRadius: '14px', border: '1px solid #e2e8f0', background: 'transparent', color: '#475569', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}
             >
               Open Alert Center
@@ -277,21 +297,23 @@ const CM_Dashboard: React.FC = () => {
           <section style={{ background: '#f8fafc', padding: '32px', borderRadius: '32px', border: '1px solid #e2e8f0' }}>
             <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#1e293b', marginBottom: '24px' }}>Pathways Status</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {[
-                { label: 'Technical Tracks', value: 12, total: 15, color: '#c8102e' },
-                { label: 'Soft Skills', value: 4, total: 6, color: '#0ea5e9' },
-                { label: 'Leadership Track', value: 3, total: 4, color: '#10b981' }
-              ].map((path, i) => (
-                <div key={i}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 700, marginBottom: '8px' }}>
-                    <span style={{ color: '#475569' }}>{path.label}</span>
-                    <span style={{ color: '#1e293b' }}>{path.value}/{path.total}</span>
+              {stats?.pathways && stats.pathways.length > 0 ? (
+                stats.pathways.map((path: any, i: number) => (
+                  <div key={i}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 700, marginBottom: '8px' }}>
+                      <span style={{ color: '#475569' }}>{path.label}</span>
+                      <span style={{ color: '#1e293b' }}>{path.value}/{path.total}</span>
+                    </div>
+                    <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${Math.min(100, Math.round((path.value / (path.total || 1)) * 100))}%`, background: path.color, borderRadius: '3px' }}></div>
+                    </div>
                   </div>
-                  <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${(path.value / path.total) * 100}%`, background: path.color, borderRadius: '3px' }}></div>
-                  </div>
+                ))
+              ) : (
+                <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: '13px', padding: '12px 0' }}>
+                  No pathways registered
                 </div>
-              ))}
+              )}
             </div>
           </section>
         </div>

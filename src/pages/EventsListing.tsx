@@ -2,15 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, MapPin, Clock, Users, ChevronRight, CheckCircle2, AlertCircle } from 'lucide-react';
 import { eventsApi } from '../services/api';
-import nestIcon from '../assets/nest_icon.png';
 import StatusModal from '../components/StatusModal';
-
-const dummyEvents = [
-  { id: 'd1', title: 'Annual Alumni Tech Summit', date: '2024-10-15', time: '09:00 AM PST', attendees_count: 450, location: 'Trivandrum', category: 'Conference' },
-  { id: 'd2', title: 'AI & Machine Learning Workshop', date: '2024-11-02', time: '01:00 PM PST', attendees_count: 128, location: 'Kochi', category: 'Workshop' },
-  { id: 'd3', title: 'Cloud DevOps Bootcamp', date: '2024-11-18', time: '10:00 AM PST', attendees_count: 210, location: 'Bangalore', category: 'Workshop' },
-  { id: 'd4', title: 'Startup Pitch Night', date: '2024-12-05', time: '06:00 PM PST', attendees_count: 95, location: 'Remote', category: 'Meetup' }
-];
+import { formatTimeTo12Hour, parseDateTime } from '../utils/dateUtils';
 
 const EventsListing: React.FC = () => {
   const [events, setEvents] = useState<any[]>([]);
@@ -41,18 +34,18 @@ const EventsListing: React.FC = () => {
   const fetchEvents = async () => {
     try {
       setLoading(true);
-      const res = await eventsApi.getAllEvents(currentPage, eventsPerPage, true);
+      const res = await eventsApi.getAllEvents(currentPage, eventsPerPage, false);
       const data = res.data as any;
       if (res.success && data && data.events) {
         setEvents(data.events);
         setTotalPages(data.total_pages || 1);
         setTotalEvents(data.total_events || 0);
       } else {
-        setEvents(dummyEvents);
+        setEvents([]);
       }
     } catch (err) {
       console.error('Failed to fetch events:', err);
-      setEvents(dummyEvents);
+      setEvents([]);
     } finally {
       setLoading(false);
     }
@@ -62,29 +55,16 @@ const EventsListing: React.FC = () => {
     fetchEvents();
   }, [currentPage]);
 
-  const handleRegister = (event: any) => {
-    setModalConfig({
-      isOpen: true,
-      type: 'info',
-      title: 'Confirm Registration',
-      message: `Are you sure you want to register for ${event.title}?`,
-      confirmText: 'Confirm Registration',
-      showConfirmOnly: false,
-      onConfirm: () => handleConfirmRegistration(event.id)
-    });
-  };
-
-  const handleConfirmRegistration = async (eventId: string) => {
-    setRegistering(eventId);
-    setModalConfig(prev => ({ ...prev, isOpen: false }));
+  const handleRegister = async (event: any) => {
+    setRegistering(event.id);
     try {
-      const res = await eventsApi.registerForEvent(eventId);
+      const res = await eventsApi.registerForEvent(event.id);
       if (res.success) {
         setModalConfig({
           isOpen: true,
           type: 'success',
           title: 'Registration Successful!',
-          message: 'You have successfully registered for the event. We look forward to seeing you!',
+          message: `You have successfully registered for "${event.title}".`,
           confirmText: 'Great',
           showConfirmOnly: true,
           onConfirm: undefined
@@ -95,19 +75,19 @@ const EventsListing: React.FC = () => {
           isOpen: true,
           type: 'error',
           title: 'Registration Failed',
-          message: res.message || 'There was an issue processing your registration. Please try again.',
-          confirmText: 'Okay',
+          message: res.message || 'Unable to register for this event. Please try again later.',
+          confirmText: 'OK',
           showConfirmOnly: true,
           onConfirm: undefined
         });
       }
-    } catch (err) {
+    } catch (err: any) {
       setModalConfig({
         isOpen: true,
         type: 'error',
-        title: 'Network Error',
-        message: 'A connection error occurred. Please check your internet and try again.',
-        confirmText: 'Okay',
+        title: 'Registration Error',
+        message: err.message || 'An unexpected error occurred while registering for the event.',
+        confirmText: 'OK',
         showConfirmOnly: true,
         onConfirm: undefined
       });
@@ -301,7 +281,7 @@ const EventsListing: React.FC = () => {
                  <div>
                     <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0d2046', marginBottom: '0.75rem' }}>{event.title}</h3>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', color: '#64748b', fontSize: '0.875rem', fontWeight: 600 }}>
-                       <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Clock size={16} style={{ color: 'var(--primary)' }} /> {event.time}</span>
+                       <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Clock size={16} style={{ color: 'var(--primary)' }} /> {formatTimeTo12Hour(event.time)}</span>
                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><MapPin size={16} style={{ color: 'var(--primary)' }} /> {event.location}</span>
                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                          <Users size={16} style={{ color: 'var(--primary)' }} /> 
@@ -320,9 +300,9 @@ const EventsListing: React.FC = () => {
                       <div style={{ padding: '0.75rem 1.5rem', backgroundColor: '#f0fdf4', color: '#15803d', fontWeight: 800, borderRadius: '1rem', border: '1px solid #dcfce7', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                          <CheckCircle2 size={18} /> Registered
                       </div>
-                    ) : (event.max_attendees > 0 && event.attendees_count >= event.max_attendees) ? (
+                    ) : (event.is_active === false || event.is_over || (event.max_attendees > 0 && event.attendees_count >= event.max_attendees)) ? (
                       <div style={{ padding: '0.75rem 1.5rem', backgroundColor: '#fef2f2', color: '#b91c1c', fontWeight: 800, borderRadius: '1rem', border: '1px solid #fee2e2', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                         <AlertCircle size={18} /> Sold Out
+                         <AlertCircle size={18} /> Inactive
                       </div>
                     ) : (
                       <button 
@@ -349,15 +329,22 @@ const EventsListing: React.FC = () => {
               </div>
 
               <div style={{ backgroundColor: '#0d2046', width: '160px', padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#ffffff', textAlign: 'center', flexShrink: 0 }}>
-                 <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.2rem' }}>
-                   {event.date ? new Date(event.date).toLocaleDateString('en-US', { month: 'short' }).toUpperCase() : ''}
-                 </span>
-                 <span style={{ fontSize: '2.5rem', fontWeight: 900, lineHeight: 1 }}>
-                   {event.date ? new Date(event.date).getDate() : ''}
-                 </span>
-                 <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#cbd5e1', marginTop: '0.2rem' }}>
-                   {event.date ? new Date(event.date).getFullYear() : ''}
-                 </span>
+                {(() => {
+                  const d = parseDateTime(event.date);
+                  return (
+                    <>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.2rem' }}>
+                        {d ? d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase() : ''}
+                      </span>
+                      <span style={{ fontSize: '2.5rem', fontWeight: 900, lineHeight: 1 }}>
+                        {d ? d.getDate() : ''}
+                      </span>
+                      <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#cbd5e1', marginTop: '0.2rem' }}>
+                        {d ? d.getFullYear() : ''}
+                      </span>
+                    </>
+                  );
+                })()}
                  <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', width: '100%' }}>
                     <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b' }}>{event.category}</span>
                  </div>
@@ -469,6 +456,7 @@ const EventsListing: React.FC = () => {
           Showing {(currentPage - 1) * eventsPerPage + 1} to {Math.min(currentPage * eventsPerPage, totalEvents)} of {totalEvents} events
         </p>
       )}
+
 
       <StatusModal
         isOpen={modalConfig.isOpen}

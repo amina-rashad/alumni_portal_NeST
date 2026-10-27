@@ -30,7 +30,7 @@ const EventManagerSettings: React.FC = () => {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <label style={{ fontSize: '14px', fontWeight: 600, color: '#475569' }}>Default Event Category</label>
-          <select style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '12px', outline: 'none', background: '#fff' }}>
+          <select style={{ padding: '12px', border: '1px solid #cbd5e1', borderRadius: '12px', outline: 'none', background: '#fff', color: '#1e293b' }}>
             <option>Alumni Meet</option>
             <option>Webinar / Tech Talk</option>
             <option>Career Fair</option>
@@ -39,15 +39,15 @@ const EventManagerSettings: React.FC = () => {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <label style={{ fontSize: '14px', fontWeight: 600, color: '#475569' }}>Participant Limit Default</label>
-          <input type="number" defaultValue={100} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '12px', outline: 'none' }} />
+          <input type="number" defaultValue={100} style={{ padding: '12px', border: '1px solid #cbd5e1', borderRadius: '12px', outline: 'none', background: '#fff', color: '#1e293b' }} />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <label style={{ fontSize: '14px', fontWeight: 600, color: '#475569' }}>Registration Cut-off (Days before event)</label>
-          <input type="number" defaultValue={2} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '12px', outline: 'none' }} />
+          <input type="number" defaultValue={2} style={{ padding: '12px', border: '1px solid #cbd5e1', borderRadius: '12px', outline: 'none', background: '#fff', color: '#1e293b' }} />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <label style={{ fontSize: '14px', fontWeight: 600, color: '#475569' }}>Allow Non-Alumni Guests By Default</label>
-          <select style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '12px', outline: 'none', background: '#fff' }}>
+          <select style={{ padding: '12px', border: '1px solid #cbd5e1', borderRadius: '12px', outline: 'none', background: '#fff', color: '#1e293b' }}>
             <option>No, Alumni Only</option>
             <option>Yes, strict limit of 1 Guest</option>
             <option>Yes, up to +2 Guests</option>
@@ -109,7 +109,7 @@ const EventManagerSettings: React.FC = () => {
                  <UserCircle size={24} color="#64748b" />
                  <span style={{ fontWeight: 600 }}>Content Moderator</span>
               </div>
-              <span style={{ fontSize: '12px', color: '#64748b' }}>Manage event posts & comments</span>
+              <span style={{ fontSize: '12px', color: '#64748b' }}>Manage event posts & broadcasts</span>
            </div>
         </div>
       </div>
@@ -200,7 +200,7 @@ const EventManagerSettings: React.FC = () => {
              </button>
           )}
           <div>
-            <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#1e293b', margin: 0, fontFamily: "'Montserrat', sans-serif" }}>
+            <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#1e293b', margin: 0, fontFamily: "'Inter', sans-serif" }}>
               {selectedSection || 'Module Settings'}
             </h1>
             <p style={{ color: '#64748b', marginTop: '4px' }}>

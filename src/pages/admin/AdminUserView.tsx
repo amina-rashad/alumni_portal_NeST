@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Mail, Phone, Calendar, User, 
-  Shield, CheckCircle, Clock, FileText, 
-  Briefcase, GraduationCap, Award, MapPin
+  Shield, CheckCircle, Briefcase, GraduationCap, Banknote, Edit3
 } from 'lucide-react';
 import { adminApi } from '../../services/api';
 import toast from 'react-hot-toast';
@@ -45,142 +44,216 @@ const AdminUserView: React.FC = () => {
 
   if (!user) return null;
 
-  return (
-    <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '20px' }}>
-      <button 
-        onClick={() => navigate('/admin/users')}
-        style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', marginBottom: '24px', fontWeight: 600 }}
-      >
-        <ArrowLeft size={20} /> Back to User Governance
-      </button>
+  const formatDisplayDate = (d?: string): string => {
+    if (!d || d === 'N/A') return 'N/A';
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) return d;
+    if (/^\d{4}-\d{2}-\d{2}/.test(d)) {
+      const [yyyy, mm, dd] = d.substring(0, 10).split('-');
+      return `${dd}/${mm}/${yyyy}`;
+    }
+    const parsed = new Date(d);
+    if (!isNaN(parsed.getTime())) {
+      const dd = String(parsed.getDate()).padStart(2, '0');
+      const mm = String(parsed.getMonth() + 1).padStart(2, '0');
+      const yyyy = parsed.getFullYear();
+      return `${dd}/${mm}/${yyyy}`;
+    }
+    return d;
+  };
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '32px' }}>
-        {/* Main Info */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          <div style={{ background: '#fff', borderRadius: '24px', border: '1px solid #e2e8f0', padding: '32px', display: 'flex', alignItems: 'center', gap: '24px' }}>
-             <div style={{ 
-               width: '100px', height: '100px', borderRadius: '24px', 
-               background: '#1a2652', color: '#fff', display: 'flex', 
-               alignItems: 'center', justifyContent: 'center', fontSize: '40px', fontWeight: 800 
-             }}>
-               {user.full_name?.charAt(0)}
-             </div>
-             <div>
-               <h1 style={{ margin: 0, fontSize: '28px', fontWeight: 800, color: '#1e293b' }}>{user.full_name}</h1>
-               <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-                 <span style={{ padding: '4px 12px', borderRadius: '8px', background: '#e0e7ff', color: '#4338ca', fontSize: '12px', fontWeight: 700 }}>{user.role?.toUpperCase()}</span>
-                 <span style={{ padding: '4px 12px', borderRadius: '8px', background: '#f1f5f9', color: '#475569', fontSize: '12px', fontWeight: 700 }}>{user.user_type}</span>
-               </div>
-             </div>
+  const formatSalary = (s?: string | number): string => {
+    if (!s || s === '0' || s === 'N/A') return 'Not Specified';
+    const str = String(s).replace(/,/g, '').trim();
+    const num = Number(str);
+    if (!isNaN(num) && num > 0) {
+      return `₹${num.toLocaleString('en-IN')}`;
+    }
+    return String(s);
+  };
+
+  const joiningDateValue = user.joining_date ? formatDisplayDate(user.joining_date) : formatDisplayDate(user.created_at);
+
+  return (
+    <div style={{ maxWidth: '960px', margin: '0 auto', padding: '24px 16px' }}>
+      
+      {/* Header Navigation */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <button 
+          onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/admin/users')}
+          style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontWeight: 600, fontSize: '14px' }}
+        >
+          <ArrowLeft size={18} /> Back
+        </button>
+
+        <button
+          onClick={() => navigate(`/admin/users/edit/${user.id || id}`)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            background: '#1a2652',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '10px',
+            padding: '10px 18px',
+            fontSize: '13px',
+            fontWeight: 700,
+            cursor: 'pointer',
+            boxShadow: '0 2px 8px rgba(26, 38, 82, 0.2)'
+          }}
+        >
+          <Edit3 size={15} /> Edit User
+        </button>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        
+        {/* User Identity Banner */}
+        <div style={{ 
+          background: '#fff', 
+          borderRadius: '20px', 
+          border: '1px solid #e2e8f0', 
+          padding: '28px', 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '24px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
+        }}>
+          <div style={{ 
+            width: '84px', 
+            height: '84px', 
+            borderRadius: '20px', 
+            background: '#1a2652', 
+            color: '#fff', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            fontSize: '34px', 
+            fontWeight: 800,
+            flexShrink: 0
+          }}>
+            {user.full_name?.charAt(0)?.toUpperCase() || 'U'}
           </div>
 
-          <section style={{ background: '#fff', borderRadius: '24px', border: '1px solid #e2e8f0', padding: '32px' }}>
-            <h3 style={{ margin: '0 0 20px', fontSize: '18px', fontWeight: 800, color: '#1e293b' }}>Professional Overview</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-              <InfoItem icon={<Briefcase size={18} />} label="Specialization" value={user.specialization} />
-              <InfoItem icon={<GraduationCap size={18} />} label="Batch/Year" value={user.batch} />
-              <InfoItem icon={<Clock size={18} />} label="Joined At" value={new Date(user.created_at).toLocaleDateString()} />
-              <InfoItem icon={<Shield size={18} />} label="Email Status" value={user.is_email_verified ? 'Verified' : 'Pending'} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <h1 style={{ margin: 0, fontSize: '24px', fontWeight: 800, color: '#1e293b' }}>
+              {user.full_name}
+            </h1>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <span style={{ 
+                padding: '4px 12px', 
+                borderRadius: '8px', 
+                background: user.user_type === 'Applicant' || !user.user_type ? '#fef3c7' : '#e0e7ff', 
+                color: user.user_type === 'Applicant' || !user.user_type ? '#b45309' : '#4338ca', 
+                fontSize: '12px', 
+                fontWeight: 700 
+              }}>
+                {user.user_type || 'Applicant'}
+              </span>
             </div>
-            {user.bio && (
-              <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid #f1f5f9' }}>
-                <div style={{ fontSize: '12px', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 800, marginBottom: '8px' }}>Biography</div>
-                <p style={{ margin: 0, color: '#475569', lineHeight: 1.6 }}>{user.bio}</p>
-              </div>
-            )}
-          </section>
-
-          {/* Activity/Stats */}
-          <section style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-            <StatCard label="Job Applications" value={user.application_count || 0} icon={<FileText size={20} />} />
-            <StatCard label="Certificates Issued" value={user.certificates?.length || 0} icon={<Award size={20} />} />
-          </section>
+          </div>
         </div>
 
-        {/* Sidebar Info */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          <section style={{ background: '#fff', borderRadius: '24px', border: '1px solid #e2e8f0', padding: '24px' }}>
-            <h3 style={{ margin: '0 0 20px', fontSize: '16px', fontWeight: 800, color: '#1e293b' }}>Contact Details</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <ContactLink icon={<Mail size={18} />} label="Email" value={user.email} />
-              <ContactLink icon={<Phone size={18} />} label="Phone" value={user.phone || 'Not Provided'} />
-              <ContactLink icon={<MapPin size={18} />} label="Location" value={user.location || 'Not Specified'} />
-            </div>
-          </section>
+        {/* User Details Grid Card (matching Add User Form fields) */}
+        <div style={{ 
+          background: '#fff', 
+          borderRadius: '20px', 
+          border: '1px solid #e2e8f0', 
+          padding: '32px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
+        }}>
+          <h2 style={{ margin: '0 0 24px 0', fontSize: '17px', fontWeight: 800, color: '#1e293b', borderBottom: '1px solid #f1f5f9', paddingBottom: '16px' }}>
+            Account & Profile Details
+          </h2>
 
-          <section style={{ background: '#fff', borderRadius: '24px', border: '1px solid #e2e8f0', padding: '24px' }}>
-            <h3 style={{ margin: '0 0 20px', fontSize: '16px', fontWeight: 800, color: '#1e293b' }}>Account Security</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '14px', color: '#64748b' }}>Account Status</span>
-                <span style={{ 
-                  padding: '4px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 700,
-                  background: user.is_active ? '#dcfce7' : '#fee2e2',
-                  color: user.is_active ? '#16a34a' : '#ef4444'
-                }}>
-                  {user.is_active ? 'ACTIVE' : 'INACTIVE'}
-                </span>
-              </div>
-              <div style={{ fontSize: '13px', color: '#94a3b8' }}>
-                Last login: {user.last_login ? new Date(user.last_login).toLocaleString() : 'Never'}
-              </div>
-              <button 
-                onClick={async () => {
-                  if (window.confirm('Reset this user\'s password to "Welcome@NeST2024"?')) {
-                    try {
-                      const res = await adminApi.updateUser(user.id, { password: 'Welcome@NeST2024' });
-                      if (res.success) {
-                        toast.success('Password reset to Welcome@NeST2024');
-                      } else {
-                        toast.error(res.message || 'Failed to reset password');
-                      }
-                    } catch (err) {
-                      toast.error('Error resetting password');
-                    }
-                  }
-                }}
-                style={{ 
-                  marginTop: '12px', padding: '12px', borderRadius: '10px', 
-                  background: '#f1f5f9', color: '#1a2652', border: 'none', 
-                  fontSize: '12px', fontWeight: 700, cursor: 'pointer', transition: '0.2s' 
-                }}
-              >
-                Reset to Default Password
-              </button>
-            </div>
-          </section>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
+            
+            {/* Full Name */}
+            <DetailItem 
+              icon={<User size={18} color="#1a2652" />} 
+              label="Full Name" 
+              value={user.full_name || 'N/A'} 
+            />
+
+            {/* Email Address */}
+            <DetailItem 
+              icon={<Mail size={18} color="#1a2652" />} 
+              label="Email Address" 
+              value={user.email || 'N/A'} 
+            />
+
+            {/* Phone Number */}
+            <DetailItem 
+              icon={<Phone size={18} color="#1a2652" />} 
+              label="Phone Number" 
+              value={user.phone || 'Not Provided'} 
+            />
+
+            {/* Assign Role / User Type */}
+            <DetailItem 
+              icon={<Shield size={18} color="#1a2652" />} 
+              label="Assigned Role" 
+              value={user.user_type || 'Alumni'} 
+            />
+
+            {/* Salary / Stipend */}
+            <DetailItem 
+              icon={<Banknote size={18} color="#1a2652" />} 
+              label="Salary / Stipend" 
+              value={formatSalary(user.salary)} 
+            />
+
+            {/* Joining Date */}
+            <DetailItem 
+              icon={<Calendar size={18} color="#1a2652" />} 
+              label="Joining Date (DD/MM/YYYY)" 
+              value={joiningDateValue} 
+            />
+
+            {/* Batch / Year */}
+            <DetailItem 
+              icon={<GraduationCap size={18} color="#1a2652" />} 
+              label="Batch / Year" 
+              value={user.batch && user.batch !== 'N/A' ? user.batch : 'N/A'} 
+            />
+
+            {/* Specialization / Department */}
+            <DetailItem 
+              icon={<Briefcase size={18} color="#1a2652" />} 
+              label="Specialization / Department" 
+              value={user.specialization && user.specialization !== 'N/A' ? user.specialization : 'N/A'} 
+            />
+
+          </div>
         </div>
+
       </div>
     </div>
   );
 };
 
-const InfoItem: React.FC<{ icon: any, label: string, value: string }> = ({ icon, label, value }) => (
-  <div style={{ display: 'flex', gap: '12px' }}>
-    <div style={{ color: '#94a3b8' }}>{icon}</div>
-    <div>
-      <div style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 800 }}>{label}</div>
-      <div style={{ fontSize: '14px', color: '#1e293b', fontWeight: 600 }}>{value || 'N/A'}</div>
+const DetailItem: React.FC<{ icon: any, label: string, value: string }> = ({ icon, label, value }) => (
+  <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+    <div style={{ 
+      width: '38px', 
+      height: '38px', 
+      borderRadius: '10px', 
+      background: '#f8fafc', 
+      border: '1px solid #e2e8f0', 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center',
+      flexShrink: 0
+    }}>
+      {icon}
     </div>
-  </div>
-);
-
-const ContactLink: React.FC<{ icon: any, label: string, value: string }> = ({ icon, label, value }) => (
-  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1a2652' }}>{icon}</div>
     <div style={{ overflow: 'hidden' }}>
-      <div style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 800 }}>{label}</div>
-      <div style={{ fontSize: '13px', color: '#475569', fontWeight: 600, textOverflow: 'ellipsis', overflow: 'hidden' }}>{value}</div>
-    </div>
-  </div>
-);
-
-const StatCard: React.FC<{ label: string, value: number | string, icon: any }> = ({ label, value, icon }) => (
-  <div style={{ background: '#fff', borderRadius: '24px', border: '1px solid #e2e8f0', padding: '24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-    <div style={{ width: '48px', height: '48px', borderRadius: '16px', background: 'rgba(26, 38, 82, 0.05)', color: '#1a2652', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
-    <div>
-      <div style={{ fontSize: '24px', fontWeight: 800, color: '#1e293b' }}>{value}</div>
-      <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>{label}</div>
+      <div style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.5px', marginBottom: '2px' }}>
+        {label}
+      </div>
+      <div style={{ fontSize: '15px', color: '#1e293b', fontWeight: 600, wordBreak: 'break-word' }}>
+        {value}
+      </div>
     </div>
   </div>
 );

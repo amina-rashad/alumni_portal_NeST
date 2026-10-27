@@ -5,21 +5,7 @@ import {
   FileText, ShieldCheck, Plus, Trash2, ChevronDown, CheckCircle, GripVertical
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-
-// --- API Service (Sample Integration) ---
-// In a real app, this would be in a separate src/services/courseService.ts file
-const courseService = {
-  createCourse: async (courseData: any) => {
-    try {
-      // Replace with actual backend endpoint
-      const response = await axios.post('/api/admin/courses', courseData);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
-  }
-};
+import { coursesApi } from '../../services/api';
 
 interface Lesson {
   id: string;
@@ -42,7 +28,7 @@ interface Assessment {
   order: number;
 }
 
-const assessmentTypes = ['Quiz', 'Scenario', 'Debugging', 'Project', 'Video Demo'];
+const assessmentTypes = ['MCQ Assessment', 'Scenario', 'Debugging', 'Project', 'Video Demo'];
 
 const AdminAddCourse: React.FC = () => {
   const navigate = useNavigate();
@@ -148,24 +134,26 @@ const AdminAddCourse: React.FC = () => {
     const payload = {
       ...formData,
       modules,
-      assessments: assessments.filter(a => a.required)
+      assessments: assessments.filter(a => a.required),
+      is_active: true,
+      is_published: true,
+      status: 'Published'
     };
 
     try {
-
-      // await courseService.createCourse(payload);
-      
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      setSubmitSuccess(true);
-      setTimeout(() => {
-        setSubmitSuccess(false);
-        navigate('/admin/dashboard'); // Or back to courses list
-      }, 2000);
-    } catch (error) {
+      const res = await coursesApi.addCourse(payload);
+      if (res && res.success !== false) {
+        setSubmitSuccess(true);
+        setTimeout(() => {
+          setSubmitSuccess(false);
+          navigate('/admin/courses');
+        }, 1500);
+      } else {
+        alert(res?.message || 'Failed to create course. Please try again.');
+      }
+    } catch (error: any) {
       console.error('Failed to create course', error);
-      alert('Failed to create course. Please try again.');
+      alert(error?.message || 'Failed to create course. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

@@ -5,7 +5,8 @@ import {
   Search,
   Clock,
   Star,
-  ChevronRight
+  ChevronRight,
+  CheckCircle2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { coursesApi } from '../services/api';
@@ -17,6 +18,8 @@ const CourseListing: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [enrolledCourseIds, setEnrolledCourseIds] = useState<Set<string>>(new Set());
+  const [enrolledMap, setEnrolledMap] = useState<Record<string, any>>({});
   
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -29,12 +32,36 @@ const CourseListing: React.FC = () => {
   const fetchCourses = async () => {
     try {
       setIsLoading(true);
-      const res = await coursesApi.getAllCourses(currentPage, coursesPerPage);
-      if (res.success && res.data && res.data.courses) {
+      const [res, myCoursesRes] = await Promise.all([
+        coursesApi.getAllCourses(currentPage, coursesPerPage),
+        coursesApi.getMyCourses().catch(() => ({ success: false, data: null }))
+      ]);
+
+      const enrolledIds = new Set<string>();
+      const eMap: Record<string, any> = {};
+
+      if (myCoursesRes && myCoursesRes.success && myCoursesRes.data && myCoursesRes.data.courses) {
+        myCoursesRes.data.courses.forEach((mc: any) => {
+          const cid = String(mc.id || mc._id || mc.course_id || '');
+          if (cid) {
+            enrolledIds.add(cid);
+            eMap[cid] = mc;
+          }
+        });
+      }
+
+      if (res && res.success && res.data && res.data.courses) {
+        res.data.courses.forEach((c: any) => {
+          if (c.is_enrolled) {
+            enrolledIds.add(String(c.id));
+          }
+        });
         setCourses(res.data.courses);
         setTotalPages(res.data.total_pages || 1);
         setTotalCourses(res.data.total_courses || 0);
       }
+      setEnrolledCourseIds(enrolledIds);
+      setEnrolledMap(eMap);
     } catch (err) {
       console.error('Failed to load courses:', err);
     } finally {
@@ -197,104 +224,161 @@ const CourseListing: React.FC = () => {
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '2.5rem' }}>
-          {filteredCourses.map((course, index) => (
-            <React.Fragment key={course.id}>
-              <motion.div
-                whileHover={{ y: -10 }}
-                style={{
-                  background: 'white',
-                  borderRadius: '1.5rem',
-                  overflow: 'hidden',
-                  boxShadow: '0 4px 15px rgba(0,0,0,0.03)',
-                  border: '1px solid #f1f5f9',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  cursor: 'pointer'
-                }}
-                onClick={() => navigate(`/courses/${course.id}`)}
-              >
-                <div style={{ height: '220px', backgroundColor: '#0d2046', position: 'relative', overflow: 'hidden' }}>
-                  {course.cover_image ? (
-                    <img src={course.cover_image} alt={course.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : (
-                    <div style={{ position: 'absolute', inset: 0, opacity: 0.1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <BookOpen size={120} color="white" />
-                    </div>
-                  )}
-                  {/* Overlay Badges */}
-                  <div style={{ position: 'absolute', top: '1.25rem', right: '1.25rem' }}>
-                    <span style={{ 
-                      background: 'rgba(255,255,255,0.1)', 
-                      backdropFilter: 'blur(10px)', 
-                      padding: '0.6rem 1.2rem', 
-                      borderRadius: '1rem', 
-                      fontSize: '0.7rem', 
-                      fontWeight: 900, 
-                      color: 'white', 
-                      textTransform: 'uppercase', 
-                      letterSpacing: '0.1em',
-                      border: '1px solid rgba(255,255,255,0.2)' 
-                    }}>
-                      {course.level || 'Standard'}
-                    </span>
-                  </div>
-                  <div style={{ position: 'absolute', bottom: '1.25rem', left: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#eab308' }}>
-                    <div style={{ display: 'flex', gap: '2px' }}>
-                      {[1,2,3,4].map(i => <Star key={i} size={14} fill="currentColor" />)}
-                      <Star size={14} />
-                    </div>
-                    <span style={{ color: 'white', fontSize: '0.9rem', fontWeight: 800 }}>4.9 <span style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>({course.enrolled_count || 0})</span></span>
-                  </div>
-                </div>
- 
-                <div style={{ padding: '1.75rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <h3 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#0d2046', margin: 0, lineHeight: 1.2 }}>{course.title}</h3>
-                  <p style={{ color: '#64748b', fontSize: '0.9rem', lineHeight: 1.6, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                    {course.description || "Master these professional skills with our industry-standard certification program."}
-                  </p>
+          {filteredCourses.map((course, index) => {
+            const courseIdStr = String(course.id || course._id || '');
+            const enrolledInfo = enrolledMap[courseIdStr];
+            const isEnrolled = enrolledCourseIds.has(courseIdStr) || Boolean(course.is_enrolled);
+            const isCompleted = (enrolledInfo?.enrollment_info?.status === 'Completed') || 
+                                (course.enrollment_status === 'Completed') ||
+                                Boolean(enrolledInfo?.assessment_info?.has_passed);
 
-                  {/* Instructor Section */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.5rem' }}>
-                    <div style={{ 
-                      width: '36px', height: '36px', borderRadius: '50%', background: '#3b82f6', 
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', 
-                      fontWeight: 800, fontSize: '0.7rem' 
-                    }}>
-                      {course.instructor ? course.instructor.split(' ').map((n: any) => n[0]).join('') : 'NE'}
+            return (
+              <React.Fragment key={course.id}>
+                <motion.div
+                  whileHover={{ y: -10 }}
+                  style={{
+                    background: 'white',
+                    borderRadius: '1.5rem',
+                    overflow: 'hidden',
+                    boxShadow: isEnrolled ? '0 10px 30px rgba(13, 32, 70, 0.08)' : '0 4px 15px rgba(0,0,0,0.03)',
+                    border: isEnrolled ? '1.5px solid #bfdbfe' : '1px solid #f1f5f9',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    cursor: 'pointer',
+                    position: 'relative'
+                  }}
+                  onClick={() => navigate(`/courses/${course.id}`)}
+                >
+                  <div style={{ height: '220px', backgroundColor: '#0d2046', position: 'relative', overflow: 'hidden' }}>
+                    {course.cover_image ? (
+                      <img src={course.cover_image} alt={course.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      <div style={{ position: 'absolute', inset: 0, opacity: 0.1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <BookOpen size={120} color="white" />
+                      </div>
+                    )}
+                    
+                    {/* Enrolled Badge - Top Left Overlay */}
+                    {isEnrolled && (
+                      <div style={{ position: 'absolute', top: '1.25rem', left: '1.25rem', zIndex: 2 }}>
+                        <span style={{ 
+                          background: isCompleted ? 'linear-gradient(135deg, #059669 0%, #10B981 100%)' : 'linear-gradient(135deg, #0d2046 0%, #1e3a8a 100%)', 
+                          backdropFilter: 'blur(10px)', 
+                          padding: '0.45rem 0.95rem', 
+                          borderRadius: '1rem', 
+                          fontSize: '0.72rem', 
+                          fontWeight: 900, 
+                          color: 'white', 
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.35rem',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.06em',
+                          boxShadow: '0 4px 14px rgba(0,0,0,0.3)',
+                          border: '1px solid rgba(255,255,255,0.25)' 
+                        }}>
+                          <CheckCircle2 size={13} color="#6ee7b7" />
+                          {isCompleted ? 'Completed' : 'Enrolled'}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Level Badge - Top Right */}
+                    <div style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', zIndex: 2 }}>
+                      <span style={{ 
+                        background: 'rgba(255,255,255,0.15)', 
+                        backdropFilter: 'blur(10px)', 
+                        padding: '0.6rem 1.2rem', 
+                        borderRadius: '1rem', 
+                        fontSize: '0.7rem', 
+                        fontWeight: 900, 
+                        color: 'white', 
+                        textTransform: 'uppercase', 
+                        letterSpacing: '0.1em',
+                        border: '1px solid rgba(255,255,255,0.2)' 
+                      }}>
+                        {course.level || 'Standard'}
+                      </span>
                     </div>
-                    <span style={{ color: '#475569', fontSize: '0.95rem', fontWeight: 700 }}>{course.instructor || "NeST Expert"}</span>
+
+                    <div style={{ position: 'absolute', bottom: '1.25rem', left: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#eab308', zIndex: 2 }}>
+                      <div style={{ display: 'flex', gap: '2px' }}>
+                        {[1,2,3,4].map(i => <Star key={i} size={14} fill="currentColor" />)}
+                        <Star size={14} />
+                      </div>
+                      <span style={{ color: 'white', fontSize: '0.9rem', fontWeight: 800 }}>4.9 <span style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>({course.enrolled_count || 0})</span></span>
+                    </div>
                   </div>
-                </div>
- 
-                <div style={{ padding: '1.25rem 1.75rem', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fcfdfe' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#475569', fontWeight: 700, fontSize: '0.9rem' }}>
-                    <Clock size={16} color="#3b82f6" />
-                    <span>{course.duration || '12 Weeks'}</span>
+   
+                  <div style={{ padding: '1.75rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem' }}>
+                      <h3 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#0d2046', margin: 0, lineHeight: 1.2 }}>{course.title}</h3>
+                      {isEnrolled && (
+                        <span style={{
+                          flexShrink: 0,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.25rem',
+                          background: isCompleted ? '#ecfdf5' : '#eff6ff',
+                          color: isCompleted ? '#059669' : '#1d4ed8',
+                          border: `1px solid ${isCompleted ? '#a7f3d0' : '#bfdbfe'}`,
+                          padding: '0.25rem 0.6rem',
+                          borderRadius: '8px',
+                          fontSize: '0.75rem',
+                          fontWeight: 700
+                        }}>
+                          <CheckCircle2 size={12} />
+                          {isCompleted ? 'Completed' : 'Enrolled'}
+                        </span>
+                      )}
+                    </div>
+
+                    <p style={{ color: '#64748b', fontSize: '0.9rem', lineHeight: 1.6, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      {course.description || "Master these professional skills with our industry-standard certification program."}
+                    </p>
+
+                    {/* Instructor Section */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.5rem' }}>
+                      <div style={{ 
+                        width: '36px', height: '36px', borderRadius: '50%', background: isEnrolled ? '#0d2046' : '#3b82f6', 
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', 
+                        fontWeight: 800, fontSize: '0.7rem' 
+                      }}>
+                        {course.instructor ? course.instructor.split(' ').map((n: any) => n[0]).join('') : 'NE'}
+                      </div>
+                      <span style={{ color: '#475569', fontSize: '0.95rem', fontWeight: 700 }}>{course.instructor || "NeST Expert"}</span>
+                    </div>
                   </div>
-                  <button 
-                    style={{ 
-                      background: '#3b82f6', 
-                      color: 'white', 
-                      border: 'none', 
-                      padding: '0.7rem 1.4rem', 
-                      borderRadius: '1rem', 
-                      fontWeight: 800, 
-                      fontSize: '0.85rem', 
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      boxShadow: '0 4px 12px rgba(59, 130, 246, 0.2)'
-                    }}
-                  >
-                    View Details <ChevronRight size={14} />
-                  </button>
-                </div>
-              </motion.div>
- 
-              {/* NeST Pro Learning banner removed */}
-            </React.Fragment>
-          ))}
+   
+                  <div style={{ padding: '1.25rem 1.75rem', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fcfdfe' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#475569', fontWeight: 700, fontSize: '0.9rem' }}>
+                      <Clock size={16} color={isEnrolled ? '#0d2046' : '#3b82f6'} />
+                      <span>{course.duration || '12 Weeks'}</span>
+                    </div>
+                    <button 
+                      style={{ 
+                        background: isEnrolled ? '#0d2046' : '#3b82f6', 
+                        color: 'white', 
+                        border: 'none', 
+                        padding: '0.7rem 1.4rem', 
+                        borderRadius: '1rem', 
+                        fontWeight: 800, 
+                        fontSize: '0.85rem', 
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        boxShadow: isEnrolled ? '0 4px 12px rgba(13, 32, 70, 0.25)' : '0 4px 12px rgba(59, 130, 246, 0.2)',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      {isEnrolled ? (isCompleted ? 'Completed • Review' : 'Enrolled • View Course') : 'View Details'} <ChevronRight size={14} />
+                    </button>
+                  </div>
+                </motion.div>
+              </React.Fragment>
+            );
+          })}
         </div>
       )}
  

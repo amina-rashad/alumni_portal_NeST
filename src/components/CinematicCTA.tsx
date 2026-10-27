@@ -3,7 +3,11 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import './CinematicCTA.css';
 
-const CinematicCTA: React.FC = () => {
+interface CinematicCTAProps {
+  onContactClick?: () => void;
+}
+
+const CinematicCTA: React.FC<CinematicCTAProps> = ({ onContactClick }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -188,9 +192,22 @@ const CinematicCTA: React.FC = () => {
               <span>Get Started Now</span>
               <div className="btn-glow" />
             </Link>
-            <a href="#contact" className="cinematic-btn secondary">
+            <button 
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                if (onContactClick) {
+                  onContactClick();
+                } else {
+                  const el = document.getElementById('contact');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
+              className="cinematic-btn secondary"
+              style={{ cursor: 'pointer', fontFamily: 'inherit' }}
+            >
               <span>Contact Support</span>
-            </a>
+            </button>
           </div>
         </motion.div>
       </div>

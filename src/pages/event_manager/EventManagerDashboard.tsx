@@ -10,7 +10,7 @@ import { eventManagerApi } from '../../services/api';
 const StatCard: React.FC<{
   title: string;
   value: string;
-  change: string;
+  change?: string;
   icon: React.ReactNode;
   color: string;
   loading?: boolean;
@@ -32,9 +32,11 @@ const StatCard: React.FC<{
       <div style={{ padding: '12px', borderRadius: '16px', background: `${color}10`, color }}>
         {icon}
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#10b981', fontSize: '12px', fontWeight: 700 }}>
-        <TrendingUp size={14} /> {change}
-      </div>
+      {change && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#10b981', fontSize: '12px', fontWeight: 700 }}>
+          <TrendingUp size={14} /> {change}
+        </div>
+      )}
     </div>
     <div>
       <div style={{ fontSize: '14px', color: '#64748b', fontWeight: 500, marginBottom: '4px' }}>{title}</div>
@@ -129,40 +131,35 @@ const EventManagerDashboard: React.FC = () => {
     fetchData();
   }, []);
 
+  const totalParticipants = distribution.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
+
+  const buildConicGradient = () => {
+    if (totalParticipants === 0) return 'none';
+    let acc = 0;
+    const parts: string[] = [];
+    distribution.forEach((item) => {
+      const val = Number(item.value) || 0;
+      if (val > 0) {
+        const startDeg = (acc / totalParticipants) * 360;
+        acc += val;
+        const endDeg = (acc / totalParticipants) * 360;
+        parts.push(`${item.color || '#3b82f6'} ${startDeg}deg ${endDeg}deg`);
+      }
+    });
+    return parts.length > 0 ? `conic-gradient(${parts.join(', ')})` : 'none';
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#1e293b', margin: '0 0 8px 0' }}>Event Governance Portal</h1>
-          <p style={{ margin: 0, color: '#64748b', fontWeight: 500 }}>Global event oversight and participant engagement analytics.</p>
-        </div>
-        <button 
-          onClick={() => navigate('/event-manager/community-feed')}
-          style={{
-            padding: '12px 24px',
-            borderRadius: '14px',
-            background: '#fff',
-            color: '#1e293b',
-            border: '1px solid #e2e8f0',
-            fontWeight: 700,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            transition: 'all 0.3s ease'
-          }}
-          onMouseOver={(e) => { e.currentTarget.style.borderColor = brandPrimary; }}
-          onMouseOut={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; }}
-        >
-          <Activity size={18} color="#DC2626" /> Career Timelines
-        </button>
+      <div>
+        <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#1e293b', margin: '0 0 8px 0' }}>Event Governance Portal</h1>
+        <p style={{ margin: 0, color: '#64748b', fontWeight: 500 }}>Global event oversight and participant engagement analytics.</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px' }}>
-        <StatCard title="Total Events" value={stats?.total_events || "0"} change="+2" icon={<Calendar size={24} />} color="#233167" loading={isLoading} />
-        <StatCard title="Active Participants" value={stats?.active_participants?.toLocaleString() || "0"} change="+15%" icon={<Users size={24} />} color="#10b981" loading={isLoading} />
-        <StatCard title="Page Views" value={stats?.page_views || "45.2K"} change="+24%" icon={<MousePointer2 size={24} />} color="#f59e0b" loading={isLoading} />
-        <StatCard title="Engagement Rate" value={stats?.engagement_rate || "68%"} change="+5%" icon={<TrendingUp size={24} />} color="#ec4899" loading={isLoading} />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '24px' }}>
+        <StatCard title="Total Events" value={stats?.total_events !== undefined ? String(stats.total_events) : "0"} icon={<Calendar size={24} />} color="#233167" loading={isLoading} />
+        <StatCard title="Active Participants" value={stats?.active_participants !== undefined ? stats.active_participants.toLocaleString() : "0"} icon={<Users size={24} />} color="#10b981" loading={isLoading} />
+        <StatCard title="Engagement Rate" value={stats?.engagement_rate || "0%"} icon={<TrendingUp size={24} />} color="#ec4899" loading={isLoading} />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr', gap: '32px' }}>
@@ -255,32 +252,67 @@ const EventManagerDashboard: React.FC = () => {
           </section>
         </div>
 
-        {/* Quick Analytics / Pie Chart Placeholder */}
+        {/* Quick Analytics / Dynamic Donut Chart */}
         <section style={{ background: brandDark, borderRadius: '32px', color: '#fff', padding: '32px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
           <div>
             <h3 style={{ margin: '0 0 8px 0', fontSize: '20px', fontWeight: 800 }}>Participant Status</h3>
             <p style={{ margin: 0, fontSize: '14px', color: 'rgba(255,255,255,0.6)' }}>Distribution of participants across user types</p>
           </div>
           
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ position: 'relative', width: '180px', height: '180px', border: '12px solid rgba(255,255,255,0.05)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ fontSize: '32px', fontWeight: 800 }}>{distribution.length > 0 ? distribution[0].value : '0%'}</div>
-              <div style={{ position: 'absolute', top: '-12px', left: '-12px', right: '-12px', bottom: '-12px', border: '12px solid #0ea5e9', borderRadius: '50%', clipPath: 'polygon(50% 50%, -20% -20%, 120% -20%, 120% 120%)', transform: 'rotate(20deg)' }}></div>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '190px' }}>
+            <div style={{
+              position: 'relative',
+              width: '180px',
+              height: '180px',
+              borderRadius: '50%',
+              background: totalParticipants > 0 ? buildConicGradient() : 'rgba(255, 255, 255, 0.08)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: totalParticipants > 0 ? '0 8px 24px rgba(0,0,0,0.25)' : 'none',
+              transition: 'all 0.3s ease'
+            }}>
+              {/* Inner Circle Cutout for Donut */}
+              <div style={{
+                width: '144px',
+                height: '144px',
+                borderRadius: '50%',
+                background: brandDark,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <div style={{ fontSize: '32px', fontWeight: 800, color: '#ffffff', lineHeight: 1 }}>
+                  {totalParticipants}
+                </div>
+                <div style={{ fontSize: '11px', fontWeight: 600, color: 'rgba(255,255,255,0.5)', marginTop: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  {totalParticipants === 1 ? 'Participant' : 'Participants'}
+                </div>
+              </div>
             </div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {isLoading ? (
               [1, 2, 3].map(i => <div key={i} style={{ height: '20px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px' }} className="skeleton-pulse" />)
-            ) : distribution.length > 0 ? distribution.map((item) => (
-              <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ width: '12px', height: '12px', borderRadius: '4px', background: item.color || '#fff' }}></div>
-                  <span style={{ fontSize: '14px', fontWeight: 500 }}>{item.label}</span>
-                </div>
-                <span style={{ fontSize: '14px', fontWeight: 700 }}>{item.value}</span>
-              </div>
-            )) : (
+            ) : distribution.length > 0 ? (
+              distribution.map((item) => {
+                const count = Number(item.value) || 0;
+                const pct = totalParticipants > 0 ? Math.round((count / totalParticipants) * 100) : 0;
+                return (
+                  <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ width: '12px', height: '12px', borderRadius: '4px', background: item.color || '#fff' }}></div>
+                      <span style={{ fontSize: '14px', fontWeight: 500 }}>{item.label}</span>
+                    </div>
+                    <span style={{ fontSize: '14px', fontWeight: 700 }}>
+                      {count} <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', fontWeight: 500 }}>({pct}%)</span>
+                    </span>
+                  </div>
+                );
+              })
+            ) : (
               <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.6)' }}>No distribution data</div>
             )}
           </div>

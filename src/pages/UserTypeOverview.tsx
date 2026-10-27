@@ -15,7 +15,7 @@ const userTypeData: Record<string, any> = {
     title: 'Alumni Network',
     tagline: 'Leveraging years of expertise and corporate wisdom.',
     description: 'Our alumni network is the backbone of NeST Digital. Comprising former employees and trainees who have gone on to achieve great heights in the tech industry, this group provides invaluable mentorship and career pathways for current members.',
-    heroImage: '/placeholder.jpg',
+    heroImage: '/images/users/alumni.jpg',
     color: '#C8102E',
     pillars: [
       { title: 'Global Presence', desc: 'Our alumni are spread across 15+ countries, holding senior leadership positions in FAANG and Fortune 500 companies.', icon: Globe },
@@ -37,7 +37,7 @@ const userTypeData: Record<string, any> = {
     title: 'Intern Hub',
     tagline: 'Cultivating the next generation of digital leaders.',
     description: 'Our internship program offers students and fresh graduates the opportunity to work on real-world projects alongside industry experts. It is a launchpad for careers in software engineering, UI/UX, and data science.',
-    heroImage: '/placeholder.jpg',
+    heroImage: '/images/users/interns.jpg',
     color: '#1E4FA0',
     pillars: [
       { title: 'Structured Paths', desc: 'Each intern follows a 12-week modular roadmap tailored to their specific technology stack.', icon: MapPin },
@@ -59,7 +59,7 @@ const userTypeData: Record<string, any> = {
     title: 'Trainee Program',
     tagline: 'Bridging the skill gap through intensive training.',
     description: 'The Trainee Program at NeST is designed for individuals who want to pivot or deep-dive into new technologies. We provide structured learning paths and hands-on laboratory sessions to ensure industry readiness.',
-    heroImage: '/placeholder.jpg',
+    heroImage: '/images/users/trainees.jpg',
     color: '#10B981',
     pillars: [
       { title: 'Certified Labs', desc: 'Our state-of-the-art labs are equipped with the latest hardware and software environments.', icon: ShieldCheck },
@@ -81,7 +81,7 @@ const userTypeData: Record<string, any> = {
     title: 'Industrial Visits',
     tagline: 'Experiencing engineering excellence first-hand.',
     description: 'We welcome students from various universities to visit our facilities and witness the engineering transformation at NeST Digital. These visits provide a window into the corporate world and help students align their learning with industry standards.',
-    heroImage: '/placeholder.jpg',
+    heroImage: '/images/users/iv_students.jpg',
     color: '#F59E0B',
     pillars: [
       { title: 'Expert Talks', desc: '30-minute power talks with our senior architects during the visit.', icon: Zap },
@@ -97,6 +97,28 @@ const userTypeData: Record<string, any> = {
       { icon: Users, title: 'Guided Factory Tours', desc: 'See how large-scale software and hardware systems are integrated.' },
       { icon: Zap, title: 'Tech Workshops', desc: 'Attend short power-talks by our senior architects during your visit.' },
       { icon: Rocket, title: 'Future Careers', desc: 'Understand the different roles available and find your calling in tech.' }
+    ]
+  },
+  'applicants': {
+    title: 'Career Applicants',
+    tagline: 'Opening pathways to premier digital engineering careers.',
+    description: 'NeST Digital connects talented job seekers, lateral hires, and promising fresh graduates directly with hiring managers. Track your applications, discover tailored roles, and accelerate your tech career through our streamlined hiring ecosystem.',
+    heroImage: '/images/users/applicants.jpg',
+    color: '#8B5CF6',
+    pillars: [
+      { title: 'Transparent Tracking', desc: 'Real-time visibility into your application status, interview rounds, and evaluation feedback.', icon: Target },
+      { title: 'Direct Access', desc: 'Skip recruiter intermediaries with direct visibility to engineering hiring managers.', icon: Briefcase },
+      { title: 'Skills Matching', desc: 'Automated skill and portfolio assessment to match you with best-fit high-growth roles.', icon: Zap }
+    ],
+    details: [
+      { label: 'Open Opportunities', value: 'Over 50+ active software engineering, QA, and cloud roles across NeST.' },
+      { label: 'Average Response Time', value: 'Applications reviewed within 48 to 72 business hours.' },
+      { label: 'Evaluation Process', value: 'Objective coding challenges, system design, and collaborative cultural interviews.' }
+    ],
+    features: [
+      { icon: Briefcase, title: 'Tailored Job Matches', desc: 'Receive proactive alerts for roles matching your tech stack and experience level.' },
+      { icon: Target, title: 'Real-Time Status', desc: 'Track your application progress from screening to final offer letter in real time.' },
+      { icon: Rocket, title: 'Rapid Onboarding', desc: 'Fast-tracked interview and onboarding processes for qualified community applicants.' }
     ]
   }
 };

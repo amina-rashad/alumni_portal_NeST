@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, Plus, 
-  Eye, Edit2, MoreHorizontal, UserPlus, FileSpreadsheet, Trash2, RefreshCw
+  Eye, Edit2, MoreHorizontal, UserPlus, FileSpreadsheet, Trash2, RefreshCw,
+  UserCheck, UserX, X, CheckCircle2
 } from 'lucide-react';
 import { adminApi } from '../../services/api';
 import toast from 'react-hot-toast';
@@ -20,6 +22,48 @@ const AdminUsers: React.FC = () => {
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
   const nestNavy = '#1a2652';
 
+  const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
+  const [statusNotification, setStatusNotification] = useState<{
+    userName: string;
+    userEmail: string;
+    newStatus: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    if (statusNotification) {
+      const timer = setTimeout(() => {
+        setStatusNotification(null);
+      }, 4500);
+      return () => clearTimeout(timer);
+    }
+  }, [statusNotification]);
+
+  const handleToggleStatus = async (user: any) => {
+    if (statusUpdatingId) return;
+    const currentActive = user.is_active !== false;
+    const newStatus = !currentActive;
+    setStatusUpdatingId(user.id);
+
+    try {
+      const res = await adminApi.updateUser(user.id, { is_active: newStatus });
+      if (res.success) {
+        setUsers(prev => prev.map(u => u.id === user.id ? { ...u, is_active: newStatus } : u));
+        setStatusNotification({
+          userName: user.full_name || user.email,
+          userEmail: user.email,
+          newStatus: newStatus
+        });
+        toast.success(`User status updated to ${newStatus ? 'Active' : 'Inactive'}`);
+      } else {
+        toast.error(res.message || 'Failed to update user status');
+      }
+    } catch {
+      toast.error('Failed to update user status');
+    } finally {
+      setStatusUpdatingId(null);
+    }
+  };
+
   useEffect(() => {
     const fetchUsers = async () => {
       setIsLoading(true);
@@ -34,11 +78,13 @@ const AdminUsers: React.FC = () => {
 
   const getDisplayRole = (user: any) => {
     if (isStaffRole(user.role) || user.user_type === 'Staff') return 'Staff';
-    if (user.user_type === 'Industrial Student' || user.user_type === 'IV Student') return 'IV Student';
-    if (user.user_type === 'Intern') return 'Intern';
-    if (user.user_type === 'Trainee') return 'Trainee';
-    if (user.user_type === 'Alumni' || (!user.user_type && !isStaffRole(user.role))) return 'Alumni';
-    return 'Other';
+    const normalizedType = user.user_type?.toLowerCase()?.trim();
+    if (normalizedType === 'industrial student' || normalizedType === 'iv student' || normalizedType === 'iv students') return 'IV Student';
+    if (normalizedType === 'intern' || normalizedType === 'interns') return 'Intern';
+    if (normalizedType === 'trainee' || normalizedType === 'trainees') return 'Trainee';
+    if (normalizedType === 'alumni') return 'Alumni';
+    if (normalizedType === 'applicant' || normalizedType === 'applicants' || !user.user_type) return 'Applicant';
+    return user.user_type || 'Applicant';
   };
 
   const isStaffRole = (role: string) => {
@@ -47,6 +93,8 @@ const AdminUsers: React.FC = () => {
 
   const getRoleBadgeStyle = (displayRole: string) => {
     switch (displayRole) {
+      case 'Applicant':
+        return { background: '#fef3c7', color: '#b45309' }; // Amber badge for direct applicants
       case 'Alumni':
         return { background: '#e2e7f3', color: '#1a2652' };
       case 'IV Student':
@@ -58,7 +106,7 @@ const AdminUsers: React.FC = () => {
       case 'Trainee':
         return { background: '#f5f3ff', color: '#8b5cf6' };
       default:
-        return { background: '#f1f5f9', color: '#475569' };
+        return { background: '#fef3c7', color: '#b45309' };
     }
   };
 
@@ -70,18 +118,16 @@ const AdminUsers: React.FC = () => {
       
     if (!matchesSearch) return false;
     
-    // 2. Category filter
+    // 2. Category filter based on normalized display role
+    const displayRole = getDisplayRole(user);
     if (selectedCategory === 'All') return true;
-    if (selectedCategory === 'Staff') return isStaffRole(user.role) || user.user_type === 'Staff';
-    if (selectedCategory === 'Alumni') return user.user_type === 'Alumni' || (!user.user_type && !isStaffRole(user.role));
-    if (selectedCategory === 'IV Students') return user.user_type === 'Industrial Student';
-    if (selectedCategory === 'Interns') return user.user_type === 'Intern';
-    if (selectedCategory === 'Trainees') return user.user_type === 'Trainee';
-    
-    // Others
-    const knownTypes = ['Alumni', 'Industrial Student', 'Intern', 'Trainee', 'Staff'];
-    const isKnown = knownTypes.includes(user.user_type) || isStaffRole(user.role);
-    return !isKnown;
+    if (selectedCategory === 'Applicants') return displayRole === 'Applicant';
+    if (selectedCategory === 'Staff') return displayRole === 'Staff';
+    if (selectedCategory === 'Alumni') return displayRole === 'Alumni';
+    if (selectedCategory === 'IV Students') return displayRole === 'IV Student';
+    if (selectedCategory === 'Interns') return displayRole === 'Intern';
+    if (selectedCategory === 'Trainees') return displayRole === 'Trainee';
+    return true;
   });
 
   const isAllFilteredSelected = filteredUsers.length > 0 && filteredUsers.every(user => selectedUserIds.includes(user.id));
@@ -209,7 +255,7 @@ const AdminUsers: React.FC = () => {
 
           {/* Category Filter Pills */}
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-            {['All', 'Alumni', 'IV Students', 'Interns', 'Trainees', 'Staff', 'Others'].map((cat) => {
+            {['All', 'Applicants', 'Alumni', 'IV Students', 'Interns', 'Trainees', 'Staff'].map((cat) => {
               const isActive = selectedCategory === cat;
               return (
                 <button
@@ -352,16 +398,60 @@ const AdminUsers: React.FC = () => {
                     })()}
                   </td>
                   <td style={{ padding: '16px' }}>
-                    <span style={{ 
-                      padding: '6px 12px', 
-                      borderRadius: '8px', 
-                      fontSize: '12px', 
-                      fontWeight: 600, 
-                      background: user.is_active ? '#dcfce7' : '#fee2e2',
-                      color: user.is_active ? '#16a34a' : '#ef4444'
-                    }}>
-                      {user.is_active ? 'Active' : 'Inactive'}
-                    </span>
+                    {(() => {
+                      const isActive = user.is_active !== false;
+                      const isUpdating = statusUpdatingId === user.id;
+                      return (
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleStatus(user);
+                          }}
+                          disabled={isUpdating}
+                          style={{ 
+                            padding: '6px 12px', 
+                            borderRadius: '8px', 
+                            fontSize: '12px', 
+                            fontWeight: 700, 
+                            background: isActive ? '#dcfce7' : '#fee2e2',
+                            color: isActive ? '#15803d' : '#b91c1c',
+                            border: `1px solid ${isActive ? '#86efac' : '#fca5a5'}`,
+                            cursor: isUpdating ? 'wait' : 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            transition: 'all 0.15s ease',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                            opacity: isUpdating ? 0.7 : 1,
+                            userSelect: 'none'
+                          }}
+                          title={`Click to switch status to ${isActive ? 'Inactive' : 'Active'}`}
+                          onMouseEnter={(e) => { 
+                            if (!isUpdating) {
+                              e.currentTarget.style.transform = 'scale(1.05)';
+                              e.currentTarget.style.boxShadow = '0 3px 8px rgba(0,0,0,0.1)';
+                            }
+                          }}
+                          onMouseLeave={(e) => { 
+                            e.currentTarget.style.transform = 'scale(1)';
+                            e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.04)';
+                          }}
+                        >
+                          {isUpdating ? (
+                            <RefreshCw size={12} style={{ animation: 'spin 0.8s linear infinite' }} />
+                          ) : (
+                            <span style={{ 
+                              width: '7px', 
+                              height: '7px', 
+                              borderRadius: '50%', 
+                              background: isActive ? '#16a34a' : '#ef4444',
+                              boxShadow: isActive ? '0 0 6px rgba(22, 163, 74, 0.6)' : '0 0 6px rgba(239, 68, 68, 0.6)'
+                            }} />
+                          )}
+                          {isActive ? 'Active' : 'Inactive'}
+                        </button>
+                      );
+                    })()}
                   </td>
                   <td style={{ padding: '16px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -558,6 +648,195 @@ const AdminUsers: React.FC = () => {
               </button>
             </div>
           </div>
+        </>,
+        document.body
+      )}
+
+      {/* Status Change Notification Pop Up */}
+      {document.body && createPortal(
+        <>
+          <style>{`
+            @keyframes spin {
+              from { transform: rotate(0deg); }
+              to { transform: rotate(360deg); }
+            }
+            @keyframes notificationProgress {
+              from { width: 100%; }
+              to { width: 0%; }
+            }
+          `}</style>
+          <AnimatePresence>
+            {statusNotification && (
+              <motion.div
+                initial={{ opacity: 0, y: -24, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                transition={{ duration: 0.22, ease: 'easeOut' }}
+                style={{
+                  position: 'fixed',
+                  top: '24px',
+                  right: '24px',
+                  zIndex: 99999,
+                  width: 'calc(100% - 48px)',
+                  maxWidth: '430px',
+                  background: '#ffffff',
+                  borderRadius: '16px',
+                  boxShadow: '0 20px 45px -10px rgba(15, 23, 42, 0.3), 0 0 0 1px rgba(15, 23, 42, 0.08)',
+                  overflow: 'hidden',
+                  border: `1px solid ${statusNotification.newStatus ? '#bbf7d0' : '#fecaca'}`
+                }}
+              >
+                {/* Top Accent Strip */}
+                <div 
+                  style={{ 
+                    height: '4px', 
+                    width: '100%', 
+                    background: statusNotification.newStatus ? '#16a34a' : '#ef4444' 
+                  }} 
+                />
+                
+                <div style={{ padding: '18px 20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
+                    {/* Status Icon */}
+                    <div 
+                      style={{
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '12px',
+                        background: statusNotification.newStatus ? '#dcfce7' : '#fee2e2',
+                        color: statusNotification.newStatus ? '#15803d' : '#b91c1c',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        boxShadow: statusNotification.newStatus 
+                          ? '0 4px 12px rgba(22, 163, 74, 0.2)' 
+                          : '0 4px 12px rgba(239, 68, 68, 0.2)'
+                      }}
+                    >
+                      {statusNotification.newStatus ? (
+                        <UserCheck size={22} strokeWidth={2.2} />
+                      ) : (
+                        <UserX size={22} strokeWidth={2.2} />
+                      )}
+                    </div>
+
+                    {/* Body Text */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
+                        <span style={{ 
+                          fontSize: '11px', 
+                          fontWeight: 800, 
+                          letterSpacing: '0.6px', 
+                          textTransform: 'uppercase',
+                          color: statusNotification.newStatus ? '#15803d' : '#b91c1c'
+                        }}>
+                          Status Notification
+                        </span>
+                        <button
+                          onClick={() => setStatusNotification(null)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#94a3b8',
+                            cursor: 'pointer',
+                            padding: '2px',
+                            display: 'flex',
+                            borderRadius: '6px',
+                            transition: 'color 0.15s'
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.color = '#1e293b')}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = '#94a3b8')}
+                          title="Dismiss"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+
+                      <h4 style={{ 
+                        margin: '0 0 6px 0', 
+                        fontSize: '15px', 
+                        fontWeight: 700, 
+                        color: '#0f172a' 
+                      }}>
+                        {statusNotification.newStatus ? 'Account Marked Active' : 'Account Marked Inactive'}
+                      </h4>
+
+                      <p style={{ 
+                        margin: '0 0 14px 0', 
+                        fontSize: '13px', 
+                        color: '#475569', 
+                        lineHeight: 1.45 
+                      }}>
+                        User <strong style={{ color: '#0f172a' }}>{statusNotification.userName}</strong> ({statusNotification.userEmail}) is now{' '}
+                        <span style={{ 
+                          fontWeight: 700, 
+                          color: statusNotification.newStatus ? '#15803d' : '#b91c1c' 
+                        }}>
+                          {statusNotification.newStatus ? 'Active' : 'Inactive'}
+                        </span>.
+                        {statusNotification.newStatus 
+                          ? ' User can now log in and access authorized portal features.' 
+                          : ' User login is now blocked and account access is suspended.'}
+                      </p>
+
+                      {/* Bottom action info */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '2px' }}>
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '4px 10px',
+                          borderRadius: '20px',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          background: statusNotification.newStatus ? '#f0fdf4' : '#fef2f2',
+                          color: statusNotification.newStatus ? '#166534' : '#991b1b',
+                          border: `1px solid ${statusNotification.newStatus ? '#bbf7d0' : '#fecaca'}`
+                        }}>
+                          <span style={{ 
+                            width: '6px', 
+                            height: '6px', 
+                            borderRadius: '50%', 
+                            background: statusNotification.newStatus ? '#16a34a' : '#ef4444' 
+                          }} />
+                          Current: {statusNotification.newStatus ? 'Active' : 'Inactive'}
+                        </span>
+
+                        <button
+                          onClick={() => setStatusNotification(null)}
+                          style={{
+                            background: '#f1f5f9',
+                            border: 'none',
+                            color: '#475569',
+                            padding: '6px 14px',
+                            borderRadius: '8px',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            transition: 'background 0.15s'
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = '#e2e8f0')}
+                          onMouseLeave={(e) => (e.currentTarget.style.background = '#f1f5f9')}
+                        >
+                          Dismiss
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Progress Countdown Bar */}
+                <div style={{ width: '100%', height: '3px', background: '#f1f5f9', overflow: 'hidden' }}>
+                  <div style={{
+                    height: '100%',
+                    background: statusNotification.newStatus ? '#16a34a' : '#ef4444',
+                    animation: 'notificationProgress 4.5s linear forwards'
+                  }} />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </>,
         document.body
       )}

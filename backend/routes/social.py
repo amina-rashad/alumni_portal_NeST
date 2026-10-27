@@ -14,6 +14,11 @@ from .notifications import create_notification
 social_bp = Blueprint("social", __name__)
 
 
+from utils.date_helpers import format_datetime_utc
+
+_format_datetime = format_datetime_utc
+
+
 def _serialize_post(post: dict, db=None, current_user_id=None) -> dict:
     """Convert a MongoDB post document to a JSON-safe dictionary."""
     result = {
@@ -25,7 +30,7 @@ def _serialize_post(post: dict, db=None, current_user_id=None) -> dict:
         "likes_count": len(post.get("likes", [])),
         "comments_count": len(post.get("comments", [])),
         "is_liked": False,
-        "created_at": post.get("created_at").isoformat() if post.get("created_at") else None,
+        "created_at": _format_datetime(post.get("created_at")),
     }
 
     # Check if current user liked this post
@@ -41,6 +46,10 @@ def _serialize_post(post: dict, db=None, current_user_id=None) -> dict:
                 result["author_type"] = author.get("user_type", "")
                 result["author_picture"] = author.get("profile_picture")
                 result["author_status"] = author.get("status", "none")
+                role = (author.get("role") or "user").strip().lower()
+                user_type = (author.get("user_type") or "").strip().lower()
+                result["author_role"] = "Admin" if role in ("admin", "super_admin") else ("Recruiter" if role in ("recruiter", "job_recruiter") else (author.get("role") or "Network Contributor"))
+                result["is_official"] = role in ("admin", "super_admin", "recruiter", "job_recruiter") or user_type in ("staff", "admin", "recruiter")
         except Exception:
             pass
 
@@ -52,7 +61,7 @@ def _serialize_post(post: dict, db=None, current_user_id=None) -> dict:
                 "id": str(c.get("_id", "")),
                 "text": c.get("text", ""),
                 "author_name": c.get("author_name", ""),
-                "created_at": c.get("created_at").isoformat() if c.get("created_at") else None,
+                "created_at": _format_datetime(c.get("created_at")),
             }
             result["comments"].append(comment)
 
@@ -71,11 +80,27 @@ def get_feed():
     page = int(request.args.get("page", 1))
     per_page = int(request.args.get("per_page", 20))
     skip = (page - 1) * per_page
+    only_official = request.args.get("official_only") == "true"
 
-    posts_cursor = db["posts"].find().sort("created_at", -1).skip(skip).limit(per_page)
+    query = {}
+    if only_official:
+        official_users = list(db["users"].find(
+            {"$or": [
+                {"role": {"$in": ["admin", "super_admin", "recruiter", "job_recruiter"]}},
+                {"user_type": {"$in": ["Staff", "Admin", "Recruiter", "staff", "admin", "recruiter"]}}
+            ]},
+            {"_id": 1}
+        ))
+        official_ids = []
+        for u in official_users:
+            official_ids.append(u["_id"])
+            official_ids.append(str(u["_id"]))
+        query["author_id"] = {"$in": official_ids}
+
+    posts_cursor = db["posts"].find(query).sort("created_at", -1).skip(skip).limit(per_page)
     posts_list = [_serialize_post(p, db, user_id) for p in posts_cursor]
 
-    total = db["posts"].count_documents({})
+    total = db["posts"].count_documents(query)
 
     return jsonify({
         "success": True,
@@ -291,20 +316,25 @@ def delete_post(post_id):
     db = get_db()
 
     try:
-        post = db["posts"].find_one({"_id": ObjectId(post_id)})
+        oid = ObjectId(post_id)
+        post = db["posts"].find_one({"$or": [{"_id": oid}, {"_id": str(post_id)}]})
     except Exception:
-        return jsonify({"success": False, "message": "Invalid post ID."}), 400
+        post = db["posts"].find_one({"_id": str(post_id)})
 
     if not post:
         return jsonify({"success": False, "message": "Post not found."}), 404
 
-    # Only author or admin can delete
-    if str(post["author_id"]) != user_id:
+    # Only author, manager, or admin can delete
+    if str(post.get("author_id", "")) != user_id:
         user = db["users"].find_one({"_id": ObjectId(user_id)})
-        if not user or user.get("role") != "admin":
+        role = (user.get("role") or "").strip().lower() if user else ""
+        allowed = ("admin", "super_admin", "course_manager", "event_manager", "job_recruiter")
+        if not user or (role not in allowed and user.get("user_type") != "Staff"):
             return jsonify({"success": False, "message": "Access denied."}), 403
 
-    db["posts"].delete_one({"_id": ObjectId(post_id)})
+    target_id = post["_id"]
+    db["posts"].delete_one({"_id": target_id})
+    return jsonify({"success": True, "message": "Post deleted successfully."}), 200
 
 # ── Update Post ──
 

@@ -169,7 +169,7 @@ const AdminRoleManager: React.FC = () => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   <label style={{ fontSize: '13px', fontWeight: 700, color: '#475569' }}>Assign System Privilege</label>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                    <RoleOption id="job_recruiter" label="Job Recruiter" desc="Post & manage career opportunities" active={newRole === 'job_recruiter'} onClick={() => setNewRole('job_recruiter')} />
+                    <RoleOption id="job_recruiter" label="Recruiter" desc="Post & manage career opportunities" active={newRole === 'job_recruiter'} onClick={() => setNewRole('job_recruiter')} />
                     <RoleOption id="event_manager" label="Event Manager" desc="Organize platform activities" active={newRole === 'event_manager'} onClick={() => setNewRole('event_manager')} />
                     <RoleOption id="course_manager" label="Course Manager" desc="Curate educational content" active={newRole === 'course_manager'} onClick={() => setNewRole('course_manager')} />
                     <RoleOption id="user" label="Standard User" desc="Revoke administrative access" active={newRole === 'user'} onClick={() => setNewRole('user')} />

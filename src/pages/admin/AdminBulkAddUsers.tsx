@@ -1,25 +1,32 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, ArrowLeft, Download, Trash2, Users, UserPlus, History } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import { adminApi } from '../../services/api';
 import toast from 'react-hot-toast';
 
 interface UserUploadData {
+  first_name?: string;
+  last_name?: string;
   full_name: string;
   email: string;
   user_type: string;
   batch: string;
   specialization: string;
   phone: string;
+  salary?: string;
+  joining_date?: string;
   role: string;
 }
 
 const AdminBulkAddUsers: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const defaultUserType = (location.state as any)?.defaultUserType || 'Alumni';
   const [file, setFile] = useState<File | null>(null);
   const [users, setUsers] = useState<UserUploadData[]>([]);
+  const [duplicateEmailsInBatch, setDuplicateEmailsInBatch] = useState<Set<string>>(new Set());
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -39,7 +46,7 @@ const AdminBulkAddUsers: React.FC = () => {
     reader.onload = (e) => {
       try {
         const data = e.target?.result;
-        const workbook = XLSX.read(data, { type: 'binary' });
+        const workbook = XLSX.read(data, { type: 'binary', cellDates: true });
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
         const parsedData: any[] = XLSX.utils.sheet_to_json(sheet);
@@ -50,22 +57,73 @@ const AdminBulkAddUsers: React.FC = () => {
             return foundKey ? row[foundKey] : '';
           };
 
+          const firstName = String(findVal(['first name', 'firstname', 'first_name']) || '').trim();
+          const lastName = String(findVal(['last name', 'lastname', 'last_name']) || '').trim();
+          let fullName = String(findVal(['name', 'full name', 'fullname', 'student name', 'user name']) || '').trim();
+          if (!fullName && (firstName || lastName)) {
+            fullName = `${firstName} ${lastName}`.trim();
+          }
+
+          // Joining Date handling (supports Excel Date objects, serial numbers, and string dates)
+          let rawJoiningDate = findVal(['joining date', 'joining_date', 'doj', 'date of joining', 'joiningdate']);
+          let joiningDateStr = '';
+          if (rawJoiningDate instanceof Date) {
+            const dd = String(rawJoiningDate.getDate()).padStart(2, '0');
+            const mm = String(rawJoiningDate.getMonth() + 1).padStart(2, '0');
+            const yyyy = rawJoiningDate.getFullYear();
+            joiningDateStr = `${dd}/${mm}/${yyyy}`;
+          } else if (typeof rawJoiningDate === 'number') {
+            const parsedDate = new Date(Math.round((rawJoiningDate - 25569) * 86400 * 1000));
+            if (!isNaN(parsedDate.getTime())) {
+              const dd = String(parsedDate.getDate()).padStart(2, '0');
+              const mm = String(parsedDate.getMonth() + 1).padStart(2, '0');
+              const yyyy = parsedDate.getFullYear();
+              joiningDateStr = `${dd}/${mm}/${yyyy}`;
+            }
+          } else if (rawJoiningDate) {
+            joiningDateStr = String(rawJoiningDate).trim();
+          }
+
+          const userTypeVal = String(findVal(['type', 'user type', 'role', 'category', 'user_type', 'assign role']) || defaultUserType).trim();
+          const roleVal = userTypeVal.toLowerCase() === 'system admin' ? 'admin' : 'user';
+
           return {
-            full_name: findVal(['name', 'full name', 'student name', 'user name']),
-            email: String(findVal(['email', 'mail', 'email id']) || '').trim().toLowerCase(),
-            user_type: findVal(['type', 'user type', 'category']) || 'Alumni',
-            batch: findVal(['batch', 'year', 'batch/year']) || 'N/A',
-            specialization: findVal(['specialization', 'branch', 'stream']) || 'N/A',
-            phone: String(findVal(['phone', 'mobile', 'contact']) || ''),
-            role: 'user'
+            first_name: firstName,
+            last_name: lastName,
+            full_name: fullName,
+            email: String(findVal(['email', 'mail', 'email id', 'email address']) || '').trim().toLowerCase(),
+            user_type: userTypeVal,
+            batch: String(findVal(['batch', 'year', 'batch/year', 'batch / year']) || 'N/A'),
+            specialization: String(findVal(['specialization', 'branch', 'stream', 'department', 'specialization / department']) || 'N/A'),
+            phone: String(findVal(['phone', 'phone number', 'mobile', 'contact']) || ''),
+            salary: String(findVal(['salary', 'salary / stipend', 'stipend', 'compensation']) || ''),
+            joining_date: joiningDateStr,
+            role: roleVal
           };
         }).filter(u => u.full_name && u.email);
 
+        const seenInFile = new Set<string>();
+        const duplicatesInFile = new Set<string>();
+        formattedData.forEach(u => {
+          const em = (u.email || '').trim().toLowerCase();
+          if (seenInFile.has(em)) {
+            duplicatesInFile.add(em);
+          } else {
+            seenInFile.add(em);
+          }
+        });
+
+        setDuplicateEmailsInBatch(duplicatesInFile);
+
         if (formattedData.length === 0) {
-          toast.error('No valid users found. Ensure your Excel has "Name" and "Email" columns.');
+          toast.error('No valid users found. Ensure your Excel has "Email" and name columns ("First Name", "Last Name", or "Name").');
         } else {
           setUsers(formattedData);
-          toast.success(`Parsed ${formattedData.length} users successfully`);
+          if (duplicatesInFile.size > 0) {
+            toast(`Parsed ${formattedData.length} records. Notice: ${duplicatesInFile.size} duplicate email(s) found in uploaded file. Duplicate rows will be automatically skipped.`, { icon: '⚠️' });
+          } else {
+            toast.success(`Parsed ${formattedData.length} users successfully`);
+          }
         }
       } catch (err) {
         console.error(err);
@@ -108,8 +166,28 @@ const AdminBulkAddUsers: React.FC = () => {
 
   const downloadTemplate = () => {
     const templateData = [
-      { 'Name': 'Aman Abdulla', 'Email': 'aman@example.com', 'User Type': 'Industrial Student', 'Batch': '2024-2026', 'Specialization': 'B.Tech Robotics', 'Phone': '9847186044' },
-      { 'Name': 'Jane Doe', 'Email': 'jane@example.com', 'User Type': 'Intern', 'Batch': '2024', 'Specialization': 'Computer Science', 'Phone': '9876543210' }
+      { 
+        'First Name': 'Aman', 
+        'Last Name': 'Abdulla', 
+        'Email': 'aman@example.com', 
+        'Phone': '9847186044', 
+        'User Type': 'IV Student', 
+        'Salary': '25000', 
+        'Joining Date': '01/06/2024', 
+        'Batch': '2024-2026', 
+        'Specialization': 'B.Tech Robotics' 
+      },
+      { 
+        'First Name': 'Jane', 
+        'Last Name': 'Doe', 
+        'Email': 'jane@example.com', 
+        'Phone': '9876543210', 
+        'User Type': 'Intern', 
+        'Salary': '15000', 
+        'Joining Date': '15/07/2024', 
+        'Batch': '2024', 
+        'Specialization': 'Computer Science' 
+      }
     ];
     const ws = XLSX.utils.json_to_sheet(templateData);
     const wb = XLSX.utils.book_new();
@@ -118,21 +196,21 @@ const AdminBulkAddUsers: React.FC = () => {
   };
 
   return (
-    <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '20px' }}>
+    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '20px' }}>
       <button 
-        onClick={() => navigate('/admin/users')}
+        onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/admin/users')}
         style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', marginBottom: '24px', fontWeight: 600 }}
       >
-        <ArrowLeft size={20} /> Back to User Governance
+        <ArrowLeft size={20} /> Back
       </button>
 
       <div style={{ marginBottom: '32px' }}>
         <h1 style={{ fontSize: '32px', fontWeight: 800, color: '#1a2652', margin: 0 }}>Bulk User Onboarding</h1>
-        <p style={{ color: '#64748b', marginTop: '8px', fontSize: '16px' }}>Import multiple users simultaneously using an Excel spreadsheet.</p>
+        <p style={{ color: '#64748b', marginTop: '8px', fontSize: '16px' }}>Import multiple users simultaneously using an Excel spreadsheet with full Add User field support.</p>
       </div>
 
       {!isSuccess ? (
-        <div style={{ display: 'grid', gridTemplateColumns: users.length > 0 ? '400px 1fr' : '1fr', gap: '32px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: users.length > 0 ? '360px 1fr' : '1fr', gap: '32px' }}>
           {/* Upload Section */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div 
@@ -214,33 +292,55 @@ const AdminBulkAddUsers: React.FC = () => {
               style={{ background: '#fff', borderRadius: '24px', border: '1px solid #e2e8f0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
             >
               <div style={{ padding: '20px 24px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800 }}>Import Preview</h3>
-                <button onClick={() => { setUsers([]); setFile(null); }} style={{ background: 'none', border: 'none', color: '#ef4444', fontWeight: 700, cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800 }}>Import Preview ({users.length} Records)</h3>
+                <button onClick={() => { setUsers([]); setFile(null); setDuplicateEmailsInBatch(new Set()); }} style={{ background: 'none', border: 'none', color: '#ef4444', fontWeight: 700, cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <Trash2 size={14} /> Clear
                 </button>
               </div>
-              <div style={{ overflowY: 'auto', maxHeight: '500px' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              {duplicateEmailsInBatch.size > 0 && (
+                <div style={{ padding: '12px 24px', background: '#fef2f2', borderBottom: '1px solid #fee2e2', color: '#dc2626', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <AlertCircle size={16} />
+                  <span>Notice: {duplicateEmailsInBatch.size} duplicate email(s) found in uploaded file. Duplicate rows and existing users will be automatically skipped to prevent duplicates.</span>
+                </div>
+              )}
+              <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '500px' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '600px' }}>
                   <thead style={{ position: 'sticky', top: 0, background: '#fff', zIndex: 10 }}>
                     <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <th style={{ padding: '12px 24px', fontSize: '12px', color: '#94a3b8', textTransform: 'uppercase' }}>User</th>
-                      <th style={{ padding: '12px 24px', fontSize: '12px', color: '#94a3b8', textTransform: 'uppercase' }}>Type</th>
-                      <th style={{ padding: '12px 24px', fontSize: '12px', color: '#94a3b8', textTransform: 'uppercase' }}>Class/Batch</th>
+                      <th style={{ padding: '12px 18px', fontSize: '12px', color: '#94a3b8', textTransform: 'uppercase' }}>User</th>
+                      <th style={{ padding: '12px 18px', fontSize: '12px', color: '#94a3b8', textTransform: 'uppercase' }}>Role / Type</th>
+                      <th style={{ padding: '12px 18px', fontSize: '12px', color: '#94a3b8', textTransform: 'uppercase' }}>Phone</th>
+                      <th style={{ padding: '12px 18px', fontSize: '12px', color: '#94a3b8', textTransform: 'uppercase' }}>Salary</th>
+                      <th style={{ padding: '12px 18px', fontSize: '12px', color: '#94a3b8', textTransform: 'uppercase' }}>Joining Date</th>
+                      <th style={{ padding: '12px 18px', fontSize: '12px', color: '#94a3b8', textTransform: 'uppercase' }}>Batch / Dept</th>
                     </tr>
                   </thead>
                   <tbody>
                     {users.map((u, i) => (
-                      <tr key={i} style={{ borderBottom: '1px solid #f8fafc' }}>
-                        <td style={{ padding: '12px 24px' }}>
+                      <tr key={i} style={{ borderBottom: '1px solid #f8fafc', background: duplicateEmailsInBatch.has(u.email) ? '#fff7ed' : 'transparent' }}>
+                        <td style={{ padding: '12px 18px' }}>
                           <div style={{ fontWeight: 700, color: '#1e293b' }}>{u.full_name}</div>
-                          <div style={{ fontSize: '12px', color: '#64748b' }}>{u.email}</div>
+                          <div style={{ fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            {u.email}
+                            {duplicateEmailsInBatch.has(u.email) && (
+                              <span style={{ fontSize: '10px', background: '#fee2e2', color: '#dc2626', padding: '1px 6px', borderRadius: '4px', fontWeight: 700 }}>
+                                Duplicate in File
+                              </span>
+                            )}
+                          </div>
                         </td>
-                        <td style={{ padding: '12px 24px' }}>
+                        <td style={{ padding: '12px 18px' }}>
                           <span style={{ padding: '4px 8px', borderRadius: '6px', background: '#f1f5f9', color: '#475569', fontSize: '11px', fontWeight: 700 }}>
                             {u.user_type}
                           </span>
                         </td>
-                        <td style={{ padding: '12px 24px', fontSize: '13px', color: '#64748b' }}>{u.batch}</td>
+                        <td style={{ padding: '12px 18px', fontSize: '13px', color: '#64748b' }}>{u.phone || '—'}</td>
+                        <td style={{ padding: '12px 18px', fontSize: '13px', color: '#1e293b', fontWeight: 600 }}>{u.salary ? `₹${u.salary}` : '—'}</td>
+                        <td style={{ padding: '12px 18px', fontSize: '13px', color: '#64748b' }}>{u.joining_date || '—'}</td>
+                        <td style={{ padding: '12px 18px', fontSize: '12px', color: '#64748b' }}>
+                          <div>{u.batch !== 'N/A' ? u.batch : ''}</div>
+                          <div style={{ color: '#94a3b8' }}>{u.specialization !== 'N/A' ? u.specialization : ''}</div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -302,9 +402,9 @@ const AdminBulkAddUsers: React.FC = () => {
           </div>
           <ul style={{ margin: 0, paddingLeft: '20px', color: '#475569', lineHeight: 1.8, fontSize: '14px' }}>
             <li>Download the template and fill in the user details.</li>
+            <li>Supported fields include: <strong>First Name</strong>, <strong>Last Name</strong> (or combined <strong>Name</strong>), <strong>Email</strong>, <strong>Phone</strong>, <strong>User Type</strong>, <strong>Salary</strong>, <strong>Joining Date</strong> (<code>DD/MM/YYYY</code>), <strong>Batch</strong>, and <strong>Specialization</strong>.</li>
             <li><strong>Email</strong> is the unique identifier for each user. Duplicate emails will be skipped.</li>
-            <li>Default password for all bulk-added users is: <code>Welcome@NeST2024</code></li>
-            <li>User Types include: <code>Intern</code>, <code>Alumni</code>, <code>Industrial Student</code>, <code>Trainee</code>, <code>Staff</code>.</li>
+            <li>User Types include: <code>Alumni</code>, <code>Intern</code>, <code>IV Student</code>, <code>Staff</code>, <code>Trainee</code>, <code>Industrial Student</code>.</li>
             <li>Ensure the file is in <code>.xlsx</code> or <code>.csv</code> format.</li>
           </ul>
         </div>

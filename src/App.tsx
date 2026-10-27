@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { getUser, studentAPI, setTokens } from './services/api';
+import { getUser, studentAPI, setTokens, isDirectApplicant } from './services/api';
 import { Toaster } from 'react-hot-toast';
 
 // Splash & Styles
@@ -70,8 +70,6 @@ import PostDetails from './pages/PostDetails';
 
 
 
-// Settings Pages
-import AccountSettings from './pages/AccountSettings';
 
 
 // Admin Pages
@@ -91,7 +89,6 @@ import AdminCourses from './pages/admin/AdminCourses';
 import AdminAddCourse from './pages/admin/AdminAddCourse';
 import AdminCertification from './pages/admin/AdminCertification';
 import SuperAdminDashboard from './pages/admin/SuperAdminDashboard';
-import AdminRoleManager from './pages/admin/AdminRoleManager';
 import AdminAddManager from './pages/admin/AdminAddManager';
 import AdminViewManagers from './pages/admin/AdminViewManagers';
 import IssueIVCertificates from './pages/admin/IssueIVCertificates';
@@ -110,6 +107,8 @@ import EventManagerPosts from './pages/event_manager/EventManagerPosts';
 import EventManagerRegistrations from './pages/event_manager/EventManagerRegistrations';
 import EventManagerReports from './pages/event_manager/EventManagerReports';
 import EventManagerSettings from './pages/event_manager/EventManagerSettings';
+import EventManagerProfile from './pages/event_manager/EventManagerProfile';
+import CourseManagerProfile from './pages/course_manager/CourseManagerProfile';
 
 // Recruiter Pages
 import RecruiterLayout from './pages/recruiter/RecruiterLayout';
@@ -138,6 +137,7 @@ import CourseManagerReminderCenter from './pages/course_manager/ReminderCenter';
 import CourseManagerRecommendations from './pages/course_manager/RecommendationSetup';
 import CourseManagerPerformance from './pages/course_manager/PAModule';
 import CourseManagerInsights from './pages/course_manager/CompletionInsights';
+import CourseManagerPosts from './pages/course_manager/CourseManagerPosts';
 
 /* -- Luxury Splash Screen with Mask Reveal -- */
 import heroBgSplash from './assets/hero-bg.jpg';
@@ -326,22 +326,16 @@ const SplashScreen: React.FC = () => {
   );
 };
 
-/* -- Apple-level Scale + Blur + Fade Page Transition -- */
+/* -- Fast & Crisp Page Transition -- */
 const pageTransitionVariants = {
   initial: {
     opacity: 0,
-    scale: 1.04,
-    filter: 'blur(15px)'
   },
   animate: {
     opacity: 1,
-    scale: 1,
-    filter: 'blur(0px)'
   },
   exit: {
     opacity: 0,
-    scale: 0.96,
-    filter: 'blur(15px)'
   },
 };
 
@@ -352,10 +346,10 @@ const PageTransition: React.FC<{ children: React.ReactNode }> = ({ children }) =
     animate="animate"
     exit="exit"
     transition={{
-      duration: 0.7,
-      ease: [0.16, 1, 0.3, 1] // Custom Apple-style cubic bezier
+      duration: 0.15,
+      ease: 'easeOut'
     }}
-    style={{ minHeight: '100vh', width: '100%' }}
+    style={{ width: '100%' }}
   >
     {children}
   </motion.div>
@@ -384,6 +378,15 @@ const ConditionalAdminRedirect = () => {
   return <Navigate to="/admin/dashboard" replace />;
 };
 
+/* -- Guard restricting courses & events from direct applicants -- */
+const DirectApplicantGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const user = getUser();
+  if (isDirectApplicant(user)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return <>{children}</>;
+};
+
 /* -- Animated Routes wrapper with crossfade -- */
 const AnimatedRoutes: React.FC = () => {
   const location = useLocation();
@@ -395,18 +398,20 @@ const AnimatedRoutes: React.FC = () => {
         {/* Public Routes */}
         <Route path="/" element={<PageTransition><Home /></PageTransition>} />
         <Route path="/login" element={<Navigate to="/?login=true" replace />} />
+        <Route path="/contact" element={<Navigate to="/?contact=true" replace />} />
+        <Route path="/support" element={<Navigate to="/?contact=true" replace />} />
         <Route path="/register" element={<PageTransition><Register /></PageTransition>} />
 
 
         <Route path="/platform-capabilities/:id" element={<PageTransition><PlatformCapabilities /></PageTransition>} />
         <Route path="/user-type-overview/:id" element={<PageTransition><UserTypeOverview /></PageTransition>} />
 
-        <Route path="/courses/:id/play" element={<PageTransition><CoursePlayer /></PageTransition>} />
+        <Route path="/courses/:id/play" element={<DirectApplicantGuard><PageTransition><CoursePlayer /></PageTransition></DirectApplicantGuard>} />
 
         {/* User Protected Routes with MainLayout */}
         <Route element={<MainLayout />}>
           <Route path="/dashboard" element={<PageTransition><Dashboard /></PageTransition>} />
-          <Route path="/dashboard/activity" element={<PageTransition><ActivityFeed /></PageTransition>} />
+          <Route path="/dashboard/activity" element={<DirectApplicantGuard><PageTransition><ActivityFeed /></PageTransition></DirectApplicantGuard>} />
           <Route path="/profile" element={<PageTransition><ViewProfile /></PageTransition>} />
           <Route path="/profile/edit" element={<PageTransition><EditProfile /></PageTransition>} />
           <Route path="/profile/:id" element={<PageTransition><PublicProfile /></PageTransition>} />
@@ -419,27 +424,29 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="/jobs/applications" element={<PageTransition><MyApplications /></PageTransition>} />
 
           <Route path="/jobs/recommended" element={<PageTransition><RecommendedJobs /></PageTransition>} />
-          <Route path="/courses" element={<PageTransition><CourseListing /></PageTransition>} />
-          <Route path="/courses/:id" element={<PageTransition><CourseDetails /></PageTransition>} />
-          <Route path="/courses/my-courses" element={<PageTransition><MyCourses /></PageTransition>} />
-          <Route path="/iv-certificates" element={<PageTransition><IVCertificates /></PageTransition>} />
-          <Route path="/assessment/:id" element={<PageTransition><AssessmentCenter /></PageTransition>} />
+          <Route path="/courses" element={<DirectApplicantGuard><PageTransition><CourseListing /></PageTransition></DirectApplicantGuard>} />
+          <Route path="/courses/:id" element={<DirectApplicantGuard><PageTransition><CourseDetails /></PageTransition></DirectApplicantGuard>} />
+          <Route path="/courses/my-courses" element={<DirectApplicantGuard><PageTransition><MyCourses /></PageTransition></DirectApplicantGuard>} />
+          <Route path="/iv-certificates" element={<DirectApplicantGuard><PageTransition><IVCertificates /></PageTransition></DirectApplicantGuard>} />
+          <Route path="/assessment/:id" element={<DirectApplicantGuard><PageTransition><AssessmentCenter /></PageTransition></DirectApplicantGuard>} />
 
-          <Route path="/assessments/quiz" element={<PageTransition><Quiz /></PageTransition>} />
-          <Route path="/assessments/quiz/instructions" element={<PageTransition><QuizInstructions /></PageTransition>} />
-          <Route path="/assessments/quiz/result" element={<PageTransition><QuizResult /></PageTransition>} />
-          <Route path="/assessments/analytics" element={<PageTransition><PerformanceAnalysis /></PageTransition>} />
+          <Route path="/assessments/quiz" element={<DirectApplicantGuard><PageTransition><Quiz /></PageTransition></DirectApplicantGuard>} />
+          <Route path="/assessments/quiz/instructions" element={<DirectApplicantGuard><PageTransition><QuizInstructions /></PageTransition></DirectApplicantGuard>} />
+          <Route path="/assessments/quiz/result" element={<DirectApplicantGuard><PageTransition><QuizResult /></PageTransition></DirectApplicantGuard>} />
+          <Route path="/assessments/analytics" element={<DirectApplicantGuard><PageTransition><PerformanceAnalysis /></PageTransition></DirectApplicantGuard>} />
+          <Route path="/quizzes" element={<Navigate to="/assessments/quiz" replace />} />
+          <Route path="/quiz" element={<Navigate to="/assessments/quiz" replace />} />
+          <Route path="/assessments" element={<Navigate to="/assessments/quiz" replace />} />
 
-          <Route path="/events" element={<PageTransition><EventsListing /></PageTransition>} />
-
-          <Route path="/events/my-events" element={<PageTransition><MyEvents /></PageTransition>} />
+          <Route path="/events" element={<DirectApplicantGuard><PageTransition><EventsListing /></PageTransition></DirectApplicantGuard>} />
+          <Route path="/events/:id" element={<DirectApplicantGuard><PageTransition><EventsListing /></PageTransition></DirectApplicantGuard>} />
+          <Route path="/events/my-events" element={<DirectApplicantGuard><PageTransition><MyEvents /></PageTransition></DirectApplicantGuard>} />
           <Route path="/social/feed" element={<Navigate to="/dashboard/activity" replace />} />
-          <Route path="/feed" element={<Navigate to="/dashboard/activity" replace />} />
           <Route path="/social/post/create" element={<PageTransition><CreatePost /></PageTransition>} />
           <Route path="/social/post/:id" element={<PageTransition><PostDetails /></PageTransition>} />
           <Route path="/notifications" element={<PageTransition><Notifications /></PageTransition>} />
 
-          <Route path="/settings" element={<PageTransition><AccountSettings /></PageTransition>} />
+          <Route path="/settings" element={<Navigate to="/profile" replace />} />
 
         </Route>
 
@@ -448,7 +455,6 @@ const AnimatedRoutes: React.FC = () => {
           <Route index element={<ConditionalAdminRedirect />} />
           <Route path="dashboard" element={<PageTransition><AdminDashboard /></PageTransition>} />
           <Route path="super-dashboard" element={<PageTransition><SuperAdminDashboard /></PageTransition>} />
-          <Route path="roles" element={<PageTransition><AdminRoleManager /></PageTransition>} />
           <Route path="add-manager" element={<PageTransition><AdminAddManager /></PageTransition>} />
           <Route path="view-managers" element={<PageTransition><AdminViewManagers /></PageTransition>} />
           <Route path="users" element={<PageTransition><AdminUsers /></PageTransition>} />
@@ -482,16 +488,18 @@ const AnimatedRoutes: React.FC = () => {
 
           <Route path="registrations" element={<PageTransition><EventManagerRegistrations /></PageTransition>} />
           <Route path="reports" element={<PageTransition><EventManagerReports /></PageTransition>} />
-          <Route path="settings" element={<PageTransition><EventManagerSettings /></PageTransition>} />
-          <Route path="profile" element={<PageTransition><ViewProfile /></PageTransition>} />
+          <Route path="settings" element={<PageTransition><EventManagerProfile /></PageTransition>} />
+          <Route path="profile" element={<PageTransition><EventManagerProfile /></PageTransition>} />
           <Route path="profile/edit" element={<PageTransition><EditProfile /></PageTransition>} />
           <Route path="profile/:id" element={<PageTransition><PublicProfile /></PageTransition>} />
         </Route>
 
         {/* Recruiter Protected Routes */}
         <Route path="/recruiter" element={<RecruiterLayout />}>
-          <Route index element={<Navigate to="/recruiter/dashboard" replace />} />
-          <Route path="dashboard" element={<PageTransition><RecruiterDashboard /></PageTransition>} />
+          <Route index element={<Navigate to="/recruiter/overview" replace />} />
+          <Route path="overview" element={<PageTransition><RecruiterReports /></PageTransition>} />
+          <Route path="dashboard" element={<Navigate to="/recruiter/overview" replace />} />
+          <Route path="reports" element={<Navigate to="/recruiter/overview" replace />} />
           <Route path="jobs" element={<PageTransition><RecruiterJobs /></PageTransition>} />
           <Route path="jobs/post" element={<PageTransition><RecruiterPostJob /></PageTransition>} />
           <Route path="jobs/edit/:id" element={<PageTransition><RecruiterEditJob /></PageTransition>} />
@@ -499,7 +507,6 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="community-feed" element={<PageTransition><ActivityFeed /></PageTransition>} />
 
           <Route path="applications" element={<PageTransition><RecruiterApplications /></PageTransition>} />
-          <Route path="reports" element={<PageTransition><RecruiterReports /></PageTransition>} />
           <Route path="settings" element={<PageTransition><RecruiterSettings /></PageTransition>} />
           <Route path="help" element={<PageTransition><RecruiterHelp /></PageTransition>} />
           <Route path="mail" element={<PageTransition><RecruiterMail /></PageTransition>} />
@@ -513,6 +520,7 @@ const AnimatedRoutes: React.FC = () => {
           <Route index element={<Navigate to="/course-manager/dashboard" replace />} />
           <Route path="dashboard" element={<CourseManagerDashboard />} />
           <Route path="courses" element={<CourseManagerCourses />} />
+          <Route path="courses/:id" element={<PageTransition><CourseDetails /></PageTransition>} />
           <Route path="courses/create" element={<CourseManagerCreateCourse />} />
           <Route path="courses/edit/:id" element={<CourseManagerCreateCourse />} />
           <Route path="students" element={<CourseManagerStudents />} />
@@ -523,6 +531,10 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="performance" element={<CourseManagerPerformance />} />
           <Route path="insights" element={<CourseManagerInsights />} />
           <Route path="community-feed" element={<PageTransition><ActivityFeed /></PageTransition>} />
+          <Route path="posts" element={<PageTransition><CourseManagerPosts /></PageTransition>} />
+          <Route path="broadcast" element={<Navigate to="/course-manager/posts" replace />} />
+          <Route path="profile" element={<PageTransition><CourseManagerProfile /></PageTransition>} />
+          <Route path="settings" element={<PageTransition><CourseManagerProfile /></PageTransition>} />
         </Route>
 
         {/* Fallback Catch-all Route */}
@@ -533,14 +545,18 @@ const AnimatedRoutes: React.FC = () => {
 };
 
 const App: React.FC = () => {
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(() => {
+    return !sessionStorage.getItem('hasSeenSplash');
+  });
 
   useEffect(() => {
-    // Elegant timing for a luxury reveal
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 3500);
-    return () => clearTimeout(timer);
+    if (!sessionStorage.getItem('hasSeenSplash')) {
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+        sessionStorage.setItem('hasSeenSplash', 'true');
+      }, 700);
+      return () => clearTimeout(timer);
+    }
   }, []);
 
   return (
@@ -552,9 +568,9 @@ const App: React.FC = () => {
           ) : (
             <motion.div 
               key="main-app"
-              initial={{ opacity: 0, scale: 0.98, filter: 'blur(10px)' }}
-              animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.2 }}
             >
               <ScrollToTop />
               <Toaster position="top-right" />

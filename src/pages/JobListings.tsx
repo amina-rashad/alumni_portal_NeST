@@ -9,8 +9,9 @@ import {
   Calendar, ChevronRight, Check,
   Users, Star, Wifi, Target
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { jobsApi, applicationsApi, isAuthenticated } from '../services/api';
+import ApplicationFormModal, { type ApplicationProfileData } from '../components/ApplicationFormModal';
 
 interface Job {
   id: string;
@@ -32,98 +33,11 @@ interface Job {
   is_active?: boolean;
 }
 
-const MOCK_JOBS: Job[] = [
-  {
-    id: 'job-1',
-    title: 'Senior Frontend Architect',
-    department: 'Engineering',
-    company: 'NeST Digital',
-    location: 'Kochi, Kerala (Remote)',
-    type: 'Full-time',
-    experience: '6-10 Years',
-    postedAt: '2 hours ago',
-    description: 'Lead the architectural design of our next-generation digital platforms. Expertise in React, TypeScript, and micro-frontends required.',
-    skills: ['React', 'TypeScript', 'System Design', 'Module Federation'],
-    salary: '₹22-35 LPA',
-    isUrgent: true,
-    isNew: true,
-    matchScore: 95
-  },
-  {
-    id: 'job-2',
-    title: 'Backend Systems Engineer',
-    department: 'Platform Engineering',
-    company: 'NeST It & Infrastructure',
-    location: 'Trivandrum, Kerala (On-site)',
-    type: 'Full-time',
-    experience: '3-5 Years',
-    postedAt: '5 hours ago',
-    description: 'Build robust, scalable backend services using Go and Python. Experience with Kubernetes and cloud native technologies is a must.',
-    skills: ['Go', 'Python', 'Kubernetes', 'gRPC'],
-    salary: '₹15-24 LPA',
-    isNew: true,
-    matchScore: 88
-  },
-  {
-    id: 'job-3',
-    title: 'AI/ML Solutions Lead',
-    department: 'Innovation Lab',
-    company: 'NeST Cybernetics',
-    location: 'Bangalore, Karnataka (Hybrid)',
-    type: 'Contract',
-    experience: '5-8 Years',
-    postedAt: '1 day ago',
-    description: 'Drive AI initiatives and lead the development of machine learning models for predictive maintenance and industrial automation.',
-    skills: ['PyTorch', 'TensorFlow', 'NLP', 'Computer Vision'],
-    salary: '₹30-45 LPA',
-    isUrgent: true,
-    matchScore: 75
-  },
-  {
-    id: 'job-4',
-    title: 'Product Experience Designer',
-    department: 'Design',
-    company: 'NeST Digital',
-    location: 'Remote',
-    type: 'Full-time',
-    experience: '2-4 Years',
-    postedAt: '2 days ago',
-    description: 'Craft intuitive and beautiful user experiences for our enterprise suite. Focus on usability, accessibility, and modern design systems.',
-    skills: ['Figma', 'UX Research', 'Design Systems', 'Prototyping'],
-    salary: '₹12-20 LPA',
-    matchScore: 82
-  },
-  {
-    id: 'job-5',
-    title: 'DevOps & SRE Specialist',
-    department: 'Cloud Operations',
-    company: 'NeST IT Solutions',
-    location: 'Kochi, Kerala (On-site)',
-    type: 'Full-time',
-    experience: '4-7 Years',
-    postedAt: '3 days ago',
-    description: 'Ensure the reliability and performance of our global infrastructure. Master of CI/CD, monitoring, and infrastructure as code.',
-    skills: ['Terraform', 'AWS', 'Prometheus', 'Jenkins'],
-    salary: '₹18-28 LPA',
-    matchScore: 68
-  },
-  {
-    id: 'job-6',
-    title: 'Cybersecurity Analyst',
-    department: 'Security Ops',
-    company: 'NeST Digital',
-    location: 'Trivandrum, Kerala (Hybrid)',
-    type: 'Full-time',
-    experience: '3-6 Years',
-    postedAt: '4 days ago',
-    description: 'Monitor, detect, and respond to security threats. Implement security best practices across our cloud and edge infrastructure.',
-    skills: ['SIEM', 'Penetration Testing', 'Security Audits', 'ISO 27001'],
-    salary: '₹14-22 LPA',
-    matchScore: 91
-  }
-];
+
 
 const JobListings: React.FC = () => {
+  const navigate = useNavigate();
+  const listingsRef = useRef<HTMLDivElement>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -132,8 +46,9 @@ const JobListings: React.FC = () => {
   const [appliedJobs, setAppliedJobs] = useState<Set<string>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const listingsRef = useRef<HTMLDivElement>(null);
   const [toast, setToast] = useState<{message: string, type: 'success' | 'info'} | null>(null);
+  const [selectedJobForModal, setSelectedJobForModal] = useState<Job | null>(null);
+  const [isJobModalOpen, setIsJobModalOpen] = useState(false);
   
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -163,15 +78,19 @@ const JobListings: React.FC = () => {
 
   const timeAgo = (dateStr: string | undefined) => {
     if (!dateStr) return 'Recently';
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-    
+    let cleanStr = String(dateStr).trim();
+    if (!cleanStr.endsWith('Z') && !/[+-]\d{2}(:?\d{2})?$/.test(cleanStr)) {
+      cleanStr += 'Z';
+    }
+    const parsedTime = new Date(cleanStr).getTime();
+    if (isNaN(parsedTime)) return 'Recently';
+
+    const diffInSeconds = Math.floor((Date.now() - parsedTime) / 1000);
     if (diffInSeconds < 60) return 'Just now';
     if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
     if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
     if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
-    return date.toLocaleDateString();
+    return new Date(cleanStr).toLocaleDateString();
   };
 
   const scrollToTop = () => {
@@ -234,7 +153,11 @@ const JobListings: React.FC = () => {
         const res = await applicationsApi.getMyApplications();
         if (res.success && res.data && (res.data as any).applications) {
           const apps = (res.data as any).applications;
-          const appliedIds = new Set<string>(apps.map((app: any) => app.job_id));
+          const appliedIds = new Set<string>(
+            apps
+              .filter((app: any) => app.status !== 'Withdrawn' && app.status !== 'withdrawn')
+              .map((app: any) => app.job_id)
+          );
           setAppliedJobs(appliedIds);
         }
       } catch (err) {
@@ -256,20 +179,13 @@ const JobListings: React.FC = () => {
     setSavedJobs(newSaved);
   };
 
-  const handleApply = async (id: string, title: string) => {
-    try {
-      const res = await applicationsApi.applyForJob({ job_id: id });
-      if (res.success) {
-        const newApplied = new Set(appliedJobs);
-        newApplied.add(id);
-        setAppliedJobs(newApplied);
-        showNotification(`Successfully applied for ${title}!`);
-      } else {
-        showNotification(res.message || "Failed to apply", 'info');
-      }
-    } catch (err) {
-      console.error("Application error", err);
-      showNotification("Failed to submit application", 'info');
+  const handleApply = (id: string, _title: string) => {
+    const targetJob = jobs.find(j => j.id === id);
+    if (targetJob) {
+      setSelectedJobForModal(targetJob);
+      setIsJobModalOpen(true);
+    } else {
+      navigate(`/jobs/${id}/apply`);
     }
   };
 
@@ -1026,6 +942,31 @@ const JobListings: React.FC = () => {
           {toast.type === 'success' ? <Check size={20} /> : <Info size={20} />}
           {toast.message}
         </motion.div>
+      )}
+
+      {selectedJobForModal && (
+        <ApplicationFormModal
+          isOpen={isJobModalOpen}
+          onClose={() => setIsJobModalOpen(false)}
+          type="job"
+          itemTitle={selectedJobForModal.title}
+          itemSubtitle={`${selectedJobForModal.company} • ${selectedJobForModal.location}`}
+          jobSkills={selectedJobForModal.skills || (selectedJobForModal as any).skills_required}
+          jobDetails={selectedJobForModal}
+          onSubmit={async (formData: ApplicationProfileData) => {
+            const res = await applicationsApi.applyForJob({
+              job_id: selectedJobForModal.id,
+              ...formData,
+            });
+            if (res.success) {
+              setAppliedJobs(prev => new Set([...prev, selectedJobForModal.id]));
+              setIsJobModalOpen(false);
+              showNotification(`Application submitted successfully for ${selectedJobForModal.title}!`, 'success');
+            } else {
+              throw new Error(res.message || 'Failed to submit application');
+            }
+          }}
+        />
       )}
         </div>
       </div>

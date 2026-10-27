@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { socialApi, getUser, usersApi } from '../services/api';
 import UserAvatar from '../components/UserAvatar';
+import AutoPlayVideo from '../components/AutoPlayVideo';
 import alumniStoriesBg from '../assets/alumni_stories_bg.png';
 
 interface Post {
@@ -59,12 +60,13 @@ const ActivityFeed: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [tick, setTick] = useState(0);
   const [isCultureHovered, setIsCultureHovered] = useState(false);
-  const [trending, setTrending] = useState<any[]>([
-    { topic: 'Quantum FinTech', growth: '+32%', interactions: '2.4k' },
-    { topic: 'Cloud Governance', growth: '+15%', interactions: '920' },
-    { topic: 'Alumni Meet 2026', growth: '+45%', interactions: '3.1k' }
-  ]);
-  const [communityStats, setCommunityStats] = useState({ newAlumni: 124, certifications: 45 });
+  const [trending, setTrending] = useState<any[]>([]);
+  const [isStatsLoading, setIsStatsLoading] = useState(true);
+  const [communityStats, setCommunityStats] = useState<{
+    newAlumni: number;
+    certifications: number;
+    upcomingEvent?: { title: string; date: string } | null;
+  }>({ newAlumni: 0, certifications: 0, upcomingEvent: null });
   
   const navigate = useNavigate();
   const user = getUser() as any;
@@ -74,16 +76,21 @@ const ActivityFeed: React.FC = () => {
       try {
         const res = await usersApi.getCommunityStats();
         if (res.success && res.data) {
-          if (res.data.trending?.length) setTrending(res.data.trending);
+          if (Array.isArray(res.data.trending)) {
+            setTrending(res.data.trending);
+          }
           if (res.data.highlights) {
             setCommunityStats({
               newAlumni: res.data.highlights.new_alumni ?? 0,
-              certifications: res.data.highlights.certifications ?? 0
+              certifications: res.data.highlights.certifications ?? 0,
+              upcomingEvent: res.data.highlights.upcoming_event || null
             });
           }
         }
       } catch (err) {
         console.error("Failed to load community stats", err);
+      } finally {
+        setIsStatsLoading(false);
       }
     };
     fetchStats();
@@ -153,19 +160,24 @@ const ActivityFeed: React.FC = () => {
   const timeAgo = (dateStr: string) => {
     if (!dateStr) return 'Just now';
     
-    let normalizedDate = dateStr;
-    if (!dateStr.endsWith('Z') && !dateStr.includes('+') && !dateStr.includes('-')) {
-      normalizedDate += 'Z';
+    let cleanStr = String(dateStr).trim();
+    // Ensure UTC interpretation if timezone offset is missing
+    if (!cleanStr.endsWith('Z') && !/[+-]\d{2}(:?\d{2})?$/.test(cleanStr)) {
+      cleanStr += 'Z';
     }
     
-    const diff = Date.now() - new Date(normalizedDate).getTime();
+    const parsedTime = new Date(cleanStr).getTime();
+    if (isNaN(parsedTime)) return 'Just now';
+    
+    const diff = Date.now() - parsedTime;
+    if (diff < 60000) return 'Just now';
     const mins = Math.floor(diff / 60000);
-    if (mins < 1) return 'Just now';
     if (mins < 60) return `${mins}m ago`;
     const hrs = Math.floor(mins / 60);
     if (hrs < 24) return `${hrs}h ago`;
     const days = Math.floor(hrs / 24);
-    return `${days}d ago`;
+    if (days < 30) return `${days}d ago`;
+    return new Date(cleanStr).toLocaleDateString();
   };
 
   if (!user) return null;
@@ -381,8 +393,12 @@ const ActivityFeed: React.FC = () => {
                     )}
 
                     {post.video_url && (
-                      <div style={{ marginBottom: '1.5rem', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.08)', background: '#000' }}>
-                         <video src={post.video_url} controls style={{ width: '100%', maxHeight: '400px', outline: 'none' }} />
+                      <div style={{ marginBottom: '1.5rem' }}>
+                         <AutoPlayVideo 
+                           src={post.video_url} 
+                           maxHeight="450px" 
+                           style={{ borderRadius: '14px', boxShadow: '0 8px 24px rgba(0,0,0,0.1)' }} 
+                         />
                       </div>
                     )}
 
@@ -722,15 +738,36 @@ const ActivityFeed: React.FC = () => {
                    <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 2 }} style={{ width: '8px', height: '8px', background: '#10B981', borderRadius: '50%' }} />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
-                   {trending.map((item, i) => (
-                      <div key={i}>
-                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.4rem' }}>
-                            <span style={{ fontWeight: 700, color: '#1e293b' }}>#{item.topic.replace(' ', '')}</span>
-                            <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#10B981', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: '6px' }}>{item.growth}</span>
-                         </div>
-                         <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748B', fontWeight: 500 }}>{item.interactions} professional interactions</p>
-                      </div>
-                   ))}
+                   {isStatsLoading ? (
+                      [1, 2, 3].map(i => (
+                         <div key={i} style={{ height: '44px', background: '#f1f5f9', borderRadius: '12px' }} className="skeleton-pulse" />
+                      ))
+                   ) : trending.length > 0 ? (
+                      trending.map((item, i) => {
+                         const rawTopic = String(item.topic || '').trim();
+                         const tagLabel = rawTopic.startsWith('#')
+                           ? rawTopic
+                           : `#${rawTopic.replace(/[^a-zA-Z0-9]/g, '')}`;
+                         const interactionsCount = Number(item.interactions) || 0;
+                         return (
+                           <div key={i}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.4rem' }}>
+                                 <span style={{ fontWeight: 700, color: '#1e293b' }}>{tagLabel}</span>
+                                 <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#10B981', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: '6px' }}>
+                                   {item.growth || 'Active'}
+                                 </span>
+                              </div>
+                              <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748B', fontWeight: 500 }}>
+                                {interactionsCount} {interactionsCount === 1 ? 'interaction' : 'interactions'}
+                              </p>
+                           </div>
+                         );
+                      })
+                   ) : (
+                      <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic' }}>
+                         No trending topics yet. Join the conversation!
+                      </p>
+                   )}
                 </div>
 
                 {/* Community Highlights Section */}
@@ -742,8 +779,8 @@ const ActivityFeed: React.FC = () => {
                             <Users size={22} />
                          </div>
                          <div>
-                            <div style={{ fontSize: '1rem', fontWeight: 800, color: '#1e293b', lineHeight: 1.2 }}>{communityStats.newAlumni} New Alumni</div>
-                            <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Joined this month</div>
+                            <div style={{ fontSize: '1rem', fontWeight: 800, color: '#1e293b', lineHeight: 1.2 }}>{communityStats.newAlumni} Alumni</div>
+                            <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Active registered alumni</div>
                          </div>
                       </div>
                       <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
@@ -752,20 +789,22 @@ const ActivityFeed: React.FC = () => {
                           </div>
                           <div>
                              <div style={{ fontSize: '1rem', fontWeight: 800, color: '#1e293b', lineHeight: 1.2 }}>{communityStats.certifications} Certifications</div>
-                             <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Awarded last week</div>
+                             <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Total completed & issued</div>
                           </div>
                        </div>
-                       <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
-                          <div style={{ width: '48px', height: '48px', background: 'rgba(220, 38, 38, 0.1)', color: '#DC2626', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                             <Calendar size={22} />
-                          </div>
-                          <div>
-                             <div style={{ fontSize: '1rem', fontWeight: 800, color: '#1e293b', lineHeight: 1.2 }}>Annual Meetup</div>
-                             <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>June 15, 2026</div>
-                          </div>
-                       </div>
-                    </div>
-                 </div>
+                       {communityStats.upcomingEvent && (
+                         <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
+                            <div style={{ width: '48px', height: '48px', background: 'rgba(220, 38, 38, 0.1)', color: '#DC2626', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                               <Calendar size={22} />
+                            </div>
+                            <div>
+                               <div style={{ fontSize: '1rem', fontWeight: 800, color: '#1e293b', lineHeight: 1.2 }}>{communityStats.upcomingEvent.title}</div>
+                               <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>{communityStats.upcomingEvent.date}</div>
+                            </div>
+                         </div>
+                       )}
+                   </div>
+                </div>
              </motion.div>
           </aside>
         </div>

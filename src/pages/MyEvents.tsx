@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowLeft, Calendar, MapPin, Clock, 
-  Share2, 
   Download,
   Award,
   Loader2
@@ -11,6 +10,7 @@ import { Link } from 'react-router-dom';
 import { eventsApi, usersApi, getUser } from '../services/api';
 import { generateEventCertificate } from '../utils/CertificateGenerator';
 import CertificateProgressButton from '../components/CertificateProgressButton';
+import { formatDateOnly, formatTimeTo12Hour } from '../utils/dateUtils';
 
 
 const MyEvents: React.FC = () => {
@@ -288,37 +288,18 @@ const MyEvents: React.FC = () => {
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', color: '#64748B', fontSize: '0.9rem' }}>
-                    <Calendar size={16} /> {event.date}
+                    <Calendar size={16} /> {formatDateOnly(event.date, event.date)}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', color: '#64748B', fontSize: '0.9rem' }}>
-                    <Clock size={16} /> {event.time}
+                    <Clock size={16} /> {formatTimeTo12Hour(event.time)}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', color: '#64748B', fontSize: '0.9rem' }}>
                     <MapPin size={16} /> {event.location}
                   </div>
                 </div>
 
-                <div style={{ marginTop: 'auto', paddingTop: '1.5rem', display: 'flex', gap: '0.75rem' }}>
-                  {activeTab === 'upcoming' ? (
-                    <button 
-                      onClick={() => {
-                        const url = `${window.location.origin}/events/${event.id}`;
-                        if (navigator.share) {
-                          navigator.share({
-                            title: event.title,
-                            text: `Check out this event: ${event.title}`,
-                            url: url,
-                          }).catch(() => {});
-                        } else {
-                          navigator.clipboard.writeText(url);
-                          alert('Event link copied to clipboard!');
-                        }
-                      }}
-                      style={{ flex: 1, background: '#F1F5F9', borderRadius: '10px', border: 'none', color: '#0F172A', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: '0.75rem', fontWeight: 700, gap: '0.5rem' }}
-                    >
-                      <Share2 size={18} /> Share Event
-                    </button>
-                  ) : (
+                {activeTab === 'past' && (
+                  <div style={{ marginTop: 'auto', paddingTop: '1.5rem', display: 'flex', gap: '0.75rem' }}>
                     <div style={{ flex: 1 }}>
                       {event.is_certificate_issued ? (
                         <CertificateProgressButton 
@@ -357,8 +338,8 @@ const MyEvents: React.FC = () => {
                         </button>
                       )}
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </motion.div>
           ))}

@@ -108,10 +108,10 @@ const CompletionInsights: React.FC = () => {
       {/* Metric Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: 'Avg. Velocity', value: '84%', icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-          { label: 'Daily Active', value: data?.dailyActiveUsers?.[6], icon: Activity, color: 'text-red-600', bg: 'bg-red-50' },
-          { label: 'Active Streaks', value: '124', icon: Flame, color: 'text-orange-600', bg: 'bg-orange-50' },
-          { label: 'Risk Students', value: data?.inactiveLearners?.length, icon: AlertTriangle, color: 'text-amber-600', bg: 'bg-amber-50' },
+          { label: 'Avg. Velocity', value: `${data?.overallAvgCompletion ?? 0}%`, icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+          { label: 'Daily Active', value: (data?.dailyActiveUsers?.[6] ?? data?.totalEnrollments ?? 0).toString(), icon: Activity, color: 'text-red-600', bg: 'bg-red-50' },
+          { label: 'Active Streaks', value: (data?.totalActiveStreaks ?? data?.streaks?.length ?? 0).toString(), icon: Flame, color: 'text-orange-600', bg: 'bg-orange-50' },
+          { label: 'Risk Students', value: (data?.inactiveLearners?.length || 0).toString(), icon: AlertTriangle, color: 'text-amber-600', bg: 'bg-amber-50' },
         ].map((stat, i) => (
           <div key={i} className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm">
             <div className={`w-12 h-12 ${stat.bg} ${stat.color} rounded-2xl flex items-center justify-center mb-6`}>

@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { adminApi, recruiterApi } from '../../services/api';
+import { formatDateTime } from '../../utils/dateUtils';
 
 interface Application {
   id: string;
@@ -16,10 +17,15 @@ interface Application {
     avatar: string;
   };
   role: string;
+  appliedAt?: string;
+  withdrawnAt?: string;
+  reappliedAt?: string;
+  statusUpdatedAt?: string;
   date: string;
   aiScore: number;
   matchQuality: 'High' | 'Medium' | 'Low';
-  status: 'Applied' | 'Aptitude' | 'Shortlisted' | 'Interview Scheduled' | 'Offered' | 'Rejected';
+  status: 'Applied' | 'Aptitude' | 'Shortlisted' | 'Interview Scheduled' | 'Offered' | 'Rejected' | 'Withdrawn';
+  timeline?: any[];
 }
 
 const Applications: React.FC = () => {
@@ -41,10 +47,15 @@ const Applications: React.FC = () => {
           avatar: ''
         },
         role: app.job_title || 'Software Role',
-        date: app.applied_at ? new Date(app.applied_at).toLocaleDateString() : 'Today',
+        appliedAt: app.applied_at,
+        withdrawnAt: app.withdrawn_at,
+        reappliedAt: app.reapplied_at,
+        statusUpdatedAt: app.status_updated_at || app.updated_at,
+        date: formatDateTime(app.applied_at),
         aiScore: Math.floor(Math.random() * 40) + 60,
         matchQuality: 'Medium' as const,
-        status: app.status || 'Applied'
+        status: app.status || 'Applied',
+        timeline: app.timeline || []
       }));
       setApplications(mapped);
     }
@@ -68,6 +79,7 @@ const Applications: React.FC = () => {
       case 'Interview Scheduled': return { bg: '#fdf4ff', border: '#fae8ff', text: '#86198f', icon: <Send size={12} /> };
       case 'Offered': return { bg: '#f0fdf4', border: '#dcfce7', text: '#166534', icon: <CheckCircle2 size={12} /> };
       case 'Rejected': return { bg: '#fef2f2', border: '#fee2e2', text: '#991b1b', icon: <XCircle size={12} /> };
+      case 'Withdrawn': return { bg: '#f8fafc', border: '#dee2e6', text: '#868e96', icon: <XCircle size={12} /> };
       default: return { bg: '#f8fafc', border: '#f1f5f9', text: '#64748b', icon: <Clock size={12} /> };
     }
   };
@@ -81,11 +93,38 @@ const Applications: React.FC = () => {
   };
 
   const handleSaveUpdate = async () => {
+    if (!updateData.notes || !updateData.notes.trim()) {
+        alert("Internal comment / reason is mandatory. Please provide a comment before saving.");
+        return;
+    }
     try {
         const response = await recruiterApi.updateApplicationStatus(selectedApp.id, updateData);
         if (response.success) {
+            const nowIso = new Date().toISOString();
+            const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+            const adminName = currentUser.full_name || currentUser.name || 'Admin';
+            const adminEmpId = currentUser.emp_id || currentUser.id || 'ADM';
+
             setApplications(apps => apps.map(a => 
-                a.id === selectedApp.id ? { ...a, status: updateData.status as any } : a
+                a.id === selectedApp.id ? { 
+                  ...a, 
+                  status: updateData.status as any,
+                  statusUpdatedAt: nowIso,
+                  notes: updateData.notes,
+                  timeline: [
+                    ...(a.timeline || []),
+                    {
+                      action: 'Status Changed',
+                      status: updateData.status,
+                      previous_status: a.status,
+                      timestamp: nowIso,
+                      actor_name: adminName,
+                      actor_role: 'Admin',
+                      recruiter_id: adminEmpId,
+                      note: updateData.notes || `Application status updated to ${updateData.status} by ${adminName}.`
+                    }
+                  ]
+                } : a
             ));
             setSelectedApp(null);
         } else {
@@ -180,8 +219,21 @@ const Applications: React.FC = () => {
                           </div>
                         </div>
                       </td>
-                      <td style={{ padding: '16px 24px', fontSize: '14px', color: '#475569' }}>{app.role}</td>
-                      <td style={{ padding: '16px 24px', fontSize: '14px', color: '#64748b' }}>{app.date}</td>
+                      <td style={{ padding: '16px 24px', fontSize: '13px', color: '#64748b' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                          <span style={{ fontWeight: 600, color: '#334155' }}>{formatDateTime(app.appliedAt)}</span>
+                          {app.reappliedAt && (
+                            <span style={{ fontSize: '11px', color: '#2563eb', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                              <Clock size={10} /> Reapplied: {formatDateTime(app.reappliedAt)}
+                            </span>
+                          )}
+                          {app.withdrawnAt && (
+                            <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                              <Clock size={10} /> Withdrawn: {formatDateTime(app.withdrawnAt)}
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td style={{ padding: '16px 24px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <div style={{ flex: 1, height: '6px', background: '#f1f5f9', borderRadius: '10px', minWidth: '80px' }}>
@@ -223,17 +275,59 @@ const Applications: React.FC = () => {
           >
             <motion.div 
               initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
-              style={{ background: '#fff', padding: '32px', borderRadius: '20px', width: '400px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}
+              style={{ background: '#fff', padding: '28px', borderRadius: '20px', width: '480px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}
             >
-              <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '8px' }}>Update Status</h2>
-              <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '24px' }}>For {selectedApp.candidate.name}</p>
+              <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '6px' }}>Update Status</h2>
+              <p style={{ color: '#64748b', fontSize: '13px', marginBottom: '16px' }}>
+                For <strong>{selectedApp.candidate.name}</strong> • Applied: {formatDateTime(selectedApp.appliedAt)}
+              </p>
+
+              {/* Status and Action Timeline History */}
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 14px', marginBottom: '20px' }}>
+                <p style={{ margin: '0 0 8px 0', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Application Timeline & Activity
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '180px', overflowY: 'auto' }}>
+                  {(selectedApp.timeline && selectedApp.timeline.length > 0 ? selectedApp.timeline : [
+                    { action: 'Applied', status: 'Applied', timestamp: selectedApp.appliedAt, actor_name: 'Candidate' }
+                  ]).map((t: any, idx: number) => (
+                    <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', padding: '8px 10px', background: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                          <span style={{ fontWeight: 700, color: '#1e293b' }}>
+                            {t.action === 'Status Changed' ? `Status: ${t.status}` : t.action}
+                          </span>
+                          {t.actor_name && (
+                            <span style={{ fontSize: '10px', background: '#e2e8f0', color: '#1e293b', padding: '1px 6px', borderRadius: '4px', fontWeight: 700 }}>
+                              {t.actor_name}
+                            </span>
+                          )}
+                          {t.recruiter_id && (
+                            <span style={{ fontSize: '10px', background: '#e0f2fe', color: '#0369a1', border: '1px solid #bae6fd', padding: '1px 6px', borderRadius: '4px', fontWeight: 800 }}>
+                              ID: {t.recruiter_id}
+                            </span>
+                          )}
+                        </div>
+                        <span style={{ color: '#64748b', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Clock size={11} color="#94a3b8" /> {formatDateTime(t.timestamp)}
+                        </span>
+                      </div>
+                      {t.note && (
+                        <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#475569', fontStyle: 'italic', background: '#f8fafc', padding: '4px 8px', borderRadius: '6px' }}>
+                          "{t.note}"
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
               
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '8px' }}>Application Status</label>
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>New Status</label>
                 <select 
                   value={updateData.status}
                   onChange={e => setUpdateData({...updateData, status: e.target.value})}
-                  style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc', outline: 'none' }}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc', outline: 'none', fontSize: '13px' }}
                 >
                   <option value="Applied">Applied</option>
                   <option value="Aptitude">Aptitude</option>
@@ -244,9 +338,31 @@ const Applications: React.FC = () => {
                 </select>
               </div>
 
-              <div style={{ display: 'flex', gap: '12px', marginTop: '32px' }}>
-                <button onClick={() => setSelectedApp(null)} style={{ flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#fff', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
-                <button onClick={handleSaveUpdate} style={{ flex: 1, padding: '12px', borderRadius: '10px', border: 'none', background: '#3b82f6', color: '#fff', fontWeight: 600, cursor: 'pointer' }}>Save Changes</button>
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span>Internal Comment / Reason</span>
+                    <span style={{ color: '#ef4444', fontWeight: 800 }}>*</span>
+                  </label>
+                  <span style={{ fontSize: '10px', fontWeight: 800, color: '#0369a1', background: '#e0f2fe', padding: '2px 6px', borderRadius: '4px' }}>
+                    🔒 Hidden from Applicant
+                  </span>
+                </div>
+                <textarea 
+                  value={updateData.notes}
+                  onChange={e => setUpdateData({...updateData, notes: e.target.value})}
+                  placeholder="Enter internal comment, interview feedback, or reason (visible to staff only)..."
+                  rows={3}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc', outline: 'none', fontSize: '13px', boxSizing: 'border-box' }}
+                />
+                <span style={{ display: 'block', marginTop: '4px', fontSize: '11px', color: '#64748b' }}>
+                  Applicant only sees that status changed. Internal notes and updater ID are saved for recruiter tracking.
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+                <button onClick={() => setSelectedApp(null)} style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}>Cancel</button>
+                <button onClick={handleSaveUpdate} style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', background: '#3b82f6', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}>Save Changes</button>
               </div>
             </motion.div>
           </motion.div>

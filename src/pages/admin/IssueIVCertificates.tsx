@@ -156,10 +156,10 @@ const IssueIVCertificates: React.FC = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
         <div>
           <button 
-            onClick={() => navigate('/admin/iv-students')}
+            onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/admin/iv-students')}
             style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', marginBottom: '1rem', fontWeight: 600 }}
           >
-            <ArrowLeft size={18} /> Back to IV Management
+            <ArrowLeft size={18} /> Back
           </button>
           <h1 style={{ fontSize: '2rem', fontWeight: 800, color: '#1a2652', margin: 0 }}>Bulk Issue Certificates</h1>
           <p style={{ color: '#64748b', marginTop: '4px' }}>Upload an Excel sheet to generate and issue certificates to students.</p>

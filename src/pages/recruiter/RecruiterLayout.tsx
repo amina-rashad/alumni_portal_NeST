@@ -3,11 +3,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  LayoutDashboard, Briefcase, FileText, Settings, LogOut, Bell, Menu, X, ChevronDown, UserCheck, UserPlus, BarChart3, HelpCircle, Send, ArrowLeft, Mail, Activity
+  LayoutDashboard, Briefcase, FileText, Settings, LogOut, Bell, Menu, X, ChevronDown, UserCheck, UserPlus, BarChart3, HelpCircle, Send, ArrowLeft, Mail, Activity, User,
+  Shield, Users, GraduationCap, School, Award, Megaphone, Calendar, BookOpen
 } from 'lucide-react';
 import nestMainLogo from '../../assets/nest_logo.png';
 import { getUser, authApi, notificationsApi, type AuthUser } from '../../services/api';
 import UserAvatar from '../../components/UserAvatar';
+import AdminSidebar from '../../components/AdminSidebar';
 import '../../App.css';
 
 /* ─────────────────────────── types ─────────────────────────── */
@@ -17,39 +19,51 @@ interface NavGroup { section: string; icon: React.ReactNode; items: NavItem[] }
 /* ─────────────────────────── data ─────────────────────────── */
 const recruiterMenuGroups: NavGroup[] = [
   {
-    section: 'Overview', icon: <LayoutDashboard size={17} />,
+    section: 'Dashboard', icon: <LayoutDashboard size={17} />,
     items: [
-      { name: 'Dashboard', path: '/recruiter/dashboard', icon: <LayoutDashboard size={15} /> },
+      { name: 'Dashboard', path: '/recruiter/overview', icon: <LayoutDashboard size={15} /> },
+    ]
+  },
+  {
+    section: 'Career Timelines', icon: <Activity size={17} />,
+    items: [
       { name: 'Career Timelines', path: '/recruiter/community-feed', icon: <Activity size={15} /> },
-      { name: 'Hiring Insights', path: '/recruiter/reports', icon: <BarChart3 size={15} /> },
     ]
   },
   {
     section: 'Jobs', icon: <Briefcase size={17} />,
     items: [
-      { name: 'Post New Job', path: '/recruiter/jobs/post', icon: <UserPlus size={15} /> },
-      { name: 'Manage Jobs', path: '/recruiter/jobs', icon: <Briefcase size={15} /> },
+      { name: 'Jobs', path: '/recruiter/jobs', icon: <Briefcase size={15} /> },
     ]
   },
   {
     section: 'Applications', icon: <FileText size={17} />,
     items: [
-      { name: 'Review All', path: '/recruiter/applications', icon: <FileText size={15} /> },
+      { name: 'Review Applications', path: '/recruiter/applications', icon: <FileText size={15} /> },
+      { name: 'Talent Mail', path: '/recruiter/mail', icon: <Mail size={15} /> },
     ]
   },
   {
     section: 'Broadcast', icon: <Send size={17} />,
     items: [
-      { name: 'Create Post', path: '/recruiter/post', icon: <Send size={15} /> },
-      { name: 'Talent Mail', path: '/recruiter/mail', icon: <Mail size={15} /> },
+      { name: 'Broadcast', path: '/recruiter/post', icon: <Send size={15} /> },
     ]
   },
-  {
-    section: 'Settings', icon: <Settings size={17} />,
-    items: [
-      { name: 'Settings', path: '/recruiter/settings', icon: <Settings size={15} /> },
-    ]
-  },
+];
+
+/* ── Admin Menu Items (Shown when admin accesses recruiter) ── */
+const allAdminMenuItems = [
+  { name: 'Platform Insights', path: '/admin/dashboard', icon: <LayoutDashboard size={20} />, roles: ['super_admin', 'admin'] },
+  { name: 'Super Admin', path: '/admin/super-dashboard', icon: <Shield size={20} />, roles: ['super_admin'] },
+  { name: 'User Management', path: '/admin/users', icon: <Users size={20} />, roles: ['super_admin', 'admin'] },
+  { name: 'Active Managers', path: '/admin/view-managers', icon: <Users size={20} />, roles: ['super_admin', 'admin'] },
+  { name: 'Intern Management', path: '/admin/interns', icon: <GraduationCap size={20} />, roles: ['super_admin', 'admin'] },
+  { name: 'IV Students', path: '/admin/iv-students', icon: <School size={20} />, roles: ['super_admin', 'admin'] },
+  { name: 'Certification', path: '/admin/certification', icon: <Award size={20} />, roles: ['super_admin', 'admin'] },
+  { name: 'Broadcast Post', path: '/admin/posts', icon: <Megaphone size={20} />, roles: ['super_admin', 'admin'] },
+  { name: 'Job Management', path: '/recruiter/overview', icon: <Briefcase size={20} />, roles: ['super_admin', 'admin', 'job_recruiter'] },
+  { name: 'Event Management', path: '/event-manager/dashboard', icon: <Calendar size={20} />, roles: ['super_admin', 'admin', 'event_manager'] },
+  { name: 'Course Management', path: '/course-manager/dashboard', icon: <BookOpen size={20} />, roles: ['super_admin', 'admin', 'course_manager'] },
 ];
 
 /* ─────────────────────────── Dropdown ─────────────────────────── */
@@ -272,42 +286,91 @@ const RecruiterLayout: React.FC = () => {
   };
 
   const nestNavy = '#1a2652';
+  const [adminSidebarOpen, setAdminSidebarOpen] = useState(true);
+  const isAdmin = recruiterUser?.role === 'admin' || recruiterUser?.role === 'super_admin';
+
+  const adminMenuItems = allAdminMenuItems.filter(item =>
+    item.roles.includes(recruiterUser?.role || '')
+  );
+
+  const isItemActive = (itemPath: string) => {
+    if (itemPath === '/recruiter/applications') {
+      return location.pathname.startsWith('/recruiter/applications') || location.pathname.startsWith('/recruiter/mail');
+    }
+    if (itemPath === '/recruiter/overview' || itemPath === '/recruiter/dashboard') {
+      return (location.pathname.startsWith('/recruiter') && !location.pathname.startsWith('/recruiter/applications') && !location.pathname.startsWith('/recruiter/mail'));
+    }
+    return location.pathname.startsWith(itemPath);
+  };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#f4f7f9', overflow: 'hidden', fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ display: 'flex', height: '100vh', background: '#f8fafc', overflow: 'hidden', fontFamily: "'Inter', sans-serif" }}>
 
-      {/* ── TOP NAV FOR RECRUITER ── */}
-      <header style={{
-        height: '66px',
-        background: '#ffffff',
-        borderBottom: '1px solid #e2e8f0',
-        display: 'flex',
-        alignItems: 'center',
-        padding: '0 24px',
-        gap: '16px',
-        zIndex: 1000,
-        flexShrink: 0,
-        boxShadow: '0 1px 8px rgba(0,0,0,0.04)',
-        position: 'relative',
-      }}>
+      {/* ── ADMIN SIDEBAR (Visible when user is admin or super_admin) ── */}
+      {isAdmin && (
+        <AdminSidebar
+          isOpen={adminSidebarOpen}
+          onToggle={() => setAdminSidebarOpen(!adminSidebarOpen)}
+          userRole={recruiterUser?.role}
+          currentPath={location.pathname}
+          onLogout={handleLogout}
+        />
+      )}
 
-        {/* Logo Container */}
-        <Link to="/recruiter/dashboard" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0 }}>
-          <div style={{
-            background: 'rgba(26, 38, 82, 0.05)',
-            borderRadius: '8px',
-            padding: '4px 8px',
-            display: 'flex',
-            alignItems: 'center',
-            border: '1px solid rgba(26, 38, 82, 0.1)'
-          }}>
-            <img src={nestMainLogo} alt="NeST Digital" style={{ height: '24px', objectFit: 'contain' }} />
+      {/* ── MAIN CONTENT (Top Nav + Page Content) ── */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', minWidth: 0 }}>
+        {/* ── TOP NAV FOR RECRUITER ── */}
+        <header style={{
+          height: '66px',
+          background: '#ffffff',
+          borderBottom: '1px solid #e2e8f0',
+          display: 'flex',
+          alignItems: 'center',
+          padding: '0 24px',
+          gap: '16px',
+          zIndex: 90,
+          flexShrink: 0,
+          boxShadow: '0 1px 8px rgba(0,0,0,0.04)',
+          position: 'relative',
+        }}>
+
+        {/* Logo Container / Workspace Indicator */}
+        {isAdmin ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, marginRight: '8px' }}>
+            <span style={{
+              fontSize: '11px',
+              fontWeight: 800,
+              background: '#1a2652',
+              color: '#ffffff',
+              padding: '6px 12px',
+              borderRadius: '8px',
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}>
+              <Briefcase size={14} /> Recruiter Workspace
+            </span>
           </div>
-          <span style={{ marginLeft: '12px', fontSize: '18px', fontWeight: 800, color: nestNavy, letterSpacing: '-0.01em' }}>Recruiter</span>
-        </Link>
-
-        {/* Divider */}
-        <div style={{ width: '1px', height: '24px', background: '#e2e8f0', flexShrink: 0, margin: '0 4px' }} />
+        ) : (
+          <>
+            <Link to="/recruiter/overview" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0 }}>
+              <div style={{
+                background: 'rgba(26, 38, 82, 0.05)',
+                borderRadius: '8px',
+                padding: '4px 8px',
+                display: 'flex',
+                alignItems: 'center',
+                border: '1px solid rgba(26, 38, 82, 0.1)'
+              }}>
+                <img src={nestMainLogo} alt="NeST Digital" style={{ height: '24px', objectFit: 'contain' }} />
+              </div>
+              <span style={{ marginLeft: '12px', fontSize: '18px', fontWeight: 800, color: nestNavy, letterSpacing: '-0.01em' }}>Recruiter</span>
+            </Link>
+            <div style={{ width: '1px', height: '24px', background: '#e2e8f0', flexShrink: 0, margin: '0 4px' }} />
+          </>
+        )}
 
         {/* Desktop Nav */}
         <nav 
@@ -327,7 +390,9 @@ const RecruiterLayout: React.FC = () => {
             
             if (!isDropdown) {
               const item = group.items[0];
-              const isActive = location.pathname.startsWith(item.path);
+              const isActive = (group.section === 'Dashboard' || group.section === 'Overview')
+                ? (location.pathname === '/recruiter' || location.pathname === '/recruiter/' || location.pathname.startsWith('/recruiter/overview') || location.pathname.startsWith('/recruiter/reports') || location.pathname.startsWith('/recruiter/dashboard'))
+                : location.pathname.startsWith(item.path);
               return (
                 <Link
                   key={idx}
@@ -397,29 +462,6 @@ const RecruiterLayout: React.FC = () => {
 
         {/* Right Area */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexShrink: 0, marginLeft: '12px' }}>
-          {(recruiterUser?.role === 'admin' || recruiterUser?.role === 'super_admin') && (
-             <button 
-               onClick={() => navigate('/admin/dashboard')}
-               style={{
-                 display: 'flex',
-                 alignItems: 'center',
-                 gap: '8px',
-                 padding: '8px 14px',
-                 borderRadius: '10px',
-                 border: '1px solid rgba(26, 38, 82, 0.2)',
-                 background: '#fff',
-                 color: nestNavy,
-                 fontSize: '13px',
-                 fontWeight: 700,
-                 cursor: 'pointer',
-                 transition: 'all 0.2s'
-               }}
-               onMouseEnter={e => e.currentTarget.style.background = 'rgba(26, 38, 82, 0.02)'}
-               onMouseLeave={e => e.currentTarget.style.background = '#fff'}
-             >
-               <ArrowLeft size={16} /> <span className="desktop-nav-text">Back to Admin</span>
-             </button>
-          )}
 
           <div ref={notifRef} style={{ position: 'relative' }}>
              <div 
@@ -529,7 +571,7 @@ const RecruiterLayout: React.FC = () => {
               ) : null}
               <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1, userSelect: 'none' }}>
                 <span style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b' }}>{recruiterUser ? recruiterUser.full_name : 'Recruiter'}</span>
-                <span style={{ fontSize: '11px', color: '#64748b' }}>Hiring Manager</span>
+                <span style={{ fontSize: '11px', color: '#64748b' }}>{isAdmin ? (recruiterUser?.role === 'super_admin' ? 'Super Admin' : 'System Admin') : 'Hiring Manager'}</span>
               </div>
               <ChevronDown size={14} color="#64748b" style={{ transform: profileDropdownOpen ? 'rotate(180deg)' : 'none', transition: '0.2s' }} />
             </div>
@@ -546,8 +588,7 @@ const RecruiterLayout: React.FC = () => {
                     border: '1px solid #f1f5f9', padding: '6px', zIndex: 9999,
                   }}
                 >
-                  <Link to="/recruiter/profile" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', textDecoration: 'none', color: '#334155', fontSize: '14px' }}> <LayoutDashboard size={16} /> View Profile </Link>
-                  <Link to="/recruiter/settings" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', textDecoration: 'none', color: '#334155', fontSize: '14px' }}> <Settings size={16} /> Recruiter Settings </Link>
+                  <Link to="/recruiter/settings" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', textDecoration: 'none', color: '#334155', fontSize: '14px' }}> <User size={16} /> Recruiter Profile </Link>
                   <div style={{ height: '1px', background: '#f1f5f9', margin: '4px 8px' }} />
                   <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', width: '100%', textAlign: 'left', color: '#ef4444', fontSize: '14px', fontWeight: 600 }}> <LogOut size={16} /> Logout </button>
                 </motion.div>
@@ -572,17 +613,49 @@ const RecruiterLayout: React.FC = () => {
                   <button onClick={() => setMobileOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}><X size={24} /></button>
                </div>
                <div style={{ flex: 1, overflowY: 'auto' }}>
-                  {recruiterMenuGroups.map(group => (
-                    <div key={group.section} style={{ marginBottom: '16px' }}>
-                       <div style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>{group.section}</div>
-                       {group.items.map(item => (
-                         <Link key={item.path} to={item.path} onClick={() => setMobileOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 0', color: location.pathname.startsWith(item.path) ? nestNavy : '#334155', textDecoration: 'none', fontWeight: location.pathname.startsWith(item.path) ? 700 : 500, fontSize: '14px' }}>
-                            <span style={{ color: location.pathname.startsWith(item.path) ? nestNavy : '#64748b' }}>{item.icon}</span>
-                            {item.name}
-                         </Link>
-                       ))}
-                    </div>
-                  ))}
+                  {recruiterMenuGroups.map(group => {
+                    const isDropdown = group.items.length > 1;
+                    if (!isDropdown) {
+                      const item = group.items[0];
+                      const active = (group.section === 'Dashboard' || group.section === 'Overview')
+                        ? (location.pathname === '/recruiter' || location.pathname.startsWith('/recruiter/overview') || location.pathname.startsWith('/recruiter/reports') || location.pathname.startsWith('/recruiter/dashboard'))
+                        : location.pathname.startsWith(item.path);
+                      return (
+                        <div key={group.section} style={{ marginBottom: '8px' }}>
+                          <Link
+                            to={item.path}
+                            onClick={() => setMobileOpen(false)}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '12px',
+                              padding: '10px 12px',
+                              borderRadius: '10px',
+                              color: active ? nestNavy : '#334155',
+                              background: active ? 'rgba(26, 38, 82, 0.05)' : 'transparent',
+                              textDecoration: 'none',
+                              fontWeight: active ? 700 : 500,
+                              fontSize: '14px'
+                            }}
+                          >
+                            <span style={{ color: active ? nestNavy : '#64748b' }}>{group.icon}</span>
+                            {group.section}
+                          </Link>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div key={group.section} style={{ marginBottom: '16px' }}>
+                         <div style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px', padding: '0 12px' }}>{group.section}</div>
+                         {group.items.map(item => (
+                            <Link key={item.path} to={item.path} onClick={() => setMobileOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', color: location.pathname.startsWith(item.path) ? nestNavy : '#334155', textDecoration: 'none', fontWeight: location.pathname.startsWith(item.path) ? 700 : 500, fontSize: '14px' }}>
+                               <span style={{ color: location.pathname.startsWith(item.path) ? nestNavy : '#64748b' }}>{item.icon}</span>
+                               {item.name}
+                            </Link>
+                         ))}
+                      </div>
+                    );
+                  })}
                </div>
             </motion.div>
           </div>
@@ -594,6 +667,7 @@ const RecruiterLayout: React.FC = () => {
           <Outlet />
         </div>
       </main>
+      </div>
 
       <style>{`
         @media (max-width: 1024px) {
@@ -601,6 +675,16 @@ const RecruiterLayout: React.FC = () => {
           nav { display: none !important; }
         }
         nav::-webkit-scrollbar { display: none; }
+        .admin-sidebar-scroll::-webkit-scrollbar {
+          width: 4px;
+        }
+        .admin-sidebar-scroll::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 4px;
+        }
+        .admin-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.4);
+        }
       `}</style>
     </div>
   );
