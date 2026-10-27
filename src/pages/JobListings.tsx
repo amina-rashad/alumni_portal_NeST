@@ -211,6 +211,24 @@ const JobListings: React.FC = () => {
 
   return (
     <div style={{ width: '100%', maxWidth: '100vw', margin: '0', padding: '0', paddingBottom: '6rem' }}>
+      <style>{`
+        @media (max-width: 900px) {
+          #career-banner-section {
+            flex-direction: column !important;
+          }
+          #career-banner-section > div:last-child {
+            padding: 2.5rem 1.5rem !important;
+          }
+          #career-banner-section > div:first-child {
+            min-height: 260px !important;
+          }
+        }
+        .job-listings-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+          gap: 2rem;
+        }
+      `}</style>
       
       {/* Cinematic Hero Banner */}
       <div style={{
@@ -310,12 +328,12 @@ const JobListings: React.FC = () => {
       {/* Main Content Area */}
       <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 2rem' }}>
         {/* Shape Our Future Video Section */}
-      <div style={{ display: 'flex', gap: '5rem', alignItems: 'center', marginBottom: '8rem', flexWrap: 'wrap', padding: '2rem 0' }}>
+      <div style={{ display: 'flex', gap: '3rem', alignItems: 'center', marginBottom: '8rem', flexWrap: 'wrap', padding: '2rem 0' }}>
         <motion.div 
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8 }}
-          style={{ flex: '1 1 500px' }}
+          style={{ flex: '1 1 300px' }}
         >
           <h2 style={{ 
             fontSize: '3.2rem', 
@@ -372,7 +390,7 @@ const JobListings: React.FC = () => {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
           style={{ 
-            flex: '1 1 600px', 
+            flex: '1 1 300px', 
             position: 'relative', 
             borderRadius: '32px', 
             overflow: 'hidden', 
@@ -639,7 +657,7 @@ const JobListings: React.FC = () => {
         variants={containerVariants}
         initial="hidden"
         animate="show"
-        style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: '2rem' }}
+        className="job-listings-grid"
       >
         {loading ? (
           <div style={{ textAlign: 'center', padding: '4rem', gridColumn: '1 / -1' }}>

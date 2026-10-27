@@ -220,6 +220,7 @@ const ActivityFeed: React.FC = () => {
           position: relative;
           overflow: hidden;
           width: 100vw;
+          max-width: 100vw;
           left: 50%;
           right: 50%;
           margin-left: -50vw;
@@ -227,6 +228,19 @@ const ActivityFeed: React.FC = () => {
           box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
           border-bottom: 1px solid rgba(255,255,255,0.1);
           color: white;
+        }
+        .feed-layout-grid {
+          display: grid;
+          grid-template-columns: 1fr 420px;
+          gap: 1.5rem;
+        }
+        @media (max-width: 992px) {
+          .feed-layout-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .video-banner {
+            padding: 3.5rem 0 !important;
+          }
         }
         .video-banner::before {
           content: "";
@@ -357,7 +371,7 @@ const ActivityFeed: React.FC = () => {
           </motion.div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 420px', gap: '1.5rem' }}>
+        <div className="feed-layout-grid">
           
           <motion.div variants={pageVariants} initial="hidden" animate="visible" style={{ alignSelf: 'start' }}>
             {loading ? (

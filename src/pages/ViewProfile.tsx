@@ -351,6 +351,46 @@ const ViewProfile: React.FC = () => {
 
   return (
     <div style={{ position: 'relative', minHeight: '100vh' }}>
+      <style>{`
+        .view-profile-hero-bar {
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+          padding: 0 40px;
+          margin-top: -60px;
+          position: relative;
+          z-index: 10;
+          gap: 20px;
+        }
+        .view-profile-grid {
+          display: grid;
+          grid-template-columns: 1fr 360px;
+          gap: 30px;
+        }
+        .view-profile-identity {
+          display: flex;
+          align-items: flex-end;
+          gap: 24px;
+        }
+        @media (max-width: 992px) {
+          .view-profile-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+        @media (max-width: 768px) {
+          .view-profile-hero-bar {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            padding: 0 16px !important;
+            margin-top: -50px !important;
+          }
+          .view-profile-identity {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 16px !important;
+          }
+        }
+      `}</style>
       <div style={{ position: 'fixed', inset: 0, background: 'radial-gradient(circle at top right, rgba(200,16,46,0.05), transparent 50%), radial-gradient(circle at bottom left, rgba(26,38,82,0.05), transparent 50%)', pointerEvents: 'none', zIndex: -1 }} />
       <motion.div 
         initial={{ opacity: 0, y: 10 }}
@@ -371,16 +411,8 @@ const ViewProfile: React.FC = () => {
         </div>
         
         {/* Profile Identity Bar */}
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'flex-end', 
-          justifyContent: 'space-between',
-          padding: '0 40px',
-          marginTop: '-60px',
-          position: 'relative',
-          zIndex: 10
-        }}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '24px' }}>
+        <div className="view-profile-hero-bar">
+          <div className="view-profile-identity">
             <div style={{ 
               width: '150px', 
               height: '150px', 
@@ -459,7 +491,7 @@ const ViewProfile: React.FC = () => {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '30px' }}>
+      <div className="view-profile-grid">
         {/* Left Column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
           

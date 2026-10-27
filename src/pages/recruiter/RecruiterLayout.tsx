@@ -286,8 +286,19 @@ const RecruiterLayout: React.FC = () => {
   };
 
   const nestNavy = '#1a2652';
-  const [adminSidebarOpen, setAdminSidebarOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState<boolean>(() => typeof window !== 'undefined' && window.innerWidth <= 1024);
+  const [adminSidebarOpen, setAdminSidebarOpen] = useState(!isMobile);
   const isAdmin = recruiterUser?.role === 'admin' || recruiterUser?.role === 'super_admin';
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth <= 1024;
+      setIsMobile(mobile);
+      if (mobile) setAdminSidebarOpen(false);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const adminMenuItems = allAdminMenuItems.filter(item =>
     item.roles.includes(recruiterUser?.role || '')
@@ -314,6 +325,8 @@ const RecruiterLayout: React.FC = () => {
           userRole={recruiterUser?.role}
           currentPath={location.pathname}
           onLogout={handleLogout}
+          isMobile={isMobile}
+          onCloseMobile={() => setAdminSidebarOpen(false)}
         />
       )}
 
@@ -663,7 +676,7 @@ const RecruiterLayout: React.FC = () => {
       </AnimatePresence>
 
       <main style={{ flex: 1, overflowY: 'auto', background: '#f4f7f9' }}>
-        <div style={{ padding: '32px', maxWidth: '1400px', margin: '0 auto' }}>
+        <div className="recruiter-main-content" style={{ padding: '32px', maxWidth: '1400px', margin: '0 auto' }}>
           <Outlet />
         </div>
       </main>
@@ -673,6 +686,11 @@ const RecruiterLayout: React.FC = () => {
         @media (max-width: 1024px) {
           .mobile-menu-btn { display: flex !important; }
           nav { display: none !important; }
+        }
+        @media (max-width: 768px) {
+          .recruiter-main-content {
+            padding: 16px !important;
+          }
         }
         nav::-webkit-scrollbar { display: none; }
         .admin-sidebar-scroll::-webkit-scrollbar {

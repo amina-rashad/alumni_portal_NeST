@@ -84,6 +84,12 @@ h6 {
   padding: 0 24px;
 }
 
+@media (max-width: 640px) {
+  .container {
+    padding: 0 16px;
+  }
+}
+
 section {
   position: relative;
 }

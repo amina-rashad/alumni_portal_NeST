@@ -640,7 +640,7 @@ const MainLayout: React.FC = () => {
         className="custom-scrollbar"
         style={{ flex: 1, overflowY: 'auto', position: 'relative', scrollBehavior: 'smooth' }}
       >
-        <div style={{ 
+        <div className="main-page-wrapper" style={{ 
           padding: (
             location.pathname.startsWith('/dashboard') || 
             location.pathname.startsWith('/jobs') || 
@@ -668,6 +668,12 @@ const MainLayout: React.FC = () => {
         @media (max-width: 1024px) {
           .mobile-menu-btn { display: flex !important; }
           nav { display: none !important; }
+        }
+        @media (max-width: 768px) {
+          .main-page-wrapper {
+            padding-left: 14px !important;
+            padding-right: 14px !important;
+          }
         }
         nav::-webkit-scrollbar { display: none; }
       `}</style>

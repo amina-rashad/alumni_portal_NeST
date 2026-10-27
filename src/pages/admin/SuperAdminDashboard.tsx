@@ -163,6 +163,23 @@ const SuperAdminDashboard: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+      <style>{`
+        .superadmin-stats-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 20px;
+        }
+        .superadmin-content-grid {
+          display: grid;
+          grid-template-columns: 1.8fr 1fr;
+          gap: 32px;
+        }
+        @media (max-width: 992px) {
+          .superadmin-content-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
       
       {/* Dynamic Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
@@ -193,7 +210,7 @@ const SuperAdminDashboard: React.FC = () => {
       </div>
 
       {/* Hero Stats Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '24px' }}>
+      <div className="superadmin-stats-grid">
         {isLoading ? (
           [1, 2, 3, 4].map(i => <SkeletonCard key={i} />)
         ) : (
@@ -251,7 +268,7 @@ const SuperAdminDashboard: React.FC = () => {
         )}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1fr', gap: '32px' }}>
+      <div className="superadmin-content-grid">
         
         {/* Modern Activity Pipeline */}
         <section style={cardStyle}>

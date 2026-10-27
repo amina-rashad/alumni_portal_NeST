@@ -250,6 +250,19 @@ const InlineResumeBuilder: React.FC<InlineResumeBuilderProps> = ({ onAttach, onC
           transform: translateY(-2px);
           box-shadow: 0 5px 15px rgba(200, 16, 46, 0.3);
         }
+        .resume-form-row {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+          gap: 0.8rem;
+        }
+        @media (max-width: 640px) {
+          .resume-form-row {
+            grid-template-columns: 1fr !important;
+          }
+          .resume-preview-wrapper {
+            padding: 0.75rem !important;
+          }
+        }
       `}</style>
       <div style={{ padding: '1.25rem 1.75rem', background: '#f8f9fa', borderBottom: '1px solid #e9ecef', display: 'flex', flexWrap: 'wrap', gap: '1rem', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -312,7 +325,7 @@ const InlineResumeBuilder: React.FC<InlineResumeBuilderProps> = ({ onAttach, onC
             <input name="title" value={data.title} onChange={handleChange} placeholder="SENIOR SOFTWARE ENGINEER" style={{ width: '100%', padding: '0.6rem', border: '1px solid #ced4da', borderRadius: '8px', boxSizing: 'border-box', background: '#f8f9fa' }} />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '0.8rem' }}>
+          <div className="resume-form-row">
             <div>
               <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#4a4a4a', marginBottom: '0.3rem', display: 'block' }}>Phone</label>
               <input name="phone" value={data.phone} onChange={handleChange} placeholder="+91-98765 43210" style={{ width: '100%', padding: '0.6rem', border: '1px solid #ced4da', borderRadius: '8px', boxSizing: 'border-box', background: '#f8f9fa' }} />
@@ -323,7 +336,7 @@ const InlineResumeBuilder: React.FC<InlineResumeBuilderProps> = ({ onAttach, onC
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '0.8rem' }}>
+          <div className="resume-form-row">
             <div>
               <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#4a4a4a', marginBottom: '0.3rem', display: 'block' }}>Email</label>
               <input name="email" value={data.email} onChange={handleChange} placeholder="hello@example.com" style={{ width: '100%', padding: '0.6rem', border: '1px solid #ced4da', borderRadius: '8px', boxSizing: 'border-box', background: '#f8f9fa' }} />
@@ -357,7 +370,7 @@ const InlineResumeBuilder: React.FC<InlineResumeBuilderProps> = ({ onAttach, onC
         </div>
 
         {/* Live Preview Section styled to match the image */}
-        <div style={{ background: '#f1f5f9', padding: '2rem', borderRadius: '16px', overflowY: 'auto', maxHeight: '800px', textAlign: 'center' }}>
+        <div className="resume-preview-wrapper" style={{ background: '#f1f5f9', padding: '2rem', borderRadius: '16px', overflowX: 'auto', overflowY: 'auto', WebkitOverflowScrolling: 'touch', maxHeight: '800px', textAlign: 'center' }}>
           <div ref={resumeRef} style={{ 
             background: 'white', 
             padding: '3rem 3rem', 

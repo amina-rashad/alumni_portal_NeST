@@ -14,6 +14,8 @@ export interface AdminSidebarProps {
   userRole?: string;
   currentPath: string;
   onLogout: () => void;
+  isMobile?: boolean;
+  onCloseMobile?: () => void;
 }
 
 export const allAdminMenuItems = [
@@ -51,7 +53,9 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   onToggle,
   userRole = 'admin',
   currentPath,
-  onLogout
+  onLogout,
+  isMobile = false,
+  onCloseMobile
 }) => {
   const nestNavy = '#1a2652';
   const menuItems = allAdminMenuItems.filter(item =>
@@ -60,19 +64,27 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
   return (
     <motion.div
-      initial={{ width: 260 }}
-      animate={{ width: isOpen ? 260 : 80 }}
+      initial={false}
+      animate={
+        isMobile
+          ? { x: isOpen ? 0 : -290, width: 280 }
+          : { x: 0, width: isOpen ? 260 : 80 }
+      }
       transition={{ duration: 0.3, ease: 'easeInOut' }}
       style={{
         background: nestNavy,
         display: 'flex',
         flexDirection: 'column',
-        zIndex: 100,
+        zIndex: isMobile ? 1000 : 100,
         color: '#e2e8f0',
-        boxShadow: '4px 0 10px rgba(0,0,0,0.05)',
+        boxShadow: isMobile && isOpen ? '0 10px 40px rgba(0,0,0,0.3)' : '4px 0 10px rgba(0,0,0,0.05)',
         height: '100vh',
         flexShrink: 0,
-        fontFamily: "'Inter', sans-serif"
+        fontFamily: "'Inter', sans-serif",
+        position: isMobile ? 'fixed' : 'relative',
+        top: 0,
+        left: 0,
+        bottom: 0,
       }}
     >
       {/* Sidebar Top: Logo & Toggle Button */}
@@ -150,6 +162,11 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
             <Link
               key={index}
               to={item.path}
+              onClick={() => {
+                if (isMobile && onCloseMobile) {
+                  onCloseMobile();
+                }
+              }}
               style={{
                 display: 'flex',
                 alignItems: 'center',

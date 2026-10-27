@@ -152,7 +152,8 @@ const EventManagerLayout: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [managerUser, setManagerUser] = useState<AuthUser | null>(() => getUser() as unknown as AuthUser);
-  const [adminSidebarOpen, setAdminSidebarOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState<boolean>(() => typeof window !== 'undefined' && window.innerWidth <= 1024);
+  const [adminSidebarOpen, setAdminSidebarOpen] = useState(!isMobile);
   const [openGroup, setOpenGroup] = useState<NavGroup | null>(null);
   const [dropdownRect, setDropdownRect] = useState<DOMRect | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -234,6 +235,16 @@ const EventManagerLayout: React.FC = () => {
   const brandPrimary = '#233167';
   const isAdmin = managerUser?.role === 'admin' || managerUser?.role === 'super_admin';
 
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth <= 1024;
+      setIsMobile(mobile);
+      if (mobile) setAdminSidebarOpen(false);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
     <div style={{ display: 'flex', height: '100vh', background: '#f8fafc', overflow: 'hidden', fontFamily: "'Inter', sans-serif" }}>
 
@@ -245,6 +256,8 @@ const EventManagerLayout: React.FC = () => {
           userRole={managerUser?.role}
           currentPath={location.pathname}
           onLogout={handleLogout}
+          isMobile={isMobile}
+          onCloseMobile={() => setAdminSidebarOpen(false)}
         />
       )}
 
@@ -643,7 +656,7 @@ const EventManagerLayout: React.FC = () => {
 
         {/* Main Content Area */}
         <main style={{ flex: 1, overflowY: 'auto', background: '#f8fafc' }}>
-          <div style={{ padding: '32px', maxWidth: '1400px', margin: '0 auto' }}>
+          <div className="eventmanager-main-content" style={{ padding: '32px', maxWidth: '1400px', margin: '0 auto' }}>
             <Outlet />
           </div>
         </main>
@@ -654,6 +667,11 @@ const EventManagerLayout: React.FC = () => {
           .mobile-menu-btn { display: flex !important; }
           .desktop-nav-text { display: none; }
           nav { display: none !important; }
+        }
+        @media (max-width: 768px) {
+          .eventmanager-main-content {
+            padding: 16px !important;
+          }
         }
         nav::-webkit-scrollbar { display: none; }
       `}</style>

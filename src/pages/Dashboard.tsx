@@ -248,6 +248,106 @@ const Dashboard: React.FC = () => {
         ::-webkit-scrollbar-thumb:hover {
           background: rgba(255,255,255,0.2); 
         }
+
+        .dashboard-banner-inner {
+          display: flex;
+          flex-direction: row;
+          width: 100%;
+          max-width: 1400px;
+          margin: 0 auto;
+        }
+        .dashboard-banner-text {
+          padding: 4rem 2rem;
+          flex: 1.1;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+        }
+        .dashboard-banner-img {
+          flex: 1;
+          position: relative;
+          min-height: 280px;
+        }
+        .dashboard-banner-title {
+          font-size: clamp(2.2rem, 5vw, 3.8rem);
+          font-weight: 900;
+          color: #0F172A;
+          line-height: 1.1;
+          margin-bottom: 1.2rem;
+          letter-spacing: -0.02em;
+        }
+        .dashboard-split-row {
+          max-width: 1400px;
+          margin: 0 auto;
+          padding: 0 3rem;
+          display: flex;
+          gap: 5rem;
+          align-items: center;
+        }
+        .dashboard-events-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 1.5rem;
+        }
+        .dashboard-jobs-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 1.25rem;
+        }
+        .dashboard-courses-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 1.5rem;
+        }
+
+        @media (max-width: 1100px) {
+          .dashboard-events-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+          .dashboard-jobs-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+          .dashboard-courses-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+          .dashboard-split-row {
+            gap: 2.5rem !important;
+            padding: 0 1.5rem !important;
+          }
+        }
+
+        @media (max-width: 900px) {
+          .dashboard-banner-inner {
+            flex-direction: column !important;
+          }
+          .dashboard-banner-img {
+            min-height: 220px;
+            max-height: 300px;
+          }
+          .dashboard-banner-text {
+            padding: 2.5rem 1.5rem !important;
+          }
+          .dashboard-split-row {
+            flex-direction: column !important;
+            gap: 2rem !important;
+            padding: 0 1rem !important;
+          }
+          .dashboard-split-row.reverse-mobile {
+            flex-direction: column-reverse !important;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .dashboard-events-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .dashboard-jobs-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .dashboard-courses-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
       `}</style>
 
       <div style={{
@@ -270,12 +370,12 @@ const Dashboard: React.FC = () => {
           width: '100%',
           marginBottom: '0'
         }}>
-          <div style={{ maxWidth: '1400px', margin: '0 auto', width: '100%', display: 'flex' }}>
-            <div style={{ padding: '4rem 2rem', flex: '1.1', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <div className="dashboard-banner-inner">
+            <div className="dashboard-banner-text">
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
                 <span style={{ fontWeight: 800, color: '#334155', letterSpacing: '0.12em', fontSize: '0.8rem', textTransform: 'uppercase' }}>Dashboard Overview</span>
               </div>
-              <h1 style={{ fontSize: '3.8rem', fontWeight: 900, color: '#0F172A', lineHeight: 1.1, marginBottom: '1.2rem', letterSpacing: '-0.02em' }}>
+              <h1 className="dashboard-banner-title">
                 Welcome,<br />
                 <span style={{ color: '#EF4444' }}>{user ? user.full_name.split(' ')[0] : 'Amina'}</span>
               </h1>
@@ -283,7 +383,7 @@ const Dashboard: React.FC = () => {
                 Your alumni network is growing. Check out the latest updates and opportunities from classmates.
               </p>
             </div>
-            <div style={{ flex: '1', position: 'relative' }}>
+            <div className="dashboard-banner-img">
               <img src={bannerImg} alt="Banner" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               <div style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: '200px', background: 'linear-gradient(to right, #FFF8F6, transparent)' }} />
             </div>
@@ -302,7 +402,7 @@ const Dashboard: React.FC = () => {
             padding: '6rem 0 2rem',
           }}
         >
-          <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 3rem', display: 'flex', gap: '5rem', alignItems: 'center' }}>
+          <div className="dashboard-split-row">
 
             {/* Left: Video Side */}
             <div style={{ flex: '1.4', position: 'relative' }}>
@@ -361,7 +461,7 @@ const Dashboard: React.FC = () => {
             </div>
 
             {/* Right: Text Content */}
-            <div style={{ flex: '1', paddingRight: '2rem' }}>
+            <div style={{ flex: '1', padding: '1rem 0' }}>
               <h2 style={{ fontSize: '2.75rem', fontWeight: 450, color: '#1E293B', lineHeight: 1.2, marginBottom: '1.2rem', letterSpacing: '-0.01em' }}>
                 We invest in your <br />professional growth
               </h2>
@@ -402,10 +502,10 @@ const Dashboard: React.FC = () => {
             padding: '2rem 0 6rem',
           }}
         >
-          <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 3rem', display: 'flex', gap: '5rem', alignItems: 'center' }}>
+          <div className="dashboard-split-row reverse-mobile">
 
             {/* Left: Text Content */}
-            <div style={{ flex: '1', paddingLeft: '2rem' }}>
+            <div style={{ flex: '1', padding: '1rem 0' }}>
               <h2 style={{ fontSize: '2.75rem', fontWeight: 450, color: '#1E293B', lineHeight: 1.2, marginBottom: '1.2rem', letterSpacing: '-0.01em' }}>
                 United by Diversity, <br />Shaping a Better Future.
               </h2>
@@ -519,7 +619,7 @@ const Dashboard: React.FC = () => {
                 </button>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem' }}>
+              <div className="dashboard-events-grid">
                 {events.length > 0 ? (
                   events.slice(0, 4).map((event, i) => (
                     <motion.div
@@ -797,7 +897,7 @@ const Dashboard: React.FC = () => {
               </button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.25rem' }}>
+            <div className="dashboard-jobs-grid">
               {jobs.length > 0 ? (
                 jobs.slice(0, 6).map((job, i) => (
                   <motion.div
@@ -1118,7 +1218,7 @@ const Dashboard: React.FC = () => {
               </button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem' }}>
+            <div className="dashboard-courses-grid">
               {courses.length > 0 ? (
                 courses.slice(0, 4).map((course, i) => {
                   const courseId = course.id || course._id;

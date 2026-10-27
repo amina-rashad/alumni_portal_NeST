@@ -16,6 +16,7 @@ import { formatTimeAgo } from '../../utils/dateUtils';
 
 const AdminLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -23,6 +24,27 @@ const AdminLayout: React.FC = () => {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth <= 1024;
+      setIsMobile(mobile);
+      if (mobile) {
+        setSidebarOpen(false);
+      } else {
+        setSidebarOpen(true);
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (isMobile) {
+      setSidebarOpen(false);
+    }
+  }, [location.pathname]);
 
   const fetchNotifications = async () => {
     try {
@@ -134,33 +156,73 @@ const AdminLayout: React.FC = () => {
   const nestNavy = '#1a2652';
 
   return (
-    <div style={{ display: 'flex', height: '100vh', background: '#f8fafc', overflow: 'hidden', fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ display: 'flex', height: '100vh', background: '#f8fafc', overflow: 'hidden', fontFamily: "'Inter', sans-serif", position: 'relative' }}>
+      {/* Mobile Backdrop */}
+      {isMobile && sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(5, 13, 30, 0.65)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+            zIndex: 999,
+          }}
+        />
+      )}
+
       <AdminSidebar
         isOpen={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
         userRole={adminUser?.role}
         currentPath={location.pathname}
         onLogout={handleLogout}
+        isMobile={isMobile}
+        onCloseMobile={() => setSidebarOpen(false)}
       />
 
-  {/* Main Content Area */}
-  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-    {/* Header */}
-    <header style={{ height: '72px', background: '#fff', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 32px', zIndex: 90 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-        <h2 style={{
-          fontSize: '22px',
-          fontWeight: 800,
-          color: '#1e293b',
-          margin: 0,
-          fontFamily: "'Inter', sans-serif",
-          letterSpacing: '-0.01em'
-        }}>
-          NeST Admin Portal
-        </h2>
-      </div>
+      {/* Main Content Area */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+        {/* Header */}
+        <header className="admin-header" style={{ height: '72px', background: '#fff', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 32px', zIndex: 90, flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0 }}>
+            {/* Mobile Sidebar Hamburger Toggle */}
+            <button
+              className="admin-mobile-toggle"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              style={{
+                display: 'none',
+                background: '#f1f5f9',
+                border: 'none',
+                borderRadius: '10px',
+                padding: '8px',
+                cursor: 'pointer',
+                color: '#1e293b',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}
+              aria-label="Toggle navigation menu"
+            >
+              <Menu size={22} />
+            </button>
+            <h2 className="admin-header-title" style={{
+              fontSize: '22px',
+              fontWeight: 800,
+              color: '#1e293b',
+              margin: 0,
+              fontFamily: "'Inter', sans-serif",
+              letterSpacing: '-0.01em',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
+            }}>
+              NeST Admin Portal
+            </h2>
+          </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '28px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexShrink: 0 }}>
             {/* Notifications Dropdown */}
             <div style={{ position: 'relative' }}>
               <div 
@@ -182,7 +244,7 @@ const AdminLayout: React.FC = () => {
                     onClick={() => setIsNotificationsOpen(false)}
                   />
                   <div style={{
-                    position: 'absolute', top: 'calc(100% + 10px)', right: '-20px', width: '380px',
+                    position: 'absolute', top: 'calc(100% + 10px)', right: '-20px', width: 'min(380px, calc(100vw - 32px))',
                     background: '#fff', borderRadius: '16px', boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
                     border: '1px solid #e2e8f0', zIndex: 100, overflow: 'hidden', display: 'flex', flexDirection: 'column',
                     maxHeight: '480px'
@@ -262,27 +324,41 @@ const AdminLayout: React.FC = () => {
               )}
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', padding: '4px', borderRadius: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '4px', borderRadius: '12px' }}>
               <UserAvatar
                 src={adminUser?.profile_picture}
                 name={adminUser?.full_name}
                 status={(adminUser as any)?.status}
-                size={42}
+                size={38}
                 bgColor={nestNavy}
               />
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '14px', fontWeight: 700, color: '#1e293b' }}>{adminUser ? adminUser.full_name : 'Administrator'}</span>
-                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 500 }}>{getRoleLabel(adminUser?.role)}</span>
+              <div className="admin-user-info" style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', whiteSpace: 'nowrap' }}>{adminUser ? adminUser.full_name : 'Admin'}</span>
+                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 500, whiteSpace: 'nowrap' }}>{getRoleLabel(adminUser?.role)}</span>
               </div>
             </div>
           </div>
         </header>
 
         {/* Page Content */}
-        <main style={{ flex: 1, overflowY: 'auto', padding: '32px', background: '#f8fafc' }}>
+        <main className="admin-main" style={{ flex: 1, overflowY: 'auto', padding: '32px', background: '#f8fafc', minWidth: 0 }}>
           <Outlet />
         </main>
       </div>
+
+      <style>{`
+        @media (max-width: 1024px) {
+          .admin-mobile-toggle { display: flex !important; }
+          .admin-header { padding: 0 16px !important; height: 60px !important; }
+          .admin-main { padding: 16px !important; }
+          .admin-header-title { font-size: 17px !important; }
+        }
+        @media (max-width: 640px) {
+          .admin-user-info { display: none !important; }
+          .admin-main { padding: 12px 10px !important; }
+          .admin-header { padding: 0 12px !important; }
+        }
+      `}</style>
     </div>
   );
 };

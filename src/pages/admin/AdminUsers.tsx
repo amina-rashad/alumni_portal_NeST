@@ -303,7 +303,8 @@ const AdminUsers: React.FC = () => {
         {isLoading ? (
           <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>Loading users...</div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+          <div style={{ overflowX: 'auto', width: '100%', WebkitOverflowScrolling: 'touch' }}>
+            <table style={{ width: '100%', minWidth: '700px', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
                 <th style={{ padding: '16px', width: '48px' }}>
@@ -482,6 +483,7 @@ const AdminUsers: React.FC = () => {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 

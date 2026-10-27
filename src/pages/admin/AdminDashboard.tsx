@@ -101,9 +101,41 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', animation: 'fadeIn 0.5s ease-out' }}>
+      <style>{`
+        .admin-stats-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 16px;
+        }
+        .admin-analytics-grid {
+          display: grid;
+          grid-template-columns: 1fr 1.5fr;
+          gap: 24px;
+        }
+        .admin-bottom-grid {
+          display: grid;
+          grid-template-columns: 1.8fr 1fr;
+          gap: 32px;
+        }
+        .admin-activities-subgrid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+        }
+        @media (max-width: 992px) {
+          .admin-analytics-grid, .admin-bottom-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+        @media (max-width: 640px) {
+          .admin-activities-subgrid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
       
       {/* Stats - Compact Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+      <div className="admin-stats-grid">
         {stats.map((stat, i) => (
           <motion.div 
             key={stat.title}
@@ -131,7 +163,7 @@ const AdminDashboard: React.FC = () => {
       </div>
 
       {/* Analytics Row: Pie Graph & Bar Graph */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '24px' }}>
+      <div className="admin-analytics-grid">
          {/* PIE GRAPH: Platform Overview */}
          <section style={{ background: '#fff', borderRadius: '32px', padding: '32px', border: '1px solid #f1f5f9', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
             <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#1e293b', marginBottom: '24px' }}>Platform Distribution</h3>
@@ -238,14 +270,14 @@ const AdminDashboard: React.FC = () => {
       </div>
 
       {/* Bottom Content Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1fr', gap: '32px' }}>
+      <div className="admin-bottom-grid">
         
         {/* Recent Activity Grid */}
         <section style={{ background: '#fff', borderRadius: '32px', padding: '32px', border: '1px solid #f1f5f9', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
           <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#1e293b', marginBottom: '28px', display: 'flex', alignItems: 'center', gap: '12px' }}>
              <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(26, 38, 82, 0.08)', color: nestNavy }}><Activity size={18} /></div> Recent Activities
           </h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          <div className="admin-activities-subgrid">
              {activities.length > 0 ? activities.map((act, i) => (
                <div key={i} style={{ padding: '20px', borderRadius: '24px', background: '#f8fafc', border: '1px solid #f1f5f9', display: 'flex', gap: '16px', transition: 'transform 0.2s' }}>
                   <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: nestNavy, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 800, flexShrink: 0 }}>
