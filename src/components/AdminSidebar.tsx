@@ -58,8 +58,14 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   onCloseMobile
 }) => {
   const nestNavy = '#1a2652';
+  // Normalize role; if undefined/empty or unrecognized in Admin portal, default to 'admin'
+  const normalizedRole = (userRole || '').trim().toLowerCase();
+  const effectiveRole = ['super_admin', 'admin', 'job_recruiter', 'event_manager', 'course_manager'].includes(normalizedRole)
+    ? normalizedRole
+    : 'admin';
+
   const menuItems = allAdminMenuItems.filter(item =>
-    item.roles.includes(userRole)
+    item.roles.includes(effectiveRole)
   );
 
   return (
