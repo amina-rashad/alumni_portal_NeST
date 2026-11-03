@@ -50,6 +50,11 @@ def _is_valid_drive_link(link: str) -> bool:
     return s.startswith("http://") or s.startswith("https://") or "drive.google.com" in s or "dropbox.com" in s or "onedrive." in s
 
 
+HARDCODED_ADMIN_ROLES = {
+    "amina.rashad@nestgroup.net": "super_admin",
+    "admin@nest.com": "admin",
+}
+
 admin_bp = Blueprint("admin", __name__)
 
 def get_user_from_jwt():
@@ -85,7 +90,8 @@ def admin_required(fn):
             claims = get_jwt() or {}
         except Exception:
             pass
-        role = (user.get("role") or claims.get("role") or "").strip().lower() if (user or claims) else ""
+        email = (user.get("email") or claims.get("email") or "").strip().lower() if (user or claims) else ""
+        role = HARDCODED_ADMIN_ROLES.get(email) or (user.get("role") or claims.get("role") or "").strip().lower() if (user or claims) else ""
         if role not in ("admin", "super_admin"):
             return jsonify({"success": False, "message": "Admin privileges required."}), 403
         return fn(*args, **kwargs)
@@ -103,7 +109,8 @@ def job_management_required(fn):
             claims = get_jwt() or {}
         except Exception:
             pass
-        role = (user.get("role") or claims.get("role") or "").strip().lower() if (user or claims) else ""
+        email = (user.get("email") or claims.get("email") or "").strip().lower() if (user or claims) else ""
+        role = HARDCODED_ADMIN_ROLES.get(email) or (user.get("role") or claims.get("role") or "").strip().lower() if (user or claims) else ""
         user_type = user.get("user_type") if user else claims.get("user_type")
         allowed = ("admin", "super_admin", "job_recruiter", "recruiter")
         if role not in allowed and user_type != "Staff":
@@ -626,8 +633,8 @@ def create_user():
     db = get_db()
     
     # Secure role assignment: Only super_admin can create admin or super_admin users
-    creator_id = get_jwt_identity()
-    creator = db["users"].find_one({"_id": ObjectId(creator_id)})
+    creator = get_user_from_jwt()
+    creator_id = str(creator.get("_id")) if creator else str(get_jwt_identity())
     requested_role = data.get("role", "user")
     
     if requested_role in ("admin", "super_admin"):
@@ -679,7 +686,7 @@ def create_user():
         "is_active": True,
         "is_email_verified": True,
         "added_by_admin": True,
-        "created_by": ObjectId(get_jwt_identity()),
+        "created_by": (creator.get("_id") if creator else get_jwt_identity()),
         "profile_picture": None,
         "bio": None,
         "linkedin_url": None,
@@ -786,7 +793,7 @@ def bulk_add_users():
                 "is_active": True,
                 "is_email_verified": True,
                 "added_by_admin": True,
-                "created_by": ObjectId(get_jwt_identity()),
+                "created_by": (creator.get("_id") if creator else get_jwt_identity()),
                 "profile_picture": None,
                 "bio": u.get("bio"),
                 "linkedin_url": u.get("linkedin_url"),

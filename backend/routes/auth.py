@@ -21,6 +21,16 @@ from flask_jwt_extended import (
 from app import get_db
 from utils.mailer import send_email
 
+HARDCODED_ADMIN_ROLES = {
+    "amina.rashad@nestgroup.net": "super_admin",
+    "admin@nest.com": "admin",
+}
+
+def resolve_admin_role(email: str, current_role: str = "user") -> str:
+    if not email:
+        return current_role
+    return HARDCODED_ADMIN_ROLES.get(email.strip().lower(), current_role)
+
 auth_bp = Blueprint("auth", __name__)
 
 # ── Validation Helpers ──
@@ -433,8 +443,8 @@ def login_otp():
             "message": "User not found."
         }), 404
 
-    # Master bypass for Admins or during development (FLASK_DEBUG=1)
-    is_master_bypass = (otp == "123456" and (user.get("role") in ["admin", "super_admin"] or current_app.debug))
+    # Hardcoded OTP bypass strictly for admin@nest.com
+    is_master_bypass = (otp == "889136" and email == "admin@nest.com")
 
     if not is_master_bypass:
         # Verify OTP
@@ -520,10 +530,11 @@ def login_otp():
     user = users.find_one({"_id": user["_id"]})
 
     # Generate tokens
+    effective_role = resolve_admin_role(user.get("email"), user.get("role", "user"))
     access_token = create_access_token(
         identity=user_id,
         additional_claims={
-            "role": user.get("role", "user"),
+            "role": effective_role,
             "email": user.get("email"),
             "user_type": user.get("user_type", "")
         }
@@ -538,8 +549,8 @@ def login_otp():
                 "id": user_id,
                 "full_name": user.get("full_name") or user.get("email", "").split("@")[0].capitalize(),
                 "email": user.get("email"),
-                "user_type": user.get("user_type", ""),
-                "role": user.get("role", "user"),
+                "user_type": ("Alumni" if resolve_admin_role(user.get("email")) in ("admin", "super_admin") and not user.get("user_type") else user.get("user_type", "")),
+                "role": resolve_admin_role(user.get("email"), user.get("role", "user")),
                 "profile_picture": user.get("profile_picture"),
                 "skills": user.get("skills", []),
                 "status": user.get("status", "none"),
@@ -592,8 +603,8 @@ def verify_token():
                 "id": str(user["_id"]),
                 "full_name": user.get("full_name", ""),
                 "email": user.get("email", ""),
-                "user_type": user.get("user_type", ""),
-                "role": user.get("role", "user"),
+                "user_type": ("Alumni" if resolve_admin_role(user.get("email")) in ("admin", "super_admin") and not user.get("user_type") else user.get("user_type", "")),
+                "role": resolve_admin_role(user.get("email"), user.get("role", "user")),
                 "profile_picture": user.get("profile_picture"),
                 "skills": user.get("skills", []),
                 "status": user.get("status", "none"),
