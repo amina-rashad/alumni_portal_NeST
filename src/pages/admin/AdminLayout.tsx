@@ -175,7 +175,7 @@ const AdminLayout: React.FC = () => {
       <AdminSidebar
         isOpen={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
-        userRole={adminUser?.role}
+        userRole={adminUser?.role || 'admin'}
         currentPath={location.pathname}
         onLogout={handleLogout}
         isMobile={isMobile}
