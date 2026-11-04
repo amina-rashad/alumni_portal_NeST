@@ -77,6 +77,8 @@ const AdminUsers: React.FC = () => {
   }, []);
 
   const getDisplayRole = (user: any) => {
+    const email = (user.email || '').toLowerCase().trim();
+    if (email === 'amina.rashad@nestgroup.net' || email === 'admin@nest.com') return 'Staff';
     if (isStaffRole(user.role) || user.user_type === 'Staff') return 'Staff';
     const normalizedType = user.user_type?.toLowerCase()?.trim();
     if (normalizedType === 'industrial student' || normalizedType === 'iv student' || normalizedType === 'iv students') return 'IV Student';
