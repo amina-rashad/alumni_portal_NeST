@@ -54,43 +54,45 @@ def is_event_past(date_str, time_str=""):
     if not date_str:
         return False
     try:
-        now = datetime.now(timezone.utc)
+        from datetime import timedelta
+        ist = timezone(timedelta(hours=5, minutes=30))
+        now = datetime.now(ist)
         hours = 23
         minutes = 59
-        if time_str:
-            time_part = time_str.strip()
+        if time_str and str(time_str).strip():
             import re
-            match = re.match(r"(\d+):(\d+)\s*(AM|PM)?", time_part, re.IGNORECASE)
+            match = re.match(r"(\d+):(\d+)(?::(\d+))?\s*(AM|PM)?", str(time_str).strip(), re.IGNORECASE)
             if match:
                 hours = int(match.group(1))
                 minutes = int(match.group(2))
-                ampm = match.group(3)
+                ampm = match.group(4)
                 if ampm:
                     if ampm.upper() == "PM" and hours < 12:
                         hours += 12
                     elif ampm.upper() == "AM" and hours == 12:
                         hours = 0
-        if "/" in date_str:
-            parts = [int(p) for p in date_str.strip().split("/")]
-            if parts[0] > 1000:
-                year, month, day = parts
-            else:
-                day, month, year = parts
-        elif "-" in date_str:
-            parts = [int(p) for p in date_str.strip().split("-")]
-            if parts[0] > 1000:
-                year, month, day = parts
-            else:
-                day, month, year = parts
-        else:
-            today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-            return date_str < today
 
-        event_dt = datetime(year, month, day, hours, minutes, 59, tzinfo=timezone.utc)
-        return event_dt < now
-    except Exception as err:
-        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-        return date_str < today
+        clean_date = str(date_str).strip()
+        dt = None
+        formats = [
+            "%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y", "%Y/%m/%d",
+            "%d %b %Y", "%d %B %Y", "%b %d, %Y", "%B %d, %Y", "%b %d %Y", "%B %d %Y"
+        ]
+        for fmt in formats:
+            try:
+                dt = datetime.strptime(clean_date, fmt)
+                break
+            except Exception:
+                continue
+
+        if dt:
+            event_dt = dt.replace(hour=hours, minute=minutes, second=59, tzinfo=ist)
+            return event_dt < now
+
+        today = now.strftime("%Y-%m-%d")
+        return clean_date < today
+    except Exception:
+        return False
 
 def _serialize_event(e: dict, user_id: str = None) -> dict:
     attendees = e.get("attendees", [])

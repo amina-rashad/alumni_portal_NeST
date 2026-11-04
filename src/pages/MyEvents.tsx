@@ -10,7 +10,7 @@ import { Link } from 'react-router-dom';
 import { eventsApi, usersApi, getUser } from '../services/api';
 import { generateEventCertificate } from '../utils/CertificateGenerator';
 import CertificateProgressButton from '../components/CertificateProgressButton';
-import { formatDateOnly, formatTimeTo12Hour } from '../utils/dateUtils';
+import { formatDateOnly, formatTimeTo12Hour, isEventPast } from '../utils/dateUtils';
 
 
 const MyEvents: React.FC = () => {
@@ -47,9 +47,8 @@ const MyEvents: React.FC = () => {
 
 
   const filteredEvents = events.filter(e => {
-    const eventDate = new Date(e.date);
-    const now = new Date();
-    return activeTab === 'upcoming' ? eventDate >= now : eventDate < now;
+    const isPast = isEventPast(e.date, e.time);
+    return activeTab === 'upcoming' ? !isPast : isPast;
   });
 
   return (

@@ -159,6 +159,65 @@ export const getLocalDateString = (dateVal: Date = new Date()): string => {
   return `${year}-${month}-${day}`;
 };
 
+/**
+ * Evaluates whether an event with a given date and optional time has already passed.
+ * Accurately parses multiple date formats ("YYYY-MM-DD", "DD/MM/YYYY", "4 Nov 2026")
+ * and 12/24-hour time strings ("04:16 PM", "16:16").
+ * If no time is specified, defaults to the end of that day (23:59:59).
+ */
+export const isEventPast = (dateStr?: string | null, timeStr?: string | null): boolean => {
+  if (!dateStr) return false;
+  try {
+    let hours = 23;
+    let minutes = 59;
+    let seconds = 59;
+
+    if (timeStr && String(timeStr).trim()) {
+      const match = String(timeStr).trim().match(/(\d+):(\d+)(?::(\d+))?\s*(AM|PM)?/i);
+      if (match) {
+        hours = parseInt(match[1], 10);
+        minutes = parseInt(match[2], 10);
+        if (match[3]) seconds = parseInt(match[3], 10); else seconds = 0;
+        const ampm = match[4];
+        if (ampm) {
+          if (ampm.toUpperCase() === 'PM' && hours < 12) {
+            hours += 12;
+          } else if (ampm.toUpperCase() === 'AM' && hours === 12) {
+            hours = 0;
+          }
+        }
+      }
+    }
+
+    const cleanDate = String(dateStr).trim();
+
+    // 1. YYYY-MM-DD or YYYY/MM/DD
+    if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(cleanDate)) {
+      const [y, m, d] = cleanDate.split(/[-/]/).map(Number);
+      const eventDate = new Date(y, m - 1, d, hours, minutes, seconds);
+      if (!isNaN(eventDate.getTime())) return eventDate.getTime() < Date.now();
+    }
+
+    // 2. DD-MM-YYYY or DD/MM/YYYY
+    if (/^\d{1,2}[-/]\d{1,2}[-/]\d{4}$/.test(cleanDate)) {
+      const [d, m, y] = cleanDate.split(/[-/]/).map(Number);
+      const eventDate = new Date(y, m - 1, d, hours, minutes, seconds);
+      if (!isNaN(eventDate.getTime())) return eventDate.getTime() < Date.now();
+    }
+
+    // 3. Textual date format (e.g. "4 Nov 2026", "Nov 4, 2026")
+    const parsed = new Date(cleanDate);
+    if (!isNaN(parsed.getTime())) {
+      parsed.setHours(hours, minutes, seconds, 0);
+      return parsed.getTime() < Date.now();
+    }
+
+    return false;
+  } catch {
+    return false;
+  }
+};
+
 export default {
   parseDateTime,
   formatDateTime,
@@ -167,6 +226,7 @@ export default {
   formatTimeAgo,
   formatTimeTo12Hour,
   getLocalDateTag,
-  getLocalDateString
+  getLocalDateString,
+  isEventPast
 };
 
