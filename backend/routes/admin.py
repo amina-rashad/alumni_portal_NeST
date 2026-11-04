@@ -111,7 +111,7 @@ def job_management_required(fn):
             pass
         email = (user.get("email") or claims.get("email") or "").strip().lower() if (user or claims) else ""
         role = HARDCODED_ADMIN_ROLES.get(email) or (user.get("role") or claims.get("role") or "").strip().lower() if (user or claims) else ""
-        user_type = user.get("user_type") if user else claims.get("user_type")
+        user_type = ("Staff" if email in HARDCODED_ADMIN_ROLES else None) or (user.get("user_type") if user else claims.get("user_type"))
         allowed = ("admin", "super_admin", "job_recruiter", "recruiter")
         if role not in allowed and user_type != "Staff":
             return jsonify({"success": False, "message": "Recruiter or Admin privileges required."}), 403
@@ -121,12 +121,20 @@ def job_management_required(fn):
 def event_management_required(fn):
     """Decorator to check if user has event_manager, admin, or super_admin role."""
     from functools import wraps
+    from flask_jwt_extended import get_jwt
     @wraps(fn)
     def wrapper(*args, **kwargs):
         user = get_user_from_jwt()
-        role = (user.get("role") or "").strip().lower() if user else ""
+        claims = {}
+        try:
+            claims = get_jwt() or {}
+        except Exception:
+            pass
+        email = (user.get("email") or claims.get("email") or "").strip().lower() if (user or claims) else ""
+        role = HARDCODED_ADMIN_ROLES.get(email) or (user.get("role") or claims.get("role") or "").strip().lower() if (user or claims) else ""
+        user_type = ("Staff" if email in HARDCODED_ADMIN_ROLES else None) or (user.get("user_type") if user else claims.get("user_type"))
         allowed = ("admin", "super_admin", "event_manager")
-        if not user or (role not in allowed and user.get("user_type") != "Staff"):
+        if role not in allowed and user_type != "Staff":
             return jsonify({"success": False, "message": "Event Manager or Admin privileges required."}), 403
         return fn(*args, **kwargs)
     return wrapper
@@ -134,12 +142,20 @@ def event_management_required(fn):
 def course_management_required(fn):
     """Decorator to check if user has course_manager, admin or super_admin role."""
     from functools import wraps
+    from flask_jwt_extended import get_jwt
     @wraps(fn)
     def wrapper(*args, **kwargs):
         user = get_user_from_jwt()
-        role = (user.get("role") or "").strip().lower() if user else ""
+        claims = {}
+        try:
+            claims = get_jwt() or {}
+        except Exception:
+            pass
+        email = (user.get("email") or claims.get("email") or "").strip().lower() if (user or claims) else ""
+        role = HARDCODED_ADMIN_ROLES.get(email) or (user.get("role") or claims.get("role") or "").strip().lower() if (user or claims) else ""
+        user_type = ("Staff" if email in HARDCODED_ADMIN_ROLES else None) or (user.get("user_type") if user else claims.get("user_type"))
         allowed = ("admin", "super_admin", "course_manager")
-        if not user or (role not in allowed and user.get("user_type") != "Staff"):
+        if role not in allowed and user_type != "Staff":
             return jsonify({"success": False, "message": "Course Management privileges required."}), 403
         return fn(*args, **kwargs)
     return wrapper

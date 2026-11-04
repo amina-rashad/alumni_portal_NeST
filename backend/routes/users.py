@@ -368,7 +368,13 @@ def get_my_iv_certificates():
     user_id = get_jwt_identity()
     db = get_db()
     
-    user = db["users"].find_one({"_id": ObjectId(user_id)})
+    user = None
+    try:
+        user = db["users"].find_one({"_id": ObjectId(user_id)})
+    except Exception:
+        pass
+    if not user:
+        user = db["users"].find_one({"$or": [{"email": str(user_id).strip().lower()}, {"emp_id": str(user_id)}]})
     if not user:
         return jsonify({"success": False, "message": "User not found."}), 404
         
