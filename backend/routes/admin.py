@@ -738,6 +738,8 @@ def bulk_add_users():
     skipped_count = 0
     errors = []
     seen_in_batch = set()
+    creator = get_user_from_jwt()
+    creator_id = str(creator.get("_id")) if creator else str(get_jwt_identity())
     
     now = datetime.now(timezone.utc)
     
@@ -820,7 +822,7 @@ def bulk_add_users():
 
     # Log to History Collection as requested ("store details in database too")
     db["bulk_upload_history"].insert_one({
-        "admin_id": ObjectId(get_jwt_identity()),
+        "admin_id": (creator.get("_id") if creator else get_jwt_identity()),
         "timestamp": now,
         "filename": data.get("filename", "unknown_import.xlsx"),
         "added_count": added_count,

@@ -29,11 +29,25 @@ users_col = db["users"]
 
 sample_users = [
     {
+        "full_name": "Amina Rashad",
+        "email": "amina.rashad@nestgroup.net",
+        "password": bcrypt.hashpw("AdminPassword@123".encode("utf-8"), bcrypt.gensalt()),
+        "phone": "999-999-9999",
+        "user_type": "Staff",
+        "batch": "N/A",
+        "specialization": "System Administration",
+        "role": "super_admin",
+        "is_active": True,
+        "is_email_verified": True,
+        "bio": "Master Super Administrator for the NeST Alumni Portal.",
+        "skills": ["System Admin", "Security", "DevOps"],
+    },
+    {
         "full_name": "NeST System Admin",
         "email": "admin@nest.com",
         "password": bcrypt.hashpw("Admin123!".encode("utf-8"), bcrypt.gensalt()),
         "phone": "9876543210",
-        "user_type": "Alumni",
+        "user_type": "Staff",
         "batch": "N/A",
         "specialization": "System Administration",
         "role": "admin",
@@ -41,104 +55,6 @@ sample_users = [
         "is_email_verified": True,
         "bio": "Master system administrator for the NeST Alumni Portal.",
         "skills": ["System Admin", "Security", "DevOps"],
-    },
-    {
-        "full_name": "Arjun Krishnan",
-        "email": "arjun.k@gmail.com",
-        "password": bcrypt.hashpw("User1234!".encode("utf-8"), bcrypt.gensalt()),
-        "phone": "9845612378",
-        "user_type": "Alumni",
-        "batch": "2022",
-        "specialization": "Computer Science",
-        "role": "user",
-        "is_active": True,
-        "is_email_verified": True,
-        "bio": "Full-stack developer at Infosys. Passionate about React and Node.js.",
-        "skills": ["React", "Node.js", "MongoDB", "Python"],
-    },
-    {
-        "full_name": "Priya Menon",
-        "email": "priya.menon@gmail.com",
-        "password": bcrypt.hashpw("User1234!".encode("utf-8"), bcrypt.gensalt()),
-        "phone": "9812345670",
-        "user_type": "Alumni",
-        "batch": "2021",
-        "specialization": "Electronics & Communication",
-        "role": "user",
-        "is_active": True,
-        "is_email_verified": True,
-        "bio": "IoT Engineer at TCS. Working on embedded systems and smart devices.",
-        "skills": ["Embedded C", "Arduino", "IoT", "VHDL"],
-    },
-    {
-        "full_name": "Rahul Nair",
-        "email": "rahul.nair@gmail.com",
-        "password": bcrypt.hashpw("User1234!".encode("utf-8"), bcrypt.gensalt()),
-        "phone": "9867534210",
-        "user_type": "Intern",
-        "batch": "2025",
-        "specialization": "Artificial Intelligence",
-        "role": "user",
-        "is_active": True,
-        "is_email_verified": True,
-        "bio": "ML intern at NeST Digital. Exploring transformer architectures.",
-        "skills": ["Python", "TensorFlow", "PyTorch", "NLP"],
-    },
-    {
-        "full_name": "Sneha Thomas",
-        "email": "sneha.t@gmail.com",
-        "password": bcrypt.hashpw("User1234!".encode("utf-8"), bcrypt.gensalt()),
-        "phone": "9834567890",
-        "user_type": "Trainee",
-        "batch": "2024",
-        "specialization": "Data Science",
-        "role": "user",
-        "is_active": True,
-        "is_email_verified": True,
-        "bio": "Data science trainee exploring ML pipelines and analytics.",
-        "skills": ["Python", "Pandas", "SQL", "Tableau"],
-    },
-    {
-        "full_name": "Vishnu Prasad",
-        "email": "vishnu.p@gmail.com",
-        "password": bcrypt.hashpw("User1234!".encode("utf-8"), bcrypt.gensalt()),
-        "phone": "9876123450",
-        "user_type": "Industrial Student",
-        "batch": "2025",
-        "specialization": "Mechanical Engineering",
-        "role": "user",
-        "is_active": True,
-        "is_email_verified": True,
-        "bio": "IV student from College of Engineering, Trivandrum.",
-        "skills": ["AutoCAD", "SolidWorks", "MATLAB"],
-    },
-    {
-        "full_name": "Aishwarya Suresh",
-        "email": "aishwarya.s@gmail.com",
-        "password": bcrypt.hashpw("User1234!".encode("utf-8"), bcrypt.gensalt()),
-        "phone": "9801234567",
-        "user_type": "Alumni",
-        "batch": "2020",
-        "specialization": "Information Technology",
-        "role": "user",
-        "is_active": True,
-        "is_email_verified": True,
-        "bio": "Senior DevOps Engineer at AWS. Cloud architecture enthusiast.",
-        "skills": ["AWS", "Kubernetes", "Docker", "Terraform", "CI/CD"],
-    },
-    {
-        "full_name": "Mohammed Faiz",
-        "email": "faiz.m@gmail.com",
-        "password": bcrypt.hashpw("User1234!".encode("utf-8"), bcrypt.gensalt()),
-        "phone": "9823456789",
-        "user_type": "Event Participant",
-        "batch": "2023",
-        "specialization": "Computer Science",
-        "role": "user",
-        "is_active": True,
-        "is_email_verified": True,
-        "bio": "Attending NeST tech events. Currently a freelance web developer.",
-        "skills": ["JavaScript", "Vue.js", "PHP", "WordPress"],
     },
 ]
 
@@ -367,27 +283,18 @@ print(f"✅ Events: {len(sample_events)} seeded")
 posts_col = db["posts"]
 
 # Get a user ID for posts
-arjun = users_col.find_one({"email": "arjun.k@gmail.com"})
-priya = users_col.find_one({"email": "priya.menon@gmail.com"})
+admin_user = users_col.find_one({"email": "amina.rashad@nestgroup.net"}) or users_col.find_one({"email": "admin@nest.com"})
 
-if arjun and priya:
+if admin_user:
     sample_posts = [
         {
-            "author_id": arjun["_id"],
-            "content": "Excited to share that I've been promoted to Senior Developer at Infosys! The skills I built during my time at NeST were instrumental. Always grateful for the foundation. 🚀 #CareerGrowth",
+            "author_id": admin_user["_id"],
+            "content": "Welcome to the official NeST Digital Alumni Portal! Stay tuned for upcoming career opportunities, alumni gatherings, and technical learning programs.",
             "image_url": None,
             "likes": [],
             "comments": [],
             "created_at": now - timedelta(hours=5),
-        },
-        {
-            "author_id": priya["_id"],
-            "content": "Just completed a workshop on IoT Security at TCS. If anyone from the NeST network is working in IoT, let's connect! Would love to collaborate on some projects. 🔒💡",
-            "image_url": None,
-            "likes": [],
-            "comments": [],
-            "created_at": now - timedelta(hours=12),
-        },
+        }
     ]
     posts_col.delete_many({})
     posts_col.insert_many(sample_posts)
@@ -484,8 +391,6 @@ print("🎉 Database seeded successfully!")
 print("=" * 50)
 print("\n📋 Test Credentials:")
 print("─" * 30)
-print("Admin:  admin@nest.com / Admin123!")
-print("User:   arjun.k@gmail.com / User1234!")
-print("User:   priya.menon@gmail.com / User1234!")
-print("Intern: rahul.nair@gmail.com / User1234!")
+print("Super Admin: amina.rashad@nestgroup.net / AdminPassword@123")
+print("Admin:       admin@nest.com / Admin123! (OTP: 889136)")
 print("─" * 30)
