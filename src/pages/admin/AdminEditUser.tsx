@@ -96,6 +96,12 @@ const AdminEditUser: React.FC = () => {
   // Field validation logic matching AdminAddUser
   const validateField = (field: string, value: string): string => {
     switch (field) {
+      case 'email': {
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!value || !value.trim()) return 'Email address is required.';
+        if (!emailRegex.test(value.trim())) return 'Please enter a valid email address.';
+        return '';
+      }
       case 'first_name':
         return validateName(value, 'First name', 2, 50, true);
       case 'last_name':
@@ -155,6 +161,7 @@ const AdminEditUser: React.FC = () => {
 
   const validateAll = (): boolean => {
     const newErrors: Record<string, string> = {
+      email: validateField('email', formData.email),
       first_name: validateField('first_name', formData.first_name),
       last_name: validateField('last_name', formData.last_name),
       phone: validateField('phone', formData.phone),
@@ -193,6 +200,7 @@ const AdminEditUser: React.FC = () => {
     const isSystemAdmin = formData.role.toLowerCase() === 'system admin';
     const updatePayload = {
       full_name: `${formData.first_name} ${formData.last_name}`.trim(),
+      email: formData.email.trim().toLowerCase(),
       phone: formData.phone.trim(),
       salary: formData.salary.trim(),
       joining_date: formData.joining_date.trim(),
@@ -401,10 +409,10 @@ const AdminEditUser: React.FC = () => {
                 )}
               </div>
 
-              {/* Email Address (Permanent) */}
+              {/* Email Address * */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', gridColumn: 'span 2' }}>
                 <label style={{ fontSize: '13px', fontWeight: 700, color: '#475569' }}>
-                  Email Address (Permanent)
+                  Email Address *
                 </label>
                 <div style={{ position: 'relative' }}>
                   <div style={{ position: 'absolute', top: '50%', left: '16px', transform: 'translateY(-50%)', color: '#94a3b8', display: 'flex' }}>
@@ -412,24 +420,26 @@ const AdminEditUser: React.FC = () => {
                   </div>
                   <input 
                     type="email" 
-                    readOnly 
                     value={formData.email} 
-                    style={{ 
-                      padding: '12px 16px 12px 42px', 
-                      borderRadius: '8px', 
-                      border: '1px solid #e2e8f0', 
-                      outline: 'none', 
-                      fontSize: '14px', 
-                      color: '#64748b', 
-                      background: '#f1f5f9',
-                      cursor: 'not-allowed',
-                      width: '100%',
-                      boxSizing: 'border-box'
-                    }} 
+                    onChange={e => {
+                      setFormData({ ...formData, email: e.target.value });
+                      if (touched.email) validateField('email', e.target.value);
+                    }}
+                    onBlur={() => {
+                      setTouched(prev => ({ ...prev, email: true }));
+                      validateField('email', formData.email);
+                    }}
+                    placeholder="user@example.com"
+                    style={getInputStyle('email', true)} 
                   />
                 </div>
+                {touched.email && errors.email && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#dc2626', fontSize: '12px' }}>
+                    <AlertCircle size={13} /> {errors.email}
+                  </div>
+                )}
                 <div style={{ fontSize: '12px', color: '#94a3b8' }}>
-                  Permanent identifier associated with this user account across the portal.
+                  Primary email used for verification and notifications across the portal.
                 </div>
               </div>
 

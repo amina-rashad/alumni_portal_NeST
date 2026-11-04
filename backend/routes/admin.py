@@ -859,7 +859,7 @@ def update_user_status(user_id):
                 "message": "Access denied. Only Super Admin can assign Admin or Super Admin roles."
             }), 403
 
-    allowed_fields = ["is_active", "role", "full_name", "phone", "salary", "joining_date", "emp_id", "user_type", "batch", "specialization", "password"]
+    allowed_fields = ["is_active", "role", "full_name", "email", "phone", "salary", "joining_date", "emp_id", "user_type", "batch", "specialization", "password"]
     update_data = {}
     for field in allowed_fields:
         if field in data:
@@ -870,6 +870,22 @@ def update_user_status(user_id):
                 if len(name_val) < 2:
                     return jsonify({"success": False, "message": "Full name must be at least 2 characters."}), 400
                 update_data["full_name"] = name_val
+            elif field == "email" and data[field] is not None:
+                new_email = str(data[field]).strip().lower()
+                if not new_email or not EMAIL_REGEX.match(new_email):
+                    return jsonify({"success": False, "message": "Please enter a valid email address."}), 400
+                # Check for duplicate email across other users
+                dup = db["users"].find_one({
+                    "_id": {"$ne": ObjectId(user_id)},
+                    "email": {"$regex": f"^{re.escape(new_email)}$", "$options": "i"}
+                })
+                if dup:
+                    dup_name = dup.get("full_name") or "Existing Account"
+                    return jsonify({
+                        "success": False,
+                        "message": f"Email '{new_email}' is already in use by {dup_name}. Duplicate emails are not allowed."
+                    }), 409
+                update_data["email"] = new_email
             elif field == "phone" and data[field]:
                 phone_clean = str(data[field]).strip()
                 digits_only = re.sub(r"\D", "", phone_clean)

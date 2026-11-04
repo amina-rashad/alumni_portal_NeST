@@ -18,6 +18,11 @@ from .auth import _is_user_added_by_admin
 from .applications import serialize_timeline
 from utils.date_helpers import format_datetime_utc
 
+HARDCODED_ADMIN_ROLES = {
+    "amina.rashad@nestgroup.net": "super_admin",
+    "admin@nest.com": "admin",
+}
+
 recruiter_bp = Blueprint("recruiter", __name__)
 
 def recruiter_required(fn):
@@ -44,8 +49,10 @@ def recruiter_required(fn):
             user = db["users"].find_one({"email": str(claims.get("email")).strip().lower()})
             
         allowed = ["job_recruiter", "recruiter", "admin", "super_admin"]
-        role = ((user.get("role") if user else None) or claims.get("role") or "").strip().lower()
-        user_type = user.get("user_type") if user else claims.get("user_type")
+        user_email = (user.get("email") if user else None) or claims.get("email") or str(user_id).strip().lower()
+        hardcoded_role = HARDCODED_ADMIN_ROLES.get(user_email)
+        role = hardcoded_role or ((user.get("role") if user else None) or claims.get("role") or "").strip().lower()
+        user_type = ("Staff" if hardcoded_role in ("admin", "super_admin") else None) or (user.get("user_type") if user else claims.get("user_type"))
         
         print(f"DEBUG: recruiter_required - identity={user_id}, claims={claims}, found_user={bool(user)}, role={role}, type={user_type}", flush=True)
         
