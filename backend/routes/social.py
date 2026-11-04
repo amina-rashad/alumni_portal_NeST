@@ -145,7 +145,7 @@ def create_post():
         author_name = user.get("full_name", "Someone")
         
         # Notify everyone except the author
-        users_cursor = db["users"].find({"_id": {"$ne": ObjectId(user_id)}}, {"_id": 1})
+        users_cursor = db["users"].find({"_id": {"$ne": ObjectId(user_id)}, "user_type": {"$ne": "Applicant"}, "role": {"$ne": "applicant"}}, {"_id": 1})
         for u in users_cursor:
             create_notification(
                 db,

@@ -6,7 +6,7 @@ import {
   Briefcase, Calendar, Shield,
   Loader2
 } from 'lucide-react';
-import { notificationsApi } from '../services/api';
+import { notificationsApi, getUser } from '../services/api';
 import { formatTimeAgo } from '../utils/dateUtils';
 
 const getNotifConfig = (type: string) => {
@@ -17,6 +17,9 @@ const getNotifConfig = (type: string) => {
     case 'connection':
       return { icon: <UserPlus size={18} color="#10B981" />, color: '#10B981' };
     case 'job':
+    case 'career':
+    case 'timeline':
+    case 'application':
       return { icon: <Briefcase size={18} color="#8B5CF6" />, color: '#8B5CF6' };
     case 'event':
       return { icon: <Calendar size={18} color="#F59E0B" />, color: '#F59E0B' };
@@ -33,6 +36,8 @@ const Notifications: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [now, setNow] = useState(new Date());
+  const currentUser = getUser();
+  const isApplicant = String((currentUser as any)?.user_type || '').toLowerCase() === 'applicant' || String((currentUser as any)?.role || '').toLowerCase() === 'applicant';
 
   useEffect(() => {
     fetchNotifications();
@@ -54,9 +59,17 @@ const Notifications: React.FC = () => {
     }
   };
 
-  const filteredNotifications = filter === 'all' 
-    ? notifications 
-    : notifications.filter(n => n.type === filter);
+  const filteredNotifications = notifications.filter(n => {
+    if (isApplicant) {
+      if (['event', 'course', 'social'].includes(n.type)) return false;
+      const isJobTopic = /job|career|hiring|opportunity|application|interview|shortlist|offer|timeline|status/i.test(`${n.title} ${n.message} ${n.link || ''}`);
+      const isAllowedType = ['job', 'career', 'application', 'timeline'].includes(n.type);
+      if (!isJobTopic && !isAllowedType) return false;
+    }
+    if (filter === 'all') return true;
+    if (filter === 'timeline') return /timeline|status|application/i.test(`${n.type} ${n.title}`);
+    return n.type === filter;
+  });
 
   const markAllAsRead = async () => {
     try {
@@ -194,13 +207,17 @@ const Notifications: React.FC = () => {
           transition={{ delay: 0.1 }}
           style={{ display: 'flex', gap: '10px', marginBottom: '2rem', overflowX: 'auto', paddingBottom: '10px' }}
         >
-          {[
+          {(isApplicant ? [
+            { id: 'all', label: 'All Career Updates', icon: <Bell size={14} /> },
+            { id: 'job', label: 'Jobs & Careers', icon: <Briefcase size={14} /> },
+            { id: 'timeline', label: 'Application Timelines', icon: <Calendar size={14} /> }
+          ] : [
             { id: 'all', label: 'All', icon: <Bell size={14} /> },
             { id: 'mention', label: 'Mentions', icon: <MessageSquare size={14} /> },
             { id: 'job', label: 'Jobs', icon: <Briefcase size={14} /> },
             { id: 'event', label: 'Events', icon: <Calendar size={14} /> },
             { id: 'system', label: 'System', icon: <Shield size={14} /> }
-          ].map((f) => (
+          ]).map((f) => (
             <button
               key={f.id}
               onClick={() => setFilter(f.id)}
