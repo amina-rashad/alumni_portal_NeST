@@ -33,7 +33,15 @@ def course_manager_required(fn):
             pass
         if not user:
             user = db["users"].find_one({"$or": [{"email": str(user_id).strip().lower()}, {"emp_id": str(user_id)}]})
-        user_email = (user.get("email") if user else None) or str(user_id).strip().lower()
+        from flask_jwt_extended import get_jwt
+        claims = {}
+        try:
+            claims = get_jwt() or {}
+        except Exception:
+            pass
+        if not user and claims.get("email"):
+            user = db["users"].find_one({"email": str(claims.get("email")).strip().lower()})
+        user_email = ((user.get("email") if user else None) or claims.get("email") or str(user_id or "")).strip().lower()
         hardcoded_role = HARDCODED_ADMIN_ROLES.get(user_email)
         role = hardcoded_role or ((user.get("role") or "").strip().lower() if user else "")
         user_type = ("Staff" if hardcoded_role in ("admin", "super_admin") else None) or (user.get("user_type") if user else "")

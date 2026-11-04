@@ -12,12 +12,23 @@ from functools import wraps
 from app import get_db
 from utils.date_helpers import format_datetime_utc
 
+HARDCODED_ADMIN_ROLES = {
+    "amina.rashad@nestgroup.net": "super_admin",
+    "admin@nest.com": "admin",
+}
+
 courses_bp = Blueprint("courses", __name__)
 
 def course_manager_or_admin_required(fn):
     """Decorator to allow course_manager, admin, or super_admin roles."""
     @wraps(fn)
     def wrapper(*args, **kwargs):
+        from flask_jwt_extended import get_jwt
+        claims = {}
+        try:
+            claims = get_jwt() or {}
+        except Exception:
+            pass
         user_id = get_jwt_identity()
         db = get_db()
         user = None
@@ -27,8 +38,14 @@ def course_manager_or_admin_required(fn):
             pass
         if not user:
             user = db["users"].find_one({"$or": [{"email": str(user_id).strip().lower()}, {"emp_id": str(user_id)}]})
-        role = (user.get("role") or "").strip().lower() if user else ""
-        if not user or (role not in ("course_manager", "admin", "super_admin") and user.get("user_type") != "Staff"):
+        if not user and claims.get("email"):
+            user = db["users"].find_one({"email": str(claims.get("email")).strip().lower()})
+
+        user_email = ((user.get("email") if user else None) or claims.get("email") or str(user_id or "")).strip().lower()
+        hardcoded_role = HARDCODED_ADMIN_ROLES.get(user_email)
+        role = hardcoded_role or ((user.get("role") or claims.get("role") or "").strip().lower() if (user or claims) else "")
+        user_type = ("Staff" if hardcoded_role in ("admin", "super_admin") else None) or (user.get("user_type") if user else claims.get("user_type"))
+        if role not in ("course_manager", "admin", "super_admin") and user_type != "Staff":
             return jsonify({"success": False, "message": "Course Manager or Admin privileges required."}), 403
         return fn(*args, **kwargs)
     return wrapper

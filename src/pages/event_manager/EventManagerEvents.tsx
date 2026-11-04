@@ -184,6 +184,7 @@ const isEventOver = (dateStr: string, timeStr?: string): boolean => {
 
     const fallbackDate = new Date(cleanDate);
     if (!isNaN(fallbackDate.getTime())) {
+      fallbackDate.setHours(hours, minutes, 59, 0);
       return fallbackDate.getTime() < Date.now();
     }
     return false;

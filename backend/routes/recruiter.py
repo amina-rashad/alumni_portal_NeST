@@ -49,7 +49,7 @@ def recruiter_required(fn):
             user = db["users"].find_one({"email": str(claims.get("email")).strip().lower()})
             
         allowed = ["job_recruiter", "recruiter", "admin", "super_admin"]
-        user_email = (user.get("email") if user else None) or claims.get("email") or str(user_id).strip().lower()
+        user_email = str((user.get("email") if user else None) or claims.get("email") or str(user_id or "")).strip().lower()
         hardcoded_role = HARDCODED_ADMIN_ROLES.get(user_email)
         role = hardcoded_role or ((user.get("role") if user else None) or claims.get("role") or "").strip().lower()
         user_type = ("Staff" if hardcoded_role in ("admin", "super_admin") else None) or (user.get("user_type") if user else claims.get("user_type"))

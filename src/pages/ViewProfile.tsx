@@ -267,9 +267,10 @@ const ViewProfile: React.FC = () => {
 
     const fetchAllCertificates = async () => {
       try {
-        const [eventRes, courseRes] = await Promise.all([
+        const [eventRes, courseRes, ivRes] = await Promise.all([
           eventsApi.getMyEvents(),
-          coursesApi.getMyCourses()
+          coursesApi.getMyCourses(),
+          usersApi.getMyIVCertificates()
         ]);
 
         const certs: any[] = [];
@@ -306,6 +307,21 @@ const ViewProfile: React.FC = () => {
               date: e.date,
               issuer: 'NeST Alumni Association',
               color: '#10B981'
+            });
+          });
+        }
+
+        // 3. IV & Academic Certificates
+        if (ivRes && ivRes.success && ivRes.data && ivRes.data.certificates) {
+          ivRes.data.certificates.forEach((c: any) => {
+            certs.push({
+              id: `iv_${c.id || c.date}`,
+              type: 'iv',
+              title: c.title || 'Industrial Visit Excellence',
+              name: c.title || 'Industrial Visit Excellence',
+              date: c.date,
+              issuer: c.college ? `NeST Digital · ${c.college}` : 'NeST Digital Academy',
+              color: '#6366F1'
             });
           });
         }
