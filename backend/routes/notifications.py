@@ -49,28 +49,48 @@ def get_notifications():
     user_id = get_jwt_identity()
     db = get_db()
     
-    # Query current user's role
+    # Query current user
     user_role = None
+    is_applicant = False
+    target_oid = None
     try:
         user = db["users"].find_one({"_id": ObjectId(user_id)})
-        if user:
-            user_role = user.get("role")
     except Exception:
-        pass
+        user = None
+    if not user:
+        user = db["users"].find_one({"$or": [{"email": str(user_id).strip().lower()}, {"emp_id": str(user_id)}]})
+        
+    if user:
+        user_role = (user.get("role") or "").strip().lower()
+        user_type = (user.get("user_type") or "").strip().lower()
+        is_applicant = (user_type == "applicant" or user_role == "applicant")
+        target_oid = user["_id"]
+    else:
+        try:
+            target_oid = ObjectId(user_id)
+        except Exception:
+            target_oid = user_id
 
     page = int(request.args.get("page", 1))
     per_page = int(request.args.get("per_page", 30))
     skip = (page - 1) * per_page
 
-    notifs_cursor = db["notifications"].find(
-        {"user_id": ObjectId(user_id)}
-    ).sort("created_at", -1).skip(skip).limit(per_page)
+    query = {"user_id": target_oid}
+    if is_applicant:
+        # Applicants ONLY receive career timeline and job-related notifications
+        query["type"] = {"$nin": ["event", "course", "social"]}
+        query["$or"] = [
+            {"type": {"$in": ["job", "career", "application", "timeline"]}},
+            {"title": {"$regex": r"(job|career|hiring|opportunity|application|interview|shortlist|offer|timeline|status)", "$options": "i"}},
+            {"link": {"$regex": r"^/(jobs|applications)", "$options": "i"}}
+        ]
 
+    notifs_cursor = db["notifications"].find(query).sort("created_at", -1).skip(skip).limit(per_page)
     notifs_list = [_serialize_notification(n, db, user_role) for n in notifs_cursor]
 
-    # Count unread
+    # Count unread matching the same strict query
     unread_count = db["notifications"].count_documents({
-        "user_id": ObjectId(user_id),
+        **query,
         "is_read": False
     })
 
@@ -170,24 +190,44 @@ def delete_all_notifications():
 
 def create_notification(db, user_id, type_str, title, message, link=None):
     """Helper function to create a notification (called from other routes)."""
+    target_user = None
+    try:
+        target_user = db["users"].find_one({"_id": ObjectId(user_id) if isinstance(user_id, str) else user_id})
+    except Exception:
+        pass
+
+    # If recipient is an Applicant, strictly enforce job & career timeline notifications only
+    if target_user:
+        u_type = str(target_user.get("user_type") or "").strip().lower()
+        u_role = str(target_user.get("role") or "").strip().lower()
+        if u_type == "applicant" or u_role == "applicant":
+            # Exclude courses, events, and community social feed
+            if type_str in ("event", "course", "social"):
+                return None
+            combined_text = f"{title} {message} {link or ''}".lower()
+            is_job_career_related = any(kw in combined_text for kw in (
+                "job", "career", "hiring", "opportunity", "application",
+                "interview", "shortlist", "offer", "timeline", "status", "candidate", "resume"
+            ))
+            if not is_job_career_related and type_str not in ("job", "career", "application", "timeline"):
+                return None
+
     # Dynamic path mapping based on user role to ensure managers stay inside their panels!
     mapped_link = link
-    if link:
+    if link and target_user:
         try:
-            target_user = db["users"].find_one({"_id": ObjectId(user_id) if isinstance(user_id, str) else user_id})
-            if target_user:
-                role = target_user.get("role")
-                if role == "event_manager":
-                    if link in ("/community", "/dashboard/activity", "/feed", "/community-feed"):
-                        mapped_link = "/event-manager/community-feed"
-                    elif link == "/events":
-                        mapped_link = "/event-manager/events"
-                elif role == "recruiter":
-                    if link in ("/community", "/dashboard/activity", "/feed", "/community-feed"):
-                        mapped_link = "/recruiter/community-feed"
-                else:
-                    if link == "/community":
-                        mapped_link = "/dashboard/activity"
+            role = target_user.get("role")
+            if role == "event_manager":
+                if link in ("/community", "/dashboard/activity", "/feed", "/community-feed"):
+                    mapped_link = "/event-manager/community-feed"
+                elif link == "/events":
+                    mapped_link = "/event-manager/events"
+            elif role == "recruiter":
+                if link in ("/community", "/dashboard/activity", "/feed", "/community-feed"):
+                    mapped_link = "/recruiter/community-feed"
+            else:
+                if link == "/community":
+                    mapped_link = "/dashboard/activity"
         except Exception as err:
             print(f"Error mapping notification link: {err}")
 

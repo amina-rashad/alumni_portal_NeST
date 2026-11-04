@@ -659,7 +659,9 @@ def create_event():
         
         # Broaden audience for verification: notify everyone except the creator
         users_cursor = db["users"].find({
-            "_id": {"$ne": ObjectId(current_user_id)}
+            "_id": {"$ne": ObjectId(current_user_id)},
+            "user_type": {"$ne": "Applicant"},
+            "role": {"$ne": "applicant"}
         }, {"_id": 1, "full_name": 1})
         
         count = 0

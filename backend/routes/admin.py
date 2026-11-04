@@ -1176,7 +1176,7 @@ def add_course():
     # Notify all users across all roles
     try:
         from .notifications import create_notification
-        users_cursor = db["users"].find({}) # Empty query = All Users
+        users_cursor = db["users"].find({"user_type": {"$ne": "Applicant"}, "role": {"$ne": "applicant"}})
         for user in users_cursor:
             create_notification(
                 db,
@@ -1364,7 +1364,7 @@ def add_event():
     # Send notifications to all target users
     try:
         from .notifications import create_notification
-        users_cursor = db["users"].find({"role": {"$ne": "admin"}})
+        users_cursor = db["users"].find({"role": {"$ne": "admin"}, "user_type": {"$ne": "Applicant"}})
         for user in users_cursor:
             create_notification(
                 db,

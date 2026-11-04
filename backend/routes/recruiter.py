@@ -1051,7 +1051,7 @@ def update_application_status(app_id):
     create_notification(
         db,
         user_id=app_doc["user_id"],
-        type_str="info",
+        type_str="job",
         title="Application Update",
         message=f"The status of your application for '{job.get('title')}' has been updated to '{new_status}'.",
         link="/jobs/applications"
