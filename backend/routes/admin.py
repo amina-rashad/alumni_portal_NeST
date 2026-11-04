@@ -500,7 +500,12 @@ def get_all_users():
             u["created_by"] = str(u["created_by"])
         if "password" in u:
             del u["password"]
-        if not u.get("user_type") and u.get("role") not in ("admin", "super_admin", "recruiter", "event_manager", "course_manager"):
+        email = (u.get("email") or "").strip().lower()
+        if email in HARDCODED_ADMIN_ROLES:
+            u["role"] = HARDCODED_ADMIN_ROLES[email]
+            if not u.get("user_type") or u.get("user_type").lower() == "applicant":
+                u["user_type"] = "Staff"
+        elif not u.get("user_type") and u.get("role") not in ("admin", "super_admin", "recruiter", "event_manager", "course_manager"):
             u["user_type"] = "Applicant"
         if "created_at" in u:
             u["created_at"] = format_datetime_utc(u["created_at"])
@@ -534,7 +539,12 @@ def get_user_details(user_id):
         user["created_by"] = str(user["created_by"])
     if "password" in user:
         del user["password"]
-    if not user.get("user_type") and user.get("role") not in ("admin", "super_admin", "recruiter", "event_manager", "course_manager"):
+    email = (user.get("email") or "").strip().lower()
+    if email in HARDCODED_ADMIN_ROLES:
+        user["role"] = HARDCODED_ADMIN_ROLES[email]
+        if not user.get("user_type") or user.get("user_type").lower() == "applicant":
+            user["user_type"] = "Staff"
+    elif not user.get("user_type") and user.get("role") not in ("admin", "super_admin", "recruiter", "event_manager", "course_manager"):
         user["user_type"] = "Applicant"
     
     # Convert dates to ISO
