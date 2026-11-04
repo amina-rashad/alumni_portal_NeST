@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { eventsApi, eventManagerApi } from '../../services/api';
 import StatusModal from '../../components/StatusModal';
-import { formatDateOnly, formatTimeTo12Hour } from '../../utils/dateUtils';
+import { formatDateOnly, formatTimeTo12Hour, isEventPast } from '../../utils/dateUtils';
 
 const GlassSelect: React.FC<{
   label: string;
@@ -292,12 +292,11 @@ const EventManagerEvents: React.FC = () => {
       if (res.success && res.data) {
         const rawEvents = (res.data as any).events || [];
         const mappedEvents = rawEvents.map((e: any) => {
-          const isOver = e.is_over !== undefined ? e.is_over : isEventOver(e.date, e.time);
+          const isOver = Boolean(e.is_over) || isEventPast(e.date, e.time);
           const attendeesCount = e.attendees_count ?? (e.attendees?.length || 0);
           const isFull = e.is_full !== undefined ? e.is_full : (e.max_attendees > 0 && attendeesCount >= e.max_attendees);
-          // If date exceeded, or capacity full, or explicitly inactive -> mark inactive
           const isInactive = e.is_active === false || isOver || isFull;
-          const status = isInactive ? 'Inactive' : 'Active';
+          const status = isOver ? 'Past' : (isInactive ? 'Inactive' : 'Active');
           return {
             ...e,
             attendees_count: attendeesCount,
@@ -562,10 +561,10 @@ const EventManagerEvents: React.FC = () => {
   };
 
   const filteredEvents = events.filter(e => {
-    const isPast = e.is_over || isEventOver(e.date, e.time);
+    const isPast = Boolean(e.is_over) || isEventPast(e.date, e.time);
     const matchesTab = activeTab === 'All' || 
-                       (activeTab === 'Active' && e.status === 'Active') ||
-                       (activeTab === 'Inactive' && e.status === 'Inactive') ||
+                       (activeTab === 'Active' && !isPast && e.status === 'Active') ||
+                       (activeTab === 'Inactive' && !isPast && e.status === 'Inactive') ||
                        (activeTab === 'Past' && isPast);
     const matchesSearch = e.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           e.category.toLowerCase().includes(searchQuery.toLowerCase());
@@ -1207,14 +1206,14 @@ const EventManagerEvents: React.FC = () => {
                     fontWeight: 800,
                     background: 'rgba(255, 255, 255, 0.95)',
                     backdropFilter: 'blur(8px)',
-                    color: event.is_active ? '#16a34a' : '#ef4444',
-                    border: event.is_active ? '1px solid rgba(22, 163, 74, 0.25)' : '1px solid rgba(239, 68, 68, 0.25)',
+                    color: isPast ? '#64748b' : (event.is_active ? '#16a34a' : '#ef4444'),
+                    border: isPast ? '1px solid #cbd5e1' : (event.is_active ? '1px solid rgba(22, 163, 74, 0.25)' : '1px solid rgba(239, 68, 68, 0.25)'),
                     display: 'flex',
                     alignItems: 'center',
                     gap: '6px'
                   }}>
-                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: event.is_active ? '#16a34a' : '#ef4444' }}></div>
-                    {event.is_active ? 'Active' : 'Inactive'}
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: isPast ? '#94a3b8' : (event.is_active ? '#16a34a' : '#ef4444') }}></div>
+                    {isPast ? 'Past Event' : (event.is_active ? 'Active' : 'Inactive')}
                   </div>
                 </div>
               </div>
@@ -1285,7 +1284,7 @@ const EventManagerEvents: React.FC = () => {
                     }}
                   >
                     <Power size={15} color={isPast ? '#94a3b8' : (event.is_active ? '#ef4444' : '#10b981')} /> 
-                    {event.is_active ? 'Turn Inactive' : 'Turn Active'}
+                    {isPast ? 'Event Ended' : (event.is_active ? 'Turn Inactive' : 'Turn Active')}
                   </button>
                   <button 
                     onClick={() => navigate(`${baseRoute}/attendees?eventId=${event.id}&eventName=${encodeURIComponent(event.title)}`)}
