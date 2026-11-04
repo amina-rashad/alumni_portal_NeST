@@ -6,13 +6,16 @@ import {
   Download, Filter, ChevronRight, Loader2
 } from 'lucide-react';
 
-const registrationsData = [
-  { id: 'REG-001', name: 'John Doe', email: 'john.doe@example.com', phone: '+91 98765 43210', event: 'Global Alumni Meet 2024', type: 'Alumni', status: 'Attended', date: '2024-03-22 10:30 AM' },
-  { id: 'REG-002', name: 'Sara Wilson', email: 'sara.w@example.com', phone: '+91 98765 43211', event: 'Web Development Workshop', type: 'Student', status: 'Not Attended', date: '2024-03-22 11:45 AM' },
-  { id: 'REG-003', name: 'Michael Chen', email: 'm.chen@tech.com', phone: '+91 98765 43212', event: 'Tech Talk: Future of AI', type: 'Intern', status: 'Attended', date: '2024-03-21 02:15 PM' },
-  { id: 'REG-004', name: 'Emily Davis', email: 'emily.d@university.edu', phone: '+91 98765 43213', event: 'Global Alumni Meet 2024', type: 'Student', status: 'Not Attended', date: '2024-03-20 09:00 AM' },
-  { id: 'REG-005', name: 'David Miller', email: 'david.m@nest.com', phone: '+91 98765 43214', event: 'Networking Lunch', type: 'Faculty', status: 'Attended', date: '2024-03-22 08:30 AM' },
-];
+const registrationsData: Array<{
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  event: string;
+  type: string;
+  status: string;
+  date: string;
+}> = [];
 
 const EventManagerRegistrations: React.FC = () => {
   const brandPrimary = '#233167';

@@ -482,7 +482,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {[
                   { name: 'Amina Rashad', email: 'amina.rashad@nestgroup.net', avatar: 'A' },
-                  { name: 'NeST Alumni', email: 'alumni.nest@gmail.com', avatar: 'N' },
+                  { name: 'NeST System Admin', email: 'admin@nest.com', avatar: 'N' },
                 ].map((acc, idx) => (
                   <button 
                     key={idx} 
